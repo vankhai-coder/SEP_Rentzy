@@ -5,30 +5,103 @@ import sequelize from "../config/db.js";
 const User = sequelize.define(
   "User",
   {
-    user_id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
-    full_name: { type: DataTypes.STRING(100), allowNull: false },
-    email: { type: DataTypes.STRING(150), allowNull: false, unique: true },
-    email_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
-    phone_number: DataTypes.STRING(20),
-    phone_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
-    password_hash: DataTypes.STRING(255),
-    google_id: DataTypes.STRING(255),
-    avatar_url: DataTypes.STRING(255),
-    role: { type: DataTypes.ENUM("renter", "owner", "admin"), defaultValue: "renter" },
-    driver_license_number: DataTypes.STRING(50),
-    driver_license_name: DataTypes.STRING(100),
-    driver_license_dob: DataTypes.DATE,
-    driver_license_image_url: DataTypes.STRING(255),
-    driver_license_status: { type: DataTypes.ENUM("pending", "approved", "rejected"), defaultValue: "pending" },
-    national_id_number: DataTypes.STRING(50),
-    national_id_name: DataTypes.STRING(100),
-    national_id_dob: DataTypes.DATE,
-    national_id_image_url: DataTypes.STRING(255),
-    national_id_status: { type: DataTypes.ENUM("pending", "approved", "rejected"), defaultValue: "pending" },
-    points: { type: DataTypes.INTEGER, defaultValue: 0 },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+    user_id: {
+      type: DataTypes.BIGINT.UNSIGNED,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    full_name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING(150),
+      allowNull: false,
+      unique: true,
+    },
+    email_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    phone_number: {
+      type: DataTypes.STRING(20),
+    },
+    phone_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    password_hash: {
+      type: DataTypes.STRING(255),
+    },
+    google_id: {
+      type: DataTypes.STRING(255),
+    },
+    avatar_url: {
+      type: DataTypes.STRING(255),
+    },
+    role: {
+      type: DataTypes.ENUM("renter", "owner", "admin"),
+      allowNull: false,
+      defaultValue: "renter",
+    },
+    driver_license_number: {
+      type: DataTypes.STRING(50),
+    },
+    driver_license_name: {
+      type: DataTypes.STRING(100),
+    },
+    driver_license_dob: {
+      type: DataTypes.DATEONLY,
+    },
+    driver_license_image_url: {
+      type: DataTypes.STRING(255),
+    },
+    driver_license_status: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "pending",
+    },
+    national_id_number: {
+      type: DataTypes.STRING(50),
+    },
+    national_id_name: {
+      type: DataTypes.STRING(100),
+    },
+    national_id_dob: {
+      type: DataTypes.DATEONLY,
+    },
+    national_id_image_url: {
+      type: DataTypes.STRING(255),
+    },
+    national_id_status: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "pending",
+    },
+    points: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
   },
-  { tableName: "users" }
+  {
+    tableName: "users",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+    indexes: [
+      { name: "idx_users_role", fields: ["role"] },
+      { name: "idx_users_email_verified", fields: ["email_verified"] },
+    ],
+  }
 );
-
 export default User;

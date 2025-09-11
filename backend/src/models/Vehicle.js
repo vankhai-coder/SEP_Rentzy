@@ -2,22 +2,111 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
-
 const Vehicle = sequelize.define(
   "Vehicle",
   {
-    vehicle_id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
-    owner_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
-    brand_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
-    model: { type: DataTypes.STRING(100), allowNull: false },
-    type: { type: DataTypes.ENUM("car", "motorbike", "bicycle"), allowNull: false },
-    license_plate: DataTypes.STRING(20),
-    price_per_day: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-    location: DataTypes.STRING(255),
-    description: DataTypes.TEXT,
-    status: { type: DataTypes.ENUM("available", "unavailable"), defaultValue: "available" },
+    vehicle_id: {
+      type: DataTypes.BIGINT.UNSIGNED,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    owner_id: {
+      type: DataTypes.BIGINT.UNSIGNED,
+      allowNull: false,
+    },
+    brand_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+    vehicle_type: {
+      type: DataTypes.ENUM("car", "motorbike"),
+      allowNull: false,
+    },
+    model: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    year: {
+      type: DataTypes.INTEGER, // Sequelize has no YEAR type, use INTEGER
+      allowNull: false,
+    },
+    price_per_day: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+    },
+    main_image_url: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    extra_images: {
+      type: DataTypes.JSON,
+    },
+    features: {
+      type: DataTypes.JSON,
+    },
+    location: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+
+    // Car fields
+    transmission: {
+      type: DataTypes.ENUM("manual", "automatic"),
+    },
+    seats: {
+      type: DataTypes.TINYINT.UNSIGNED,
+    },
+    fuel_type: {
+      type: DataTypes.ENUM("petrol", "diesel", "electric", "hybrid"),
+    },
+
+    // Motorbike fields
+    bike_type: {
+      type: DataTypes.ENUM("scooter", "manual", "clutch", "electric"),
+    },
+    engine_capacity: {
+      type: DataTypes.INTEGER.UNSIGNED,
+    },
+
+    // Status fields
+    approvalStatus: {
+      type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
+      defaultValue: "none",
+    },
+    status: {
+      type: DataTypes.ENUM("available", "blocked"),
+      defaultValue: "available",
+    },
+    rent_count: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      defaultValue: 0,
+    },
+
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
   },
-  { tableName: "vehicles" }
+  {
+    tableName: "vehicles",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+    indexes: [
+      { name: "idx_vehicles_owner", fields: ["owner_id"] },
+      { name: "idx_vehicles_brand", fields: ["brand_id"] },
+      { name: "idx_vehicles_type", fields: ["vehicle_type"] },
+      { name: "idx_vehicles_status", fields: ["status"] },
+      { name: "idx_vehicles_location", fields: ["location"] },
+    ],
+  }
 );
 
 export default Vehicle;
