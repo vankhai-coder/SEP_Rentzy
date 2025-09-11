@@ -11,6 +11,7 @@ import Booking from "./Booking.js";
 import Transaction from "./Transaction.js";
 import Favorite from "./Favorite.js";
 import Message from "./Message.js";
+import VehicleReport from "./VehicleReport.js";
 
 // --- RELATIONS ---
 
@@ -85,6 +86,14 @@ User.hasMany(Favorite, { foreignKey: "user_id" });
 Favorite.belongsTo(User, { foreignKey: "user_id" });
 Vehicle.hasMany(Favorite, { foreignKey: "vehicle_id" });
 Favorite.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+
+// Vehicle ↔ VehicleReports
+Vehicle.hasMany(VehicleReport, { foreignKey: "vehicle_id" });
+VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+
+// User ↔ VehicleReports
+User.hasMany(VehicleReport, { foreignKey: "user_id" });
+VehicleReport.belongsTo(User, { foreignKey: "user_id" });
 
 // --- COLLECT MODELS INTO ONE OBJECT ---
 const db = {
