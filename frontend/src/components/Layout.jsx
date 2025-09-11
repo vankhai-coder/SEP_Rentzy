@@ -3,7 +3,7 @@ import Header from './Header.jsx'
 
 const Layout = ({ children }) => {
   return (
-    <div>
+    <div className=' px-40'>
       {/* Header */}
       <Header />
 
