@@ -8,10 +8,6 @@ const Message = sequelize.define("Message", {
     primaryKey: true,
     autoIncrement: true,
   },
-  booking_id: {
-    type: DataTypes.BIGINT.UNSIGNED,
-    allowNull: false,
-  },
   sender_id: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
@@ -44,7 +40,6 @@ const Message = sequelize.define("Message", {
   tableName: "messages",
   timestamps: false, // we manually handle created_at
   indexes: [
-    { fields: ["booking_id"] },
     { fields: ["sender_id"] },
     { fields: ["receiver_id", "is_read"] },
   ],
