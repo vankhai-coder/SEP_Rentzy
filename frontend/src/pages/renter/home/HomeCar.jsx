@@ -1,20 +1,25 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchVehicles } from "../../redux/features/vehicles/vehicleSlice";
-import CarList from "../../components/vehicles/car/CarList";
+import { fetchVehicles } from "../../../redux/features/renter/vehicles/vehicleSlice";
+import { fetchBrands } from "../../../redux/features/renter/brand/brandSlice";
+import CarList from "../../../components/renter/vehicles/car/CarList";
+import BrandList from "../../../components/renter/brand/BrandList";
 
 const HomeCar = () => {
   const dispatch = useDispatch();
-  const { vehicles, loading, error } = useSelector(
+  const { vehicles, loading: vehicleLoading } = useSelector(
     (state) => state.vehicleStore
   );
+  const {
+    brands,
+    loading: brandLoading,
+    error: brandError,
+  } = useSelector((state) => state.brandStore);
 
   useEffect(() => {
     dispatch(fetchVehicles("car"));
+    dispatch(fetchBrands("car"));
   }, [dispatch]);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-6">
@@ -31,11 +36,18 @@ const HomeCar = () => {
 
       {/* Danh sách xe */}
       <h2 className="text-2xl font-bold mb-4">Danh Sách Xe Ô Tô</h2>
-      <CarList cars={vehicles} />
+      {vehicleLoading ? <p>Loading...</p> : <CarList cars={vehicles} />}
 
       {/* Giới thiệu hãng xe */}
       <section className="mt-8">
         <h2 className="text-2xl font-bold mb-4">Hãng Xe Nổi Bật</h2>
+        {brandLoading ? (
+          <p>Đang tải hãng xe...</p>
+        ) : brandError ? (
+          <p>{brandError}</p>
+        ) : (
+          <BrandList brands={brands} />
+        )}
       </section>
     </div>
   );

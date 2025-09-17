@@ -5,8 +5,8 @@ import Layout from "./components/Layout.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "./redux/features/auth/authSlice.js";
 import { useEffect } from "react";
-import HomeCar from "./pages/home/HomeCar.jsx";
-import HomeMotorbike from "./pages/home/HomeMotorbike.jsx";
+import HomeCar from "./pages/renter/home/HomeCar.jsx";
+import HomeMotorbike from "./pages/renter/home/HomeMotorbike.jsx";
 const App = () => {
   // check auth :
   const dispatch = useDispatch();
