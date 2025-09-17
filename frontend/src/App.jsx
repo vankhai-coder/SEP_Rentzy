@@ -1,23 +1,23 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import HomePage from './pages/Home.jsx'
-import LoginPage from './pages/Login.jsx'
-import Layout from './components/Layout.jsx'
-import { useDispatch, useSelector } from 'react-redux'
-import { checkAuth } from './redux/features/auth/authSlice.js'
-import { useEffect } from 'react'
-
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import HomePage from "./pages/Home.jsx";
+import LoginPage from "./pages/Login.jsx";
+import Layout from "./components/Layout.jsx";
+import { useDispatch, useSelector } from "react-redux";
+import { checkAuth } from "./redux/features/auth/authSlice.js";
+import { useEffect } from "react";
+import HomeCar from "./pages/home/HomeCar.jsx";
+import HomeMotorbike from "./pages/home/HomeMotorbike.jsx";
 const App = () => {
-
-  // check auth : 
-  const dispatch = useDispatch()
-  const { loading } = useSelector(state => state.userStore)
+  // check auth :
+  const dispatch = useDispatch();
+  const { loading } = useSelector((state) => state.userStore);
 
   useEffect(() => {
-    dispatch(checkAuth())
-  }, [])
+    dispatch(checkAuth());
+  }, []);
 
   if (loading) {
-    return <div className='min-h-screen text-center'>Checking auth...</div>
+    return <div className="min-h-screen text-center">Checking auth...</div>;
   }
 
   return (
@@ -25,12 +25,17 @@ const App = () => {
       <Layout>
         <Routes>
           {/* Login,Register: */}
-          <Route path='/login' element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
           {/* Home : */}
-          <Route path='/' element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
+          {/* Home Xe Ô Tô */}
+          <Route path="/cars" element={<HomeCar />} />
+
+          {/* Home Xe Máy */}
+          <Route path="/motorbikes" element={<HomeMotorbike />} />
 
           {/* OWNER ROUTES :  */}
 
@@ -38,11 +43,10 @@ const App = () => {
 
           {/* 404 fallback */}
           <Route path="*" element={<HomePage />} />
-
         </Routes>
       </Layout>
     </Router>
-  )
-}
+  );
+};
 
-export default App 
+export default App;
