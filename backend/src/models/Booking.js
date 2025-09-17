@@ -30,8 +30,7 @@ const Booking = sequelize.define("Booking", {
   total_amount: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
   total_paid: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
 
-  voucher_code: { type: DataTypes.STRING(50) },
-  user_voucher_id: { type: DataTypes.BIGINT.UNSIGNED },
+  voucher_code: { type: DataTypes.BIGINT.UNSIGNED },
 
   order_code: { type: DataTypes.BIGINT, unique: true },
   order_code_remaining: { type: DataTypes.BIGINT, unique: true },

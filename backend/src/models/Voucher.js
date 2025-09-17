@@ -43,24 +43,11 @@ const Voucher = sequelize.define(
       type: DataTypes.DECIMAL(12, 2),
       defaultValue: null,
     },
-    points_required: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-      allowNull: false,
-    },
-    total_quantity: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      defaultValue: 0,
-    },
-    remaining_quantity: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      defaultValue: 0,
-    },
     valid_from: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    valid_to: {
+    valid_to: { 
       type: DataTypes.DATE,
       allowNull: false,
     },
@@ -70,15 +57,7 @@ const Voucher = sequelize.define(
     },
     image_url: {
       type: DataTypes.STRING(255),
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
+    }
   },
   {
     tableName: "vouchers",
@@ -88,7 +67,6 @@ const Voucher = sequelize.define(
     indexes: [
       { name: "idx_vouchers_active", fields: ["is_active", "valid_to"] },
       { name: "idx_vouchers_creator", fields: ["created_by"] },
-      { name: "idx_vouchers_points", fields: ["points_required"] },
     ],
   }
 );

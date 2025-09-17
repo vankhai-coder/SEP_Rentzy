@@ -32,6 +32,7 @@ const PointsTransaction = sequelize.define("PointsTransaction", {
   reference_id: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: true,
+    unique: true
   },
   description: {
     type: DataTypes.STRING(255),

@@ -4,13 +4,13 @@ import Bank from "./Bank.js";
 import Brand from "./Brand.js";
 import Vehicle from "./Vehicle.js";
 import Voucher from "./Voucher.js";
-import UserVoucher from "./UserVoucher.js";
 import PointsTransaction from "./PointsTransaction.js";
 import Notification from "./Notification.js";
 import Booking from "./Booking.js";
 import Transaction from "./Transaction.js";
 import Favorite from "./Favorite.js";
 import Message from "./Message.js";
+import VehicleReport from "./VehicleReport.js";
 
 // --- RELATIONS ---
 
@@ -30,15 +30,13 @@ Vehicle.belongsTo(Brand, { foreignKey: "brand_id" });
 User.hasMany(Voucher, { foreignKey: "created_by" });
 Voucher.belongsTo(User, { as: "creator", foreignKey: "created_by" });
 
-// Users ↔ UserVouchers ↔ Vouchers
-User.hasMany(UserVoucher, { foreignKey: "user_id" });
-UserVoucher.belongsTo(User, { foreignKey: "user_id" });
-Voucher.hasMany(UserVoucher, { foreignKey: "voucher_id" });
-UserVoucher.belongsTo(Voucher, { foreignKey: "voucher_id" });
-
 // Users ↔ PointsTransactions
 User.hasMany(PointsTransaction, { foreignKey: "user_id" });
 PointsTransaction.belongsTo(User, { foreignKey: "user_id" });
+
+// Booking ↔ PointsTransaction (1:1)
+Booking.hasOne(PointsTransaction, { foreignKey: "reference_id", as: "pointsTransaction" });
+PointsTransaction.belongsTo(Booking, { foreignKey: "reference_id", as: "booking" });
 
 // Users ↔ Notifications
 User.hasMany(Notification, { foreignKey: "user_id" });
@@ -54,14 +52,6 @@ Booking.belongsTo(User, { as: "owner", foreignKey: "owner_id" });
 Vehicle.hasMany(Booking, { foreignKey: "vehicle_id" });
 Booking.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
 
-// Bookings ↔ UserVouchers
-UserVoucher.hasMany(Booking, { foreignKey: "user_voucher_id" });
-Booking.belongsTo(UserVoucher, { foreignKey: "user_voucher_id" });
-
-// Bookings ↔ Messages
-Booking.hasMany(Message, { foreignKey: "booking_id" });
-Message.belongsTo(Booking, { foreignKey: "booking_id" });
-
 // Users ↔ Messages
 User.hasMany(Message, { foreignKey: "sender_id", as: "SentMessages" });
 User.hasMany(Message, { foreignKey: "receiver_id", as: "ReceivedMessages" });
@@ -75,16 +65,26 @@ Transaction.belongsTo(Booking, { foreignKey: "booking_id" });
 // Users ↔ Transactions
 User.hasMany(Transaction, { foreignKey: "from_user_id", as: "SentTransactions" });
 User.hasMany(Transaction, { foreignKey: "to_user_id", as: "ReceivedTransactions" });
-User.hasMany(Transaction, { foreignKey: "admin_id", as: "AdminTransactions" });
 Transaction.belongsTo(User, { as: "fromUser", foreignKey: "from_user_id" });
 Transaction.belongsTo(User, { as: "toUser", foreignKey: "to_user_id" });
-Transaction.belongsTo(User, { as: "admin", foreignKey: "admin_id" });
 
 // Favorites
 User.hasMany(Favorite, { foreignKey: "user_id" });
 Favorite.belongsTo(User, { foreignKey: "user_id" });
 Vehicle.hasMany(Favorite, { foreignKey: "vehicle_id" });
 Favorite.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+
+// Vehicle ↔ VehicleReports
+Vehicle.hasMany(VehicleReport, { foreignKey: "vehicle_id" });
+VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+
+// User ↔ VehicleReports
+User.hasMany(VehicleReport, { foreignKey: "user_id" });
+VehicleReport.belongsTo(User, { foreignKey: "user_id" });
+
+// Voucher ↔ Booking
+Voucher.hasMany(Booking, { foreignKey: "voucher_code", as: "bookings" });
+Booking.belongsTo(Voucher, { foreignKey: "voucher_code", as: "voucher" });
 
 // --- COLLECT MODELS INTO ONE OBJECT ---
 const db = {
@@ -94,7 +94,6 @@ const db = {
   Brand,
   Vehicle,
   Voucher,
-  UserVoucher,
   PointsTransaction,
   Notification,
   Booking,

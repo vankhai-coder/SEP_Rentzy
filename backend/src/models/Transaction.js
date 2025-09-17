@@ -20,10 +20,6 @@ const Transaction = sequelize.define("Transaction", {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: true,
   },
-  admin_id: {
-    type: DataTypes.BIGINT.UNSIGNED,
-    allowNull: true,
-  },
   amount: {
     type: DataTypes.DECIMAL(12, 2),
     allowNull: false,
