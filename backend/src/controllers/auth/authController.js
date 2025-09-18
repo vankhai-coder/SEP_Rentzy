@@ -92,7 +92,14 @@ export const googleCallback = async (req, res) => {
 export const logout = (req, res) => {
     try {
         // 1. delete cookie : 
-        res.clearCookie('token')
+        res.clearCookie('token',
+            {
+                httpOnly: true,   // cannot be accessed by JavaScript (XSS safe)
+                secure: process.env.NODE_ENV === "production", // only HTTPS in production
+                sameSite: "strict", // CSRF protection
+                maxAge: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
+            }
+        )
         // 2. return : 
         return res.status(200).json({ success: true, message: "Logout successfully!" })
     } catch (error) {

@@ -147,11 +147,12 @@ const Header = () => {
                   <Button
                     variant={"outline"}
                     className={"p-6"}
-                 
+
                   >
                     Đăng Ký
                   </Button>
                 </DialogTrigger>
+                <DialogTitle></DialogTitle>
                 <DialogContent>
                   <DialogHeader>
                     <DialogDescription>
@@ -168,6 +169,7 @@ const Header = () => {
                     Đăng Nhập
                   </Button>
                 </DialogTrigger>
+                <DialogTitle></DialogTitle>
                 <DialogContent>
                   <DialogHeader>
                     <DialogDescription>

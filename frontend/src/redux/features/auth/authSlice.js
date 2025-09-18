@@ -27,7 +27,7 @@ export const logoutUser = createAsyncThunk(
     "user/logoutUser",
     async (_, { rejectWithValue }) => {
         try {
-            await axiosInstance.get(`${import.meta.env.VITE_API_URL}/logout`)
+            await axiosInstance.get(`${import.meta.env.VITE_API_URL}/api/logout`)
             return true; // success
         } catch (err) {
             return rejectWithValue(err.response?.data || "Logout failed");
@@ -84,6 +84,7 @@ const userSlice = createSlice({
                 state.avatar = ""
                 state.loading = false;
                 state.error = null;
+                state.email = ''
             })
             .addCase(logoutUser.rejected, (state, action) => {
                 state.loading = false;

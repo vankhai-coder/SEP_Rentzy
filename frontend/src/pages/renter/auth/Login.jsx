@@ -1,8 +1,11 @@
+import { EyeClosed, EyeClosedIcon, EyeIcon, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isEyeOpen, setIsEyeOpen] = useState(false)
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -38,8 +41,7 @@ const Login = () => {
             </label>
             <div className="relative">
               <input
-                type="password"
-                id="password"
+                type={isEyeOpen ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -47,19 +49,19 @@ const Login = () => {
                 required
               />
               <span className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-gray-400 cursor-pointer"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  <path
-                    fillRule="evenodd"
-                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                    clipRule="evenodd"
+                {isEyeOpen ?
+                  <EyeIcon
+                    onClick={() => {
+                      setIsEyeOpen(!isEyeOpen)
+                    }}
                   />
-                </svg>
+                  :
+                  <EyeClosed
+                    onClick={() => {
+                      setIsEyeOpen(!isEyeOpen)
+                    }}
+                  />
+                }
               </span>
             </div>
           </div>
@@ -99,10 +101,25 @@ const Login = () => {
               xmlns="http://www.w3.org/2000/svg"
               className="w-5 h-5 mr-2"
               viewBox="0 0 24 24"
-              fill="currentColor"
             >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.72 0 5.17-.98 7.08-2.58l-1.9-1.9a7.9 7.9 0 01-5.18 1.98c-4.42 0-8-3.58-8-8s3.58-8 8-8c3.27 0 6.1 1.95 7.42 4.77l-2.92 2.92-1.5-1.5c-.83-.83-2.18-.83-3.01 0l-5.61 5.61c-.83.83-.83 2.18 0 3.01l1.5 1.5c.83.83 2.18.83 3.01 0l5.61-5.61c.83-.83.83-2.18 0-3.01l-1.5-1.5-2.92-2.92c1.94-1.32 4.1-2.07 6.48-2.07 3.31 0 6.2 1.63 7.98 4.19l2.25-2.25C22.63 4.31 17.68 2 12 2z" />
+              <path
+                fill="#4285F4"
+                d="M23.49 12.27c0-.79-.07-1.54-.21-2.27H12v4.3h6.45c-.28 1.48-1.12 2.73-2.37 3.57v2.96h3.83c2.24-2.06 3.58-5.1 3.58-8.56z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.83-2.96c-1.06.71-2.41 1.14-4.1 1.14-3.15 0-5.82-2.13-6.77-4.99H2.24v3.09C4.21 21.53 7.83 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.23 14.28c-.25-.71-.39-1.47-.39-2.28s.14-1.57.39-2.28V6.63H2.24A11.96 11.96 0 0 0 0 12c0 1.93.46 3.75 1.24 5.37l3.99-3.09z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.07 15.24 0 12 0 7.83 0 4.21 2.47 2.24 6.63l3.99 3.09c.95-2.86 3.62-4.97 6.77-4.97z"
+              />
             </svg>
+
             Google
           </button>
         </div>
