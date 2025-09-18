@@ -1,12 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/Home.jsx";
-import LoginPage from "./pages/Login.jsx";
+import LoginPage from "./pages/renter/auth/Login.jsx";
 import Layout from "./components/Layout.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { checkAuth } from "./redux/features/auth/authSlice.js";
 import { useEffect } from "react";
 import HomeCar from "./pages/renter/home/HomeCar.jsx";
 import HomeMotorbike from "./pages/renter/home/HomeMotorbike.jsx";
+import Register from "./pages/renter/auth/Register.jsx";
+import VerifyEmail from "./pages/renter/auth/VerifyEmail.jsx";
+import ForgotPassword from "./pages/renter/auth/ForgotPassword.jsx";
 const App = () => {
   // check auth :
   const dispatch = useDispatch();
@@ -25,7 +28,8 @@ const App = () => {
       <Layout>
         <Routes>
           {/* Login,Register: */}
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Home : */}
           <Route path="/" element={<HomePage />} />

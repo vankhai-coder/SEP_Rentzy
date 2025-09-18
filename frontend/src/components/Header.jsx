@@ -11,6 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutUser } from "@/redux/features/auth/authSlice";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import Register from "@/pages/renter/auth/Register";
+import Login from "@/pages/renter/auth/Login";
 
 const Header = () => {
   const { userId, email } = useSelector((state) => state.userStore);
@@ -132,29 +142,40 @@ const Header = () => {
           {/* Show Login Button If not login : */}
           {!userId && (
             <div className="flex gap-4">
-              <Button
-                variant={"outline"}
-                className={"p-6"}
-                onClick={() => {
-                  window.open(
-                    `${import.meta.env.VITE_API_URL}/api/auth/google`,
-                    "_blank"
-                  );
-                }}
-              >
-                Đăng Ký
-              </Button>
-              <Button
-                className={"p-6"}
-                onClick={() => {
-                  window.open(
-                    `${import.meta.env.VITE_API_URL}/api/auth/google`,
-                    "_blank"
-                  );
-                }}
-              >
-                Đăng Nhập
-              </Button>
+              <Dialog>
+                <DialogTrigger>
+                  <Button
+                    variant={"outline"}
+                    className={"p-6"}
+                 
+                  >
+                    Đăng Ký
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <Register />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+              <Dialog>
+                <DialogTrigger>
+                  <Button
+                    className={"p-6"}
+                  >
+                    Đăng Nhập
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <Login />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </div>
