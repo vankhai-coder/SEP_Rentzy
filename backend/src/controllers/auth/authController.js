@@ -75,6 +75,7 @@ export const googleCallback = async (req, res) => {
                 avatar_url: user.picture,
                 google_id: user.id,
                 email_verified: true,
+                authMethod: 'oauth'
 
             });
             // set cookie : 

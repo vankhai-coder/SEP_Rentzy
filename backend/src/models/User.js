@@ -12,7 +12,6 @@ const User = sequelize.define(
     },
     full_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
     },
     email: {
       type: DataTypes.STRING(150),
@@ -92,6 +91,16 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    authMethod: {
+      type: DataTypes.ENUM('oauth', 'email'),
+      allowNull: false
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+    },
+    verifyEmailToken: {
+      type: DataTypes.STRING,
+    }
   },
   {
     tableName: "users",
