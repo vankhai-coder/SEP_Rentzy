@@ -1,6 +1,6 @@
 import { CheckCircle, EyeClosed, EyeIcon, Loader } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Toaster, toast } from 'sonner'
+import {  toast } from 'sonner'
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -160,16 +160,11 @@ const Register = () => {
           </span>
         </p>
 
-        <div className="flex space-x-4">
+        <div className="flex flex-col gap-4 space-x-4">
 
-          <button
-            className="flex items-center justify-center w-full px-4 py-2 text-gray-700 transition duration-200 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            onClick={() => {
-              window.open(
-                `${import.meta.env.VITE_API_URL}/api/auth/google`,
-                "_blank"
-              );
-            }}
+          <a
+            className="flex items-center justify-center hover:cursor-pointer w-full px-4 py-2 text-gray-700 transition duration-200 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -195,7 +190,7 @@ const Register = () => {
             </svg>
 
             Google
-          </button>
+          </a>
         </div>
       </div>
     </div>

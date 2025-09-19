@@ -1,5 +1,9 @@
 import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
+import { sendEmail } from '../../utils/email/sendEmail.js';
+import { verifyEmailTemplate } from '../../utils/email/templates/verifyEmail.js';
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 // redirect user to google login form and ask for permission : 
 export const googleLogin = (req, res) => {
@@ -108,3 +112,58 @@ export const logout = (req, res) => {
 
     }
 }
+
+// register :
+export const register = async (req, res) => {
+    try {
+        const { email, password } = req.body || {}
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Missing email or password in request!" });
+        }
+
+        // 1. check if email already exist :
+        const existEmail = await db.User.findOne({ where: { email } });
+        if (existEmail) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Email already exists!" });
+        }
+
+        // 2. create new account :
+        const password_hash = await bcrypt.hash(password, 10); // 10 = salt rounds
+        const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+
+        const newUser = await db.User.create({
+            email,
+            password_hash,
+            authMethod: "email",
+            verifyEmailToken,
+        });
+
+        // 3. send verify email :
+        const verifyLink = `${process.env.CLIENT_ORIGIN}/verify-email?email=${encodeURIComponent(
+            email
+        )}&verifyEmailToken=${verifyEmailToken}`;
+
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Verify Your Email",
+            html: verifyEmailTemplate(verifyLink),
+        });
+
+        // 4. return success
+        return res.status(201).json({
+            success: true,
+            message: "User registered successfully. Please check your email to verify your account.",
+        });
+    } catch (error) {
+        console.error("Register error:", error);
+        return res
+            .status(500)
+            .json({ success: false, message: "Server error. Please try again later." });
+    }
+};
+
