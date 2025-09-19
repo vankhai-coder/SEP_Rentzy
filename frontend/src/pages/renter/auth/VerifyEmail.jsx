@@ -30,21 +30,19 @@ const VerifyEmail = () => {
   // toast when success : 
   useEffect(() => {
     if (isVerifyEmailSuccess) {
-      toast.success('Verify email successfully!')
+      toast.success('Verify email successfully!');
+      navigate('/');
     }
-  }, [isVerifyEmailSuccess])
+  }, [isVerifyEmailSuccess, navigate]);
 
-  // navigate to home page when verify success : 
-  useEffect(() => {
-    if (isVerifyEmailSuccess) {
-      navigate('/')
-    }
-  }, [isVerifyEmailSuccess])
 
   // dispatch to verify email : 
   useEffect(() => {
-    dispatch(verifyEmail({ email, verifyEmailToken }))
-  }, [])
+    if (email && verifyEmailToken) {
+      dispatch(verifyEmail({ email, verifyEmailToken }));
+    }
+  }, [email, verifyEmailToken, dispatch])
+
 
   // reset state : 
   useEffect(() => {

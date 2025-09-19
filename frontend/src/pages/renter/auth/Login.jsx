@@ -1,12 +1,13 @@
-import { loginUser, resetState } from '@/redux/features/auth/authSlice';
-import { EyeClosed, EyeIcon, Loader } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { loginUser, requestVerifyEmail, resetState } from '@/redux/features/auth/authSlice';
+import { EyeClosed, EyeIcon, Loader, Loader2Icon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
 const Login = () => {
   // redux : 
-  const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin } = useSelector(state => state.userStore)
+  const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin, isLoadingRequest, isRequestSuccess, errorRequest } = useSelector(state => state.userStore)
   const dispatch = useDispatch()
 
   const [email, setEmail] = useState('');
@@ -21,12 +22,25 @@ const Login = () => {
     }
   }, [errorLogin])
 
+  useEffect(() => {
+    if (errorRequest) {
+      toast.error(errorRequest)
+    }
+  }, [errorRequest])
+
   // if login success , toast it : 
   useEffect(() => {
     if (isLoginSuccess) {
       toast.success('Login successfully!')
     }
   }, [isLoginSuccess])
+
+  // if request to create veirfy email link success , toast it : 
+  useEffect(() => {
+    if (isRequestSuccess) {
+      toast.success('Open your email to verify now!')
+    }
+  }, [isRequestSuccess])
 
   // reset state if unmounted : 
   useEffect(() => {
@@ -146,6 +160,21 @@ const Login = () => {
             Google
           </a>
         </div>
+        {/* button for send request create veriyf email : */}
+        {isNotVerifyEmailError &&
+          <Button
+            className={'w-full mt-3'}
+            onClick={() => {
+              if (email) {
+                dispatch(requestVerifyEmail(email))
+              } else {
+                return
+              }
+            }}
+          >
+            {isLoadingRequest ? <Loader2Icon className='animate-spin' /> : (isRequestSuccess ? 'Open your email to verify!' : `Send verify link to ${email}`)}
+          </Button>
+        }
       </div>
     </div>
   );

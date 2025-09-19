@@ -20,8 +20,11 @@ const initialState = {
     isLoadingLogin: false,
     isNotVerifyEmailError: false,
     errorLogin: '',
-    isLoginSuccess: false
-
+    isLoginSuccess: false,
+    // for request create verify email : 
+    isLoadingRequest: false,
+    isRequestSuccess: false,
+    errorRequest: '',
 
 };
 
@@ -104,6 +107,19 @@ export const loginUser = createAsyncThunk(
     }
 );
 
+// request to create verify email : 
+export const requestVerifyEmail = createAsyncThunk(
+    "user/requestVerifyEmail",
+    async (email, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post("/api/auth/request-create-verify-email", { email });
+            return res.data; // { success: true, message: 'Verification email sent!' }
+        } catch (err) {
+            return rejectWithValue(err.response?.data || { message: "Error sending verification email" });
+        }
+    }
+);
+
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -126,6 +142,9 @@ const userSlice = createSlice({
             state.isLoginSuccess = false
             state.isNotVerifyEmailError = false
             state.errorLogin = ''
+            state.isLoadingRequest = false
+            state.isRequestSuccess = false
+            state.errorRequest = ''
         },
     },
     extraReducers: (builder) => {
@@ -243,6 +262,22 @@ const userSlice = createSlice({
                 state.isNotVerifyEmailError = !!action.payload?.isNotVerifyEmailError;
                 state.errorLogin = action.payload?.message
             })
+            // Verification email
+            .addCase(requestVerifyEmail.pending, (state) => {
+                state.errorLogin = ''
+                state.isLoadingRequest = true;
+                state.isRequestSuccess = false;
+                state.errorRequest = ''
+            })
+            .addCase(requestVerifyEmail.fulfilled, (state) => {
+                state.isLoadingRequest = false;
+                state.isRequestSuccess = true;
+            })
+            .addCase(requestVerifyEmail.rejected, (state, action) => {
+                state.isLoadingRequest = false;
+                state.isRequestSuccess = false;
+                state.errorRequest = action.payload?.message || "Failed to send verification email";
+            });
     },
 });
 

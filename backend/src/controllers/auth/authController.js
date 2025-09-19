@@ -85,7 +85,7 @@ export const googleCallback = async (req, res) => {
             // set cookie : 
             createCookie(res, newUser.user_id, 'renter', newUser.avatar_url, newUser.email)
         }
-        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}`)
+        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?googleCheckAuth=true`)
     } catch (error) {
         console.error("Google Callback Error:", error);
         res.status(500).send("Server error during Google callback");
@@ -220,6 +220,7 @@ export const verifyEmail = async (req, res) => {
     }
 };
 
+// login : 
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body || {};
@@ -265,5 +266,60 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error("Login error:", error.message);
         return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// request to create verify email : 
+export const requestCreateVerifyEmail = async (req, res) => {
+    try {
+        const { email } = req.body || {};
+
+        // 0. Check if email is provided
+        if (!email) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is required!" });
+        }
+
+        // 1. Check if user exists
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found!" });
+        }
+
+        // 2. Check if email is already verified
+        if (user.email_verified) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Email is already verified!" });
+        }
+
+        // 3. Create verify email token
+        const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+        user.verifyEmailToken = verifyEmailToken;
+        await user.save();
+
+        // 4. Send verification email
+        const verifyLink = `${process.env.CLIENT_ORIGIN}/verify-email?email=${encodeURIComponent(
+            email
+        )}&verifyEmailToken=${verifyEmailToken}`;
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Verify Your Email",
+            html: verifyEmailTemplate(verifyLink),
+        });
+
+        // 5. Response
+        return res
+            .status(200)
+            .json({ success: true, message: "Verification email sent!" });
+    } catch (error) {
+        console.error("Error in requestCreateVerifyEmail:", error.message);
+        return res
+            .status(500)
+            .json({ success: false, message: "Server error. Please try again." });
     }
 };
