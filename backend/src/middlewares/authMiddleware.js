@@ -1,23 +1,42 @@
 import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
 
-export const verifyJWTToken = (req, res, next) => {
-    try {
-        // 1. get token from cookie : 
-        const { token } = req.cookies
-        if (!token) {
-            return res.status(401).json({ success: false, message: "No token provided" });
-        }
-        // 2. decode token : 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
-
-        // 3. save the decoded data to req.user : 
-        req.user = decoded
-
-        // 4. continue : 
-        next()
-        
-    } catch (error) {
-        console.log('Error when verify jwt token :', error.message)
-        return res.status(400).json({ success: false, message: 'Error when verify jwt token!' })
+export const verifyJWTToken = async (req, res, next) => {
+  try {
+    // 1. Get token from cookie
+    const { token } = req.cookies;
+    if (!token) {
+      return res.status(401).json({ success: false, message: "No token provided" });
     }
-}
+
+    // 2. Decode token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    } catch (err) {
+      return res.status(401).json({ success: false, message: "Invalid or expired token" });
+    }
+
+    // 3. Check if user exists and is active
+    const existUser = await User.findOne({
+      where: {
+        user_id: decoded.userId, 
+        is_active: true,
+      },
+    });
+
+    if (!existUser) {
+      return res.status(403).json({ success: false, message: 'User not found or is banned!' });
+    }
+
+    // 4. Save decoded data to req.user
+    req.user = decoded;
+
+    // 5. Continue to next middleware
+    next();
+
+  } catch (error) {
+    console.error('Error verifying JWT token:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error verifying token' });
+  }
+};

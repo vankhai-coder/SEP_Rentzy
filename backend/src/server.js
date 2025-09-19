@@ -33,7 +33,7 @@ app.use((req, res, next) => {
 // ROUTE :
 
 // auth route :
-app.use("/api", AuthRoute);
+app.use("/api/auth", AuthRoute);
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.get("/", (req, res) => {

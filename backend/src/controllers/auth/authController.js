@@ -64,7 +64,7 @@ export const googleCallback = async (req, res) => {
         // Check if user already exist : 
         const existUser = await db.User.findOne({
             where: {
-                google_id: user.id,
+                email: user.email,
             }
         });
 
@@ -164,6 +164,60 @@ export const register = async (req, res) => {
         return res
             .status(500)
             .json({ success: false, message: "Server error. Please try again later." });
+    }
+};
+
+export const verifyEmail = async (req, res) => {
+    try {
+        const { email, verifyEmailToken } = req.body || {};
+
+        // 1. Check if email & token exist in body
+        if (!email || !verifyEmailToken) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Missing email or verify token in request" });
+        }
+
+        // 2. Find user by email
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
+        }
+
+        // 3. Check if token matches
+        if (user.verifyEmailToken !== verifyEmailToken) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid or expired token" });
+        }
+
+        // 4. Token matches → update user
+        user.verifyEmailToken = null; // delete token
+        user.email_verified = true;
+        await user.save();
+
+        // 5. Create cookie 
+        createCookie(res, user.user_id, user.role, user.avatar_url, user.email)
+
+        // 6. Redirect or respond
+
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                userId: user.user_id,
+                role: user.role,
+                email: user.email
+            }
+        })
+    } catch (error) {
+        console.error("Error verifying email:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
     }
 };
 

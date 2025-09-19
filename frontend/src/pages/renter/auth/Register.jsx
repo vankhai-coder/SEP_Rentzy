@@ -1,8 +1,14 @@
+import { register } from '@/redux/features/auth/authSlice';
 import { CheckCircle, EyeClosed, EyeIcon, Loader } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import {  toast } from 'sonner'
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner'
 
 const Register = () => {
+  // redux : 
+  const dispatch = useDispatch()
+  const { isLoadingRegister, errorRegister, isRegisterSuccess } = useSelector(state => state.userStore)
+  // 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -10,8 +16,6 @@ const Register = () => {
   // eye icon : 
   const [isEyeOpen, setIsEyeOpen] = useState(false)
   const [isEyeOpen2, setIsEyeOpen2] = useState(false)
-
-  const [isLoading, set] = useState('')
 
   // check validate password : 
   const [hasUppercase, setHasUppercase] = useState(false);
@@ -25,12 +29,26 @@ const Register = () => {
     setHasNumber(/[0-9]/.test(password));
     setHasMinLength(password.length >= 8);
   };
-
+  // handle password change :
   useEffect(() => {
     handlePasswordChange()
   }, [password])
 
-  const handleRegister = (e) => {
+  // if error , toast it : 
+  useEffect(() => {
+    if (errorRegister) {
+      toast.error(errorRegister)
+    }
+  }, [errorRegister])
+
+  // if register success, toast it : 
+  useEffect(() => {
+    if (isRegisterSuccess) {
+      toast.success('User registered successfully. Please check your email to verify your account.')
+    }
+  }, [isRegisterSuccess])
+
+  const handleRegister = async (e) => {
     e.preventDefault();
     // check if confirm password match : 
     if (!password.match(confirmPassword)) {
@@ -38,7 +56,8 @@ const Register = () => {
       toast.error("Confirm password not match!")
       return
     }
-    // if match , then 
+    // if match , then send register to backend : 
+    await dispatch(register({ email, password }))
   };
 
   return (
@@ -62,17 +81,15 @@ const Register = () => {
           </div>
 
           <div className="mb-1">
-            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
               Mật khẩu
             </label>
             <div className="relative">
               <input
                 type={isEyeOpen ? 'text' : 'password'}
-                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder=""
                 required
               />
               <span className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -114,17 +131,15 @@ const Register = () => {
             </ul>
           </div>
           <div className="mb-4">
-            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
               Nhập lại mật khẩu
             </label>
             <div className="relative">
               <input
                 type={isEyeOpen2 ? 'text' : 'password'}
-                id="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder=""
                 required
               />
               <span className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -149,7 +164,7 @@ const Register = () => {
             disabled={!hasLowercase || !hasNumber || !hasUppercase || !hasMinLength}
             className={`${hasLowercase && hasUppercase && hasMinLength && hasNumber ? "" : 'cursor-not-allowed '} w-full py-2 mb-4 text-white transition duration-200 bg-green-500 rounded-md hover:bg-green-900 font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2`}
           >
-           {isLoading ? <Loader className='animate-spin mx-auto' /> : 'Đăng ký'} 
+            {isLoadingRegister ? <Loader className='animate-spin mx-auto' /> : 'Đăng ký'}
           </button>
         </form>
 
@@ -164,7 +179,7 @@ const Register = () => {
 
           <a
             className="flex items-center justify-center hover:cursor-pointer w-full px-4 py-2 text-gray-700 transition duration-200 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
+            href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
