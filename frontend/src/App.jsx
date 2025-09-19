@@ -7,6 +7,10 @@ import { checkAuth } from "./redux/features/auth/authSlice.js";
 import { useEffect } from "react";
 import HomeCar from "./pages/renter/home/HomeCar.jsx";
 import HomeMotorbike from "./pages/renter/home/HomeMotorbike.jsx";
+import FavoritesPage from "./pages/renter/favorite/FavoritesPage.jsx";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 const App = () => {
   // check auth :
   const dispatch = useDispatch();
@@ -31,6 +35,7 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
+          <Route path="/favorites" element={<FavoritesPage />} />
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
 
@@ -45,6 +50,18 @@ const App = () => {
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Layout>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </Router>
   );
 };

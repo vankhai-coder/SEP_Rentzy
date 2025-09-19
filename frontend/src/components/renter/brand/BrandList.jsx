@@ -5,31 +5,32 @@ const BrandList = ({ brands }) => {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-      {brands.map((brand) => (
-        <div
-          key={brand.brand_id}
-          className="bg-white p-6 shadow rounded-xl text-center border border-gray-100 hover:shadow-lg hover:scale-105 transition transform"
-        >
-          {/* Logo trong khung tròn */}
-          {brand.logo_url && (
-            <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center rounded-full border border-gray-200 bg-gray-50">
+    <section className="bg-gray-50 py-10 rounded-xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-10 place-items-center">
+        {brands.map((brand) => (
+          <div key={brand.brand_id} className="text-center group">
+            {/* Logo tròn */}
+            <div
+              className="w-24 h-24 mx-auto mb-3 flex items-center justify-center 
+                         rounded-full bg-white border border-gray-200 shadow-sm 
+                         overflow-hidden transition duration-300 ease-in-out 
+                         group-hover:border-blue-500 group-hover:shadow-lg group-hover:scale-110"
+            >
               <img
                 src={brand.logo_url}
                 alt={brand.name}
-                className="w-16 h-16 object-contain"
+                className="w-3/4 h-3/4 object-contain transition-transform duration-300 ease-in-out group-hover:scale-110"
               />
             </div>
-          )}
 
-          {/* Tên hãng */}
-          <h3 className="font-semibold text-base text-gray-800">
-            {brand.name}
-          </h3>
-          <p className="text-gray-500 text-sm">{brand.country}</p>
-        </div>
-      ))}
-    </div>
+            {/* Tên hãng */}
+            <h3 className="font-medium text-sm text-gray-700 group-hover:text-blue-600 transition">
+              {brand.name}
+            </h3>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 };
 
