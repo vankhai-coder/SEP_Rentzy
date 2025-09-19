@@ -51,10 +51,9 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     // check if confirm password match : 
-    if (!password.match(confirmPassword)) {
-      // toast error (not match) : 
-      toast.error("Confirm password not match!")
-      return
+    if (password !== confirmPassword) {
+      toast.error("Confirm password does not match!");
+      return;
     }
     // if match , then send register to backend : 
     await dispatch(register({ email, password }))

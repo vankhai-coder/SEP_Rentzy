@@ -1,6 +1,6 @@
 import express from 'express'
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { googleCallback, googleLogin, logout, register, verifyEmail } from '../../controllers/auth/authController.js'
+import { googleCallback, googleLogin, login, logout, register, verifyEmail } from '../../controllers/auth/authController.js'
 const router = express.Router()
 
 // check auth :
@@ -15,9 +15,12 @@ router.get('/google/callback', googleCallback)
 router.get('/logout', logout)
 
 // register by email : 
-router.post('/register' , register )
+router.post('/register', register)
 
 // verify email : 
-router.post('/verify-email' , verifyEmail )
+router.post('/verify-email', verifyEmail)
+
+// login : 
+router.post('/login', login)
 
 export default router 

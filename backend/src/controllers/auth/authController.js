@@ -167,6 +167,7 @@ export const register = async (req, res) => {
     }
 };
 
+// verify email : 
 export const verifyEmail = async (req, res) => {
     try {
         const { email, verifyEmailToken } = req.body || {};
@@ -201,9 +202,7 @@ export const verifyEmail = async (req, res) => {
         // 5. Create cookie 
         createCookie(res, user.user_id, user.role, user.avatar_url, user.email)
 
-        // 6. Redirect or respond
-
-
+        // 6. Respond
         return res.status(200).json({
             success: true,
             user: {
@@ -221,3 +220,50 @@ export const verifyEmail = async (req, res) => {
     }
 };
 
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Missing email or password in request!" });
+        }
+
+        // 1. Check if email exists
+        const existUser = await db.User.findOne({ where: { email } });
+        if (!existUser) {
+            return res.status(400).json({ success: false, message: "Email not registered" });
+        }
+
+        // 2. Check if email is verified
+        if (existUser.email_verified !== true) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Email not verified", isNotVerifyEmailError: true });
+        }
+
+        // 3. Check password
+        const isMatch = await bcrypt.compare(password, existUser.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: "Incorrect password" });
+        }
+
+        // 5. Set cookie
+        createCookie(res, existUser.user_id, existUser.role, '', existUser.email)
+
+        // 6. Send response
+        return res.json({
+            success: true,
+            message: "Login successful",
+            user: {
+                userId: existUser.user_id,
+                email: existUser.email,
+                role: existUser.role,
+                avatar: existUser.avatar,
+            },
+        });
+    } catch (error) {
+        console.error("Login error:", error.message);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};

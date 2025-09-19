@@ -16,6 +16,11 @@ const initialState = {
     isLoadingVerifyEmail: false,
     errorVerifyEmail: '',
     isVerifyEmailSuccess: false,
+    // for login : 
+    isLoadingLogin: false,
+    isNotVerifyEmailError: false,
+    errorLogin: '',
+    isLoginSuccess: false
 
 
 };
@@ -25,7 +30,7 @@ export const checkAuth = createAsyncThunk(
     "user/checkAuth",
     async (_, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/api/auth/check-auth`)
+            const res = await axiosInstance.get(`/api/auth/check-auth`)
             return res.data;
         } catch (err) {
             return rejectWithValue(err.response?.data?.message || "Auth check failed");
@@ -83,6 +88,22 @@ export const verifyEmail = createAsyncThunk(
     }
 );
 
+// login : 
+export const loginUser = createAsyncThunk(
+    "user/loginUser",
+    async ({ email, password }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post("/api/auth/login", { email, password });
+            return res.data; // { success, user : {userId , role , email , avatar} }
+        } catch (err) {
+            return rejectWithValue({
+                message: err.response?.data?.message || 'Error when login!',
+                isNotVerifyEmailError: err.response?.data?.isNotVerifyEmailError
+            });
+        }
+    }
+);
+
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -102,6 +123,9 @@ const userSlice = createSlice({
             state.isLoadingVerifyEmail = false;
             state.errorVerifyEmail = "";
             state.isVerifyEmailSuccess = false;
+            state.isLoginSuccess = false
+            state.isNotVerifyEmailError = false
+            state.errorLogin = ''
         },
     },
     extraReducers: (builder) => {
@@ -197,7 +221,28 @@ const userSlice = createSlice({
             .addCase(verifyEmail.rejected, (state, action) => {
                 state.isLoadingVerifyEmail = false;
                 state.errorVerifyEmail = action.payload;
-            });
+            })
+            // login : 
+            .addCase(loginUser.pending, (state) => {
+                state.isLoadingLogin = true;
+                state.error = null;
+                state.isNotVerifyEmailError = false;
+                state.errorLogin = ''
+            })
+            .addCase(loginUser.fulfilled, (state, action) => {
+                state.isLoadingLogin = false;
+                state.isLoginSuccess = true;
+                state.userId = action.payload.user.userId;
+                state.email = action.payload.user.email;
+                state.role = action.payload.user.role;
+                state.avatar = action.payload.user.avatar;
+            })
+            .addCase(loginUser.rejected, (state, action) => {
+                state.isLoadingLogin = false;
+                state.isLoginSuccess = false;
+                state.isNotVerifyEmailError = !!action.payload?.isNotVerifyEmailError;
+                state.errorLogin = action.payload?.message
+            })
     },
 });
 

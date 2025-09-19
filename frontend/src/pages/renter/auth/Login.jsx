@@ -1,17 +1,44 @@
-import { EyeClosed, EyeClosedIcon, EyeIcon, EyeOff } from 'lucide-react';
-import React, { useState } from 'react';
+import { loginUser, resetState } from '@/redux/features/auth/authSlice';
+import { EyeClosed, EyeIcon, Loader } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner';
 
 const Login = () => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // redux : 
+  const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin } = useSelector(state => state.userStore)
+  const dispatch = useDispatch()
+
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [isEyeOpen, setIsEyeOpen] = useState(false)
 
+  // if errro , toast it : 
+  useEffect(() => {
+    if (errorLogin) {
+      toast.error(errorLogin)
+    }
+  }, [errorLogin])
+
+  // if login success , toast it : 
+  useEffect(() => {
+    if (isLoginSuccess) {
+      toast.success('Login successfully!')
+    }
+  }, [isLoginSuccess])
+
+  // reset state if unmounted : 
+  useEffect(() => {
+    return () => {
+      dispatch(resetState())
+    }
+  }, [])
+
   const handleLogin = (e) => {
     e.preventDefault();
     // Handle login logic here
-    console.log('Phone Number:', phoneNumber);
-    console.log('Password:', password);
+    dispatch(loginUser({ email, password }))
   };
 
   return (
@@ -27,8 +54,8 @@ const Login = () => {
             <input
               type="email"
               id="phoneNumber"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder=""
               required
@@ -73,9 +100,10 @@ const Login = () => {
 
           <button
             type="submit"
+            disabled={isLoadingLogin}
             className="w-full py-2 mb-4 font-bold text-white transition duration-200 bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            Đăng nhập
+            {isLoadingLogin ? <Loader className='animate-spin mx-auto' /> : ' Đăng nhập'}
           </button>
         </form>
 
@@ -88,9 +116,9 @@ const Login = () => {
 
         <div className="flex space-x-4">
 
-           <a
+          <a
             className="flex items-center justify-center hover:cursor-pointer w-full px-4 py-2 text-gray-700 transition duration-200 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
+            href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
