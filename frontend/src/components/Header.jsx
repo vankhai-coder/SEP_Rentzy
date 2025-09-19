@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { BiLogOut } from 'react-icons/bi';
+import { BiLogOut } from "react-icons/bi";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
@@ -9,13 +9,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { logoutUser } from "@/redux/features/auth/authSlice";
 
 const Header = () => {
-
-  const { userId, email } = useSelector(state => state.userStore)
-  const dispatch = useDispatch()
+  const { userId, email } = useSelector((state) => state.userStore);
+  const dispatch = useDispatch();
 
   return (
     <header className="bg-white p-8 ">
@@ -30,33 +29,66 @@ const Header = () => {
         <div className="flex items-center gap-14">
           {/* Navigation Links */}
           <div className="hidden space-x-6 font-medium text-md text-gray-700 md:flex">
-            <Link to={'/'} className="hover:text-green-500">Về Rentzy</Link>
-            <Link to={'/'} className="hover:text-green-500">Trở thành chủ xe</Link>
-            {userId && <Link to={'/'} className="hover:text-green-500">Chuyến của tôi</Link>}
+            <Link to={"/"} className="hover:text-green-500">
+              Về Rentzy
+            </Link>
+            <Link to={"/"} className="hover:text-green-500">
+              Trở thành chủ xe
+            </Link>
+            <Link to={"/cars"} className="hover:text-green-500">
+              Xe Ô Tô
+            </Link>
+            <Link to={"/motorbikes"} className="hover:text-green-500">
+              Xe Máy
+            </Link>
+            {userId && (
+              <>
+                <Link to="/" className="hover:text-green-500">
+                  Chuyến của tôi
+                </Link>
+                <Link to="/favorites" className="hover:text-green-500">
+                  Yêu thích
+                </Link>
+              </>
+            )}
           </div>
 
           {/* User Actions & Profile If Login :*/}
-          {userId &&
+          {userId && (
             <div className="flex items-center space-x-4">
               <button className="text-gray-600 hover:text-green-500">
                 {/* Bell Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
-              <button className="text-gray-600 hover:text-green-500">
-                {/* Chat Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+              </button>
+              <button className="text-gray-600 hover:text-green-500">
+                {/* Chat Icon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
                     d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"
                   />
                 </svg>
-
               </button>
 
               {/* User Profile */}
@@ -75,47 +107,61 @@ const Header = () => {
                 <DropdownMenuItem>Team</DropdownMenuItem> */}
                     <DropdownMenuItem
                       onClick={() => {
-                        dispatch(logoutUser())
+                        dispatch(logoutUser());
                       }}
                     >
-                      <BiLogOut
-                        className="size-6 text-red-500"
-                      />
+                      <BiLogOut className="size-6 text-red-500" />
                       Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 {/* Dropdown Arrow */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </div>
-            </div>}
+            </div>
+          )}
 
           {/* Show Login Button If not login : */}
-          {!userId &&
+          {!userId && (
             <div className="flex gap-4">
               <Button
-                variant={'outline'}
-                className={'p-6'}
+                variant={"outline"}
+                className={"p-6"}
                 onClick={() => {
                   window.open(
                     `${import.meta.env.VITE_API_URL}/api/auth/google`,
                     "_blank"
                   );
                 }}
-              >Đăng Ký</Button>
+              >
+                Đăng Ký
+              </Button>
               <Button
-                className={'p-6'}
+                className={"p-6"}
                 onClick={() => {
                   window.open(
                     `${import.meta.env.VITE_API_URL}/api/auth/google`,
                     "_blank"
                   );
                 }}
-              >Đăng Nhập</Button>
+              >
+                Đăng Nhập
+              </Button>
             </div>
-          }
+          )}
         </div>
       </nav>
     </header>

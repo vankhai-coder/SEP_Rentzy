@@ -2,7 +2,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
-
 const Brand = sequelize.define(
   "Brand",
   {
@@ -21,11 +20,16 @@ const Brand = sequelize.define(
     },
     logo_url: {
       type: DataTypes.STRING(255),
-    }
+    },
+    category: {
+      type: DataTypes.ENUM("car", "motorbike", "both"),
+      allowNull: false,
+      defaultValue: "both",
+    },
   },
   {
     tableName: "brands",
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
