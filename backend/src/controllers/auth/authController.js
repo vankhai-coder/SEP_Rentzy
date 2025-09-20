@@ -1,7 +1,7 @@
 import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
 import { sendEmail } from '../../utils/email/sendEmail.js';
-import { verifyEmailTemplate } from '../../utils/email/templates/verifyEmail.js';
+import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
@@ -105,10 +105,12 @@ export const logout = (req, res) => {
             }
         )
         // 2. return : 
-        return res.status(200).json({ success: true, message: "Logout successfully!" })
+        return res.status(200).json({ success: true,message: "Bạn đã đăng xuất thành công!"
+ })
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ success: false, message: "Error when logout!" })
+        return res.status(400).json({ success: false,message: "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại!"
+ })
 
     }
 }
@@ -120,7 +122,8 @@ export const register = async (req, res) => {
         if (!email || !password) {
             return res
                 .status(400)
-                .json({ success: false, message: "Missing email or password in request!" });
+                .json({ success: false,message: "Vui lòng nhập đầy đủ email và mật khẩu!"
+ });
         }
 
         // 1. check if email already exist :
@@ -128,7 +131,8 @@ export const register = async (req, res) => {
         if (existEmail) {
             return res
                 .status(400)
-                .json({ success: false, message: "Email already exists!" });
+                .json({ success: false,message: "Email đã tồn tại. Vui lòng sử dụng email khác!"
+});
         }
 
         // 2. create new account :
@@ -157,13 +161,15 @@ export const register = async (req, res) => {
         // 4. return success
         return res.status(201).json({
             success: true,
-            message: "User registered successfully. Please check your email to verify your account.",
+           message: "Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản của bạn."
+
         });
     } catch (error) {
         console.error("Register error:", error);
         return res
             .status(500)
-            .json({ success: false, message: "Server error. Please try again later." });
+            .json({ success: false,  message: "Lỗi hệ thống, vui lòng thử lại sau!"
+,});
     }
 };
 
@@ -176,7 +182,8 @@ export const verifyEmail = async (req, res) => {
         if (!email || !verifyEmailToken) {
             return res
                 .status(400)
-                .json({ success: false, message: "Missing email or verify token in request" });
+                .json({ success: false,message: "Thiếu email hoặc mã xác minh trong yêu cầu!"
+});
         }
 
         // 2. Find user by email
@@ -184,14 +191,16 @@ export const verifyEmail = async (req, res) => {
         if (!user) {
             return res
                 .status(404)
-                .json({ success: false, message: "User not found" });
+                .json({ success: false,message: "Không tìm thấy người dùng!"
+});
         }
 
         // 3. Check if token matches
         if (user.verifyEmailToken !== verifyEmailToken) {
             return res
                 .status(400)
-                .json({ success: false, message: "Invalid or expired token" });
+                .json({ success: false, message: "Token không hợp lệ hoặc đã hết hạn!"
+});
         }
 
         // 4. Token matches → update user
@@ -215,7 +224,8 @@ export const verifyEmail = async (req, res) => {
         console.error("Error verifying email:", error);
         return res.status(500).json({
             success: false,
-            message: "Internal server error",
+           message: "Lỗi hệ thống, vui lòng thử lại sau!"
+,
         });
     }
 };
@@ -227,26 +237,30 @@ export const login = async (req, res) => {
         if (!email || !password) {
             return res
                 .status(400)
-                .json({ success: false, message: "Missing email or password in request!" });
+                .json({ success: false,message: "Vui lòng nhập email và mật khẩu!"
+ });
         }
 
         // 1. Check if email exists
         const existUser = await db.User.findOne({ where: { email } });
         if (!existUser) {
-            return res.status(400).json({ success: false, message: "Email not registered" });
+            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
+ });
         }
 
         // 2. Check if email is verified
         if (existUser.email_verified !== true) {
             return res
                 .status(400)
-                .json({ success: false, message: "Email not verified", isNotVerifyEmailError: true });
+                .json({ success: false,message: "Email chưa được xác minh!"
+, isNotVerifyEmailError: true });
         }
 
         // 3. Check password
         const isMatch = await bcrypt.compare(password, existUser.password_hash);
         if (!isMatch) {
-            return res.status(400).json({ success: false, message: "Incorrect password" });
+            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
+ });
         }
 
         // 5. Set cookie
@@ -265,7 +279,8 @@ export const login = async (req, res) => {
         });
     } catch (error) {
         console.error("Login error:", error.message);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+ });
     }
 };
 
@@ -278,7 +293,8 @@ export const requestCreateVerifyEmail = async (req, res) => {
         if (!email) {
             return res
                 .status(400)
-                .json({ success: false, message: "Email is required!" });
+                .json({ success: false,message: "Vui lòng nhập email!"
+ });
         }
 
         // 1. Check if user exists
@@ -286,14 +302,16 @@ export const requestCreateVerifyEmail = async (req, res) => {
         if (!user) {
             return res
                 .status(404)
-                .json({ success: false, message: "User not found!" });
+                .json({ success: false, message: "Không tìm thấy người dùng!"
+});
         }
 
         // 2. Check if email is already verified
         if (user.email_verified) {
             return res
                 .status(400)
-                .json({ success: false, message: "Email is already verified!" });
+                .json({ success: false, message: "Email này đã được xác thực rồi!"
+ });
         }
 
         // 3. Create verify email token
@@ -315,11 +333,105 @@ export const requestCreateVerifyEmail = async (req, res) => {
         // 5. Response
         return res
             .status(200)
-            .json({ success: true, message: "Verification email sent!" });
+            .json({ success: true, message: "Đã gửi email xác thực!"
+ });
     } catch (error) {
         console.error("Error in requestCreateVerifyEmail:", error.message);
         return res
             .status(500)
-            .json({ success: false, message: "Server error. Please try again." });
+            .json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+});
+    }
+};
+
+// request to reset forgot password
+export const requestResetPassword = async (req, res) => {
+    try {
+        const { email } = req.body || {};
+
+        // 1. Validate input
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập email."
+ });
+        }
+
+        // 2. Check if user exists
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ success: false,  message: "Không tìm thấy tài khoản nào với email này."
+});
+        }
+
+        // 3. Create reset token (expires in 15 minutes)
+        const resetPasswordToken = crypto.randomBytes(32).toString("hex");
+
+        // 4. Save token to DB (optional, for invalidation)
+        user.resetPasswordToken = resetPasswordToken;
+        await user.save();
+
+        // 5. Create link
+        const link = `${process.env.CLIENT_ORIGIN}/forgot-password?email=${encodeURIComponent(
+            email
+        )}&resetPasswordToken=${resetPasswordToken}`;
+
+        // 6. Send email
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Reset your password!",
+            html: resetPasswordTemplate(link),
+        });
+
+        // 7. Response
+        return res.status(200).json({
+            success: true,
+            message: "Đã gửi yêu cầu đặt lại mật khẩu. Kiểm tra email để đặt lại!",
+        });
+    } catch (error) {
+        console.error("requestResetPassword error:", error);
+        return res.status(500).json({ success: false,message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
+ });
+    }
+};
+
+// reset password : 
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, resetPasswordToken, password } = req.body || {};
+
+        // 1. Validate input
+        if (!email || !resetPasswordToken || !password) {
+            return res.status(400).json({
+                success: false, message: "Vui lòng điền đầy đủ tất cả các trường."
+            });
+        }
+
+        // 2. Verify token
+
+        // 3. Find user
+        const user = await db.User.findOne({ where: { email, resetPasswordToken } });
+        if (!user) {
+            return res.status(404).json({
+                success: false, message: "Không tìm thấy người dùng hoặc mã xác thực không hợp lệ."
+            });
+        }
+
+        // 5. Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 6. Update password and clear token
+        user.password_hash = hashedPassword;
+        user.resetPasswordToken = '';
+        await user.save();
+
+        // 7. Response
+        return res.status(200).json({
+            success: true,
+            message: "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ."
+        });
+    } catch (error) {
+        console.error("resetPassword error:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
 };

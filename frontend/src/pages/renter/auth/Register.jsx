@@ -44,7 +44,7 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
   // if register success, toast it : 
   useEffect(() => {
     if (isRegisterSuccess) {
-      toast.success('User registered successfully. Please check your email to verify your account.')
+      toast.success('Đăng kí thành công. Mở email để xác thực tài khoản!')
       // close register form : 
       setRegisterOpen(false)
     }
@@ -54,7 +54,7 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
     e.preventDefault();
     // check if confirm password match : 
     if (password !== confirmPassword) {
-      toast.error("Confirm password does not match!");
+      toast.error("Nhập lại mật khẩu không chính xác!");
       return;
     }
     // if match , then send register to backend : 

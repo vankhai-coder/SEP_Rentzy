@@ -118,6 +118,8 @@ const Header = () => {
                     <DropdownMenuItem
                       onClick={() => {
                         dispatch(logoutUser());
+                        setLoginOpen(false)
+                        window.location.href = "/";
                       }}
                     >
                       <BiLogOut className="size-6 text-red-500" />
