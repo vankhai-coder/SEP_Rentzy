@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner'
 
-const Register = () => {
+const Register = ({ setRegisterOpen, setLoginOpen }) => {
   // redux : 
   const dispatch = useDispatch()
   const { isLoadingRegister, errorRegister, isRegisterSuccess } = useSelector(state => state.userStore)
@@ -169,9 +169,16 @@ const Register = () => {
 
         <p className="mb-4 text-center text-gray-600">
           Đã có tài khoàn?{' '}
-          <span className=" text-green-500 hover:text-green-900 font-semibold">
+          <buton
+            className=" text-green-500 hover:text-green-900 font-semibold"
+            onClick={() => {
+              setRegisterOpen(false)
+              setLoginOpen(true)
+            }}
+
+          >
             Đăng nhập ngay
-          </span>
+          </buton>
         </p>
 
         <div className="flex flex-col gap-4 space-x-4">

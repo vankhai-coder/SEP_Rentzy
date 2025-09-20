@@ -21,10 +21,15 @@ import {
 } from "@/components/ui/dialog"
 import Register from "@/pages/renter/auth/Register";
 import Login from "@/pages/renter/auth/Login";
+import { useState } from "react";
 
 const Header = () => {
   const { userId, email } = useSelector((state) => state.userStore);
   const dispatch = useDispatch();
+
+  // set open/close for Login,Register Dialog :
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [registerOpen, setRegisterOpen] = useState(false)
 
   return (
     <header className="bg-white p-8 ">
@@ -142,7 +147,8 @@ const Header = () => {
           {/* Show Login Button If not login : */}
           {!userId && (
             <div className="flex gap-4">
-              <Dialog>
+              {/* Register button: */}
+              <Dialog open={registerOpen} onOpenChange={setRegisterOpen} >
                 <DialogTrigger>
                   <Button
                     variant={"outline"}
@@ -156,12 +162,14 @@ const Header = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogDescription>
-                      <Register />
+                      <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
-              <Dialog>
+
+              {/* Login Button */}
+              <Dialog open={loginOpen} onOpenChange={setLoginOpen} >
                 <DialogTrigger>
                   <Button
                     className={"p-6"}
@@ -173,7 +181,7 @@ const Header = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogDescription>
-                      <Login />
+                      <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>

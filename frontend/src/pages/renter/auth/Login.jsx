@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
-const Login = () => {
+const Login = ({ setRegisterOpen, setLoginOpen }) => {
   // redux : 
   const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin, isLoadingRequest, isRequestSuccess, errorRequest } = useSelector(state => state.userStore)
   const dispatch = useDispatch()
@@ -123,9 +123,14 @@ const Login = () => {
 
         <p className="mb-4 text-center text-gray-600">
           Bạn chưa là thành viên?{' '}
-          <a href="#" className="font-medium text-green-500 hover:text-green-600">
+          <button
+            onClick={() => {
+              setRegisterOpen(true)
+              setLoginOpen(false)
+            }}
+            className="font-medium text-green-500 hover:text-green-600">
             Đăng ký ngay
-          </a>
+          </button>
         </p>
 
         <div className="flex space-x-4">
