@@ -113,6 +113,9 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
           </div>
 
           <button
+            onClick={() => {
+              setLoginOpen(false)
+            }}
             type="submit"
             disabled={isLoadingLogin}
             className="w-full py-2 mb-4 font-bold text-white transition duration-200 bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
@@ -169,6 +172,7 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
         {isNotVerifyEmailError &&
           <Button
             className={'w-full mt-3'}
+            disabled={isRequestSuccess}
             onClick={() => {
               if (email) {
                 dispatch(requestVerifyEmail(email))

@@ -45,6 +45,8 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
   useEffect(() => {
     if (isRegisterSuccess) {
       toast.success('User registered successfully. Please check your email to verify your account.')
+      // close register form : 
+      setRegisterOpen(false)
     }
   }, [isRegisterSuccess])
 
@@ -169,7 +171,7 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
 
         <p className="mb-4 text-center text-gray-600">
           Đã có tài khoàn?{' '}
-          <buton
+          <button
             className=" text-green-500 hover:text-green-900 font-semibold"
             onClick={() => {
               setRegisterOpen(false)
@@ -178,7 +180,7 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
 
           >
             Đăng nhập ngay
-          </buton>
+          </button>
         </p>
 
         <div className="flex flex-col gap-4 space-x-4">
