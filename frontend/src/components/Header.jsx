@@ -57,9 +57,14 @@ const Header = () => {
               Xe Máy
             </Link>
             {userId && (
-              <Link to={"/"} className="hover:text-green-500">
-                Chuyến của tôi
-              </Link>
+              <>
+                <Link to="/" className="hover:text-green-500">
+                  Chuyến của tôi
+                </Link>
+                <Link to="/favorites" className="hover:text-green-500">
+                  Yêu thích
+                </Link>
+              </>
             )}
           </div>
 

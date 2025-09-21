@@ -9,6 +9,7 @@ import db from "./models/index.js";
 import AuthRoute from "./routes/auth/authRoute.js";
 import RenterVehicleRoute from "./routes/renter/vehicleRoute.js";
 import RenterBrandRoute from "./routes/renter/brandRoute.js";
+import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 // init app :
 const app = express();
 
@@ -36,6 +37,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", AuthRoute);
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
+app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
