@@ -11,10 +11,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutUser } from "@/redux/features/auth/authSlice";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import Register from "@/pages/renter/auth/Register";
+import Login from "@/pages/renter/auth/Login";
+import { useState } from "react";
 
 const Header = () => {
   const { userId, email } = useSelector((state) => state.userStore);
   const dispatch = useDispatch();
+
+  // set open/close for Login,Register Dialog :
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [registerOpen, setRegisterOpen] = useState(false)
 
   return (
     <header className="bg-white p-8 ">
@@ -108,6 +123,8 @@ const Header = () => {
                     <DropdownMenuItem
                       onClick={() => {
                         dispatch(logoutUser());
+                        setLoginOpen(false)
+                        window.location.href = "/";
                       }}
                     >
                       <BiLogOut className="size-6 text-red-500" />
@@ -137,29 +154,45 @@ const Header = () => {
           {/* Show Login Button If not login : */}
           {!userId && (
             <div className="flex gap-4">
-              <Button
-                variant={"outline"}
-                className={"p-6"}
-                onClick={() => {
-                  window.open(
-                    `${import.meta.env.VITE_API_URL}/api/auth/google`,
-                    "_blank"
-                  );
-                }}
-              >
-                Đăng Ký
-              </Button>
-              <Button
-                className={"p-6"}
-                onClick={() => {
-                  window.open(
-                    `${import.meta.env.VITE_API_URL}/api/auth/google`,
-                    "_blank"
-                  );
-                }}
-              >
-                Đăng Nhập
-              </Button>
+              {/* Register button: */}
+              <Dialog open={registerOpen} onOpenChange={setRegisterOpen} >
+                <DialogTrigger>
+                  <Button
+                    variant={"outline"}
+                    className={"p-6"}
+
+                  >
+                    Đăng Ký
+                  </Button>
+                </DialogTrigger>
+                <DialogTitle></DialogTitle>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
+              {/* Login Button */}
+              <Dialog open={loginOpen} onOpenChange={setLoginOpen} >
+                <DialogTrigger>
+                  <Button
+                    className={"p-6"}
+                  >
+                    Đăng Nhập
+                  </Button>
+                </DialogTrigger>
+                <DialogTitle></DialogTitle>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogDescription>
+                      <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </div>

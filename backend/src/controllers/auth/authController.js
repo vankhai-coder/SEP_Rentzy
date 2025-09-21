@@ -1,5 +1,9 @@
 import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
+import { sendEmail } from '../../utils/email/sendEmail.js';
+import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 // redirect user to google login form and ask for permission : 
 export const googleLogin = (req, res) => {
@@ -60,7 +64,7 @@ export const googleCallback = async (req, res) => {
         // Check if user already exist : 
         const existUser = await db.User.findOne({
             where: {
-                google_id: user.id,
+                email: user.email,
             }
         });
 
@@ -75,12 +79,13 @@ export const googleCallback = async (req, res) => {
                 avatar_url: user.picture,
                 google_id: user.id,
                 email_verified: true,
+                authMethod: 'oauth'
 
             });
             // set cookie : 
             createCookie(res, newUser.user_id, 'renter', newUser.avatar_url, newUser.email)
         }
-        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}`)
+        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?googleCheckAuth=true`)
     } catch (error) {
         console.error("Google Callback Error:", error);
         res.status(500).send("Server error during Google callback");
@@ -91,12 +96,342 @@ export const googleCallback = async (req, res) => {
 export const logout = (req, res) => {
     try {
         // 1. delete cookie : 
-        res.clearCookie('token')
+        res.clearCookie('token',
+            {
+                httpOnly: true,   // cannot be accessed by JavaScript (XSS safe)
+                secure: process.env.NODE_ENV === "production", // only HTTPS in production
+                sameSite: "strict", // CSRF protection
+                maxAge: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
+            }
+        )
         // 2. return : 
-        return res.status(200).json({ success: true, message: "Logout successfully!" })
+        return res.status(200).json({ success: true,message: "Bạn đã đăng xuất thành công!"
+ })
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ success: false, message: "Error when logout!" })
+        return res.status(400).json({ success: false,message: "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại!"
+ })
 
     }
 }
+
+// register :
+export const register = async (req, res) => {
+    try {
+        const { email, password } = req.body || {}
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Vui lòng nhập đầy đủ email và mật khẩu!"
+ });
+        }
+
+        // 1. check if email already exist :
+        const existEmail = await db.User.findOne({ where: { email } });
+        if (existEmail) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Email đã tồn tại. Vui lòng sử dụng email khác!"
+});
+        }
+
+        // 2. create new account :
+        const password_hash = await bcrypt.hash(password, 10); // 10 = salt rounds
+        const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+
+        const newUser = await db.User.create({
+            email,
+            password_hash,
+            authMethod: "email",
+            verifyEmailToken,
+        });
+
+        // 3. send verify email :
+        const verifyLink = `${process.env.CLIENT_ORIGIN}/verify-email?email=${encodeURIComponent(
+            email
+        )}&verifyEmailToken=${verifyEmailToken}`;
+
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Verify Your Email",
+            html: verifyEmailTemplate(verifyLink),
+        });
+
+        // 4. return success
+        return res.status(201).json({
+            success: true,
+           message: "Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản của bạn."
+
+        });
+    } catch (error) {
+        console.error("Register error:", error);
+        return res
+            .status(500)
+            .json({ success: false,  message: "Lỗi hệ thống, vui lòng thử lại sau!"
+,});
+    }
+};
+
+// verify email : 
+export const verifyEmail = async (req, res) => {
+    try {
+        const { email, verifyEmailToken } = req.body || {};
+
+        // 1. Check if email & token exist in body
+        if (!email || !verifyEmailToken) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Thiếu email hoặc mã xác minh trong yêu cầu!"
+});
+        }
+
+        // 2. Find user by email
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({ success: false,message: "Không tìm thấy người dùng!"
+});
+        }
+
+        // 3. Check if token matches
+        if (user.verifyEmailToken !== verifyEmailToken) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Token không hợp lệ hoặc đã hết hạn!"
+});
+        }
+
+        // 4. Token matches → update user
+        user.verifyEmailToken = null; // delete token
+        user.email_verified = true;
+        await user.save();
+
+        // 5. Create cookie 
+        createCookie(res, user.user_id, user.role, user.avatar_url, user.email)
+
+        // 6. Respond
+        return res.status(200).json({
+            success: true,
+            user: {
+                userId: user.user_id,
+                role: user.role,
+                email: user.email
+            }
+        })
+    } catch (error) {
+        console.error("Error verifying email:", error);
+        return res.status(500).json({
+            success: false,
+           message: "Lỗi hệ thống, vui lòng thử lại sau!"
+,
+        });
+    }
+};
+
+// login : 
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Vui lòng nhập email và mật khẩu!"
+ });
+        }
+
+        // 1. Check if email exists
+        const existUser = await db.User.findOne({ where: { email } });
+        if (!existUser) {
+            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
+ });
+        }
+
+        // 2. Check if email is verified
+        if (existUser.email_verified !== true) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Email chưa được xác minh!"
+, isNotVerifyEmailError: true });
+        }
+
+        // 3. Check password
+        const isMatch = await bcrypt.compare(password, existUser.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
+ });
+        }
+
+        // 5. Set cookie
+        createCookie(res, existUser.user_id, existUser.role, '', existUser.email)
+
+        // 6. Send response
+        return res.json({
+            success: true,
+            message: "Login successful",
+            user: {
+                userId: existUser.user_id,
+                email: existUser.email,
+                role: existUser.role,
+                avatar: existUser.avatar,
+            },
+        });
+    } catch (error) {
+        console.error("Login error:", error.message);
+        return res.status(500).json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+ });
+    }
+};
+
+// request to create verify email : 
+export const requestCreateVerifyEmail = async (req, res) => {
+    try {
+        const { email } = req.body || {};
+
+        // 0. Check if email is provided
+        if (!email) {
+            return res
+                .status(400)
+                .json({ success: false,message: "Vui lòng nhập email!"
+ });
+        }
+
+        // 1. Check if user exists
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Không tìm thấy người dùng!"
+});
+        }
+
+        // 2. Check if email is already verified
+        if (user.email_verified) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Email này đã được xác thực rồi!"
+ });
+        }
+
+        // 3. Create verify email token
+        const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+        user.verifyEmailToken = verifyEmailToken;
+        await user.save();
+
+        // 4. Send verification email
+        const verifyLink = `${process.env.CLIENT_ORIGIN}/verify-email?email=${encodeURIComponent(
+            email
+        )}&verifyEmailToken=${verifyEmailToken}`;
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Verify Your Email",
+            html: verifyEmailTemplate(verifyLink),
+        });
+
+        // 5. Response
+        return res
+            .status(200)
+            .json({ success: true, message: "Đã gửi email xác thực!"
+ });
+    } catch (error) {
+        console.error("Error in requestCreateVerifyEmail:", error.message);
+        return res
+            .status(500)
+            .json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+});
+    }
+};
+
+// request to reset forgot password
+export const requestResetPassword = async (req, res) => {
+    try {
+        const { email } = req.body || {};
+
+        // 1. Validate input
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập email."
+ });
+        }
+
+        // 2. Check if user exists
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ success: false,  message: "Không tìm thấy tài khoản nào với email này."
+});
+        }
+
+        // 3. Create reset token (expires in 15 minutes)
+        const resetPasswordToken = crypto.randomBytes(32).toString("hex");
+
+        // 4. Save token to DB (optional, for invalidation)
+        user.resetPasswordToken = resetPasswordToken;
+        await user.save();
+
+        // 5. Create link
+        const link = `${process.env.CLIENT_ORIGIN}/forgot-password?email=${encodeURIComponent(
+            email
+        )}&resetPasswordToken=${resetPasswordToken}`;
+
+        // 6. Send email
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: "Reset your password!",
+            html: resetPasswordTemplate(link),
+        });
+
+        // 7. Response
+        return res.status(200).json({
+            success: true,
+            message: "Đã gửi yêu cầu đặt lại mật khẩu. Kiểm tra email để đặt lại!",
+        });
+    } catch (error) {
+        console.error("requestResetPassword error:", error);
+        return res.status(500).json({ success: false,message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
+ });
+    }
+};
+
+// reset password : 
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, resetPasswordToken, password } = req.body || {};
+
+        // 1. Validate input
+        if (!email || !resetPasswordToken || !password) {
+            return res.status(400).json({
+                success: false, message: "Vui lòng điền đầy đủ tất cả các trường."
+            });
+        }
+
+        // 2. Verify token
+
+        // 3. Find user
+        const user = await db.User.findOne({ where: { email, resetPasswordToken } });
+        if (!user) {
+            return res.status(404).json({
+                success: false, message: "Không tìm thấy người dùng hoặc mã xác thực không hợp lệ."
+            });
+        }
+
+        // 5. Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 6. Update password and clear token
+        user.password_hash = hashedPassword;
+        user.resetPasswordToken = '';
+        await user.save();
+
+        // 7. Response
+        return res.status(200).json({
+            success: true,
+            message: "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ."
+        });
+    } catch (error) {
+        console.error("resetPassword error:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
