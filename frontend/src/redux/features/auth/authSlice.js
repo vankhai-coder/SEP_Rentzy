@@ -25,6 +25,14 @@ const initialState = {
     isLoadingRequest: false,
     isRequestSuccess: false,
     errorRequest: '',
+    // for request create reset password : 
+    isLoadingRequestReset: false,
+    isRequestResetSuccess: false,
+    errorRequestReset: '',
+    // for reset password : 
+    isLoadingResetPassword: false,
+    isResetPasswordSuccess: false,
+    errorResetPassword: ''
 
 };
 
@@ -120,6 +128,42 @@ export const requestVerifyEmail = createAsyncThunk(
     }
 );
 
+// request to create reset password :
+export const requestResetPassword = createAsyncThunk(
+    "user/requestResetPassword",
+    async (email, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post("/api/auth/request-reset-password", { email });
+            return res.data; // { success: true, message: '...' }
+        } catch (err) {
+            return rejectWithValue(
+                err.response?.data?.message || "Error sending reset password email"
+            );
+        }
+    }
+);
+
+// reset password : 
+export const resetPassword = createAsyncThunk(
+    "user/resetPassword",
+    async ({ email, resetPasswordToken, password }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post("/api/auth/reset-password", {
+                email,
+                resetPasswordToken,
+                password,
+            });
+            return res.data; // e.g. { success: true, message: "Password reset!" }
+        } catch (err) {
+            return rejectWithValue(
+                err.response?.data?.message || "Error resetting password"
+            );
+        }
+    }
+);
+
+
+
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -145,6 +189,12 @@ const userSlice = createSlice({
             state.isLoadingRequest = false
             state.isRequestSuccess = false
             state.errorRequest = ''
+            state.isLoadingRequestReset = false
+            state.isRequestResetSuccess = false
+            state.errorRequestReset = ''
+            state.isLoadingResetPassword = false;
+            state.isResetPasswordSuccess = false;
+            state.errorResetPassword = ''
         },
     },
     extraReducers: (builder) => {
@@ -277,6 +327,39 @@ const userSlice = createSlice({
                 state.isLoadingRequest = false;
                 state.isRequestSuccess = false;
                 state.errorRequest = action.payload?.message || "Failed to send verification email";
+            })
+            // request reset password
+            .addCase(requestResetPassword.pending, (state) => {
+                state.isLoadingRequestReset = true;
+                state.isRequestResetSuccess = false;
+                state.errorRequestReset = ''
+            })
+            .addCase(requestResetPassword.fulfilled, (state) => {
+                state.isLoadingRequestReset = false;
+                state.isRequestResetSuccess = true;
+                state.errorRequestReset = ''
+            })
+            .addCase(requestResetPassword.rejected, (state, action) => {
+                state.isLoadingRequestReset = false;
+                state.errorRequestReset = action.payload
+                state.isRequestResetSuccess = false;
+            })
+            // resetPassword
+            .addCase(resetPassword.pending, (state) => {
+                state.isLoadingResetPassword = true;
+                state.isResetPasswordSuccess = false;
+                state.errorResetPassword = "";
+            })
+            .addCase(resetPassword.fulfilled, (state) => {
+                state.isLoadingResetPassword = false;
+                state.isResetPasswordSuccess = true;
+                state.errorResetPassword = "";
+            })
+            .addCase(resetPassword.rejected, (state, action) => {
+                state.isLoadingResetPassword = false;
+                state.isResetPasswordSuccess = false;
+                state.errorResetPassword =
+                    action.payload || "Failed to reset password.";
             });
     },
 });

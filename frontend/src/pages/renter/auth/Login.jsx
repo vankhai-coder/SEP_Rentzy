@@ -1,17 +1,23 @@
 import { Button } from '@/components/ui/button';
-import { loginUser, requestVerifyEmail, resetState } from '@/redux/features/auth/authSlice';
+import { loginUser, requestResetPassword, requestVerifyEmail, resetState } from '@/redux/features/auth/authSlice';
 import { EyeClosed, EyeIcon, Loader, Loader2Icon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
-const Login = () => {
+const Login = ({ setRegisterOpen, setLoginOpen }) => {
   // redux : 
-  const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin, isLoadingRequest, isRequestSuccess, errorRequest } = useSelector(state => state.userStore)
+  const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin,
+    isLoadingRequest, isRequestSuccess, errorRequest,
+    isLoadingRequestReset, isRequestResetSuccess, errorRequestReset
+  } = useSelector(state => state.userStore)
   const dispatch = useDispatch()
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // state for send request reset password button : 
+  const [isRequestResetPasswordButtonOpen, setIsRequestResetPasswordButtonOpen] = useState(false)
 
   const [isEyeOpen, setIsEyeOpen] = useState(false)
 
@@ -28,19 +34,32 @@ const Login = () => {
     }
   }, [errorRequest])
 
+  useEffect(() => {
+    if (errorRequestReset) {
+      toast.error(errorRequestReset)
+    }
+  }, [errorRequestReset])
+
   // if login success , toast it : 
   useEffect(() => {
     if (isLoginSuccess) {
-      toast.success('Login successfully!')
+      toast.success('Đăng nhập thành công!')
     }
   }, [isLoginSuccess])
 
   // if request to create veirfy email link success , toast it : 
   useEffect(() => {
     if (isRequestSuccess) {
-      toast.success('Open your email to verify now!')
+      toast.success('Mở email để xác nhận tài khoản!')
     }
   }, [isRequestSuccess])
+
+  // if request to create reeset password success : 
+  useEffect(() => {
+    if (isRequestResetSuccess) {
+      toast.success('Mở email để đặt lại mật khẩu!')
+    }
+  }, [isRequestResetSuccess])
 
   // reset state if unmounted : 
   useEffect(() => {
@@ -60,7 +79,7 @@ const Login = () => {
       <div className="w-full max-w-sm p-8 bg-white">
         <h2 className="mb-6 text-2xl font-bold text-center">Đăng nhập</h2>
 
-        <form onSubmit={handleLogin}>
+        <div>
           <div className="mb-4">
             <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-700">
               Email
@@ -106,26 +125,50 @@ const Login = () => {
               </span>
             </div>
           </div>
-          <div className="flex justify-end mb-6">
-            <a href="#" className="text-sm font-medium text-green-500 hover:text-green-600">
+          <div className="flex flex-col items-end mb-6">
+            <a
+              onClick={() => {
+                setIsRequestResetPasswordButtonOpen(!isRequestResetPasswordButtonOpen)
+              }}
+              className="text-sm hover:cursor-pointer font-medium text-green-500 hover:text-green-600">
               Quên mật khẩu?
             </a>
+            {/* request reset password buton :  */}
+            {isRequestResetPasswordButtonOpen &&
+              <Button
+                variant={'outline'}
+                disabled={isLoadingRequestReset}
+                className='w-full mt-2'
+                onClick={async () => {
+                  if (email) {
+                    await dispatch(requestResetPassword(email))
+                  }
+                }}
+              >
+                {isLoadingRequestReset ? <Loader className='animate-spin mx-auto' /> : 'Gửi link đặt lại mật khẩu!'}
+              </Button>
+            }
           </div>
 
           <button
-            type="submit"
+            onClick={handleLogin}
             disabled={isLoadingLogin}
             className="w-full py-2 mb-4 font-bold text-white transition duration-200 bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
             {isLoadingLogin ? <Loader className='animate-spin mx-auto' /> : ' Đăng nhập'}
           </button>
-        </form>
+        </div>
 
         <p className="mb-4 text-center text-gray-600">
           Bạn chưa là thành viên?{' '}
-          <a href="#" className="font-medium text-green-500 hover:text-green-600">
+          <button
+            onClick={() => {
+              setRegisterOpen(true)
+              setLoginOpen(false)
+            }}
+            className="font-medium text-green-500 hover:text-green-600">
             Đăng ký ngay
-          </a>
+          </button>
         </p>
 
         <div className="flex space-x-4">
@@ -164,6 +207,7 @@ const Login = () => {
         {isNotVerifyEmailError &&
           <Button
             className={'w-full mt-3'}
+            disabled={isRequestSuccess}
             onClick={() => {
               if (email) {
                 dispatch(requestVerifyEmail(email))

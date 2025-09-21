@@ -1,6 +1,6 @@
 import express from 'express'
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { googleCallback, googleLogin, login, logout, register, requestCreateVerifyEmail, verifyEmail } from '../../controllers/auth/authController.js'
+import { googleCallback, googleLogin, login, logout, register, requestCreateVerifyEmail, requestResetPassword, resetPassword, verifyEmail } from '../../controllers/auth/authController.js'
 const router = express.Router()
 
 // check auth :
@@ -25,5 +25,11 @@ router.post('/login', login)
 
 // request to create verify email : 
 router.post('/request-create-verify-email', requestCreateVerifyEmail)
+
+// request to create reset password email : 
+router.post('/request-reset-password', requestResetPassword)
+
+// reset password : 
+router.post('/reset-password', resetPassword)
 
 export default router 

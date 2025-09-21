@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner'
 
-const Register = () => {
+const Register = ({ setRegisterOpen, setLoginOpen }) => {
   // redux : 
   const dispatch = useDispatch()
   const { isLoadingRegister, errorRegister, isRegisterSuccess } = useSelector(state => state.userStore)
@@ -44,7 +44,9 @@ const Register = () => {
   // if register success, toast it : 
   useEffect(() => {
     if (isRegisterSuccess) {
-      toast.success('User registered successfully. Please check your email to verify your account.')
+      toast.success('Đăng kí thành công. Mở email để xác thực tài khoản!')
+      // close register form : 
+      setRegisterOpen(false)
     }
   }, [isRegisterSuccess])
 
@@ -52,7 +54,7 @@ const Register = () => {
     e.preventDefault();
     // check if confirm password match : 
     if (password !== confirmPassword) {
-      toast.error("Confirm password does not match!");
+      toast.error("Nhập lại mật khẩu không chính xác!");
       return;
     }
     // if match , then send register to backend : 
@@ -169,9 +171,16 @@ const Register = () => {
 
         <p className="mb-4 text-center text-gray-600">
           Đã có tài khoàn?{' '}
-          <span className=" text-green-500 hover:text-green-900 font-semibold">
+          <button
+            className=" text-green-500 hover:text-green-900 font-semibold"
+            onClick={() => {
+              setRegisterOpen(false)
+              setLoginOpen(true)
+            }}
+
+          >
             Đăng nhập ngay
-          </span>
+          </button>
         </p>
 
         <div className="flex flex-col gap-4 space-x-4">
