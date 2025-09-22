@@ -25,7 +25,7 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
   const handleFavorite = async () => {
     if (!userId) {
       toast.info("Vui lòng đăng nhập để thêm yêu thích!");
-      navigate("/login");
+      navigate("/renter/auth/login");
       return;
     }
 

@@ -1,5 +1,5 @@
 import Brand from "../../models/Brand.js";
-
+import { Op } from "sequelize";
 // Lấy tất cả brand
 export const getAllBrands = async (req, res) => {
   try {
@@ -16,16 +16,21 @@ export const getBrandsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    // validate category
     const validCategories = ["car", "motorbike", "both"];
     if (!validCategories.includes(category)) {
       return res.status(400).json({ message: "Invalid category" });
     }
 
-    const brands = await Brand.findAll({
-      where: { category },
-    });
+    let condition = {};
+    if (category === "car") {
+      condition = { category: { [Op.or]: ["car", "both"] } };
+    } else if (category === "motorbike") {
+      condition = { category: { [Op.or]: ["motorbike", "both"] } };
+    } else {
+      condition = { category: "both" }; // nếu gọi trực tiếp both
+    }
 
+    const brands = await Brand.findAll({ where: condition });
     res.status(200).json(brands);
   } catch (error) {
     console.error("Error fetching brands by category:", error);
