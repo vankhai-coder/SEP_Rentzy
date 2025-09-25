@@ -27,14 +27,10 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import {
   Avatar,
-  AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
 const Header = () => {
@@ -46,15 +42,15 @@ const Header = () => {
   const [registerOpen, setRegisterOpen] = useState(false)
 
   return (
-    <header className="mx-auto">
-      <nav className="flex items-center justify-between max-w-7xl py-8 px-20 lg:px-16 mx-auto bg-[##ffffff]">
+    <header className="mx-auto border-b-2">
+      <nav className="flex items-center justify-between w-screen max-w-7xl py-4 md:py-8 px-8 md:px-24 lg:px-16 mx-auto bg-[##ffffff]">
         {/* Logo Section */}
         <div className="flex items-center space-x-2">
           {/* You can replace this with your actual logo component or SVG */}
           <img src="./rentzy_logo.png" alt="rentzy-logo"
-            className="size-12"
+            className="size-8 md:size-12"
           />
-          <span className="text-3xl font-bold hidden md:block">RENTZY</span>
+          <span className="text-3xl font-bold hidden lg:block">RENTZY</span>
         </div>
 
         {/* navigate Section */}
@@ -180,7 +176,7 @@ const Header = () => {
                       {avatar &&
                         <Avatar>
                           <AvatarImage
-                            src={avatar}
+                            src={avatar || '/default_avt.jpg'}
                             alt="@shadcn"
                           />
                         </Avatar>
@@ -251,45 +247,35 @@ const Header = () => {
           {userId && (
             <div className="hidden lg:flex items-center space-x-4 ">
               {/* User Profile */}
-              <div className="flex cursor-pointer items-center space-x-2 rounded-full bg-green-500 p-2 px-3 text-white">
+              <div className="flex cursor-pointer items-center space-x-2 rounded-full">
                 {/* User Icon or initials */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <span className="text-sm font-bold">{email}</span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {/* <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-                <DropdownMenuItem>Team</DropdownMenuItem> */}
-                    <DropdownMenuItem
-                      onClick={() => {
-                        dispatch(logoutUser());
-                        setLoginOpen(false)
-                        window.location.href = "/";
-                      }}
+                  <Link to='/account'
+                   className='flex  items-center gap-2 hover:cursor-pointer hover:opacity-70'>
+                     {avatar &&
+                        <Avatar>
+                          <AvatarImage
+                            src={avatar || '/default_avt.jpg'}
+                            alt="@shadcn"
+                          />
+                        </Avatar>
+                      }
+                    <span className="text-sm font-semibold">{email}</span>
+                    {/* Dropdown Arrow */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <BiLogOut className="size-6 text-red-500" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {/* Dropdown Arrow */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </Link>
               </div>
             </div>
           )}

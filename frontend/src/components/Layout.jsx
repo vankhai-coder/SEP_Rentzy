@@ -14,11 +14,11 @@ const Layout = ({ children }) => {
   }, []);
 
   return (
-    <div className="">
+    <div className="flex flex-col min-h-screen">
       {/* Header */}
       <Header />
       {/* Main Content */}
-      <main className="">{children}</main>
+      <main className="flex-1 bg-[#f6f6f6]">{children}</main>
       {/* Footer : */}
       <Footer />
       <ChatBox />
