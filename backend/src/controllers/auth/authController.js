@@ -85,7 +85,7 @@ export const googleCallback = async (req, res) => {
             // set cookie : 
             createCookie(res, newUser.user_id, 'renter', newUser.avatar_url, newUser.email)
         }
-        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?googleCheckAuth=true`)
+        return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}`)
     } catch (error) {
         console.error("Google Callback Error:", error);
         res.status(500).send("Server error during Google callback");

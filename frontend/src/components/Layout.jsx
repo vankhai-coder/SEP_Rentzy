@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
   }, []);
 
   return (
-    <div className=" px-40">
+    <div className="">
       {/* Header */}
       <Header />
       {/* Main Content */}

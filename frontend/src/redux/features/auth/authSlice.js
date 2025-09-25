@@ -213,6 +213,7 @@ const userSlice = createSlice({
                 state.role = action.payload.user.role;
                 state.email = action.payload.user.email
                 state.error = null;
+                state.avatar = action.payload.user?.avatar
             })
             .addCase(checkAuth.rejected, (state, action) => {
                 state.loading = false;
