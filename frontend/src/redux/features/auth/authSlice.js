@@ -213,6 +213,7 @@ const userSlice = createSlice({
                 state.role = action.payload.user.role;
                 state.email = action.payload.user.email
                 state.error = null;
+                state.avatar = action.payload.user?.avatar
             })
             .addCase(checkAuth.rejected, (state, action) => {
                 state.loading = false;
@@ -229,15 +230,27 @@ const userSlice = createSlice({
                 state.role = "";
             })
             .addCase(logoutUser.fulfilled, (state) => {
-                state.userId = "";
-                state.role = "";
-                state.avatar = ""
                 state.loading = false;
                 state.error = null;
-                state.email = ''
-                state.isRegisterSuccess = false
-                state.errorRegister = ''
-                state.isLoadingRegister = false
+                state.isRegisterSuccess = false;
+                state.errorRegister = "";
+                state.isLoadingRegister = false;
+                state.isLoadingVerifyEmail = false;
+                state.errorVerifyEmail = "";
+                state.isVerifyEmailSuccess = false;
+                state.isLoginSuccess = false
+                state.isNotVerifyEmailError = false
+                state.errorLogin = ''
+                state.isLoadingRequest = false
+                state.isRequestSuccess = false
+                state.errorRequest = ''
+                state.isLoadingRequestReset = false
+                state.isRequestResetSuccess = false
+                state.errorRequestReset = ''
+                state.isLoadingResetPassword = false;
+                state.isResetPasswordSuccess = false;
+                state.errorResetPassword = ''
+
             })
             .addCase(logoutUser.rejected, (state, action) => {
                 state.loading = false;
