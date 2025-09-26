@@ -7,6 +7,11 @@ import Voucher from "./Voucher.js";
 import PointsTransaction from "./PointsTransaction.js";
 import Notification from "./Notification.js";
 import Booking from "./Booking.js";
+import BookingReview from "./BookingReview.js";
+import BookingHandover from "./BookingHandover.js";
+import BookingContract from "./BookingContract.js";
+import BookingCancellation from "./BookingCancellation.js";
+import BookingPayout from "./BookingPayout.js";
 import Transaction from "./Transaction.js";
 import Favorite from "./Favorite.js";
 import Message from "./Message.js";
@@ -44,9 +49,27 @@ Notification.belongsTo(User, { foreignKey: "user_id" });
 
 // Bookings ↔ Users
 User.hasMany(Booking, { foreignKey: "renter_id", as: "RenterBookings" });
-User.hasMany(Booking, { foreignKey: "owner_id", as: "OwnerBookings" });
 Booking.belongsTo(User, { as: "renter", foreignKey: "renter_id" });
-Booking.belongsTo(User, { as: "owner", foreignKey: "owner_id" });
+
+// Booking ↔ BookingReview (1:1)
+Booking.hasOne(BookingReview, { foreignKey: "booking_id", as: "review" });
+BookingReview.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
+
+// Booking ↔ BookingHandover (1:1)
+Booking.hasOne(BookingHandover, { foreignKey: "booking_id", as: "handover" });
+BookingHandover.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
+
+// Booking ↔ BookingContract (1:1)
+Booking.hasOne(BookingContract, { foreignKey: "booking_id", as: "contract" });
+BookingContract.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
+
+// Booking ↔ BookingCancellation (1:1)
+Booking.hasOne(BookingCancellation, { foreignKey: "booking_id", as: "cancellation" });
+BookingCancellation.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
+
+// Booking ↔ BookingPayout (1:1)
+Booking.hasOne(BookingPayout, { foreignKey: "booking_id", as: "payout" });
+BookingPayout.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
 
 // Bookings ↔ Vehicles
 Vehicle.hasMany(Booking, { foreignKey: "vehicle_id" });
@@ -97,9 +120,15 @@ const db = {
   PointsTransaction,
   Notification,
   Booking,
+  BookingReview,
+  BookingHandover,
+  BookingContract,
+  BookingCancellation,
+  BookingPayout,
   Transaction,
   Favorite,
   Message,
+  VehicleReport,
 };
 
 export default db;

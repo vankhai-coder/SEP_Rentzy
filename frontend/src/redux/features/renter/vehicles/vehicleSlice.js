@@ -18,12 +18,32 @@ export const fetchVehicles = createAsyncThunk(
   }
 );
 
+// Async thunk để fetch vehicle detail theo ID
+export const fetchVehicleById = createAsyncThunk(
+  "vehicles/fetchVehicleById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles/${id}`
+      );
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Error fetching vehicle details"
+      );
+    }
+  }
+);
+
 const vehicleSlice = createSlice({
   name: "vehicles",
   initialState: {
     vehicles: [],
+    currentVehicle: null,
     loading: false,
+    detailLoading: false,
     error: null,
+    detailError: null,
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -39,6 +59,18 @@ const vehicleSlice = createSlice({
       .addCase(fetchVehicles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchVehicleById.pending, (state) => {
+        state.detailLoading = true;
+        state.detailError = null;
+      })
+      .addCase(fetchVehicleById.fulfilled, (state, action) => {
+        state.detailLoading = false;
+        state.currentVehicle = action.payload;
+      })
+      .addCase(fetchVehicleById.rejected, (state, action) => {
+        state.detailLoading = false;
+        state.detailError = action.payload;
       });
   },
 });

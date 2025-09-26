@@ -142,6 +142,8 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
                 onClick={async () => {
                   if (email) {
                     await dispatch(requestResetPassword(email))
+                  }else{
+                    toast.error('Nhập email để gửi!')
                   }
                 }}
               >

@@ -3,107 +3,81 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
 const Booking = sequelize.define("Booking", {
+  // ID đặt xe (khóa chính)
   booking_id: {
     type: DataTypes.BIGINT.UNSIGNED,
     primaryKey: true,
     autoIncrement: true,
   },
+  // ID người thuê xe
   renter_id: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
   },
-  owner_id: {
-    type: DataTypes.BIGINT.UNSIGNED,
-    allowNull: false,
-  },
+  // ID xe được thuê
   vehicle_id: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
   },
 
+  // Ngày bắt đầu thuê
   start_date: { type: DataTypes.DATE, allowNull: false },
+  // Ngày kết thúc thuê
   end_date: { type: DataTypes.DATE, allowNull: false },
+  // Tổng số ngày thuê
   total_days: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+  // Tổng chi phí thuê xe (chưa bao gồm phí khác)
   total_cost: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+  // Số tiền giảm giá
   discount_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
+  // Phí giao xe
   delivery_fee: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
+  // Tổng số tiền phải trả (sau khi tính giảm giá và phí)
   total_amount: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+  // Tổng số tiền đã thanh toán
   total_paid: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
 
-  voucher_code: { type: DataTypes.BIGINT.UNSIGNED },
+  // Mã voucher sử dụng
+  voucher_code: { type: DataTypes.STRING(50) },
+  // Số điểm đã sử dụng
+  points_used: { type: DataTypes.INTEGER, defaultValue: 0 },
+  // Số điểm được tích lũy từ đơn hàng này
+  points_earned: { type: DataTypes.INTEGER, defaultValue: 0 },
 
-  order_code: { type: DataTypes.BIGINT, unique: true },
+  // Mã đơn hàng còn lại (dùng cho thanh toán)
   order_code_remaining: { type: DataTypes.BIGINT, unique: true },
 
+  // Trạng thái đặt xe
   status: {
     type: DataTypes.ENUM(
-      "pending",
-      "deposit_paid",
-      "confirmed",
-      "in_progress",
-      "completed",
-      "cancel_requested",
-      "canceled"
+      "pending",        // Chờ xác nhận
+      "deposit_paid",   // Đã đặt cọc
+      "confirmed",      // Đã xác nhận
+      "in_progress",    // Đang thuê
+      "completed",      // Hoàn thành
+      "cancel_requested", // Yêu cầu hủy
+      "canceled"        // Đã hủy
     ),
     defaultValue: "pending",
   },
 
+  // Địa điểm nhận xe
   pickup_location: { type: DataTypes.STRING(255), allowNull: false },
+  // Địa điểm trả xe
   return_location: { type: DataTypes.STRING(255), allowNull: false },
 
-  owner_handover_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
-  renter_handover_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
-  owner_return_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
-  renter_return_confirmed: { type: DataTypes.BOOLEAN, defaultValue: false },
-
-  renter_signature: { type: DataTypes.STRING(255) },
-  owner_signature: { type: DataTypes.STRING(255) },
-
-  cancellation_reason: { type: DataTypes.TEXT },
-  cancelled_at: { type: DataTypes.DATE },
-  cancel_requested_at: { type: DataTypes.DATE },
-  cancelled_by: { type: DataTypes.ENUM("renter", "system") },
-
-  owner_approved_cancel_at: { type: DataTypes.DATE },
-  owner_approved_cancel_by: { type: DataTypes.BIGINT.UNSIGNED },
-
-  totalRefundForRenterCancel: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
-  totalRefundForOwnerCancel: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
-
-  refundStatusRenter: {
-    type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
-    defaultValue: "none",
-  },
-  refundStatusOwner: {
-    type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
-    defaultValue: "none",
-  },
-
-  payoutStatus: {
-    type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
-    defaultValue: "none",
-  },
-
-  rating: { type: DataTypes.TINYINT.UNSIGNED, validate: { min: 1, max: 5 } },
-  review: { type: DataTypes.TEXT },
-
-  pre_rental_images: { type: DataTypes.JSON },
-  post_rental_images: { type: DataTypes.JSON },
-
-  points_earned: { type: DataTypes.INTEGER, defaultValue: 0 },
-
+  // Thời gian tạo đơn
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  // Thời gian cập nhật cuối
   updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, {
   tableName: "bookings",
   timestamps: false, // we use created_at / updated_at manually
   indexes: [
     { fields: ["renter_id"] },
-    { fields: ["owner_id"] },
     { fields: ["vehicle_id"] },
-    { fields: ["status"] },
-    { fields: ["start_date"] },
-    { fields: ["end_date"] },
+    { fields: ["start_date", "end_date"] },
+    { fields: ["created_at"] },
   ],
 });
 

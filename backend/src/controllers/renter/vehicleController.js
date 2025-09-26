@@ -22,7 +22,9 @@ export const getAllVehicles = async (req, res) => {
 export const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(id);
     const vehicle = await Vehicle.findByPk(id);
+    console.log(vehicle);
 
     if (!vehicle) {
       return res
