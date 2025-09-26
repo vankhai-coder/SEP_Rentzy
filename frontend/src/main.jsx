@@ -7,10 +7,10 @@ import { store } from './redux/store/store'
 import { Toaster } from "@/components/ui/sonner"
 
 createRoot(document.getElementById('root')).render(
-  // <StrictMode>
+  <StrictMode>
     <Provider store={store}>
       <Toaster richColors position="top-center" />
       <App />
     </Provider>
-  // </StrictMode>,
+  </StrictMode>,
 )
