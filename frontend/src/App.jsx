@@ -19,6 +19,8 @@ import MyVehicles from "./pages/renter/account/MyVehicles.jsx";
 import Account from "./pages/renter/account/Account.jsx";
 import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
+
+import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 const App = () => {
   return (
     <Router>
@@ -46,6 +48,9 @@ const App = () => {
           </Route>
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
+          {/* Vehicle Detail */}
+          <Route path="/cars/:id" element={<VehicleDetail />} />
+          <Route path="/motorbikes/:id" element={<VehicleDetail />} />
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />
