@@ -65,6 +65,7 @@ export const googleCallback = async (req, res) => {
         const existUser = await db.User.findOne({
             where: {
                 email: user.email,
+                authMethod : 'oauth'
             }
         });
 
