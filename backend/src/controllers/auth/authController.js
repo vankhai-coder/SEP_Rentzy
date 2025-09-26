@@ -69,7 +69,7 @@ export const googleCallback = async (req, res) => {
         });
 
         // if user exist but email already in use : 
-        if (existUser.authMethod === 'email') {
+        if (existUser && existUser.authMethod === 'email') {
             return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?error=emailInUser`)
         }
 
@@ -257,11 +257,15 @@ export const login = async (req, res) => {
         }
 
         // 1. Check if email exists
-        const existUser = await db.User.findOne({ where: { email, authMethod: 'email' } });
+        const existUser = await db.User.findOne({ where: { email } });
         if (!existUser) {
             return res.status(400).json({
                 success: false, message: "Sai thông tin đăng nhập!"
             });
+        }
+        // 1.1 check if this email is register by google oauth method : 
+        if (existUser && existUser.authMethod === 'oauth') {
+            return res.status(400).json({message : 'Email này đã được dùng để đăng nhập với Google!'})
         }
 
         // 2. Check if email is verified
