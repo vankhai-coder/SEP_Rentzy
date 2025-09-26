@@ -242,7 +242,7 @@ export const login = async (req, res) => {
         }
 
         // 1. Check if email exists
-        const existUser = await db.User.findOne({ where: { email } });
+        const existUser = await db.User.findOne({ where: { email ,authMethod : 'email' } });
         if (!existUser) {
             return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
  });
