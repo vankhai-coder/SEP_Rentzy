@@ -46,13 +46,13 @@ const UserInformation = () => {
 
           <div className="flex gap-4">
             {/* so chuyen xe : */}
-            <div className="flex sm:hidden items-center justify-between">
-              <CarIcon />
-              <span>0</span>
+            <div className="flex sm:hidden items-center justify-between gap-2 border p-1 rounded-xl">
+              <CarIcon size={26} className="text-green-400" />
+              <span className="text-green-400 font-bold text-xl">0</span>
               <span>chuyến</span>
             </div>
             {/* diem so : */}
-            <div className="flex p-4 border rounded-xl gap-2">
+            <div className="flex p-2 border rounded-xl gap-2">
               <MedalIcon className="text-yellow-500" />
               <span className="font-bold">0 điểm</span>
             </div>
@@ -81,15 +81,13 @@ const UserInformation = () => {
               <span className="font-light text-sm">Số điện thoại</span>
               <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
                 <BiError />
-                 <span className="hidden sm:block">Chưa xác thực</span>
-                </div>
+                <span className="hidden sm:block">Chưa xác thực</span>
+              </div>
             </div>
             {/* div ben phai  */}
             <div className="flex items-center gap-2 ">
-              <span className="font-semibold">
-                <span className="hidden xs:block">Thêm số điện thoại</span>
-              </span>
-              <Pen className="hover:cursor-pointer" size={16}/>
+                <span className="text-xs xs:text-base font-semibold">Thêm số điện thoại</span>
+              <Pen className="hover:cursor-pointer" size={16} />
             </div>
           </div>
 
@@ -101,12 +99,12 @@ const UserInformation = () => {
               <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
                 <BiError />
                 <span className="hidden sm:block">Chưa xác thực</span>
-                </div>
+              </div>
             </div>
             {/* div ben phai  */}
             <div className="flex items-center gap-2 ">
-              <span className="font-semibold hidden xs:block">huynhvankhai198@gmail.com</span>
-              <Pen className="hover:cursor-pointer" size={16}/>
+              <span className="text-xs xs:text-base font-semibold">huynhvankhai198@gmail.com</span>
+              <Pen className="hover:cursor-pointer" size={16} />
             </div>
           </div>
           {/*  */}

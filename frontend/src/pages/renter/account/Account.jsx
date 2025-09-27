@@ -8,7 +8,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { SelectGroup } from '@radix-ui/react-select'
-import { Car, CheckCircle2Icon, Gift, Heart, Locate, LocationEditIcon, LockIcon, MapPinCheck, Trash2, User } from 'lucide-react'
+import { Car, CheckCircle2Icon, Gift, Heart, LocationEditIcon, LockIcon, MapPinCheck, Trash2, User } from 'lucide-react'
 import { BiLogOut } from 'react-icons/bi'
 
 const Account = () => {
