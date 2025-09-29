@@ -6,10 +6,12 @@ const ProtectedRoute = ({ children, allowRole }) => {
 
     const { role } = useSelector(state => state.userStore)
 
-    if (role === allowRole) {
+    const allowed = Array.isArray(allowRole) ? allowRole.includes(role) : role === allowRole
+
+    if (allowed) {
         return children
     } else {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 }
 

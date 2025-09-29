@@ -1,17 +1,28 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
 import { checkAuth } from "@/redux/features/auth/authSlice.js";
 import ChatBox from "./chat/ChatBox";
+import { useLocation, useNavigate } from "react-router-dom";
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
+  const { role } = useSelector((state) => state.userStore);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!window.location.href.includes("verify-email")) {
       dispatch(checkAuth());
     }
   }, []);
+
+  // redirect owner to /owner when landing on home after auth
+  useEffect(() => {
+    if (role === 'owner' && location.pathname === '/') {
+      navigate('/owner', { replace: true });
+    }
+  }, [role, location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen">
