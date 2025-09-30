@@ -4,14 +4,17 @@ import { EyeClosed, EyeIcon, Loader, Loader2Icon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const Login = ({ setRegisterOpen, setLoginOpen }) => {
   // redux : 
   const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin,
     isLoadingRequest, isRequestSuccess, errorRequest,
-    isLoadingRequestReset, isRequestResetSuccess, errorRequestReset
+    isLoadingRequestReset, isRequestResetSuccess, errorRequestReset,
+    role
   } = useSelector(state => state.userStore)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,8 +47,11 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
   useEffect(() => {
     if (isLoginSuccess) {
       toast.success('Đăng nhập thành công!')
+      if (role === 'owner') {
+        navigate('/owner', { replace: true })
+      }
     }
-  }, [isLoginSuccess])
+  }, [isLoginSuccess, role])
 
   // if request to create veirfy email link success , toast it : 
   useEffect(() => {
