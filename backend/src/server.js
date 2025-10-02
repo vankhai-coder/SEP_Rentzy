@@ -14,6 +14,7 @@ import RenterVehicleRoute from "./routes/renter/vehicleRoute.js";
 import RenterBrandRoute from "./routes/renter/brandRoute.js";
 import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
+import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
 // init app :
 const app = express();
 
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
 
 // auth route :
 app.use("/api/auth", AuthRoute);
+app.use("/api/renter/vehicles/search", SearchVehicleRoute);
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
