@@ -108,43 +108,50 @@ const DriverLicenseVerify = () => {
                 <span className="text-sm sm:text-xl font-semibold">Hình ảnh</span>
                 {/* hinh anh :  */}
                 <div
-                    className="mx-auto w-[400px] h-[250px] rounded-xl bg-gray-100 bg-cover bg-center border shadow"
+                    className="mx-auto  w-[300px] h-[150px] sm:w-[400px] sm:h-[250px] rounded-xl bg-gray-100 bg-cover bg-center border shadow"
                     style={{
                         // backgroundImage: preview ? `url(${preview})` : "none",
                     }}
                 >
                 </div>
+                {/* upload button :  */}
+                <div className="text-center">
+                    <Button
+                    className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
+                    >Upload</Button>
+                </div>
+
                 {/* thong tin chung :  */}
                 <span className="text-sm sm:text-xl font-semibold">Thông tin chung</span>
                 <div>
                     <span>Số GPLX</span>
                     <input type="text" />
                     <Input
-                     disabled 
-                     placeholder='Nhập số GPLX đã cấp' 
-                     className='border-gray-500 mt-2 py-6'
-                    
-                    /> 
+                        disabled
+                        placeholder='Nhập số GPLX đã cấp'
+                        className='border-gray-500 mt-2 py-6'
+
+                    />
                 </div>
-                 <div>
+                <div>
                     <span>Họ và tên</span>
                     <input type="text" />
                     <Input
-                     disabled 
-                     placeholder='Nhập đầy đủ họ tên' 
-                     className='border-gray-500 mt-2 py-6'
-                    
-                    /> 
+                        disabled
+                        placeholder='Nhập đầy đủ họ tên'
+                        className='border-gray-500 mt-2 py-6'
+
+                    />
                 </div>
-                 <div>
+                <div>
                     <span>Ngày sinh</span>
                     <input type="text" />
                     <Input
-                     disabled 
-                     placeholder='Nhập ngày sinh' 
-                     className='border-gray-500 mt-2 py-6'
-                    
-                    /> 
+                        disabled
+                        placeholder='Nhập ngày sinh'
+                        className='border-gray-500 mt-2 py-6'
+
+                    />
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-light">Vì sao tôi phải xác thực GPLX</span>
@@ -152,14 +159,19 @@ const DriverLicenseVerify = () => {
                 </div>
 
                 {/* chup anh khuon mat : */}
-                 <span className="text-sm sm:text-xl font-semibold">Chụp ảnh khuôn mặt</span>
+                <span className="text-sm sm:text-xl font-semibold">Chụp ảnh khuôn mặt</span>
                 {/* hinh anh :  */}
                 <div
-                    className="mx-auto w-[400px] h-[250px] rounded-xl bg-gray-100 bg-cover bg-center border shadow"
+                    className="mx-auto  w-[300px] h-[150px] sm:w-[400px] sm:h-[250px] rounded-xl bg-gray-100 bg-cover bg-center border shadow"
                     style={{
                         // backgroundImage: preview ? `url(${preview})` : "none",
                     }}
                 >
+                </div>
+                <div className="text-center">
+                    <Button
+                    className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
+                    >Chụp ngay</Button>
                 </div>
             </div>
 
