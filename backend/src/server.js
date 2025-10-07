@@ -14,6 +14,7 @@ import RenterVehicleRoute from "./routes/renter/vehicleRoute.js";
 import RenterBrandRoute from "./routes/renter/brandRoute.js";
 import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
+import RenterInfoRoute from './routes/renter/renterInformationRoute.js'
 // init app :
 const app = express();
 
@@ -39,10 +40,15 @@ app.use((req, res, next) => {
 
 // auth route :
 app.use("/api/auth", AuthRoute);
+
+// renter route : 
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
+app.use("/api/renter/info" , RenterInfoRoute )
+
+
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
@@ -50,7 +56,7 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({ alter: true });
+    await db.sequelize.sync();
     console.log("✅ All models synced!");
   } catch (err) {
     console.error("❌ Error syncing models:", err);

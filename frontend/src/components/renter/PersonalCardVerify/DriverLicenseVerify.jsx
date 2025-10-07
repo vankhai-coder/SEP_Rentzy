@@ -117,8 +117,9 @@ const DriverLicenseVerify = () => {
                 {/* upload button :  */}
                 <div className="text-center">
                     <Button
-                    className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
-                    >Upload</Button>
+                        className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
+                    >Tải ảnh lên
+                    </Button>
                 </div>
 
                 {/* thong tin chung :  */}
@@ -170,7 +171,7 @@ const DriverLicenseVerify = () => {
                 </div>
                 <div className="text-center">
                     <Button
-                    className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
+                        className={'hover:cursor-pointer bg-green-500 hover:bg-green-400'}
                     >Chụp ngay</Button>
                 </div>
             </div>
