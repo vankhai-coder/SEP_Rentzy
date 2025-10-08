@@ -1,13 +1,13 @@
 import React from 'react'
-
+import './ownerPage.css'
+import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 const OwnerPage = () => {
   return (
-    <div className="p-6">
+    <div className="dashboard-container">
       <h1 className="text-2xl font-bold">Owner Dashboard</h1>
-      <p className="mt-2 text-gray-600">Chào mừng chủ xe đến với bảng điều khiển.</p>
+      <SidebarOwner />
     </div>
   )
 }
 
 export default OwnerPage;
-

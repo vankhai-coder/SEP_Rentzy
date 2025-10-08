@@ -22,16 +22,18 @@ const Layout = ({ children }) => {
     if (role === 'owner' && location.pathname === '/') {
       navigate('/owner', { replace: true });
     }
+
+  
   }, [role, location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <Header />
+      {/* Header - Ẩn khi role là owner và đang ở trang owner */}
+      {!(role === 'owner' && location.pathname === '/owner') && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
-      {/* Footer : */}
-      <Footer />
+      {/* Footer - Ẩn khi role là owner và đang ở trang owner */}
+      {!(role === 'owner' && location.pathname === '/owner') && <Footer />}
       <ChatBox />
     </div>
   );
