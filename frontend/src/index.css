@@ -3,6 +3,11 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+
+@theme {
+  --breakpoint-xs: 24rem;
+}
+
 @theme inline {
 
   --radius-sm: calc(var(--radius) - 4px);
