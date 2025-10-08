@@ -28,12 +28,12 @@ const Layout = ({ children }) => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header - Ẩn khi role là owner và đang ở trang owner */}
-      {!(role === 'owner' && location.pathname === '/owner') && <Header />}
+      {/* Header - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
+      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
-      {/* Footer - Ẩn khi role là owner và đang ở trang owner */}
-      {!(role === 'owner' && location.pathname === '/owner') && <Footer />}
+      {/* Footer - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
+      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Footer />}
       <ChatBox />
     </div>
   );

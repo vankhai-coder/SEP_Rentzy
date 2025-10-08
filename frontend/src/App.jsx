@@ -23,6 +23,7 @@ import Logout from "./pages/renter/auth/Logout.jsx";
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
+import VehicleManagement from "./pages/owner/vehicleManagement/vehicleManagement.jsx";
 const App = () => {
   return (
     <Router>
@@ -63,6 +64,14 @@ const App = () => {
             element={
               <ProtectedRoute allowRole={'owner'}>
                 <OwnerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner/vehicle-management"
+            element={
+              <ProtectedRoute allowRole={'owner'}>
+                <VehicleManagement />
               </ProtectedRoute>
             }
           />

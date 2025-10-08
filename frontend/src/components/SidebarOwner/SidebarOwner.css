@@ -13,6 +13,7 @@
     top: 0;
     overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3); /* Thêm bóng đổ */
+    z-index: 1000; /* Đảm bảo sidebar luôn ở trên cùng */
 }
 
 .sidebar-header {
