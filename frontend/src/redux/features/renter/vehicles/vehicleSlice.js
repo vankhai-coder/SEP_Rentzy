@@ -35,13 +35,44 @@ export const fetchVehicleById = createAsyncThunk(
   }
 );
 
+// THÊM MỚI: searchVehicles với error handling
+export const searchVehicles = createAsyncThunk(
+  "vehicles/searchVehicles",
+  async ({ type, params }, { rejectWithValue }) => {
+    try {
+      const queryString = new URLSearchParams({
+        type,
+        ...params,
+        page: 1,
+        limit: 12,
+      }).toString();
+      console.log(
+        "Debug: API URL:",
+        `/api/renter/vehicles/search?${queryString}`
+      ); // THÊM MỚI: Log URL
+      const response = await axios.get(
+        `/api/renter/vehicles/search?${queryString}`
+      );
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Search failed");
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Debug: API Error:", error.response?.data || error.message); // THÊM MỚI
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 const vehicleSlice = createSlice({
   name: "vehicles",
   initialState: {
     vehicles: [],
     currentVehicle: null,
+    searchVehicles: [],
     loading: false,
     detailLoading: false,
+    searchLoading: false,
     error: null,
     detailError: null,
   },
@@ -71,6 +102,20 @@ const vehicleSlice = createSlice({
       .addCase(fetchVehicleById.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload;
+      })
+      // THÊM MỚI: For searchVehicles với rejectWithValue
+      .addCase(searchVehicles.pending, (state) => {
+        state.searchLoading = true;
+        state.error = null; // Clear error khi start
+      })
+      .addCase(searchVehicles.fulfilled, (state, action) => {
+        state.searchLoading = false;
+        state.searchVehicles = action.payload.data;
+        state.error = null;
+      })
+      .addCase(searchVehicles.rejected, (state, action) => {
+        state.searchLoading = false;
+        state.error = action.payload || action.error.message; // Từ rejectWithValue
       });
   },
 });
