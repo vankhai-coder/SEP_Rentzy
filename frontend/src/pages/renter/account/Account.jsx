@@ -8,7 +8,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { SelectGroup } from '@radix-ui/react-select'
-import { Car, CheckCircle2Icon, Gift, Heart, Locate, LocationEditIcon, LockIcon, MapPinCheck, Trash2, User } from 'lucide-react'
+import { Car, CheckCircle2Icon, Gift, Heart, LocationEditIcon, LockIcon, MapPinCheck, Trash2, User } from 'lucide-react'
 import { BiLogOut } from 'react-icons/bi'
 
 const Account = () => {
@@ -21,7 +21,7 @@ const Account = () => {
     const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
     return (
-        <div className=' px-8 sm:px-12 md:px-24 pt-6 md:pt-16 mb-16'>
+        <div className='p-2 xs:px-8 sm:px-12 md:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16'>
             {/* mobile: nav list */}
             <Select onValueChange={(value) => navigate(value)}>
                 <SelectTrigger className="lg:hidden w-full text-md font-medium py-4 bg-[#ffffff] mb-6 md:mb-10">

@@ -21,6 +21,8 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import OwnerPage from "./pages/owner/ownerPage.jsx";
 const App = () => {
   return (
     <Router>
@@ -56,6 +58,14 @@ const App = () => {
           <Route path="/motorbikes" element={<HomeMotorbike />} />
 
           {/* OWNER ROUTES :  */}
+          <Route
+            path="/owner"
+            element={
+              <ProtectedRoute allowRole={'owner'}>
+                <OwnerPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* ADMIN ROUTES :  */}
 
