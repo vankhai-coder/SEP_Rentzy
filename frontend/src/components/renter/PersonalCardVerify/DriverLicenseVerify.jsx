@@ -15,7 +15,7 @@ const DriverLicenseVerify = () => {
 
     // redux : 
     const {
-        isVerifyDriverLicense,
+        isVerifyDriverLicenseOfRenterUploadSuccess,
         driverLicenseNumber,
         driverLicenseName,
         driverLicenseDob,
@@ -71,7 +71,7 @@ const DriverLicenseVerify = () => {
     // Chụp ảnh
     const capture = () => {
         // if dont verify driver yet , toast : 
-        if(!isVerifyDriverLicense){
+        if(!isVerifyDriverLicenseOfRenterUploadSuccess){
             toast.error('Bạn phải xác thực GPLX trước!')
             return 
         }
@@ -112,10 +112,10 @@ const DriverLicenseVerify = () => {
     // toast : 
     // toast if verify success : 
     useEffect(() => {
-        if (isVerifyDriverLicense) {
+        if (isVerifyDriverLicenseOfRenterUploadSuccess) {
             toast.success('Xác thực giấy phép lái xe thành công ,hãy xác minh khuôn mặt!')
         }
-    }, [isVerifyDriverLicense])
+    }, [isVerifyDriverLicenseOfRenterUploadSuccess])
 
     // toast if fail : 
     useEffect(() => {

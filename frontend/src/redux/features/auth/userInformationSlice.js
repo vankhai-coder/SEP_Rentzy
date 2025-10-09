@@ -9,7 +9,7 @@ const initialState = {
   isVerifyNationalId: true,
 
   // driver license : 
-  isVerifyDriverLicense: false,
+  isVerifyDriverLicenseOfRenterUploadSuccess: false,
   driverLicenseNumber: '',
   driverLicenseName: '',
   driverLicenseDob: '',
@@ -95,7 +95,7 @@ const userInformationSlice = createSlice({
       .addCase(verifyDriverLicense.pending, (state) => {
         state.driverLicenseLoading = true;
         state.driverLicenseError = '';
-        state.isVerifyDriverLicense = false;
+        state.isVerifyDriverLicenseOfRenterUploadSuccess = false;
         state.driverLicenseNumber = '';
         state.driverLicenseName = '';
         state.driverLicenseDob = '';
@@ -105,7 +105,7 @@ const userInformationSlice = createSlice({
       .addCase(verifyDriverLicense.fulfilled, (state, action) => {
         state.driverLicenseLoading = false;
         state.driverLicenseError = '';
-        state.isVerifyDriverLicense = true;
+        state.isVerifyDriverLicenseOfRenterUploadSuccess = true;
         // backend returns:
         // { data: { id: "...", name: "...", dob: "..." } }
         const data = action.payload.data;
@@ -117,7 +117,7 @@ const userInformationSlice = createSlice({
       // Rejected
       .addCase(verifyDriverLicense.rejected, (state, action) => {
         state.driverLicenseLoading = false;
-        state.isVerifyDriverLicense = false;
+        state.isVerifyDriverLicenseOfRenterUploadSuccess = false;
         state.driverLicenseError = action.payload?.message || 'Verification failed';
         state.driverLicenseNumber = '';
         state.driverLicenseName = '';
@@ -129,6 +129,8 @@ const userInformationSlice = createSlice({
         state.is2FaceMatchLoading = true;
         state.is2FaceMatchError = null;
         state.is2FaceMatch = null;
+        state.isVerifyDriverLicenseMatchWithwebcam = false;
+
       })
       .addCase(check2FaceMatch.fulfilled, (state) => {
         state.is2FaceMatchLoading = false;
@@ -140,6 +142,8 @@ const userInformationSlice = createSlice({
         state.is2FaceMatchLoading = false;
         state.is2FaceMatchError = action.payload || "Lỗi khi kiểm tra khớp khuôn mặt";
         state.is2FaceMatch = null;
+        state.isVerifyDriverLicenseMatchWithwebcam = false;
+
       })
   }
 
