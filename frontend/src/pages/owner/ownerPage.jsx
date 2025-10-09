@@ -6,7 +6,7 @@ const OwnerPage = () => {
   return (
     <div className="flex min-h-screen">
       <SidebarOwner />
-      <div className="flex-grow ml-64 p-5 bg-gray-50 min-h-screen">
+      <div className="flex-grow ml-[250px] p-5 bg-gray-50 min-h-screen">
         <Routes>
           <Route path="/" element={<div className="p-6"><h1 className="text-2xl font-bold">Tổng quan</h1></div>} />
           <Route path="/vehicle-management" element={<VehicleManagement />} />
