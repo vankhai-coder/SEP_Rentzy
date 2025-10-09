@@ -1,4 +1,5 @@
 import Vehicle from "../../models/Vehicle.js";
+import User from "../../models/User.js";
 
 // Lấy tất cả vehicles (filter theo type: car/motorbike)
 export const getAllVehicles = async (req, res) => {
@@ -25,6 +26,8 @@ export const getVehicleById = async (req, res) => {
     console.log(id);
     const vehicle = await Vehicle.findByPk(id);
     console.log(vehicle);
+    const owner = await User.findByPk(vehicle.owner_id);
+    console.log(owner);
 
     if (!vehicle) {
       return res
@@ -32,7 +35,7 @@ export const getVehicleById = async (req, res) => {
         .json({ success: false, message: "Vehicle not found" });
     }
 
-    res.json({ success: true, data: vehicle });
+    res.json({ success: true, data: { vehicle, owner } });
   } catch (error) {
     console.error("Error fetching vehicle by id:", error);
     res.status(500).json({ success: false, message: "Server error" });

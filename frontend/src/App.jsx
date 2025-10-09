@@ -23,6 +23,8 @@ import Logout from "./pages/renter/auth/Logout.jsx";
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
+
+import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VehicleManagement from "./pages/owner/vehicleManagement/vehicleManagement.jsx";
 const App = () => {
   return (
@@ -38,31 +40,35 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
-          <Route path='/' element={<Account/>}>
-            <Route path="/account"  element={<UserInformation/>} />
-            <Route path="/myvehicles"  element={<MyVehicles/>} />
-            <Route path="/favorites"  element={<FavoritesPage/>} />
-            <Route path="/mytrips"  element={<MyTrips/>} />
-            <Route path="/longtermrenting"  element={<LongTermRenting/>} />
-            <Route path="/myreward"  element={<MyReward/>} />
-            <Route path="/myaddress"  element={<MyAddress/>} />
-            <Route path="/resetpw"  element={<ResetPassword/>} />
-            <Route path="/deleteaccount"  element={<DeleteAccount/>} />
+          <Route path="/" element={<Account />}>
+            <Route path="/account" element={<UserInformation />} />
+            <Route path="/myvehicles" element={<MyVehicles />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/mytrips" element={<MyTrips />} />
+            <Route path="/longtermrenting" element={<LongTermRenting />} />
+            <Route path="/myreward" element={<MyReward />} />
+            <Route path="/myaddress" element={<MyAddress />} />
+            <Route path="/resetpw" element={<ResetPassword />} />
+            <Route path="/deleteaccount" element={<DeleteAccount />} />
           </Route>
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
+          <Route path="/cars/search" element={<SearchResults type="car" />} />
           {/* Vehicle Detail */}
           <Route path="/cars/:id" element={<VehicleDetail />} />
           <Route path="/motorbikes/:id" element={<VehicleDetail />} />
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />
-
+          <Route
+            path="/motorbikes/search"
+            element={<SearchResults type="motorbike" />}
+          />
           {/* OWNER ROUTES :  */}
           <Route
             path="/owner"
             element={
-              <ProtectedRoute allowRole={'owner'}>
+              <ProtectedRoute allowRole={"owner"}>
                 <OwnerPage />
               </ProtectedRoute>
             }

@@ -173,7 +173,7 @@ const Header = () => {
                   }
                   {userId &&
                     <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1 flex items-center justify-center gap-2">
-                      {avatar &&
+                      {
                         <Avatar>
                           <AvatarImage
                             src={avatar || '/default_avt.jpg'}
@@ -251,7 +251,7 @@ const Header = () => {
                 {/* User Icon or initials */}
                   <Link to='/account'
                    className='flex  items-center gap-2 hover:cursor-pointer hover:opacity-70'>
-                     {avatar &&
+                     {
                         <Avatar>
                           <AvatarImage
                             src={avatar || '/default_avt.jpg'}

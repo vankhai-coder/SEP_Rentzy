@@ -65,9 +65,13 @@ export const googleCallback = async (req, res) => {
         const existUser = await db.User.findOne({
             where: {
                 email: user.email,
-                authMethod : 'oauth'
             }
         });
+
+        // if user exist but email already in use : 
+        if (existUser && existUser.authMethod === 'email') {
+            return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?error=emailInUser`)
+        }
 
         if (existUser) {
             // set cookie : 
@@ -106,12 +110,14 @@ export const logout = (req, res) => {
             }
         )
         // 2. return : 
-        return res.status(200).json({ success: true,message: "Bạn đã đăng xuất thành công!"
- })
+        return res.status(200).json({
+            success: true, message: "Bạn đã đăng xuất thành công!"
+        })
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ success: false,message: "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại!"
- })
+        return res.status(400).json({
+            success: false, message: "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại!"
+        })
 
     }
 }
@@ -123,8 +129,9 @@ export const register = async (req, res) => {
         if (!email || !password) {
             return res
                 .status(400)
-                .json({ success: false,message: "Vui lòng nhập đầy đủ email và mật khẩu!"
- });
+                .json({
+                    success: false, message: "Vui lòng nhập đầy đủ email và mật khẩu!"
+                });
         }
 
         // 1. check if email already exist :
@@ -132,8 +139,9 @@ export const register = async (req, res) => {
         if (existEmail) {
             return res
                 .status(400)
-                .json({ success: false,message: "Email đã tồn tại. Vui lòng sử dụng email khác!"
-});
+                .json({
+                    success: false, message: "Email đã tồn tại. Vui lòng sử dụng email khác!"
+                });
         }
 
         // 2. create new account :
@@ -162,15 +170,17 @@ export const register = async (req, res) => {
         // 4. return success
         return res.status(201).json({
             success: true,
-           message: "Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản của bạn."
+            message: "Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản của bạn."
 
         });
     } catch (error) {
         console.error("Register error:", error);
         return res
             .status(500)
-            .json({ success: false,  message: "Lỗi hệ thống, vui lòng thử lại sau!"
-,});
+            .json({
+                success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+                ,
+            });
     }
 };
 
@@ -183,8 +193,9 @@ export const verifyEmail = async (req, res) => {
         if (!email || !verifyEmailToken) {
             return res
                 .status(400)
-                .json({ success: false,message: "Thiếu email hoặc mã xác minh trong yêu cầu!"
-});
+                .json({
+                    success: false, message: "Thiếu email hoặc mã xác minh trong yêu cầu!"
+                });
         }
 
         // 2. Find user by email
@@ -192,16 +203,18 @@ export const verifyEmail = async (req, res) => {
         if (!user) {
             return res
                 .status(404)
-                .json({ success: false,message: "Không tìm thấy người dùng!"
-});
+                .json({
+                    success: false, message: "Không tìm thấy người dùng!"
+                });
         }
 
         // 3. Check if token matches
         if (user.verifyEmailToken !== verifyEmailToken) {
             return res
                 .status(400)
-                .json({ success: false, message: "Token không hợp lệ hoặc đã hết hạn!"
-});
+                .json({
+                    success: false, message: "Token không hợp lệ hoặc đã hết hạn!"
+                });
         }
 
         // 4. Token matches → update user
@@ -225,8 +238,8 @@ export const verifyEmail = async (req, res) => {
         console.error("Error verifying email:", error);
         return res.status(500).json({
             success: false,
-           message: "Lỗi hệ thống, vui lòng thử lại sau!"
-,
+            message: "Lỗi hệ thống, vui lòng thử lại sau!"
+            ,
         });
     }
 };
@@ -238,30 +251,39 @@ export const login = async (req, res) => {
         if (!email || !password) {
             return res
                 .status(400)
-                .json({ success: false,message: "Vui lòng nhập email và mật khẩu!"
- });
+                .json({
+                    success: false, message: "Vui lòng nhập email và mật khẩu!"
+                });
         }
 
         // 1. Check if email exists
-        const existUser = await db.User.findOne({ where: { email ,authMethod : 'email' } });
+        const existUser = await db.User.findOne({ where: { email } });
         if (!existUser) {
-            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
- });
+            return res.status(400).json({
+                success: false, message: "Sai thông tin đăng nhập!"
+            });
+        }
+        // 1.1 check if this email is register by google oauth method : 
+        if (existUser && existUser.authMethod === 'oauth') {
+            return res.status(400).json({message : 'Email này đã được dùng để đăng nhập với Google!'})
         }
 
         // 2. Check if email is verified
         if (existUser.email_verified !== true) {
             return res
                 .status(400)
-                .json({ success: false,message: "Email chưa được xác minh!"
-, isNotVerifyEmailError: true });
+                .json({
+                    success: false, message: "Email chưa được xác minh!"
+                    , isNotVerifyEmailError: true
+                });
         }
 
         // 3. Check password
         const isMatch = await bcrypt.compare(password, existUser.password_hash);
         if (!isMatch) {
-            return res.status(400).json({ success: false, message: "Sai thông tin đăng nhập!"
- });
+            return res.status(400).json({
+                success: false, message: "Sai thông tin đăng nhập!"
+            });
         }
 
         // 5. Set cookie
@@ -280,8 +302,9 @@ export const login = async (req, res) => {
         });
     } catch (error) {
         console.error("Login error:", error.message);
-        return res.status(500).json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
- });
+        return res.status(500).json({
+            success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+        });
     }
 };
 
@@ -294,8 +317,9 @@ export const requestCreateVerifyEmail = async (req, res) => {
         if (!email) {
             return res
                 .status(400)
-                .json({ success: false,message: "Vui lòng nhập email!"
- });
+                .json({
+                    success: false, message: "Vui lòng nhập email!"
+                });
         }
 
         // 1. Check if user exists
@@ -303,16 +327,18 @@ export const requestCreateVerifyEmail = async (req, res) => {
         if (!user) {
             return res
                 .status(404)
-                .json({ success: false, message: "Không tìm thấy người dùng!"
-});
+                .json({
+                    success: false, message: "Không tìm thấy người dùng!"
+                });
         }
 
         // 2. Check if email is already verified
         if (user.email_verified) {
             return res
                 .status(400)
-                .json({ success: false, message: "Email này đã được xác thực rồi!"
- });
+                .json({
+                    success: false, message: "Email này đã được xác thực rồi!"
+                });
         }
 
         // 3. Create verify email token
@@ -334,14 +360,16 @@ export const requestCreateVerifyEmail = async (req, res) => {
         // 5. Response
         return res
             .status(200)
-            .json({ success: true, message: "Đã gửi email xác thực!"
- });
+            .json({
+                success: true, message: "Đã gửi email xác thực!"
+            });
     } catch (error) {
         console.error("Error in requestCreateVerifyEmail:", error.message);
         return res
             .status(500)
-            .json({ success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
-});
+            .json({
+                success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+            });
     }
 };
 
@@ -352,15 +380,17 @@ export const requestResetPassword = async (req, res) => {
 
         // 1. Validate input
         if (!email) {
-            return res.status(400).json({ success: false, message: "Vui lòng nhập email."
- });
+            return res.status(400).json({
+                success: false, message: "Vui lòng nhập email."
+            });
         }
 
         // 2. Check if user exists
         const user = await db.User.findOne({ where: { email } });
         if (!user) {
-            return res.status(404).json({ success: false,  message: "Không tìm thấy tài khoản nào với email này."
-});
+            return res.status(404).json({
+                success: false, message: "Không tìm thấy tài khoản nào với email này."
+            });
         }
 
         // 3. Create reset token (expires in 15 minutes)
@@ -390,8 +420,9 @@ export const requestResetPassword = async (req, res) => {
         });
     } catch (error) {
         console.error("requestResetPassword error:", error);
-        return res.status(500).json({ success: false,message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
- });
+        return res.status(500).json({
+            success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
+        });
     }
 };
 
