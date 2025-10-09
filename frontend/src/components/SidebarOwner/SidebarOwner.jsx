@@ -14,7 +14,7 @@ const SidebarOwner = ({ handleLogout }) => {
                 <ul>
                     <li>
                         <NavLink
-                            to="/ownerpage/overview"
+                            to="/owner/overview"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <MdOutlineDashboard />
@@ -24,7 +24,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="divider"></li>
                     <li>
                         <NavLink
-                            to="/ownerpage/vehicle-management"
+                            to="/owner/vehicle-management"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <MdDirectionsCar />
@@ -34,7 +34,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="divider"></li>
                     <li>
                         <NavLink
-                            to="/ownerpage/booking-management"
+                            to="/owner/booking-management"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <MdCalendarMonth />
@@ -44,7 +44,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="divider"></li>
                     <li>
                         <NavLink
-                            to="/ownerpage/cancel-requests"
+                            to="/owner/cancel-requests"
                             className={({ isActive }) =>
                                 isActive ? 'active' : ''
                             }
@@ -58,7 +58,7 @@ const SidebarOwner = ({ handleLogout }) => {
             
                     <li>
                         <NavLink
-                            to="/ownerpage/revenue"
+                            to="/owner/revenue"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <MdShowChart />
@@ -68,7 +68,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="divider"></li>
                     <li>
                         <NavLink
-                            to="/ownerpage/vehicle-reviews"
+                            to="/owner/vehicle-reviews"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <FaClipboardList style={{ marginRight: 8, fontSize: 18 }} />
@@ -78,7 +78,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="divider"></li>
                     <li>
                         <NavLink
-                            to="/ownerpage/notifications"
+                            to="/owner/notifications"
                             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         >
                             <MdNotifications />
