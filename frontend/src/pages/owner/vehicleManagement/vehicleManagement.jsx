@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../api/axiosInstance';
 import { toast } from 'react-toastify';
@@ -10,7 +10,9 @@ import {
   MdLock, 
   MdLockOpen,
   MdDelete,
-  MdRefresh
+  MdRefresh,
+  MdDirectionsCar,
+  MdTwoWheeler
 } from 'react-icons/md';
 import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 
@@ -31,11 +33,12 @@ const [stats, setStats] = useState({
     totalVehicles: 0,
     totalRentals: 0
 });
+const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
 
 const navigate = useNavigate();
 
   // Fetch vehicles data
-const fetchVehicles = async () => {
+const fetchVehicles = useCallback(async () => {
     try {
     setLoading(true);
     const params = new URLSearchParams({
@@ -58,7 +61,7 @@ const fetchVehicles = async () => {
     } finally {
     setLoading(false);
     }
-};
+}, [pagination.currentPage, pagination.itemsPerPage, sortBy, sortOrder, searchTerm]);
 
   // Fetch vehicle stats
   const fetchStats = async () => {
@@ -75,7 +78,7 @@ const fetchVehicles = async () => {
   useEffect(() => {
     fetchVehicles();
     fetchStats();
-  }, [pagination.currentPage, sortBy, sortOrder]);
+  }, [fetchVehicles]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -119,6 +122,17 @@ const fetchVehicles = async () => {
         toast.error('Lỗi khi xóa xe');
       }
     }
+  };
+
+  // Handle vehicle type selection
+  const handleAddCar = () => {
+    setShowVehicleTypeModal(false);
+    navigate('/owner/add-car');
+  };
+
+  const handleAddMotorbike = () => {
+    setShowVehicleTypeModal(false);
+    navigate('/owner/add-motorbike');
   };
 
   // Format price
@@ -194,12 +208,7 @@ const fetchVehicles = async () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <SidebarOwner />
-      
-      {/* Main Content */}
-      <div className="flex-1 ml-[250px] p-6">
+    <div className="w-full">
         {/* Header */}
         <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -262,7 +271,7 @@ const fetchVehicles = async () => {
             </button>
 
             <button
-              onClick={() => navigate('/owner/add-vehicle')}
+              onClick={() => setShowVehicleTypeModal(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <MdAdd className="w-5 h-5" />
@@ -416,7 +425,44 @@ const fetchVehicles = async () => {
           </div>
         )}
       </div>
-      </div>
+
+      {/* Vehicle Type Selection Modal */}
+      {showVehicleTypeModal && (
+        <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 ">
+            <div className="text-center">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Chọn loại xe mà bạn muốn thêm
+              </h2>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleAddCar}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <MdDirectionsCar className="w-5 h-5" />
+                  Thêm ô tô
+                </button>
+                
+                <button
+                  onClick={handleAddMotorbike}
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <MdTwoWheeler className="w-5 h-5" />
+                  Thêm xe máy
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowVehicleTypeModal(false)}
+                className="mt-4 w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors "
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

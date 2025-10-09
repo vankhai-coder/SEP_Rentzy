@@ -25,7 +25,6 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
-import VehicleManagement from "./pages/owner/vehicleManagement/vehicleManagement.jsx";
 const App = () => {
   return (
     <Router>
@@ -66,18 +65,10 @@ const App = () => {
           />
           {/* OWNER ROUTES :  */}
           <Route
-            path="/owner"
+            path="/owner/*"
             element={
               <ProtectedRoute allowRole={"owner"}>
                 <OwnerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/owner/vehicle-management"
-            element={
-              <ProtectedRoute allowRole={'owner'}>
-                <VehicleManagement />
               </ProtectedRoute>
             }
           />
