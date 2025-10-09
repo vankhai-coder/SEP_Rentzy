@@ -113,7 +113,7 @@ const AddCarForm = () => {
         submitData.append('documents', doc);
       });
 
-      const response = await axiosInstance.post('/owner/vehicles', submitData, {
+      const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

@@ -49,7 +49,7 @@ const fetchVehicles = useCallback(async () => {
         ...(searchTerm && { search: searchTerm })
     });
 
-    const response = await axiosInstance.get(`/owner/vehicles?${params}`);
+    const response = await axiosInstance.get(`/api/owner/vehicles?${params}`);
     
     if (response.data.success) {
         setVehicles(response.data.data.vehicles);
@@ -66,7 +66,7 @@ const fetchVehicles = useCallback(async () => {
   // Fetch vehicle stats
   const fetchStats = async () => {
     try {
-      const response = await axiosInstance.get('/owner/vehicles/stats');
+      const response = await axiosInstance.get('/api/owner/vehicles/stats');
       if (response.data.success) {
         setStats(response.data.data);
       }
@@ -107,22 +107,22 @@ const fetchVehicles = useCallback(async () => {
   };
 
   // Handle delete vehicle
-  const handleDelete = async (vehicleId, vehicleName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa xe "${vehicleName}"?`)) {
-      try {
-        const response = await axiosInstance.delete(`/owner/vehicles/${vehicleId}`);
+  // const handleDelete = async (vehicleId, vehicleName) => {
+  //   if (window.confirm(`Bạn có chắc chắn muốn xóa xe "${vehicleName}"?`)) {
+  //     try {
+  //       const response = await axiosInstance.delete(`/owner/vehicles/${vehicleId}`);
         
-        if (response.data.success) {
-          toast.success('Xóa xe thành công');
-          fetchVehicles();
-          fetchStats();
-        }
-      } catch (error) {
-        console.error('Error deleting vehicle:', error);
-        toast.error('Lỗi khi xóa xe');
-      }
-    }
-  };
+  //       if (response.data.success) {
+  //         toast.success('Xóa xe thành công');
+  //         fetchVehicles();
+  //         fetchStats();
+  //       }
+  //     } catch (error) {
+  //       console.error('Error deleting vehicle:', error);
+  //       toast.error('Lỗi khi xóa xe');
+  //     }
+  //   }
+  // };
 
   // Handle vehicle type selection
   const handleAddCar = () => {
@@ -289,7 +289,7 @@ const fetchVehicles = useCallback(async () => {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ẢNH</th>
                 <th className="px-4 py-3 text-left font-medium">XE</th>
-                <th className="px-4 py-3 text-left font-medium">BIỂN SỐ</th>
+                <th className="px-4 py-3 text-left font-medium">ĐỊA ĐIỂM</th>
                 <th className="px-4 py-3 text-left font-medium">GIÁ/NGÀY</th>
                 <th className="px-4 py-3 text-left font-medium">LƯỢT THUÊ</th>
                 <th className="px-4 py-3 text-left font-medium">TRẠNG THÁI</th>
@@ -379,13 +379,13 @@ const fetchVehicles = useCallback(async () => {
                             </>
                           )}
                         </button>
-                        <button
+                        {/* <button
                           onClick={() => handleDelete(vehicle.vehicle_id, vehicle.model)}
                           className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
                         >
                           <MdDelete className="w-4 h-4" />
                           Xóa
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>

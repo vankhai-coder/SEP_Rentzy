@@ -7,7 +7,10 @@ import { Op } from "sequelize";
 export const getOwnerVehicles = async (req, res) => {
   try {
     const { search, sortBy = "created_at", sortOrder = "DESC", page = 1, limit = 10 } = req.query;
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
+    
+    console.log("getOwnerVehicles - ownerId:", ownerId);
+    console.log("getOwnerVehicles - req.user:", req.user);
 
     // Tính offset cho phân trang
     const offset = (page - 1) * limit;
@@ -16,10 +19,13 @@ export const getOwnerVehicles = async (req, res) => {
     let whereCondition = { owner_id: ownerId };
     
     if (search) {
-      whereCondition[Op.or] = [
-        { model: { [Op.like]: `%${search}%` } },
-        { location: { [Op.like]: `%${search}%` } }
-      ];
+      whereCondition = {
+        ...whereCondition,
+        [Op.or]: [
+          { model: { [Op.like]: `%${search}%` } },
+          { location: { [Op.like]: `%${search}%` } }
+        ]
+      };
     }
 
     // Lấy danh sách xe với thông tin brand
@@ -30,6 +36,12 @@ export const getOwnerVehicles = async (req, res) => {
           model: Brand,
           as: "brand",
           attributes: ["brand_id", "name", "logo_url"]
+        },
+        {
+          model: User,
+          as: "owner",
+          attributes: ["user_id", "full_name", "email"],
+          where: { user_id: ownerId } // Đảm bảo chỉ lấy xe của người dùng hiện tại
         }
       ],
       order: [[sortBy, sortOrder.toUpperCase()]],
@@ -66,7 +78,10 @@ export const getOwnerVehicles = async (req, res) => {
 // GET /api/owner/vehicles/stats - Lấy thống kê xe của owner
 export const getOwnerVehicleStats = async (req, res) => {
   try {
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
+    
+    console.log("getOwnerVehicleStats - ownerId:", ownerId);
+    console.log("getOwnerVehicleStats - req.user:", req.user);
 
     const stats = await Vehicle.findAll({
       where: { owner_id: ownerId },
@@ -111,7 +126,7 @@ export const getOwnerVehicleStats = async (req, res) => {
 export const getOwnerVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
 
     const vehicle = await Vehicle.findOne({
       where: { 
@@ -151,7 +166,7 @@ export const getOwnerVehicleById = async (req, res) => {
 // POST /api/owner/vehicles - Thêm xe mới
 export const createVehicle = async (req, res) => {
   try {
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
     const vehicleData = {
       ...req.body,
       owner_id: ownerId,
@@ -191,7 +206,7 @@ export const createVehicle = async (req, res) => {
 export const updateVehicle = async (req, res) => {
   try {
     const { id } = req.params;
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
@@ -242,7 +257,7 @@ export const updateVehicleStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
@@ -281,7 +296,7 @@ export const updateVehicleStatus = async (req, res) => {
 export const deleteVehicle = async (req, res) => {
   try {
     const { id } = req.params;
-    const ownerId = req.user.user_id;
+    const ownerId = req.user.userId;
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
