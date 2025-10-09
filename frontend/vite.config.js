@@ -14,7 +14,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-   resolve: {
+  optimizeDeps: {
+    include: ['react-webcam']
+  },
+  resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

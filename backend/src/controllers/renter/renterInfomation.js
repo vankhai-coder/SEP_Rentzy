@@ -3,7 +3,7 @@ import FormData from "form-data";
 
 export const verifyDriverLicenseCard = async (req, res) => {
     try {
-        if (!req.file) return res.status(400).send("No file uploaded!");
+        if (!req.file) return res.status(400).json({message : 'No file send!'});
 
         //  Create form-data to send image correctly
         const formData = new FormData();
