@@ -289,7 +289,7 @@ const fetchVehicles = useCallback(async () => {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ẢNH</th>
                 <th className="px-4 py-3 text-left font-medium">XE</th>
-                <th className="px-4 py-3 text-left font-medium">ĐỊA ĐIỂM</th>
+                <th className="px-4 py-3 text-left font-medium">BIỂN SỐ</th>
                 <th className="px-4 py-3 text-left font-medium">GIÁ/NGÀY</th>
                 <th className="px-4 py-3 text-left font-medium">LƯỢT THUÊ</th>
                 <th className="px-4 py-3 text-left font-medium">TRẠNG THÁI</th>
@@ -325,7 +325,7 @@ const fetchVehicles = useCallback(async () => {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-900 font-medium">
-                      {vehicle.location}
+                      {vehicle.license_plate}
                     </td>
                     <td className="px-4 py-3 text-gray-900 font-medium">
                       {formatPrice(vehicle.price_per_day)}

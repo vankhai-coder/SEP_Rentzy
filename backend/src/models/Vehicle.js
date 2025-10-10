@@ -22,6 +22,11 @@ const Vehicle = sequelize.define(
       type: DataTypes.ENUM("car", "motorbike"),
       allowNull: false,
     },
+    license_plate: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+    },
     model: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -55,6 +60,19 @@ const Vehicle = sequelize.define(
     // Car fields
     transmission: {
       type: DataTypes.ENUM("manual", "automatic"),
+    },
+    body_type: {
+      type: DataTypes.ENUM(
+        "sedan",
+        "suv",
+        "hatchback",
+        "convertible",
+        "coupe",
+        "minivan",
+        "pickup",
+        "van",
+        "mpv"
+      ),
     },
     seats: {
       type: DataTypes.TINYINT.UNSIGNED,
