@@ -15,8 +15,13 @@ import RenterBrandRoute from "./routes/renter/brandRoute.js";
 import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
 import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
+
 // booking route
 import BookingRoute from "./routes/booking/bookingRoute.js";
+
+import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
+import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
+
 // init app :
 const app = express();
 
@@ -43,12 +48,19 @@ app.use((req, res, next) => {
 // auth route :
 app.use("/api/auth", AuthRoute);
 app.use("/api/renter/vehicles/search", SearchVehicleRoute);
+
+// renter route :
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
+
 // booking route
 app.use("/api/renter/booking", BookingRoute);
+
+app.use("/api/owner", OwnerVehicleRoute);
+app.use("/api/renter/info", RenterInfoRoute);
+
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });

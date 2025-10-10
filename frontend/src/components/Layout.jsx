@@ -35,14 +35,23 @@ const Layout = ({ children }) => {
     }
   }, [role, location.pathname]);
 
+  // redirect owner to /owner when landing on home after auth
+  useEffect(() => {
+    if (role === 'owner' && location.pathname === '/') {
+      navigate('/owner', { replace: true });
+    }
+
+  
+  }, [role, location.pathname]);
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <Header />
+      {/* Header - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
+      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
-      {/* Footer : */}
-      <Footer />
+      {/* Footer - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
+      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Footer />}
       <ChatBox />
     </div>
   );

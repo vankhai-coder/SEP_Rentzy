@@ -65,7 +65,7 @@ const App = () => {
           />
           {/* OWNER ROUTES :  */}
           <Route
-            path="/owner"
+            path="/owner/*"
             element={
               <ProtectedRoute allowRole={"owner"}>
                 <OwnerPage />

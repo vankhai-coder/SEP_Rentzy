@@ -59,7 +59,7 @@ Message.belongsTo(User, { as: "receiver", foreignKey: "receiver_id" });
 
 // Brand ↔ Vehicle
 Brand.hasMany(Vehicle, { foreignKey: "brand_id" });
-Vehicle.belongsTo(Brand, { foreignKey: "brand_id" });
+Vehicle.belongsTo(Brand, { as: "brand", foreignKey: "brand_id" });
 
 // User ↔ Vehicle
 User.hasMany(Vehicle, { foreignKey: "owner_id" });
