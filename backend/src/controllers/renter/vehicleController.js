@@ -35,7 +35,27 @@ export const getVehicleById = async (req, res) => {
         .json({ success: false, message: "Vehicle not found" });
     }
 
-    res.json({ success: true, data: { vehicle, owner } });
+    // Parse JSON strings to arrays
+    const vehicleData = vehicle.toJSON();
+    if (vehicleData.extra_images && typeof vehicleData.extra_images === 'string') {
+      try {
+        vehicleData.extra_images = JSON.parse(vehicleData.extra_images);
+      } catch (e) {
+        vehicleData.extra_images = [];
+      }
+    }
+    if (vehicleData.features && typeof vehicleData.features === 'string') {
+      try {
+        vehicleData.features = JSON.parse(vehicleData.features);
+      } catch (e) {
+        vehicleData.features = [];
+      }
+    }
+
+    // Include owner data in vehicle object
+    vehicleData.owner = owner;
+
+    res.json({ success: true, data: vehicleData });
   } catch (error) {
     console.error("Error fetching vehicle by id:", error);
     res.status(500).json({ success: false, message: "Server error" });

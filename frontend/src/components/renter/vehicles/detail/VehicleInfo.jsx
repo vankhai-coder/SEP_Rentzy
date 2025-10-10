@@ -1,208 +1,199 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const VehicleInfo = ({ vehicle }) => {
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
+  
   if (!vehicle) return null;
   
   const specifications = [
-    { label: 'Truyền động', value: vehicle.transmission || 'Số tự động', icon: '⚙️', color: 'from-blue-500 to-blue-600' },
-    { label: 'Số ghế', value: vehicle.seats || '5 chỗ', icon: '🪑', color: 'from-green-500 to-green-600' },
-    { label: 'Nhiên liệu', value: vehicle.fuel_type || 'Xăng', icon: '🔋', color: 'from-yellow-500 to-orange-500' },
-    { label: 'Tiêu hao', value: vehicle.fuel_consumption || '10L/100km', icon: '💧', color: 'from-cyan-500 to-blue-500' }
+    { 
+      label: 'Truyền động', 
+      value: vehicle.transmission || 'Số tự động', 
+      icon: (
+        <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+        </svg>
+      )
+    },
+    { 
+      label: 'Số ghế', 
+      value: vehicle.seats || '7 chỗ', 
+      icon: (
+        <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M4 18v3h3v-3h10v3h3v-3h1v-2H3v2h1zM19 10h3v8h-3v-8zM2 10h3v8H2v-8zM7 4v2h10V4H7zM6 8v2h12V8H6z"/>
+        </svg>
+      )
+    },
+    { 
+      label: 'Nhiên liệu', 
+      value: vehicle.fuel_type || 'Xăng', 
+      icon: (
+        <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 13.5V19H8v-5.5h4zm0-3.5H8V5h4v5z"/>
+        </svg>
+      )
+    },
+    { 
+      label: 'Tiêu hao', 
+      value: vehicle.fuel_consumption || '7L/100km', 
+      icon: (
+        <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+        </svg>
+      )
+    }
   ].filter(spec => spec.value);
   
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShowCopySuccess(true);
+      setTimeout(() => setShowCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+  
+  const handleToggleFavorite = () => {
+    setIsFavorited(!isFavorited);
+    // TODO: Implement API call to add/remove from favorites
+  };
+  
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl shadow-lg">
-      {/* Header with modern gradient */}
-      <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          <h3 className="text-3xl font-bold mb-2">Thông tin xe</h3>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-white text-white p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-gray-900 text-2xl font-bold mb-2">{vehicle.model || 'TOYOTA FORTUNER'} {vehicle.year || '2014'}</h1>
+            <div className="flex items-center gap-3 text-sm text-gray-900 mb-3">
+              <div className="flex items-center gap-1">
+                <span className="text-yellow-400">★</span>
+                <span>5.0</span>
+              </div>
+              <span>•</span>
+              <span>{vehicle.rent_count ?? "0"} chuyến</span>
+              <span>•</span>
+              <span>{vehicle.location || 'Phường Linh Đông, TP Thủ Đức'}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-green-600 px-3 py-1 rounded-full text-sm">
+              <span className="w-2 h-2 bg-green-300 rounded-full"></span>
+              <span>Miễn thế chấp</span>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-2 ml-4">
+            {/* Share Button */}
+            <button 
+              onClick={handleCopyLink}
+              className="relative p-2 bg-gray-300 hover:bg-gray-600 rounded-lg transition-colors duration-200"
+              title="Chia sẻ"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+              </svg>
+              {showCopySuccess && (
+                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+                  Đã sao chép!
+                </div>
+              )}
+            </button>
+            
+            {/* Favorite Button */}
+            <button 
+              onClick={handleToggleFavorite}
+              className={`p-2 rounded-lg transition-colors duration-200 ${
+                isFavorited 
+                  ? 'bg-red-300 hover:bg-red-300' 
+                  : 'bg-gray-300 hover:bg-gray-300'
+              }`}
+              title={isFavorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+            >
+              <svg className={`w-5 h-5 ${
+                isFavorited ? 'fill-current' : ''
+              }`} fill={isFavorited ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
       </div>
       
-      {/* Vehicle Basic Info - Modern Card */}
-      <div className="mb-8 bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-all duration-300">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-2xl font-bold text-gray-800 mb-2">{vehicle.model} {vehicle.year}</h4>
-            {vehicle.location && (
-              <div className="flex items-center gap-3 text-gray-600">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">📍</span>
+      {/* Content Section */}
+      <div className="p-6">
+        {/* Specifications */}
+        {specifications.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Đặc điểm</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {specifications.map((spec, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4 text-center hover:bg-gray-100 transition-colors duration-200">
+                  <div className="flex justify-center mb-2">{spec.icon}</div>
+                  <div className="text-sm text-gray-600 mb-1">{spec.label}</div>
+                  <div className="font-semibold text-gray-900">{spec.value}</div>
                 </div>
-                <span className="font-medium text-lg">{vehicle.location}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Description */}
+        <div className="mb-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Mô tả</h4>
+          <div className="bg-gray-50 rounded-lg p-4">
+            {vehicle.description ? (
+              <p className="text-gray-700 leading-relaxed">{vehicle.description}</p>
+            ) : (
+              <div className="space-y-3 text-gray-700">
+                <p>Ngoài các ưu đãi về giá MICARRO còn hỗ trợ thêm cho Quý Khách hàng các Chính sách như sau:</p>
+                <ul className="space-y-1 ml-4">
+                  <li>• Hoàn tiền đổ xăng dư</li>
+                  <li>• Miễn phí vượt dưới 1h</li>
+                  <li>• Miễn phí vượt dưới 10Km</li>
+                  <li>• Sử dụng miễn phí: Nước, Đồ ăn vặt, Khăn giấy có trong gói MICAR KIT khi thuê xe</li>
+                </ul>
+                <p>Toyota Fortuner là mẫu xe SUV cỡ trung, sang trọng và khả năng vận hành mạnh mẽ, sự kết hợp giữa khả năng vận hành mạnh mẽ, sự thoải mái và tính năng an toàn vượt trội. Được trang bị khung gầm vững chắi, Fortuner sở hữu điểm mạnh về sự linh hoạt và toàn vượt trội.</p>
               </div>
             )}
           </div>
-          <div className="hidden md:block">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🚗</span>
-            </div>
-          </div>
         </div>
-      </div>
-      
-      {/* Specifications - Modern Grid */}
-      {specifications.length > 0 && (
-        <div className="mb-8">
-          <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <span className="text-3xl">⚡</span>
-            Đặc điểm nổi bật
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {specifications.map((spec, index) => (
-              <div key={index} className="group bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-14 h-14 bg-gradient-to-r ${spec.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <span className="text-2xl">{spec.icon}</span>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-500 mb-2 font-medium">{spec.label}</div>
-                  <div className="font-bold text-gray-800 text-lg">{spec.value}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Description - Modern Card */}
-      {vehicle.description ? (
-        <div className="mb-8 bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-all duration-300">
-          <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <span className="text-3xl">📝</span>
-            Mô tả chi tiết
-          </h4>
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg">{vehicle.description}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-8 bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-all duration-300">
-          <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <span className="text-3xl">📝</span>
-            Mô tả chi tiết
-          </h4>
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
-            <div className="space-y-4 text-gray-700 leading-relaxed">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">🚗</span>
-                </div>
-                <p className="font-bold text-xl text-gray-800">FORD TERRITORY TITANIUM X-2024</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">🚚</span>
-                </div>
-                <p className="text-lg">Giao nhận tận nơi yêu cầu</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">✨</span>
-                </div>
-                <p className="text-lg">Xe mới đẹp, rộng rãi, an toàn, tiện nghi, phù hợp cho gia đình du lịch.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm">🔧</span>
-                </div>
-                <p className="text-lg">Xe trang bị hệ thống cảm biến camera 360 gạt mưa tự động, đèn pha tự động v..v</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Features - Modern Grid */}
-      {vehicle.features && vehicle.features.length > 0 ? (
-        <div className="mb-8">
-          <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <span className="text-3xl">🎯</span>
-            Tiện nghi cao cấp
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {vehicle.features.map((feature, index) => {
+        
+        {/* Features */}
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Các tiện nghi khác</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {(vehicle.features && vehicle.features.length > 0 ? vehicle.features : [
+              'Camera lùi', 'Cảm biến lốp', 'Cảm biến va chạm', 'Cảnh báo tốc độ', 
+              'Định vị GPS', 'Khe cắm USB', 'Lốp dự phòng', 'Màn hình DVD', 'ETC', 'Túi khí an toàn'
+            ]).map((feature, index) => {
               const getFeatureIcon = (featureName) => {
-                 const name = featureName.toLowerCase();
-                 if (name.includes('bluetooth')) return '🔗';
-                 if (name.includes('camera') && name.includes('360')) return '🎯';
-                 if (name.includes('camera') && name.includes('cập lề')) return '📸';
-                 if (name.includes('camera') && name.includes('hành trình')) return '🎬';
-                 if (name.includes('camera') && name.includes('lùi')) return '🔄';
-                 if (name.includes('cảm biến') && name.includes('lốp')) return '⚡';
-                 if (name.includes('cảm biến') && name.includes('va chạm')) return '🛡️';
-                 if (name.includes('cảnh báo') && name.includes('tốc độ')) return '🚨';
-                 if (name.includes('cửa sổ trời')) return '☀️';
-                 if (name.includes('định vị') || name.includes('gps')) return '🧭';
-                 if (name.includes('khe cắm') || name.includes('usb')) return '🔌';
-                 if (name.includes('lốp dự phòng')) return '🔧';
-                 if (name.includes('etc')) return '💎';
-                 if (name.includes('túi khí') || name.includes('an toàn')) return '🛡️';
-                 return '✨';
-               };
-              
-              const getFeatureColor = (index) => {
-                const colors = [
-                  'from-blue-400 to-blue-600',
-                  'from-green-400 to-green-600', 
-                  'from-purple-400 to-purple-600',
-                  'from-pink-400 to-pink-600',
-                  'from-yellow-400 to-orange-500',
-                  'from-cyan-400 to-blue-500',
-                  'from-red-400 to-pink-500',
-                  'from-indigo-400 to-purple-500'
-                ];
-                return colors[index % colors.length];
+                const name = featureName.toLowerCase();
+                if (name.includes('camera') && name.includes('lùi')) return '📹';
+                if (name.includes('cảm biến') && name.includes('lốp')) return '⚡';
+                if (name.includes('cảm biến') && name.includes('va chạm')) return '🛡️';
+                if (name.includes('cảnh báo') && name.includes('tốc độ')) return '🚨';
+                if (name.includes('định vị') || name.includes('gps')) return '🧭';
+                if (name.includes('khe cắm') || name.includes('usb')) return '🔌';
+                if (name.includes('lốp dự phòng')) return '🔧';
+                if (name.includes('màn hình') || name.includes('dvd')) return '📺';
+                if (name.includes('etc')) return '💳';
+                if (name.includes('túi khí') || name.includes('an toàn')) return '🛡️';
+                return '✓';
               };
               
               return (
-                <div key={index} className="group bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 bg-gradient-to-r ${getFeatureColor(index)} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                      <span className="text-white text-lg">{getFeatureIcon(feature)}</span>
-                    </div>
-                    <span className="font-medium text-gray-700 text-sm group-hover:text-gray-800 transition-colors duration-300">{feature}</span>
-                  </div>
+                <div key={index} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors duration-200">
+                  <span className="text-lg">{getFeatureIcon(feature)}</span>
+                  <span className="text-sm text-gray-700 font-medium">{feature}</span>
                 </div>
               );
             })}
           </div>
         </div>
-      ) : (
-        <div className="mb-8">
-          <h4 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-            <span className="text-3xl">🎯</span>
-            Tiện nghi cao cấp
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[
-               { name: 'Bluetooth', icon: '🔗', color: 'from-blue-400 to-blue-600' },
-               { name: 'Camera 360', icon: '🎯', color: 'from-green-400 to-green-600' },
-               { name: 'Camera cập lề', icon: '📸', color: 'from-purple-400 to-purple-600' },
-               { name: 'Camera hành trình', icon: '🎬', color: 'from-pink-400 to-pink-600' },
-               { name: 'Camera lùi', icon: '🔄', color: 'from-yellow-400 to-orange-500' },
-               { name: 'Cảm biến lốp', icon: '⚡', color: 'from-cyan-400 to-blue-500' },
-               { name: 'Cảm biến va chạm', icon: '🛡️', color: 'from-red-400 to-pink-500' },
-               { name: 'Cảnh báo tốc độ', icon: '🚨', color: 'from-indigo-400 to-purple-500' },
-               { name: 'Cửa sổ trời', icon: '☀️', color: 'from-yellow-400 to-orange-500' },
-               { name: 'Định vị GPS', icon: '🧭', color: 'from-green-400 to-emerald-500' },
-               { name: 'Khe cắm USB', icon: '🔌', color: 'from-blue-400 to-cyan-500' },
-               { name: 'Lốp dự phòng', icon: '🔧', color: 'from-gray-400 to-gray-600' },
-               { name: 'ETC', icon: '💎', color: 'from-purple-400 to-pink-500' },
-               { name: 'Túi khí an toàn', icon: '🛡️', color: 'from-red-400 to-orange-500' }
-             ].map((feature, index) => (
-              <div key={index} className="group bg-white rounded-lg shadow-md p-4 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 bg-gradient-to-r ${feature.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <span className="text-white text-lg">{feature.icon}</span>
-                  </div>
-                  <span className="font-medium text-gray-700 text-sm group-hover:text-gray-800 transition-colors duration-300">{feature.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
