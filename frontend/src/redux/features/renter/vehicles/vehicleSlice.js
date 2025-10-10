@@ -120,8 +120,6 @@ const vehicleSlice = createSlice({
       .addCase(fetchVehicleById.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload;
-<<<<<<< HEAD
-=======
       })
       // THÊM MỚI: For searchVehicles với rejectWithValue
       .addCase(searchVehicles.pending, (state) => {
@@ -137,7 +135,6 @@ const vehicleSlice = createSlice({
       .addCase(searchVehicles.rejected, (state, action) => {
         state.searchLoading = false;
         state.searchError = action.payload || action.error.message; // Từ rejectWithValue, dùng searchError riêng
->>>>>>> quangvinh
       });
   },
 });
