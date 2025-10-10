@@ -40,7 +40,15 @@ const AddCarForm = () => {
 
   // Body type options
   const bodyTypes = [
-    "Sedan", "SUV", "Hatchback", "Crossover", "Pickup", "Coupe", "Convertible", "Wagon", "Minivan"
+    "sedan",
+        "suv",
+        "hatchback",
+        "convertible",
+        "coupe",
+        "minivan",
+        "pickup",
+        "van",
+        "mpv"
   ];
 
 
