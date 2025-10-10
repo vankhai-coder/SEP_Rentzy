@@ -57,4 +57,3 @@ export const getVehicleBookedDates = async (req, res) => {
   }
 };
 
-// ... existing code ...

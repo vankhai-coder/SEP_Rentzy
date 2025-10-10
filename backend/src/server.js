@@ -15,6 +15,8 @@ import RenterBrandRoute from "./routes/renter/brandRoute.js";
 import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
 import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
+// booking route
+import BookingRoute from "./routes/booking/bookingRoute.js";
 // init app :
 const app = express();
 
@@ -45,6 +47,8 @@ app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
+// booking route
+app.use("/api/renter/booking", BookingRoute);
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
