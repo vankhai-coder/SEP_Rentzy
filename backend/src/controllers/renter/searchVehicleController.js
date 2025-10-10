@@ -16,31 +16,35 @@ export const searchVehicles = async (req, res) => {
       max_price, // decimal, optional
       year_min, // integer, optional
       year_max, // integer, optional
+      // New filters based on slide filters
+      transmission, // "manual" or "automatic" for cars
+      fuel_type, // "petrol", "diesel", "electric", "hybrid" for cars
+      min_seats, // integer, optional for cars (FIX: Đổi từ seats sang min_seats để match frontend)
+      max_seats, // integer, optional for cars
+      bike_type, // "scooter", "manual", "clutch", "electric" for motorbikes
+      min_engine_capacity, // integer, optional for motorbikes
+      max_engine_capacity, // integer, optional for motorbikes
       page = 1,
       limit = 12,
       sort_by = "price_per_day", // "price_per_day" hoặc "year"
       sort_order = "ASC", // "ASC" hoặc "DESC"
     } = req.query;
 
-    // Validation (giữ nguyên)
+    // Validation (giữ nguyên và thêm mới)
     if (!type || !["car", "motorbike"].includes(type)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Loại xe không hợp lệ (car hoặc motorbike)",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Loại xe không hợp lệ (car hoặc motorbike)",
+      });
     }
     if (start_date && end_date) {
       const start = new Date(start_date + "T00:00:00");
       const end = new Date(end_date + "T23:59:59");
       if (end <= start) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Ngày kết thúc phải sau ngày bắt đầu",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Ngày kết thúc phải sau ngày bắt đầu",
+        });
       }
     }
     if (min_price && (isNaN(min_price) || parseFloat(min_price) < 0)) {
@@ -62,6 +66,75 @@ export const searchVehicles = async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Năm tối đa không hợp lệ" });
+    }
+    // FIX: Thêm check cho "undefined" string từ frontend (an toàn, dù frontend đã fix)
+    if (transmission === "undefined") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid transmission param" });
+    }
+    // New validations
+    if (
+      transmission &&
+      type === "car" &&
+      !["manual", "automatic"].includes(transmission)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Loại hộp số không hợp lệ" });
+    }
+    if (
+      fuel_type &&
+      type === "car" &&
+      !["petrol", "diesel", "electric", "hybrid"].includes(fuel_type)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Loại nhiên liệu không hợp lệ" });
+    }
+    if (min_seats && (isNaN(min_seats) || parseInt(min_seats) < 1)) {
+      // FIX: Đổi từ seats sang min_seats
+      return res.status(400).json({
+        success: false,
+        message: "Số chỗ ngồi tối thiểu không hợp lệ",
+      });
+    }
+    if (max_seats && (isNaN(max_seats) || parseInt(max_seats) < 1)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Số chỗ ngồi tối đa không hợp lệ" });
+    }
+    if (
+      bike_type &&
+      type === "motorbike" &&
+      !["scooter", "manual", "clutch", "electric"].includes(bike_type)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Loại xe máy không hợp lệ" });
+    }
+    if (
+      min_engine_capacity &&
+      (isNaN(min_engine_capacity) || parseInt(min_engine_capacity) < 50)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Dung tích động cơ tối thiểu không hợp lệ",
+      });
+    }
+    if (
+      max_engine_capacity &&
+      (isNaN(max_engine_capacity) || parseInt(max_engine_capacity) < 50)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Dung tích động cơ tối đa không hợp lệ",
+      });
+    }
+    if (brand_id && (isNaN(brand_id) || parseInt(brand_id) < 1)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "ID hãng xe không hợp lệ" });
     }
 
     // Build where clause cơ bản cho Vehicle
@@ -100,6 +173,37 @@ export const searchVehicles = async (req, res) => {
     }
     if (year_max) {
       andConditions.push({ year: { [Op.lte]: parseInt(year_max) } });
+    }
+
+    // New filter conditions
+    if (type === "car") {
+      if (transmission) {
+        andConditions.push({ transmission });
+      }
+      if (fuel_type) {
+        andConditions.push({ fuel_type });
+      }
+      if (min_seats) {
+        // FIX: Sử dụng min_seats cho filter >= (không còn seats)
+        andConditions.push({ seats: { [Op.gte]: parseInt(min_seats) } });
+      }
+      if (max_seats) {
+        andConditions.push({ seats: { [Op.lte]: parseInt(max_seats) } });
+      }
+    } else if (type === "motorbike") {
+      if (bike_type) {
+        andConditions.push({ bike_type });
+      }
+      if (min_engine_capacity) {
+        andConditions.push({
+          engine_capacity: { [Op.gte]: parseInt(min_engine_capacity) },
+        });
+      }
+      if (max_engine_capacity) {
+        andConditions.push({
+          engine_capacity: { [Op.lte]: parseInt(max_engine_capacity) },
+        });
+      }
     }
 
     if (andConditions.length > 0) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import "./DateTimeModal.css"; // Thêm import CSS mới
 import vi from "date-fns/locale/vi";
 import { X, Calendar, Clock, AlertCircle } from "lucide-react";
 import { addDays, format, isAfter } from "date-fns";
@@ -173,37 +174,6 @@ const DateTimeModal = ({
           </button>
         </div>
       </div>
-
-      <style jsx global>{`
-        .custom-calendar {
-          width: fit-content !important;
-          margin: 0 auto !important;
-          display: flex !important;
-          justify-content: center !important;
-          gap: 2rem;
-        }
-        .react-datepicker__month-container {
-          border-radius: 8px;
-        }
-        .react-datepicker__header {
-          background-color: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-          text-align: center;
-        }
-        .react-datepicker__day--selected,
-        .react-datepicker__day--in-range,
-        .react-datepicker__day--keyboard-selected {
-          background-color: #22c55e !important;
-          color: white !important;
-        }
-        .react-datepicker__day--in-selecting-range {
-          background-color: #bbf7d0 !important;
-        }
-        .react-datepicker__current-month {
-          font-weight: 600;
-          color: #065f46;
-        }
-      `}</style>
     </div>
   );
 };
