@@ -1,3 +1,5 @@
+import DriverLicenseVerify from "@/components/renter/PersonalCardVerify/DriverLicenseVerify"
+import IdentityCardVerify from "@/components/renter/PersonalCardVerify/IdentityCardVerify"
 import {
   Avatar,
   AvatarFallback,
@@ -8,9 +10,9 @@ import { BiError } from "react-icons/bi"
 
 const UserInformation = () => {
   return (
-    <div className="bg-[#ffffff] rounded-2xl p-4 md:p-6">
-
-
+   <div className="flex flex-col gap-9 ">
+    {/* basic detail : avatar , name , email , phone .... */}
+     <div className="bg-[#ffffff] rounded-2xl p-4 md:p-6">
 
       {/* thong tin tai khoan :  */}
       <div className="flex items-center justify-between rounded-t-2xl py-4">
@@ -26,8 +28,6 @@ const UserInformation = () => {
           <span>chuyến</span>
         </div>
       </div>
-
-
 
       <div className="flex flex-col md:flex-row md:justify-between gap-4" >
 
@@ -111,11 +111,15 @@ const UserInformation = () => {
         </div>
       </div>
 
-
-
-
-
     </div>
+
+    {/* Verify driver license : */}
+    <DriverLicenseVerify />
+
+
+    {/* Verify identity card : */}
+    <IdentityCardVerify />
+   </div>
   )
 }
 
