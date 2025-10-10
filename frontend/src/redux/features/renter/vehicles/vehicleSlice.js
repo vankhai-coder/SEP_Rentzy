@@ -35,8 +35,6 @@ export const fetchVehicleById = createAsyncThunk(
   }
 );
 
-<<<<<<< HEAD
-=======
 // FIX: Helper clean params trong thunk
 const cleanParamsForQuery = (params) => {
   return Object.fromEntries(
@@ -81,17 +79,13 @@ export const searchVehicles = createAsyncThunk(
   }
 );
 
->>>>>>> quangvinh
 const vehicleSlice = createSlice({
   name: "vehicles",
   initialState: {
     vehicles: [],
     currentVehicle: null,
-<<<<<<< HEAD
-=======
     searchVehicles: [],
     searchPagination: null, // THÊM MỚI: Lưu pagination cho search
->>>>>>> quangvinh
     loading: false,
     detailLoading: false,
     error: null,
