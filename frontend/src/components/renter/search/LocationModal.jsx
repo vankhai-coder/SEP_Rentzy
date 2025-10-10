@@ -43,28 +43,49 @@ const LocationModal = ({
         const { latitude, longitude } = position.coords;
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=vi&zoom=18`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=vi&zoom=10`
           );
           const data = await response.json();
           const addr = data.address || {};
           const displayName = data.display_name || "";
 
-          const road =
-            addr.road ||
-            addr.residential ||
-            addr.pedestrian ||
-            addr.highway ||
-            "";
+          // FIX: Ưu tiên ward (phường) + city/province (thành phố/tỉnh)
           const ward =
             addr.suburb || addr.village || addr.town || addr.quarter || "";
-          const district =
-            addr.city_district || addr.district || addr.county || "";
-          const province = addr.state || addr.province || addr.region || "";
+          let city =
+            addr.state || addr.province || addr.city || addr.municipality || "";
 
-          let result = [road, ward, district, province]
-            .filter(Boolean)
-            .join(", ");
-          if (!result.trim()) result = displayName;
+          // FIX: Nếu city rỗng, extract từ display_name (lấy phần cuối: district + city)
+          if (!city.trim()) {
+            const nameParts = displayName.split(", ");
+            if (nameParts.length >= 2) {
+              city = nameParts.slice(-1)[0]; // Lấy phần cuối (thành phố, e.g., "Đà Nẵng")
+              if (nameParts.length >= 3) {
+                city = `${nameParts[nameParts.length - 2]}, ${city}`; // Nếu có district: "Hải Châu, Đà Nẵng"
+              }
+            }
+          }
+
+          // FIX: Build result: Ward + City (bỏ road nếu không cần, tập trung ward + city như yêu cầu)
+          let result = [ward, city].filter(Boolean).join(", ");
+          if (!result.trim()) result = displayName; // Fallback full nếu rỗng
+
+          // FIX: Backup forward search nếu vẫn miss city
+          if (!city.trim()) {
+            const forwardResponse = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${latitude},${longitude}&addressdetails=1&accept-language=vi&limit=1&zoom=10`
+            );
+            const forwardData = await forwardResponse.json();
+            if (forwardData.length > 0) {
+              const forwardAddr = forwardData[0].address || {};
+              city =
+                forwardAddr.state ||
+                forwardAddr.city ||
+                forwardAddr.municipality ||
+                "";
+              result = [ward, city].filter(Boolean).join(", ");
+            }
+          }
 
           setSearchQuery(result);
           setSelectedLocation(result);
@@ -98,9 +119,12 @@ const LocationModal = ({
 
     try {
       const query = normalizeSearchText(searchQuery);
-      const queryWithCountry = query.includes("việt nam")
+      let queryWithCountry = query.includes("việt nam")
         ? query
         : `${query}, Việt Nam`;
+      if (query.includes("da nang")) {
+        queryWithCountry = `${query}, Đà Nẵng`;
+      }
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -117,15 +141,27 @@ const LocationModal = ({
 
       const location = data[0];
       const addr = location.address || {};
-      const road =
-        addr.road || addr.residential || addr.pedestrian || addr.highway || "";
+      const displayName = location.display_name || "";
+
+      // FIX: Tương tự, ưu tiên ward + city cho manual search
       const ward =
         addr.suburb || addr.village || addr.town || addr.quarter || "";
-      const district = addr.city_district || addr.district || addr.county || "";
-      const province = addr.state || addr.province || addr.region || "";
+      let city =
+        addr.state || addr.province || addr.city || addr.municipality || "";
 
-      let result = [road, ward, district, province].filter(Boolean).join(", ");
-      if (!result.trim()) result = location.display_name;
+      // FIX: Fallback từ display_name nếu city rỗng
+      if (!city.trim()) {
+        const nameParts = displayName.split(", ");
+        if (nameParts.length >= 2) {
+          city = nameParts.slice(-1)[0];
+          if (nameParts.length >= 3) {
+            city = `${nameParts[nameParts.length - 2]}, ${city}`;
+          }
+        }
+      }
+
+      let result = [ward, city].filter(Boolean).join(", ");
+      if (!result.trim()) result = displayName;
 
       setSelectedLocation(result);
       setSearchQuery(result);
@@ -243,7 +279,7 @@ const LocationModal = ({
           <button
             type="button"
             onClick={handleSaveLocation}
-            className="w-full bg-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+            className="w-full bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition-colors disabled:opacity-50"
             disabled={isLoadingLocation || !selectedLocation.trim()}
           >
             Lưu địa điểm

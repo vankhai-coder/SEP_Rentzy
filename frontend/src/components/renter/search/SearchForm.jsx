@@ -3,6 +3,7 @@ import { MapPin, Calendar, Search, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import LocationModal from "./LocationModal";
 import DateTimeModal from "./DateTimeModal";
+import "./SearchForm.css"; // Import CSS mới để dễ chỉnh
 
 const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -62,46 +63,45 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     setShowDateModal(false);
   };
 
-  const themeClass = type === "car" ? "border-green-200" : "border-blue-200";
+  const themeClass = type === "car" ? "border-green-200" : "border-blue-200"; // Giữ cho theme, nhưng CSS chính ở file riêng
 
   return (
     <>
-      {/* Thanh tìm kiếm trung tâm */}
-      <div className="w-full flex justify-center mt-6">
-        <form
-          onSubmit={handleSubmit}
-          className={`bg-white rounded-full shadow-lg border ${themeClass} 
-                      flex items-center justify-between gap-4 px-6 py-4 
-                      w-[75%] max-w-5xl transition-all duration-300 hover:shadow-xl`}
-        >
+      {/* Thanh tìm kiếm trung tâm - Thêm padding top/bottom qua CSS */}
+      <div className="search-form-container">
+        {" "}
+        {/* Class mới cho container */}
+        <form onSubmit={handleSubmit} className={`search-form ${themeClass}`}>
           {/* Địa điểm */}
           <div
-            className="flex items-center gap-3 flex-1 cursor-pointer border-r border-gray-200 pr-4 hover:bg-gray-50 rounded-full transition"
+            className="search-form-section" // Class mới
             onClick={() => setShowLocationModal(true)}
           >
-            <MapPin className="text-gray-500" size={22} />
-            <div className="flex flex-col text-left">
-              <span className="text-sm text-gray-500">Địa điểm</span>
-              <span className="font-medium text-gray-800 truncate max-w-[180px]">
+            <MapPin className="search-form-icon" />
+            <div className="search-form-label">
+              <span className="search-form-label-text">Địa điểm</span>
+              <span className="search-form-label-value">
                 {formData.location || "Chọn địa điểm"}
               </span>
             </div>
-            <ChevronDown className="ml-auto text-gray-400" size={18} />
+            <ChevronDown className="search-form-chevron" />
           </div>
 
           {/* Thời gian thuê */}
           <div
-            className="flex items-center gap-3 flex-1 cursor-pointer border-r border-gray-200 pr-4 hover:bg-gray-50 rounded-full transition"
+            className="search-form-section" // Class mới (không border-r vì CSS handle)
             onClick={() => setShowDateModal(true)}
           >
-            <Calendar className="text-gray-500" size={22} />
-            <div className="flex flex-col text-left">
-              <span className="text-sm text-gray-500">Thời gian thuê</span>
-              <span className="font-medium text-gray-800 truncate max-w-[250px]">
+            <Calendar className="search-form-icon" />
+            <div className="search-form-label">
+              <span className="search-form-label-text">Thời gian thuê</span>
+              <span className="search-form-label-value search-form-time-value">
+                {" "}
+                {/* Class riêng cho time */}
                 {timeDisplay}
               </span>
             </div>
-            <ChevronDown className="ml-auto text-gray-400" size={18} />
+            <ChevronDown className="search-form-chevron" />
           </div>
 
           <button
@@ -111,16 +111,15 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
               !formData.startDate ||
               !formData.endDate
             }
-            className="flex items-center justify-center gap-2 bg-green-500 text-white px-8 py-3 rounded-full 
-                       hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="search-form-submit" // Class mới
           >
-            <Search size={18} />
+            <Search className="search-form-submit-icon" />
             <span>Tìm Xe</span>
           </button>
         </form>
       </div>
 
-      {/* Modals */}
+      {/* Modals - Giữ nguyên */}
       {showLocationModal && (
         <LocationModal
           onClose={() => setShowLocationModal(false)}

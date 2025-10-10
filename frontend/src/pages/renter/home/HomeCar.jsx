@@ -52,8 +52,8 @@ const HomeCar = () => {
   );
 
   return (
-    <div className="container mx-auto p-6">
-      <section className="mb-8">
+    <div className="container mx-auto p-6 pt-1">
+      <section className="mb-4">
         <SearchForm
           type="car"
           brands={brands}
