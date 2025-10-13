@@ -68,7 +68,7 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({ alter: true });
+    await db.sequelize.sync({ force: false });
     console.log("✅ All models synced!");
   } catch (err) {
     console.error("❌ Error syncing models:", err);

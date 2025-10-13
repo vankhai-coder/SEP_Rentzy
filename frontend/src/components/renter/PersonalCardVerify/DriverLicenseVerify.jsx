@@ -11,7 +11,7 @@ import { toast } from "sonner"
 const DriverLicenseVerify = () => {
 
     const [toggleEdit, setToggleEdit] = useState(false)
-    const [toggleEnglishNotice, setToggleEnglishNotice] = useState(false)
+    const [toggleEnglishNotice, setToggleEnglishNotice] = useState(true)
 
     // redux : 
     const {
@@ -47,7 +47,8 @@ const DriverLicenseVerify = () => {
         if (!f) return;
 
         if (!ALLOWED_MIME.includes(f.type) || !isValidExtension(f.name)) {
-            toast.error("Only JPG/PNG/WEBP/GIF allowed.");
+            toast.error("Chỉ cho phép JPG/PNG/WEBP/GIF.");
+            e.target.value = "";
             return;
         }
 
@@ -71,9 +72,9 @@ const DriverLicenseVerify = () => {
     // Chụp ảnh
     const capture = () => {
         // if dont verify driver yet , toast : 
-        if(!isVerifyDriverLicenseOfRenterUploadSuccess){
+        if (!isVerifyDriverLicenseOfRenterUploadSuccess) {
             toast.error('Bạn phải xác thực GPLX trước!')
-            return 
+            return
         }
         setStartCamera(true)
         if (!webcamRef.current) return;

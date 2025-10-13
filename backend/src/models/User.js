@@ -100,6 +100,10 @@ const User = sequelize.define(
     },
     verifyEmailToken: {
       type: DataTypes.STRING,
+    } ,
+    updatedEmail: {
+      type: DataTypes.STRING,
+      unique : true
     }
   },
   {

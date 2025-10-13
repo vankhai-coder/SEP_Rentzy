@@ -22,6 +22,11 @@ const initialState = {
   is2FaceMatchError: '',
   is2FaceMatchLoading: '',
 
+  // update new email : 
+  isSendUpdateEmailSuccess: false,
+  isLoadingSendUpdateEmail: false,
+  errorWhenSendUpdateEmail: ''
+
 };
 
 
@@ -58,7 +63,6 @@ export const verifyDriverLicense = createAsyncThunk(
 )
 
 // check 2 image match (from one person)
-
 export const check2FaceMatch = createAsyncThunk(
   "faceMatch/check2FaceMatch",
   async ({ image_1, image_2 }, { rejectWithValue }) => {
@@ -82,11 +86,33 @@ export const check2FaceMatch = createAsyncThunk(
   }
 );
 
+// send update email request : 
+export const sendUpdateEmail = createAsyncThunk(
+  "auth/sendUpdateEmail",
+  async ({ updatedEmail }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/api/auth/request-update-email",
+        { updatedEmail }
+      );
+
+      return response.data; // backend should return { message: "..." }
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Lỗi khi cập nhật email!');
+    }
+  }
+);
+
 const userInformationSlice = createSlice({
   name: "userInformation",
   initialState,
   reducers: {
-
+    resetUserInformationSlice: (state) => {
+      // update new email : 
+      state.isSendUpdateEmailSuccess = false;
+      state.isLoadingSendUpdateEmail = false;
+      state.errorWhenSendUpdateEmail = '';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -143,13 +169,31 @@ const userInformationSlice = createSlice({
         state.is2FaceMatchError = action.payload || "Lỗi khi kiểm tra khớp khuôn mặt";
         state.is2FaceMatch = null;
         state.isVerifyDriverLicenseMatchWithwebcam = false;
-
       })
+      // send verify email request : 
+      // --- PENDING ---
+      .addCase(sendUpdateEmail.pending, (state) => {
+        state.isLoadingSendUpdateEmail = true;
+        state.errorWhenSendUpdateEmail = null;
+        state.isSendUpdateEmailSuccess = null;
+      })
+      // --- FULFILLED ---
+      .addCase(sendUpdateEmail.fulfilled, (state) => {
+        state.isLoadingSendUpdateEmail = false;
+        state.errorWhenSendUpdateEmail = null;
+        state.isSendUpdateEmailSuccess = true
+      })
+      // --- REJECTED ---
+      .addCase(sendUpdateEmail.rejected, (state, action) => {
+        state.isLoadingSendUpdateEmail = false;
+        state.errorWhenSendUpdateEmail = action.payload
+        state.isSendUpdateEmailSuccess = false
+      });
   }
 
 
 });
 
-
+export const { resetUserInformationSlice } = userInformationSlice.actions
 
 export default userInformationSlice.reducer;
