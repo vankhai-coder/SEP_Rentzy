@@ -89,7 +89,6 @@ const forwardGeocode = async (address) => {
     return null;
   }
   try {
-    console.log("forwardGeocode - address:", address);
     const normalizedAddress = address.toLowerCase().includes("việt nam") || address.toLowerCase().includes("vietnam")
       ? address
       : `${address}, Việt Nam`;
@@ -104,6 +103,27 @@ const forwardGeocode = async (address) => {
   } catch (error) {
     console.error("forwardGeocode - Error:", error);
     return null;
+  }
+};
+
+// Utility: Fetch address suggestions
+const fetchAddressSuggestions = async (query) => {
+  if (!query?.trim()) return [];
+  try {
+    const normalizedQuery = query.toLowerCase().includes("việt nam") || query.toLowerCase().includes("vietnam")
+      ? query
+      : `${query}, Việt Nam`;
+    const url = `${NOMINATIM_BASE_URL}/search?format=json&limit=5&countrycodes=vn&q=${encodeURIComponent(normalizedQuery)}`;
+    const response = await fetch(url, { headers: { "Accept-Language": "vi" } });
+    const data = await response.json();
+    return data.map(item => ({
+      display_name: item.display_name,
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+    }));
+  } catch (error) {
+    console.error("fetchAddressSuggestions - Error:", error);
+    return [];
   }
 };
 
@@ -147,8 +167,10 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
   const [userAddress, setUserAddress] = useState("");
   const [distance, setDistance] = useState(0);
   const [addressInput, setAddressInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const lastDistanceRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
 
   // Initialize vehicle position from vehicle prop
   useEffect(() => {
@@ -161,7 +183,6 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
 
       const { latitude, longitude, location } = vehicle;
 
-      // Priority 1: Use latitude and longitude from vehicle
       if (latitude != null && longitude != null) {
         const coords = { lat: Number(latitude), lon: Number(longitude) };
         if (coords.lat >= -90 && coords.lat <= 90 && coords.lon >= -180 && coords.lon <= 180) {
@@ -175,7 +196,6 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
         }
       }
 
-      // Priority 2: Geocode vehicle.location if no valid coordinates
       if (location) {
         console.log("Geocoding vehicle.location:", location);
         const coords = await forwardGeocode(location);
@@ -221,6 +241,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
         const addr = await reverseGeocode(coords.lat, coords.lon);
         setUserAddress(addr);
         setAddressInput(addr);
+        setSuggestions([]);
       },
       (err) => {
         console.error("Geolocation error:", err);
@@ -230,7 +251,36 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
     );
   }, []);
 
-  // Handle manual address input
+  // Debounced address suggestion fetching
+  const fetchSuggestions = useCallback(async (query) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const results = await fetchAddressSuggestions(query);
+    setSuggestions(results);
+  }, []);
+
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetchSuggestions(addressInput);
+    }, 300);
+
+    return () => clearTimeout(debounceTimeoutRef.current);
+  }, [addressInput, fetchSuggestions]);
+
+  // Handle selecting a suggestion
+  const handleSelectSuggestion = (suggestion) => {
+    setAddressInput(suggestion.display_name);
+    setUserCoords({ lat: suggestion.lat, lon: suggestion.lon });
+    setUserAddress(suggestion.display_name);
+    setSuggestions([]);
+  };
+
+  // Handle manual address input and confirm location
   const handleManualAddress = useCallback(async () => {
     if (!addressInput.trim()) {
       alert("Vui lòng nhập địa chỉ cụ thể.");
@@ -244,7 +294,8 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       setUserCoords(coords);
       const addr = await reverseGeocode(coords.lat, coords.lon);
       setUserAddress(addr);
-      setAddressInput("");
+      setAddressInput(addr);
+      setSuggestions([]);
     } else {
       alert("Không tìm thấy địa chỉ. Vui lòng thử lại với địa chỉ chi tiết hơn.");
     }
@@ -257,12 +308,11 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       alert("Vui lòng xác định vị trí của bạn trước khi xác nhận.");
       return;
     }
-    // Truyền đúng chữ ký: (address, coords, distance)
     onConfirm(userAddress, userCoords, distance);
   }, [userCoords, userAddress, distance, onConfirm]);
 
   // Map center fallback
-  const mapCenter = vehicleCoords || userCoords || PLACEHOLDER_COORDS;
+  const mapCenter = userCoords || vehicleCoords || PLACEHOLDER_COORDS;
 
   return (
     <div className="space-y-4">
@@ -281,20 +331,35 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
         {vehicleAddress || "Không xác định được vị trí"}
       </div>
 
-      {/* Address Input */}
-      <div className="space-y-2">
+      {/* Address Input with Suggestions */}
+      <div className="space-y-2 relative">
         <label className="block text-sm font-medium text-gray-700">
           Nhập địa chỉ của bạn:
         </label>
         <div className="flex gap-2">
-          <input
-            type="text"
-            className="flex-1 border rounded-md px-3 py-2 text-sm"
-            placeholder="Ví dụ: K34/36 Lê Hữu Trác, An Hải Đông, Sơn Trà, Đà Nẵng"
-            value={addressInput}
-            onChange={(e) => setAddressInput(e.target.value)}
-            disabled={isGeocoding}
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              placeholder="Ví dụ: K34/36 Lê Hữu Trác, An Hải Đông, Sơn Trà, Đà Nẵng"
+              value={addressInput}
+              onChange={(e) => setAddressInput(e.target.value)}
+              disabled={isGeocoding}
+            />
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                {suggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                  >
+                    {suggestion.display_name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button
             onClick={handleManualAddress}
             className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-green-400"
