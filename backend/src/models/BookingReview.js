@@ -29,12 +29,6 @@ const BookingReview = sequelize.define(
       },
     },
 
-    // Tiêu đề đánh giá
-    review_title: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-
     // Nội dung đánh giá
     review_content: {
       type: DataTypes.TEXT,
