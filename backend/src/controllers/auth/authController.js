@@ -585,6 +585,7 @@ export const verifyUpdatedEmail = async (req, res) => {
         user.verifyEmailToken = null; // delete token
         user.email_verified = true;
         user.email = updatedEmail
+        user.updatedEmail = ''
         await user.save();
 
         // 5. Create cookie 

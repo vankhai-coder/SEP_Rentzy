@@ -22,10 +22,15 @@ const initialState = {
   is2FaceMatchError: '',
   is2FaceMatchLoading: '',
 
-  // update new email : 
+  // request send update new email : 
   isSendUpdateEmailSuccess: false,
   isLoadingSendUpdateEmail: false,
-  errorWhenSendUpdateEmail: ''
+  errorWhenSendUpdateEmail: '',
+
+  // verify updated email : 
+  isVerifyUpdatedEmailSuccess: false,
+  isVerifyUpdatedEmailLoading: false,
+  verifyUpdatedEmailError: ''
 
 };
 
@@ -103,15 +108,36 @@ export const sendUpdateEmail = createAsyncThunk(
   }
 );
 
+// send update email request : 
+export const verifyUpdatedEmail = createAsyncThunk(
+  "auth/verifyUpdatedEmail",
+  async ({ updatedEmail, verifyEmailToken }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/api/auth/verify-updated-email",
+        { updatedEmail, verifyEmailToken }
+      );
+
+      return response.data; // backend should return { message: "..." }
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Lỗi khi cập nhật email!');
+    }
+  }
+);
+
 const userInformationSlice = createSlice({
   name: "userInformation",
   initialState,
   reducers: {
     resetUserInformationSlice: (state) => {
-      // update new email : 
+      // send request update new email : 
       state.isSendUpdateEmailSuccess = false;
       state.isLoadingSendUpdateEmail = false;
       state.errorWhenSendUpdateEmail = '';
+      // verify updated email : 
+      state.isVerifyUpdatedEmailSuccess = false;
+      state.isVerifyUpdatedEmailLoading = false;
+      state.verifyUpdatedEmailError = '';
     },
   },
   extraReducers: (builder) => {
@@ -188,6 +214,26 @@ const userInformationSlice = createSlice({
         state.isLoadingSendUpdateEmail = false;
         state.errorWhenSendUpdateEmail = action.payload
         state.isSendUpdateEmailSuccess = false
+      })
+
+      // verify updated email : 
+      // --- PENDING ---
+      .addCase(verifyUpdatedEmail.pending, (state) => {
+        state.isVerifyUpdatedEmailLoading = true;
+        state.verifyUpdatedEmailError = null;
+        state.isVerifyUpdatedEmailSuccess = null;
+      })
+      // --- FULFILLED ---
+      .addCase(verifyUpdatedEmail.fulfilled, (state) => {
+        state.isVerifyUpdatedEmailLoading = false;
+        state.verifyUpdatedEmailError = null;
+        state.isVerifyUpdatedEmailSuccess = true
+      })
+      // --- REJECTED ---
+      .addCase(verifyUpdatedEmail.rejected, (state, action) => {
+        state.isVerifyUpdatedEmailLoading = false;
+        state.verifyUpdatedEmailError = action.payload
+        state.isVerifyUpdatedEmailSuccess = false
       });
   }
 

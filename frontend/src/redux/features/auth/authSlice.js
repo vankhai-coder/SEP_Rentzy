@@ -196,6 +196,9 @@ const userSlice = createSlice({
             state.isResetPasswordSuccess = false;
             state.errorResetPassword = ''
         },
+        setEmail: (state, action) => {
+            state.email = action.payload
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -378,6 +381,6 @@ const userSlice = createSlice({
 });
 
 // Actions
-export const { setUser, resetState } = userSlice.actions;
+export const { setUser, resetState, setEmail } = userSlice.actions;
 
 export default userSlice.reducer;

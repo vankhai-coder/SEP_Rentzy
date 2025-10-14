@@ -25,6 +25,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
+import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
 const App = () => {
   return (
     <Router>
@@ -34,6 +35,7 @@ const App = () => {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/verify-updated-email" element={<VerifyUpdatedEmail />} />
 
           {/* Home : */}
           <Route path="/" element={<HomePage />} />
