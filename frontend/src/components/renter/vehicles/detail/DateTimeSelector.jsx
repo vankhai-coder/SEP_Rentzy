@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import TimePicker from 'react-time-picker';
 import { toast } from 'react-toastify';
@@ -7,7 +7,7 @@ import "react-time-picker/dist/TimePicker.css";
 import "react-toastify/dist/ReactToastify.css";
 import './DateTimeSelector.css';
 
-const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, initialEndDate, initialPickupTime, initialReturnTime }) => {
+const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, initialEndDate, initialPickupTime, initialReturnTime, vehicleId }) => {
     // Không set ngày mặc định nếu không có initialStartDate/initialEndDate
     const [startDate, setStartDate] = useState(initialStartDate ? new Date(initialStartDate) : null);
     const [endDate, setEndDate] = useState(initialEndDate ? new Date(initialEndDate) : null);
@@ -15,6 +15,54 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
     const [returnTime, setReturnTime] = useState(initialReturnTime || null);
     const [selectedPickupSlot, setSelectedPickupSlot] = useState(initialPickupTime || null);
     const [selectedReturnSlot, setSelectedReturnSlot] = useState(initialReturnTime || null);
+
+    // === MỚI: fetch lịch đã đặt từ API ===
+    const [apiBookedDates, setApiBookedDates] = useState([]);
+
+    // Chuẩn hóa dữ liệu booking từ API về format dùng trong component
+    const normalizeBookings = (data) => {
+        return data.map(b => {
+            const startDate = b.startDate || b.start_date;
+            const endDate = b.endDate || b.end_date;
+            const pickupTimeRaw = b.pickupTime || b.start_time;
+            const returnTimeRaw = b.returnTime || b.end_time;
+
+            const pickupTime = pickupTimeRaw ? pickupTimeRaw.slice(0, 5) : '00:00';
+            const returnTime = returnTimeRaw ? returnTimeRaw.slice(0, 5) : '23:00';
+
+            const startDateTime = startDate && pickupTime ? new Date(`${startDate}T${pickupTime}:00`) : null;
+            const endDateTime = endDate && returnTime ? new Date(`${endDate}T${returnTime}:00`) : null;
+
+            return { startDate, endDate, pickupTime, returnTime, startDateTime, endDateTime };
+        });
+    };
+
+    useEffect(() => {
+        const endpoint = vehicleId
+            ? `/api/renter/booking/${vehicleId}`
+            : 'http://localhost:3000/api/renter/booking/4'; // fallback theo yêu cầu
+
+        const fetchBookedDates = async () => {
+            try {
+                const res = await fetch(endpoint);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+
+                // Hỗ trợ cả trường hợp API trả mảng trực tiếp, hoặc trong json.data
+                const raw = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+                const normalized = normalizeBookings(raw);
+
+                setApiBookedDates(normalized);
+            } catch (err) {
+                console.error('Lỗi tải ngày đã đặt:', err);
+            }
+        };
+
+        fetchBookedDates();
+    }, [vehicleId]);
+
+    // Dùng dữ liệu từ props nếu có, ngược lại dùng dữ liệu từ API
+    const effectiveBookedDates = (bookedDates && bookedDates.length > 0) ? bookedDates : apiBookedDates;
 
     const handleConfirm = () => {
         if (!startDate || !endDate) {
@@ -70,10 +118,10 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
             return false;
         }
 
-        if (!bookedDates || bookedDates.length === 0) return true;
+        if (!effectiveBookedDates || effectiveBookedDates.length === 0) return true;
 
         // Kiểm tra từng booking
-        for (const booking of bookedDates) {
+        for (const booking of effectiveBookedDates) {
             const bookingStart = new Date(booking.startDate);
             const bookingEnd = new Date(booking.endDate);
             
@@ -94,7 +142,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
             }
         }
         return true;
-    }, [bookedDates]);
+    }, [effectiveBookedDates]);
 
     const getDateClassName = useCallback((date) => {
         if (!isDateAvailable(date)) {
@@ -105,7 +153,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
         currentDate.setHours(0, 0, 0, 0);
 
         // Kiểm tra xem ngày này có booking nào không
-        const hasBooking = bookedDates?.some(booking => {
+        const hasBooking = effectiveBookedDates?.some(booking => {
             const bookingStart = new Date(booking.startDate);
             const bookingEnd = new Date(booking.endDate);
             return currentDate >= bookingStart && currentDate <= bookingEnd;
@@ -116,21 +164,21 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
         }
 
         return '';
-    }, [bookedDates, isDateAvailable]);
+    }, [effectiveBookedDates, isDateAvailable]);
 
     // Thêm hàm để lấy thông tin booking cho một ngày cụ thể
     const getBookingInfoForDate = useCallback((date) => {
-        if (!bookedDates || bookedDates.length === 0) return null;
+        if (!effectiveBookedDates || effectiveBookedDates.length === 0) return null;
 
         const currentDate = new Date(date);
         currentDate.setHours(0, 0, 0, 0);
 
-        return bookedDates.find(booking => {
+        return effectiveBookedDates.find(booking => {
             const bookingStart = new Date(booking.startDate);
             const bookingEnd = new Date(booking.endDate);
             return currentDate >= bookingStart && currentDate <= bookingEnd;
         });
-    }, [bookedDates]);
+    }, [effectiveBookedDates]);
 
     // Thêm component để hiển thị thông tin booking
     const BookingInfo = ({ date }) => {
@@ -147,7 +195,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
     };
 
     const isHourBooked = useCallback((hour, date) => {
-        if (!bookedDates || bookedDates.length === 0) return false;
+        if (!effectiveBookedDates || effectiveBookedDates.length === 0) return false;
         if (!date) return false;
 
         const selectedDateTime = new Date(date);
@@ -164,7 +212,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
         const totalOffset = vietnamOffset + localOffset;
         selectedDateTime.setMinutes(selectedDateTime.getMinutes() + totalOffset);
 
-        return bookedDates.some(booking => {
+        return effectiveBookedDates.some(booking => {
             const startDateTime = new Date(booking.startDateTime);
             const endDateTime = new Date(booking.endDateTime);
 
@@ -177,7 +225,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
 
             return selectedDateTime >= startDateTime && selectedDateTime < endDateTime;
         });
-    }, [bookedDates]);
+    }, [effectiveBookedDates]);
 
     const getAvailableHours = useCallback((date) => {
         if (!date) return [];
@@ -203,9 +251,9 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
     }, [isDateAvailable]);
 
     const getHighlightDates = useCallback(() => {
-        if (!bookedDates || bookedDates.length === 0) return [];
+        if (!effectiveBookedDates || effectiveBookedDates.length === 0) return [];
 
-        const highlight = bookedDates.map(booking => {
+        const highlight = effectiveBookedDates.map(booking => {
             const start = new Date(booking.startDateTime);
             const end = new Date(booking.endDateTime);
 
@@ -225,7 +273,7 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
                 "react-datepicker__day--highlighted-custom": highlight
             }
         ];
-    }, [bookedDates]);
+    }, [effectiveBookedDates]);
 
     const handleDateChange = (type, date) => {
         if (!date) {
@@ -470,17 +518,14 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
                     <div className="rental-summary">
                         <div className="summary-item">
                             <span className="summary-label">Thời gian nhận xe</span>
-                            <span className="summary-value">05:00-22:00</span>
+                            <span className="summary-value">{formatDisplayTime(startDate, pickupTime)}</span>
                         </div>
                         <div className="summary-item">
                             <span className="summary-label">Thời gian trả xe</span>
-                            <span className="summary-value">05:00-22:00</span>
+                            <span className="summary-value">{formatDisplayTime(endDate, returnTime)}</span>
                         </div>
                         <div className="summary-divider"></div>
                         <div className="rental-duration">
-                            <div className="duration-text">
-                                {formatDisplayTime(startDate, pickupTime)} - {formatDisplayTime(endDate, returnTime)}
-                            </div>
                             <div className="duration-info">
                                 <span className="duration-label">Thời gian thuê:</span>
                                 <span className="duration-value">{calculateRentalDays()} ngày</span>

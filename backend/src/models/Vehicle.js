@@ -56,6 +56,14 @@ const Vehicle = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    latitude: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+    },
 
     // Car fields
     transmission: {

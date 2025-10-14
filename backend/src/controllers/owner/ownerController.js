@@ -2,13 +2,39 @@ import Vehicle from "../../models/Vehicle.js";
 import Brand from "../../models/Brand.js";
 import User from "../../models/User.js";
 import { Op } from "sequelize";
+import axios from "axios";
 
+export const geocodeLocation = async (address) => {
+  try {
+    console.log("geocodeLocation - address:", address);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+      address
+    )}&format=json&limit=1`;
+    const res = await axios.get(url);
+    if (res.data && res.data.length > 0) {
+      return {
+        lat: parseFloat(res.data[0].lat),
+        lon: parseFloat(res.data[0].lon),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Geocode error:", error.message);
+    return null;
+  }
+};
 // GET /api/owner/vehicles - Lấy danh sách xe của owner
 export const getOwnerVehicles = async (req, res) => {
   try {
-    const { search, sortBy = "created_at", sortOrder = "DESC", page = 1, limit = 10 } = req.query;
+    const {
+      search,
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      page = 1,
+      limit = 10,
+    } = req.query;
     const ownerId = req.user.userId;
-    
+
     console.log("getOwnerVehicles - ownerId:", ownerId);
     console.log("getOwnerVehicles - req.user:", req.user);
 
@@ -17,14 +43,14 @@ export const getOwnerVehicles = async (req, res) => {
 
     // Tạo điều kiện tìm kiếm
     let whereCondition = { owner_id: ownerId };
-    
+
     if (search) {
       whereCondition = {
         ...whereCondition,
         [Op.or]: [
           { model: { [Op.like]: `%${search}%` } },
-          { location: { [Op.like]: `%${search}%` } }
-        ]
+          { location: { [Op.like]: `%${search}%` } },
+        ],
       };
     }
 
@@ -35,19 +61,19 @@ export const getOwnerVehicles = async (req, res) => {
         {
           model: Brand,
           as: "brand",
-          attributes: ["brand_id", "name", "logo_url"]
+          attributes: ["brand_id", "name", "logo_url"],
         },
         {
           model: User,
           as: "owner",
           attributes: ["user_id", "full_name", "email"],
-          where: { user_id: ownerId } // Đảm bảo chỉ lấy xe của người dùng hiện tại
-        }
+          where: { user_id: ownerId }, // Đảm bảo chỉ lấy xe của người dùng hiện tại
+        },
       ],
       order: [[sortBy, sortOrder.toUpperCase()]],
       limit: parseInt(limit),
       offset: parseInt(offset),
-      distinct: true
+      distinct: true,
     });
 
     // Tính toán thông tin phân trang
@@ -61,16 +87,16 @@ export const getOwnerVehicles = async (req, res) => {
           currentPage: parseInt(page),
           totalPages,
           totalItems: count,
-          itemsPerPage: parseInt(limit)
-        }
-      }
+          itemsPerPage: parseInt(limit),
+        },
+      },
     });
   } catch (error) {
     console.error("Error getting owner vehicles:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy danh sách xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -79,7 +105,7 @@ export const getOwnerVehicles = async (req, res) => {
 export const getOwnerVehicleStats = async (req, res) => {
   try {
     const ownerId = req.user.userId;
-    
+
     console.log("getOwnerVehicleStats - ownerId:", ownerId);
     console.log("getOwnerVehicleStats - req.user:", req.user);
 
@@ -88,20 +114,23 @@ export const getOwnerVehicleStats = async (req, res) => {
       attributes: [
         "status",
         "approvalStatus",
-        [Vehicle.sequelize.fn("COUNT", Vehicle.sequelize.col("vehicle_id")), "count"]
+        [
+          Vehicle.sequelize.fn("COUNT", Vehicle.sequelize.col("vehicle_id")),
+          "count",
+        ],
       ],
       group: ["status", "approvalStatus"],
-      raw: true
+      raw: true,
     });
 
     // Tính tổng số xe
     const totalVehicles = await Vehicle.count({
-      where: { owner_id: ownerId }
+      where: { owner_id: ownerId },
     });
 
     // Tính tổng lượt thuê
     const totalRentals = await Vehicle.sum("rent_count", {
-      where: { owner_id: ownerId }
+      where: { owner_id: ownerId },
     });
 
     res.json({
@@ -109,15 +138,15 @@ export const getOwnerVehicleStats = async (req, res) => {
       data: {
         totalVehicles,
         totalRentals: totalRentals || 0,
-        statusBreakdown: stats
-      }
+        statusBreakdown: stats,
+      },
     });
   } catch (error) {
     console.error("Error getting vehicle stats:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy thống kê xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -129,36 +158,36 @@ export const getOwnerVehicleById = async (req, res) => {
     const ownerId = req.user.userId;
 
     const vehicle = await Vehicle.findOne({
-      where: { 
+      where: {
         vehicle_id: id,
-        owner_id: ownerId 
+        owner_id: ownerId,
       },
       include: [
         {
           model: Brand,
           as: "brand",
-          attributes: ["brand_id", "name", "logo_url", "country"]
-        }
-      ]
+          attributes: ["brand_id", "name", "logo_url", "country"],
+        },
+      ],
     });
 
     if (!vehicle) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy xe"
+        message: "Không tìm thấy xe",
       });
     }
 
     res.json({
       success: true,
-      data: vehicle
+      data: vehicle,
     });
   } catch (error) {
     console.error("Error getting vehicle by id:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy thông tin xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -167,12 +196,21 @@ export const getOwnerVehicleById = async (req, res) => {
 export const createVehicle = async (req, res) => {
   try {
     const ownerId = req.user.userId;
-    const vehicleData = {
+    let vehicleData = {
       ...req.body,
       owner_id: ownerId,
       approvalStatus: "pending", // Mặc định chờ duyệt
-      status: "available"
+      status: "available",
     };
+
+    // Geocode location nếu có
+    if (vehicleData.location) {
+      const geocodeResult = await geocodeLocation(vehicleData.location);
+      if (geocodeResult) {
+        vehicleData.latitude = geocodeResult.lat;
+        vehicleData.longitude = geocodeResult.lon;
+      }
+    }
 
     const vehicle = await Vehicle.create(vehicleData);
 
@@ -182,22 +220,22 @@ export const createVehicle = async (req, res) => {
         {
           model: Brand,
           as: "brand",
-          attributes: ["brand_id", "name", "logo_url"]
-        }
-      ]
+          attributes: ["brand_id", "name", "logo_url"],
+        },
+      ],
     });
 
     res.status(201).json({
       success: true,
       message: "Thêm xe thành công",
-      data: vehicleWithBrand
+      data: vehicleWithBrand,
     });
   } catch (error) {
     console.error("Error creating vehicle:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi thêm xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -210,16 +248,16 @@ export const updateVehicle = async (req, res) => {
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
-      where: { 
+      where: {
         vehicle_id: id,
-        owner_id: ownerId 
-      }
+        owner_id: ownerId,
+      },
     });
 
     if (!vehicle) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy xe"
+        message: "Không tìm thấy xe",
       });
     }
 
@@ -232,22 +270,22 @@ export const updateVehicle = async (req, res) => {
         {
           model: Brand,
           as: "brand",
-          attributes: ["brand_id", "name", "logo_url"]
-        }
-      ]
+          attributes: ["brand_id", "name", "logo_url"],
+        },
+      ],
     });
 
     res.json({
       success: true,
       message: "Cập nhật xe thành công",
-      data: updatedVehicle
+      data: updatedVehicle,
     });
   } catch (error) {
     console.error("Error updating vehicle:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi cập nhật xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -261,16 +299,16 @@ export const updateVehicleStatus = async (req, res) => {
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
-      where: { 
+      where: {
         vehicle_id: id,
-        owner_id: ownerId 
-      }
+        owner_id: ownerId,
+      },
     });
 
     if (!vehicle) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy xe"
+        message: "Không tìm thấy xe",
       });
     }
 
@@ -280,14 +318,14 @@ export const updateVehicleStatus = async (req, res) => {
     res.json({
       success: true,
       message: `Xe đã được ${status === "blocked" ? "khóa" : "mở khóa"}`,
-      data: { vehicle_id: id, status }
+      data: { vehicle_id: id, status },
     });
   } catch (error) {
     console.error("Error updating vehicle status:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi cập nhật trạng thái xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -300,16 +338,16 @@ export const deleteVehicle = async (req, res) => {
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
-      where: { 
+      where: {
         vehicle_id: id,
-        owner_id: ownerId 
-      }
+        owner_id: ownerId,
+      },
     });
 
     if (!vehicle) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy xe"
+        message: "Không tìm thấy xe",
       });
     }
 
@@ -318,17 +356,14 @@ export const deleteVehicle = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Xóa xe thành công"
+      message: "Xóa xe thành công",
     });
   } catch (error) {
     console.error("Error deleting vehicle:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi xóa xe",
-      error: error.message
+      error: error.message,
     });
   }
 };
-
-
-

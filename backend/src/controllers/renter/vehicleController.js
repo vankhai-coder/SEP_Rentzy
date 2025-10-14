@@ -1,5 +1,7 @@
 import Vehicle from "../../models/Vehicle.js";
 import User from "../../models/User.js";
+import Booking from "../../models/Booking.js";
+import BookingReview from "../../models/BookingReview.js";
 
 // Lấy tất cả vehicles (filter theo type: car/motorbike)
 export const getAllVehicles = async (req, res) => {
@@ -27,7 +29,6 @@ export const getVehicleById = async (req, res) => {
     const vehicle = await Vehicle.findByPk(id);
     console.log(vehicle);
     const owner = await User.findByPk(vehicle.owner_id);
-    console.log(owner);
 
     if (!vehicle) {
       return res
@@ -37,14 +38,17 @@ export const getVehicleById = async (req, res) => {
 
     // Parse JSON strings to arrays
     const vehicleData = vehicle.toJSON();
-    if (vehicleData.extra_images && typeof vehicleData.extra_images === 'string') {
+    if (
+      vehicleData.extra_images &&
+      typeof vehicleData.extra_images === "string"
+    ) {
       try {
         vehicleData.extra_images = JSON.parse(vehicleData.extra_images);
       } catch (e) {
         vehicleData.extra_images = [];
       }
     }
-    if (vehicleData.features && typeof vehicleData.features === 'string') {
+    if (vehicleData.features && typeof vehicleData.features === "string") {
       try {
         vehicleData.features = JSON.parse(vehicleData.features);
       } catch (e) {
@@ -54,6 +58,56 @@ export const getVehicleById = async (req, res) => {
 
     // Include owner data in vehicle object
     vehicleData.owner = owner;
+
+    // === LẤY CÁC ĐÁNH GIÁ VỀ CHỦ XE (chỉ số sao + nội dung + người thuê) ===
+    const ownerId = vehicle.owner_id;
+    const reviews = await BookingReview.findAll({
+      attributes: ["review_id", "rating", "review_title", "review_content", "created_at"],
+      include: [
+        {
+          model: Booking,
+          as: "booking",
+          attributes: ["renter_id"], // tối giản
+          include: [
+            {
+              model: Vehicle,
+              attributes: [],            // không cần trả dữ liệu xe
+              where: { owner_id: ownerId },
+              required: true,
+            },
+            {
+              model: User,
+              as: "renter",
+              attributes: ["user_id", "full_name", "avatar_url"],
+            },
+          ],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+    });
+
+    vehicleData.owner_comments = reviews.map((r) => ({
+      review_id: r.review_id,
+      rating: r.rating,
+      comment: r.review_content ?? r.review_title ?? "",
+      created_at: r.created_at,
+      renter: r.booking?.renter
+        ? {
+            user_id: r.booking.renter.user_id,
+            full_name: r.booking.renter.full_name,
+            avatar_url: r.booking.renter.avatar_url,
+          }
+        : null,
+    }));
+
+    // Tóm tắt điểm trung bình và số lượng đánh giá để FE hiển thị nhanh
+    const ratings = vehicleData.owner_comments
+      .map((rv) => Number(rv.rating) || 0)
+      .filter((n) => !Number.isNaN(n));
+    vehicleData.owner_rating_summary = {
+      average: ratings.length ? Number((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)) : 0,
+      count: ratings.length,
+    };
 
     res.json({ success: true, data: vehicleData });
   } catch (error) {
