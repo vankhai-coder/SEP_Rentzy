@@ -29,8 +29,8 @@ export const verifyJWTToken = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'User not found or is banned!' });
     }
 
-    // 4. Save decoded data to req.user
-    req.user = decoded;
+    // 4. Save decoded data to req.user (thêm points)
+    req.user = { ...decoded, points: existUser.points };
 
     // 5. Continue to next middleware
     next();

@@ -19,6 +19,9 @@ import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
 // booking route
 import BookingRoute from "./routes/booking/bookingRoute.js";
 
+// voucher route
+import VoucherRoute from "./routes/renter/voucherRoute.js";
+
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
@@ -61,6 +64,9 @@ app.use("/api/renter/booking", BookingRoute);
 app.use("/api/owner", OwnerVehicleRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 
+// voucher route
+app.use("/api/renter/vouchers", VoucherRoute);
+
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
@@ -68,7 +74,7 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({ alter: true });
+    await db.sequelize.sync({ alter: false });
     console.log("✅ All models synced!");
   } catch (err) {
     console.error("❌ Error syncing models:", err);
