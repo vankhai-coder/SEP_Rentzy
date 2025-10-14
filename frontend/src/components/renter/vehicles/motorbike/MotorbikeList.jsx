@@ -1,9 +1,13 @@
 import { Bike, Gauge, Fuel } from "lucide-react";
 import VehicleCard from "../VehicleCard";
 
-const MotorbikeList = ({ bikes }) => {
+const MotorbikeList = ({ bikes = [] }) => {
+  if (!bikes.length) {
+    return <p className="text-gray-500">Không có xe máy nào được tìm thấy.</p>;
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {bikes.map((bike) => (
         <VehicleCard
           key={bike.vehicle_id}

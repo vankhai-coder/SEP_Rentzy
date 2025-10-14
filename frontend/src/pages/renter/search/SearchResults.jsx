@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { searchVehicles } from "../../../redux/features/renter/vehicles/vehicleSlice";
 import SearchForm from "../../../components/renter/search/SearchForm";
-import FilterBar from "../../../components/renter/search/FilterSidebar";
+import FilterBar from "../../../components/renter/search/FilterSidebar"; // FIX: Đổi tên import nếu cần (trước là FilterSidebar?)
 import VehicleCard from "../../../components/renter/vehicles/VehicleCard";
 import { Calendar, MapPin, AlertCircle } from "lucide-react";
 
@@ -29,22 +29,31 @@ const SearchResults = ({ type }) => {
       });
   }, [dispatch, type, paramsKey]);
 
+  // FIX: Helper để clean params - Loại keys với value undefined/null/empty (bao gồm khi clear explicit)
+  const cleanParams = useCallback((dirtyParams) => {
+    return Object.fromEntries(
+      Object.entries(dirtyParams).filter(
+        ([, value]) => value !== undefined && value !== null && value !== ""
+      )
+    );
+  }, []);
+
   const handleSearch = useCallback(
     (formData) => {
       console.log("🔍 SEARCH FORM DATA:", formData);
-      const newParams = { ...params, ...formData };
+      const newParams = cleanParams({ ...params, ...formData }); // FIX: Clean trước merge
       setSearchParams(newParams);
     },
-    [params, setSearchParams]
+    [params, setSearchParams, cleanParams]
   );
 
   const handleFilterChange = useCallback(
     (filters) => {
       console.log("🎚️ FILTER CHANGED:", filters);
-      const newParams = { ...params, ...filters };
+      const newParams = cleanParams({ ...params, ...filters }); // FIX: Clean để tránh "undefined" và clear explicit (như brand_id: undefined)
       setSearchParams(newParams);
     },
-    [params, setSearchParams]
+    [params, setSearchParams, cleanParams]
   );
 
   const renderVehicleList = () => {
@@ -104,6 +113,7 @@ const SearchResults = ({ type }) => {
         <FilterBar
           type={type}
           brands={brands}
+          initialValues={params}
           onFilterChange={handleFilterChange}
         />
       </section>
