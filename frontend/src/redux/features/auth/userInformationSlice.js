@@ -70,17 +70,22 @@ export const verifyDriverLicense = createAsyncThunk(
 // check 2 image match (from one person)
 export const check2FaceMatch = createAsyncThunk(
   "faceMatch/check2FaceMatch",
-  async ({ image_1, image_2 }, { rejectWithValue }) => {
+  async ({ image_1, image_2, driverLicenseName, driverLicenseDob, driverLicenseNumber }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       formData.append("image_1", image_1);
       formData.append("image_2", image_2);
 
       const response = await axiosInstance.post(
-        "/api/renter/info/check-2-face-match",
+        `/api/renter/info/check-2-face-match`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
+          params: {
+            driverLicenseName,
+            driverLicenseDob,
+            driverLicenseNumber,
+          },
         }
       );
 

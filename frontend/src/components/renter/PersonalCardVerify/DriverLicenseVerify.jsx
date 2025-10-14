@@ -103,7 +103,7 @@ const DriverLicenseVerify = () => {
         formData.append("image", blob, "face.jpg");
 
         try {
-            await dispatch(check2FaceMatch({ image_1: file, image_2: blob }))
+            await dispatch(check2FaceMatch({ image_1: file, image_2: blob, driverLicenseNumber, driverLicenseDob, driverLicenseName }))
         } catch (err) {
             console.log('error ', err.message)
         }

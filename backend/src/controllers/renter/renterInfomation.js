@@ -3,6 +3,7 @@ import axios from 'axios'
 import FormData from "form-data";
 import s3, { getTemporaryImageUrl } from '../../utils/aws/s3.js';
 import User from '../../models/User.js';
+import { decryptWithSecret, encryptWithSecret } from '../../utils/cryptoUtil.js'
 
 export const verifyDriverLicenseCard = async (req, res) => {
     try {
@@ -102,6 +103,15 @@ export const check2FaceMatch = async (req, res) => {
             }
         });
 
+        const { driverLicenseName, driverLicenseDob, driverLicenseNumber } = req.query;
+        // Check if any parameter is missing
+        if (!driverLicenseName || !driverLicenseDob || !driverLicenseNumber) {
+            return res.status(400).json({
+                error: true,
+                message: "Missing required query parameters: driverLicenseName, driverLicenseDob, driverLicenseNumber",
+            });
+        }
+
         if (!user) {
             return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
         }
@@ -165,7 +175,10 @@ export const check2FaceMatch = async (req, res) => {
         // save fileName to db : 
         user.driver_license_image_url = fileName
         user.driver_license_status = 'approved'
-        // FIXME : do i need to save other field?
+        // hash and save other field : 
+        user.driver_license_number = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
+        user.driver_license_name = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
+        user.driver_license_dob = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
 
         await user.save()
 

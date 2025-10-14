@@ -43,14 +43,14 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "renter",
     },
-    driver_license_number: {
-      type: DataTypes.STRING(50),
+    driver_license_number: {  // will be hashed
+      type: DataTypes.TEXT,
     },
-    driver_license_name: {
-      type: DataTypes.STRING(100),
+    driver_license_name: { // will be hashed
+      type: DataTypes.TEXT,
     },
-    driver_license_dob: {
-      type: DataTypes.DATEONLY,
+    driver_license_dob: { // will be hashed
+      type: DataTypes.TEXT,
     },
     driver_license_image_url: { // store key to aws s3 
       type: DataTypes.STRING(255),
@@ -100,10 +100,10 @@ const User = sequelize.define(
     },
     verifyEmailToken: {
       type: DataTypes.STRING,
-    } ,
+    },
     updatedEmail: {
       type: DataTypes.STRING,
-      unique : true
+      unique: true
     }
   },
   {
