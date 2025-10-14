@@ -1,9 +1,13 @@
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import axios from 'axios'
 import FormData from "form-data";
+import s3, { getTemporaryImageUrl } from '../../utils/aws/s3.js';
+import User from '../../models/User.js';
 
 export const verifyDriverLicenseCard = async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({message : 'No file send!'});
+
+        if (!req.file) return res.status(400).json({ message: 'No file send!' });
 
         //  Create form-data to send image correctly
         const formData = new FormData();
@@ -33,7 +37,9 @@ export const verifyDriverLicenseCard = async (req, res) => {
         }
 
         // if success : 
-        console.log(" FPT.AI Response:", response.data);
+        console.log(" FPT.AI Response success :", response.data);
+
+
 
         return res.json(response.data);
 
@@ -89,6 +95,17 @@ export const verifyIdentityCard = async (req, res) => {
 
 export const check2FaceMatch = async (req, res) => {
     try {
+        // check if user exist : 
+        const user = await User.findOne({
+            where: {
+                user_id: req.user?.userId
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
         if (!req.files) {
             return res.status(400).json({ message: "No files were uploaded!" });
         }
@@ -110,8 +127,6 @@ export const check2FaceMatch = async (req, res) => {
             contentType: image_2.mimetype,
         });
 
-
-
         // send to FPT AI to check if 2 image is come from same person : 
         const response = await axios.post(
             "https://api.fpt.ai/dmp/checkface/v1",
@@ -123,6 +138,36 @@ export const check2FaceMatch = async (req, res) => {
                 },
             }
         );
+
+        // save image to aws s3 server : 
+        // Generate unique file name
+        const fileName = `driver-licenses/${Date.now()}-${image_1.originalname}`;
+
+        const uploadParams = {
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: fileName,
+            Body: image_1.buffer,
+            ContentType: image_1.mimetype,
+            ACL: "private", // keep it private
+        };
+
+        try {
+            await s3.send(new PutObjectCommand(uploadParams));
+
+            // Create a short-lived signed URL :
+            // const imageUrl = await getTemporaryImageUrl(fileName)
+            // console.log("Uploaded to S3:", imageUrl);
+
+        } catch (err) {
+            console.error("Error uploading to S3:", err);
+            return res.status(500).json({ message: "Upload to S3 failed" });
+        }
+        // save fileName to db : 
+        user.driver_license_image_url = fileName
+        user.driver_license_status = 'approved'
+        // FIXME : do i need to save other field?
+
+        await user.save()
 
         // return to client : 
         return res.status(200).json(response.data)

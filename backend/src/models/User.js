@@ -52,7 +52,7 @@ const User = sequelize.define(
     driver_license_dob: {
       type: DataTypes.DATEONLY,
     },
-    driver_license_image_url: {
+    driver_license_image_url: { // store key to aws s3 
       type: DataTypes.STRING(255),
     },
     driver_license_status: {
