@@ -66,6 +66,7 @@ const Booking = sequelize.define(
       type: DataTypes.ENUM(
         "pending", // Chờ xác nhận
         "deposit_paid", // Đã đặt cọc
+        "rental_paid", // Đã thanh toán toàn bộ
         "confirmed", // Đã xác nhận
         "in_progress", // Đang thuê
         "completed", // Hoàn thành

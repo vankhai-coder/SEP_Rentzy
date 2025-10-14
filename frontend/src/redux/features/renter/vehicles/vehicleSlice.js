@@ -35,6 +35,24 @@ export const fetchVehicleById = createAsyncThunk(
   }
 );
 
+// Async thunk để search vehicles theo nhiều tiêu chí (type + params từ URL)
+export const searchVehicles = createAsyncThunk(
+  "vehicles/searchVehicles",
+  async ({ type, params }, { rejectWithValue }) => {
+    try {
+      const query = new URLSearchParams({ ...(params || {}), type }).toString();
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?${query}`
+      );
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Error searching vehicles"
+      );
+    }
+  }
+);
+
 const vehicleSlice = createSlice({
   name: "vehicles",
   initialState: {
@@ -44,6 +62,10 @@ const vehicleSlice = createSlice({
     detailLoading: false,
     error: null,
     detailError: null,
+    // thêm state cho kết quả tìm kiếm
+    searchVehicles: [],
+    searchLoading: false,
+    searchError: null,
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -71,6 +93,18 @@ const vehicleSlice = createSlice({
       .addCase(fetchVehicleById.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload;
+      })
+      .addCase(searchVehicles.pending, (state) => {
+        state.searchLoading = true;
+        state.searchError = null;
+      })
+      .addCase(searchVehicles.fulfilled, (state, action) => {
+        state.searchLoading = false;
+        state.searchVehicles = action.payload;
+      })
+      .addCase(searchVehicles.rejected, (state, action) => {
+        state.searchLoading = false;
+        state.searchError = action.payload;
       });
   },
 });

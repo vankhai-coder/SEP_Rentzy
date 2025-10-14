@@ -48,9 +48,6 @@ Thumbs.db
 coverage/
 *.lcov
 
-# Database files
-rentzyMain.sql
-
 # Misc
 *.tgz
 *.zip
