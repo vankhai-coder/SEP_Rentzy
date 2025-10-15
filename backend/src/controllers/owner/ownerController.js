@@ -235,7 +235,9 @@ export const createVehicle = async (req, res) => {
       transmission,
       seats,
       engine_capacity,
-      fuel_consumption
+      fuel_consumption,
+      latitude,
+      longitude,
     } = req.body;
 
     // Handle image uploads
@@ -274,6 +276,9 @@ export const createVehicle = async (req, res) => {
       owner_id: ownerId,
       approvalStatus: "pending", // Mặc định chờ duyệt
       status: "available",
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      extra_images: JSON.stringify(additional_images)
     };
 
     // Xử lý brand: nếu gửi tên brand thì tìm brand_id
@@ -281,7 +286,7 @@ export const createVehicle = async (req, res) => {
       const existingBrand = await Brand.findOne({
         where: {
           name: {
-            [Op.iLike]: `%${brand}%`
+            [Op.like]: `%${brand}%`
           }
         }
       });
