@@ -50,7 +50,7 @@ export const getOwnerVehicles = async (req, res) => {
         ...whereCondition,
         [Op.or]: [
           { model: { [Op.like]: `%${search}%` } },
-          { location: { [Op.like]: `%${search}%` } },
+          { license_plate: { [Op.like]: `%${search}%` } },
         ],
       };
     }

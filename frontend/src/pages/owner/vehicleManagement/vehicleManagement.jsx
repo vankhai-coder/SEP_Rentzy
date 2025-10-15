@@ -16,6 +16,23 @@ import {
 } from 'react-icons/md';
 import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 
+// Custom debounce hook
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -37,6 +54,9 @@ const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
 
 const navigate = useNavigate();
 
+// Use debounce for search term
+const debouncedSearchTerm = useDebounce(searchTerm, 50);
+
   // Fetch vehicles data
 const fetchVehicles = useCallback(async () => {
     try {
@@ -46,7 +66,7 @@ const fetchVehicles = useCallback(async () => {
         limit: pagination.itemsPerPage,
         sortBy,
         sortOrder,
-        ...(searchTerm && { search: searchTerm })
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
     });
 
     const response = await axiosInstance.get(`/api/owner/vehicles?${params}`);
@@ -61,7 +81,7 @@ const fetchVehicles = useCallback(async () => {
     } finally {
     setLoading(false);
     }
-}, [pagination.currentPage, pagination.itemsPerPage, sortBy, sortOrder, searchTerm]);
+}, [pagination.currentPage, pagination.itemsPerPage, sortBy, sortOrder, debouncedSearchTerm]);
 
   // Fetch vehicle stats
   const fetchStats = async () => {
@@ -80,12 +100,11 @@ const fetchVehicles = useCallback(async () => {
     fetchStats();
   }, [fetchVehicles]);
 
-  // Handle search
-  const handleSearch = (e) => {
-    e.preventDefault();
+  // Reset to first page when search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== searchTerm) return; // Only trigger when debounced value changes
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-    fetchVehicles();
-  };
+  }, [debouncedSearchTerm]);
 
   // Handle status toggle
   const handleStatusToggle = async (vehicleId, currentStatus) => {
@@ -222,7 +241,7 @@ const fetchVehicles = useCallback(async () => {
       {/* Search and Filter Bar */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+          <div className="flex-1 flex gap-2">
             <div className="relative flex-1">
               <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -233,13 +252,7 @@ const fetchVehicles = useCallback(async () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Tìm kiếm
-            </button>
-          </form>
+          </div>
 
           <div className="flex gap-2">
             <select
