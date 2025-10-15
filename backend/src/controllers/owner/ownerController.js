@@ -258,6 +258,7 @@ export const createVehicle = async (req, res) => {
       fuel_consumption,
       latitude,
       longitude,
+      features,
     } = req.body;
 
     // Handle image uploads
@@ -298,7 +299,8 @@ export const createVehicle = async (req, res) => {
       status: "available",
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
-      extra_images: JSON.stringify(additional_images)
+      extra_images: JSON.stringify(additional_images),
+      features: features ? JSON.parse(features) : null
     };
 
     // Xử lý brand: nếu gửi tên brand thì tìm brand_id
