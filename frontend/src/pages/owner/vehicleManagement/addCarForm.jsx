@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
@@ -31,6 +31,28 @@ const AddCarForm = () => {
   const [loading, setLoading] = useState(false);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  
+  // State cho danh sách brands
+  const [brands, setBrands] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+
+  // Fetch brands khi component mount
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoadingBrands(true);
+        const response = await axiosInstance.get('/api/owner/brands/category/car');
+        setBrands(response.data);
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        toast.error('Không thể tải danh sách thương hiệu');
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+
+    fetchBrands();
+  }, []);
 
   // Auto location function
   const getCurrentLocation = async () => {
@@ -203,13 +225,32 @@ const AddCarForm = () => {
         }
       });
 
-      if (response.data.success) {
+      // Kiểm tra cả status code và success field
+      if (response.status === 201 && response.data.success) {
         toast.success('Đăng xe thành công!');
         navigate('/owner/vehicle-management');
+      } else {
+        // Nếu có response nhưng không thành công
+        toast.error(response.data.message || 'Lỗi khi đăng xe. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error('Lỗi khi đăng xe. Vui lòng thử lại.');
+      
+      // Xử lý lỗi chi tiết hơn
+      if (error.response) {
+        // Server trả về response với error status
+        const errorMessage = error.response.data?.message || 'Lỗi từ server';
+        toast.error(errorMessage);
+        console.error('Server error:', error.response.data);
+      } else if (error.request) {
+        // Request được gửi nhưng không nhận được response
+        toast.error('Không thể kết nối đến server. Vui lòng thử lại.');
+        console.error('Network error:', error.request);
+      } else {
+        // Lỗi khác
+        toast.error('Lỗi khi đăng xe. Vui lòng thử lại.');
+        console.error('Error:', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -237,15 +278,26 @@ const AddCarForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Thương hiệu *
                 </label>
-                <input
-                  type="text"
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                  placeholder="VD: Toyota, Kia, Ford..."
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                {loadingBrands ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                    Đang tải danh sách thương hiệu...
+                  </div>
+                ) : (
+                  <select
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">-- Chọn thương hiệu --</option>
+                    {brands.map((brand) => (
+                      <option key={brand.brand_id} value={brand.name}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -282,7 +334,19 @@ const AddCarForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Địa điểm *
                 </label>
+ 
                 
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  placeholder="VD: Hà Nội, TP.HCM, Đà Nẵng..."
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+                   
                 {/* Checkbox for auto location */}
                 <div className="flex items-center mb-3">
                   <input
@@ -304,17 +368,6 @@ const AddCarForm = () => {
                     )}
                   </label>
                 </div>
-                
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="VD: Hà Nội, TP.HCM, Đà Nẵng..."
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -323,6 +323,28 @@ export const createVehicle = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating vehicle:", error);
+    
+    // Xử lý lỗi unique constraint cho license_plate
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      if (error.errors && error.errors[0] && error.errors[0].path === 'license_plate') {
+        return res.status(400).json({
+          success: false,
+          message: "Biển số xe đã tồn tại trong hệ thống",
+          error: "DUPLICATE_LICENSE_PLATE",
+        });
+      }
+    }
+    
+    // Xử lý lỗi validation khác
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu không hợp lệ",
+        error: error.errors.map(err => err.message).join(', '),
+      });
+    }
+    
+    // Lỗi server khác
     res.status(500).json({
       success: false,
       message: "Lỗi khi thêm xe",

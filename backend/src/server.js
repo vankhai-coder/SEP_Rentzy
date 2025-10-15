@@ -24,6 +24,7 @@ import BookingRoute from "./routes/booking/bookingRoute.js";
 import VoucherRoute from "./routes/renter/voucherRoute.js";
 
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
+import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
 // init app :
@@ -63,7 +64,9 @@ app.use("/api/renter/booking-history", BookingHistoryRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
+// owner route
 app.use("/api/owner", OwnerVehicleRoute);
+app.use("/api/owner/brands", OwnerBrandRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 
 // voucher route
