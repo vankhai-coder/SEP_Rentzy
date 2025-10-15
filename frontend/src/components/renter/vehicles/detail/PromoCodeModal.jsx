@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axiosInstance from "@/api/axiosInstance";
+import axiosInstance from "@/config/axiosInstance";
 
 export default function PromoCodeModal({ onConfirm, onCancel }) {
   const [query, setQuery] = useState("");

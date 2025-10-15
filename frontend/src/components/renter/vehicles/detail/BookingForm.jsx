@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import axiosInstance from '../../../../api/axiosInstance'; // Giả sử bạn có file cấu hình axios
+import axiosInstance from '../../../../config/axiosInstance'; // Giả sử bạn có file cấu hình axios
 import DateTimeSelector from './DateTimeSelector';
 import AddressSelector from './AddressSelector';
 import PromoCodeModal from './PromoCodeModal';
