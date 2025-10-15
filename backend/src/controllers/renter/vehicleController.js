@@ -71,7 +71,7 @@ export const getVehicleById = async (req, res) => {
           include: [
             {
               model: Vehicle,
-              attributes: [],            // không cần trả dữ liệu xe
+              attributes: [], // không cần trả dữ liệu xe
               where: { owner_id: ownerId },
               required: true,
             },
@@ -89,7 +89,7 @@ export const getVehicleById = async (req, res) => {
     vehicleData.owner_comments = reviews.map((r) => ({
       review_id: r.review_id,
       rating: r.rating,
-      comment: r.review_content ?? "",
+      comment: r.review_content,
       created_at: r.created_at,
       renter: r.booking?.renter
         ? {
@@ -105,7 +105,11 @@ export const getVehicleById = async (req, res) => {
       .map((rv) => Number(rv.rating) || 0)
       .filter((n) => !Number.isNaN(n));
     vehicleData.owner_rating_summary = {
-      average: ratings.length ? Number((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)) : 0,
+      average: ratings.length
+        ? Number(
+            (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+          )
+        : 0,
       count: ratings.length,
     };
 

@@ -7,20 +7,18 @@ import Voucher from "../../models/Voucher.js";
 export const getVehicleBookedDates = async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    console.log(vehicleId);
+    console.log("🔍 Vehicle ID:", vehicleId);
 
-    // Kiểm tra xe có tồn tại không
+    // 1️⃣ Kiểm tra xe có tồn tại không
     const vehicle = await Vehicle.findByPk(vehicleId);
     if (!vehicle) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy xe",
+        message: "Không tìm thấy xe.",
       });
     }
 
-    console.log("id của vehicle", vehicle.vehicle_id);
-
-    // Lấy các booking đã được xác nhận
+    // 2️⃣ Lấy các booking đang hoạt động hoặc đã được xác nhận
     const bookings = await Booking.findAll({
       where: {
         vehicle_id: vehicleId,
@@ -35,33 +33,61 @@ export const getVehicleBookedDates = async (req, res) => {
         },
       },
       attributes: ["start_date", "end_date", "start_time", "end_time"],
+      raw: true,
     });
 
-    const bookedDates = bookings.map((booking) => {
-      const startDateTime = new Date(
-        `${booking.start_date}T${booking.start_time || "00:00:00"}`
-      );
-      const endDateTime = new Date(
-        `${booking.end_date}T${booking.end_time || "23:59:59"}`
-      );
+    // 3️⃣ Xử lý ngày – giờ đặt xe
+    const bookedDates = bookings
+      .map((booking) => {
+        const { start_date, end_date, start_time, end_time } = booking;
 
-      // Thêm 1 giờ vào thời gian kết thúc như yêu cầu
-      endDateTime.setHours(endDateTime.getHours() + 1);
+        // Nếu thiếu dữ liệu ngày, bỏ qua
+        if (!start_date || !end_date) {
+          console.warn("⚠️ Bỏ qua booking do thiếu ngày:", booking);
+          return null;
+        }
 
-      return {
-        startDateTime: startDateTime.toISOString(),
-        endDateTime: endDateTime.toISOString(),
-        pickupTime: booking.start_time,
-        returnTime: booking.end_time,
-      };
-    });
+        // Tạo đối tượng Date từ start_date, end_date
+        const startDateTime = new Date(start_date);
+        const endDateTime = new Date(end_date);
 
-    res.status(200).json({
+        // Gán thêm giờ bắt đầu – kết thúc
+        if (start_time) {
+          const [h, m, s] = start_time.split(":").map(Number);
+          startDateTime.setUTCHours(h || 0, m || 0, s || 0, 0);
+        } else {
+          startDateTime.setUTCHours(0, 0, 0, 0);
+        }
+
+        if (end_time) {
+          const [h, m, s] = end_time.split(":").map(Number);
+          endDateTime.setUTCHours(h || 0, m || 0, s || 0, 0);
+        } else {
+          endDateTime.setUTCHours(23, 59, 59, 999);
+        }
+
+        // Kiểm tra hợp lệ
+        if (isNaN(startDateTime) || isNaN(endDateTime)) {
+          console.warn("⚠️ Invalid Date:", booking);
+          return null;
+        }
+
+        return {
+          startDateTime: startDateTime.toISOString(),
+          endDateTime: endDateTime.toISOString(),
+          pickupTime: start_time || "00:00:00",
+          returnTime: end_time || "23:59:59",
+        };
+      })
+      .filter(Boolean); // loại bỏ các bản ghi null
+
+    // 4️⃣ Trả kết quả
+    return res.status(200).json({
       success: true,
       bookedDates,
     });
   } catch (error) {
-    console.error("Error getting vehicle booked dates:", error);
+    console.error("❌ Error getting vehicle booked dates:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy thông tin lịch đặt xe",
@@ -70,10 +96,67 @@ export const getVehicleBookedDates = async (req, res) => {
   }
 };
 
-// Tạo booking mới
+// Helper: chuẩn hóa danh sách khoảng thời gian đã đặt theo giờ
+const buildBookedIntervals = async (vehicleId) => {
+  const bookings = await Booking.findAll({
+    where: {
+      vehicle_id: vehicleId,
+      status: {
+        [Op.in]: [
+          "pending",
+          "deposit_paid",
+          "rental_paid",
+          "accepted",
+          "in_progress",
+        ],
+      },
+    },
+    attributes: ["start_date", "end_date", "start_time", "end_time"],
+    raw: true,
+  });
+
+  return bookings
+    .map((b) => {
+      const { start_date, end_date, start_time, end_time } = b;
+      if (!start_date || !end_date) return null;
+
+      const startDateTime = new Date(start_date);
+      const endDateTime = new Date(end_date);
+
+      // Set start time (default to 00:00 if not provided)
+      if (start_time) {
+        const [h, m, s] = start_time.split(":").map(Number);
+        startDateTime.setHours(h || 0, m || 0, s || 0, 0);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+      }
+
+      // Set end time (default to 23:59:59 if not provided)
+      if (end_time) {
+        const [h, m, s] = end_time.split(":").map(Number);
+        endDateTime.setHours(h || 23, m || 59, s || 59, 999);
+      } else {
+        endDateTime.setHours(23, 59, 59, 999);
+      }
+
+      // Remove the 1-hour buffer to align with getDate API
+      // Ensure the interval matches exactly what getDate returns
+      if (isNaN(startDateTime) || isNaN(endDateTime)) return null;
+      return {
+        startDateTime,
+        endDateTime,
+        pickupTime: start_time,
+        returnTime: end_time,
+      };
+    })
+    .filter(Boolean);
+};
+
 export const createBooking = async (req, res) => {
   try {
     const renterId = req.user?.userId;
+    console.log("Renter ID:", renterId);
+    console.log("Request Body:", req.body);
     if (!renterId) {
       return res
         .status(401)
@@ -86,18 +169,21 @@ export const createBooking = async (req, res) => {
       endDate,
       startTime,
       endTime,
-      deliveryOption, // 'pickup' | 'delivery'
-      pickupAddress,  // string khi delivery
-      returnAddress,  // string khi delivery
-      deliveryFee,    // number (VND) do FE tính và gửi
+      deliveryOption,
+      pickupAddress,
+      returnAddress,
+      deliveryFee,
       voucherCode,
+      usePoints,
+      pointsToUse,
     } = req.body || {};
 
     // Validate cơ bản
-    if (!vehicle_id || !startDate || !endDate) {
+    if (!vehicle_id || !startDate || !endDate || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: "Thiếu vehicle_id hoặc thời gian thuê (startDate/endDate)",
+        message:
+          "Thiếu vehicle_id hoặc thời gian thuê (startDate/endDate/startTime/endTime)",
       });
     }
 
@@ -124,29 +210,38 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Kiểm tra trùng lịch
-    const overlappingCount = await Booking.count({
-      where: {
-        vehicle_id,
-        status: {
-          [Op.in]: [
-            "pending",
-            "deposit_paid",
-            "rental_paid",
-            "confirmed",
-            "in_progress",
-          ],
-        },
-        [Op.and]: [
-          { start_date: { [Op.lte]: end } },
-          { end_date: { [Op.gte]: start } },
-        ],
-      },
+    // Kiểm tra thời gian nhận/trả
+    const requestedStart = new Date(`${startDate}T${startTime}:00.000Z`);
+    const requestedEnd = new Date(`${endDate}T${endTime}:00.000Z`);
+    if (
+      Number.isNaN(requestedStart.getTime()) ||
+      Number.isNaN(requestedEnd.getTime()) ||
+      requestedEnd <= requestedStart
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Thời gian nhận/trả không hợp lệ",
+      });
+    }
+
+    // Kiểm tra trùng lịch theo giờ
+    const intervals = await buildBookedIntervals(vehicle_id);
+    const hasOverlap = intervals.some(({ startDateTime, endDateTime }) => {
+      // Giao khoảng: [requestedStart, requestedEnd) ∩ [startDateTime, endDateTime) ≠ ∅
+      return requestedStart < endDateTime && requestedEnd > startDateTime;
     });
-    if (overlappingCount > 0) {
+    if (hasOverlap) {
       return res.status(409).json({
         success: false,
-        message: "Xe đã có lịch trùng trong khoảng thời gian này",
+        message: "Khoảng thời gian nhận/trả xe trùng với lịch đã đặt",
+        detail: {
+          requestedStart: requestedStart.toISOString(),
+          requestedEnd: requestedEnd.toISOString(),
+          bookedIntervals: intervals.map((i) => ({
+            start: i.startDateTime.toISOString(),
+            end: i.endDateTime.toISOString(),
+          })),
+        },
       });
     }
 
@@ -156,7 +251,7 @@ export const createBooking = async (req, res) => {
     const pricePerDay = parseFloat(vehicle.price_per_day || 0);
     const total_cost = Number((total_days * pricePerDay).toFixed(2));
 
-    // Địa điểm và phí giao xe (nhận từ FE)
+    // Địa điểm và phí giao xe
     let pickup_location = vehicle.location || "";
     let return_location = vehicle.location || "";
     let delivery_fee = 0;
@@ -181,7 +276,7 @@ export const createBooking = async (req, res) => {
 
     const subtotal = total_cost + delivery_fee;
 
-    // Áp dụng voucher (nếu có)
+    // Áp dụng voucher
     let discount_amount = 0;
     let voucher_code = null;
 
@@ -237,9 +332,22 @@ export const createBooking = async (req, res) => {
       voucher_code = voucher.code;
     }
 
+    // Xử lý điểm thưởng
+    let points_used = 0;
+    if (usePoints && pointsToUse > 0) {
+      const renter = await Renter.findByPk(renterId);
+      if (!renter || renter.points < pointsToUse) {
+        return res.status(400).json({
+          success: false,
+          message: "Điểm thưởng không đủ hoặc không hợp lệ",
+        });
+      }
+      points_used = pointsToUse;
+    }
+
     const total_amount = Math.max(
       0,
-      Number((subtotal - discount_amount).toFixed(2))
+      Number((subtotal - discount_amount - points_used).toFixed(2))
     );
 
     // Lưu booking
@@ -248,8 +356,8 @@ export const createBooking = async (req, res) => {
       vehicle_id,
       start_date: start,
       end_date: end,
-      start_time: `${startTime || "09:00"}:00`,
-      end_time: `${endTime || "18:00"}:00`,
+      start_time: startTime,
+      end_time: endTime,
       total_days,
       total_cost,
       discount_amount,
@@ -257,12 +365,20 @@ export const createBooking = async (req, res) => {
       total_amount,
       total_paid: 0,
       voucher_code,
-      points_used: 0,
+      points_used,
       points_earned: 0,
       status: "pending",
       pickup_location,
       return_location,
     });
+
+    // Cập nhật điểm thưởng (nếu cần)
+    if (points_used > 0) {
+      await Renter.decrement("points", {
+        by: points_used,
+        where: { id: renterId },
+      });
+    }
 
     return res.status(201).json({
       success: true,

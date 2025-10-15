@@ -71,7 +71,7 @@ const OwnerProfile = ({ vehicle }) => {
       userAvatar: r.renter?.avatar_url || '/default_avt.jpg',
       rating: Number(r.rating) || 0,
       date: r.created_at,
-      comment: r.review_content ?? r.content ?? '',
+      comment: r.comment || '',
     }));
   }, [reviews]);
 
@@ -174,7 +174,8 @@ const OwnerProfile = ({ vehicle }) => {
                 </div>
               </div>
             </div>
-            {review.comment && <p className="text-sm text-gray-700 mt-3">{review.comment}</p>}
+      
+            {review.comment.trim() && <p className="text-sm text-gray-700 mt-3">{review.comment}</p>}
           </div>
         ))}
       </div>
