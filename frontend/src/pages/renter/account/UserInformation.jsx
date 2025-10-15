@@ -5,7 +5,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { CarIcon, MedalIcon, Pen } from "lucide-react"
+import { CarIcon, CheckCheck, MedalIcon, Pen } from "lucide-react"
 import { BiError } from "react-icons/bi"
 import {
   Dialog,
@@ -13,12 +13,49 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import UpdateEmail from "@/components/renter/PersonalInformation/UpdateEmail"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { getBasicUserInformation } from "@/redux/features/auth/userInformationSlice"
+import { toast } from "sonner"
 
 const UserInformation = () => {
 
+  // redux : 
+  const dispatch = useDispatch()
+  const {
+    points,
+    driver_class,
+    driver_license_dob,
+    avatar_url,
+    phone_number,
+    email,
+    full_name,
+    isLoadingGetBasicUserInformation,
+    errorGetBasicUserInformation,
+    date_join,
+  } = useSelector((state) => state.userInformationStore);
+
   // open updated email dialog : 
   const [open, setOpen] = useState(false)
+
+  // dispatch get basic user information: 
+  useEffect(() => {
+    dispatch(getBasicUserInformation())
+  }, [])
+
+
+  // toast if error : 
+  useEffect(() => {
+    if (errorGetBasicUserInformation) {
+      toast.error(errorGetBasicUserInformation)
+    }
+  }, [errorGetBasicUserInformation])
+
+  if (isLoadingGetBasicUserInformation) {
+    return <div
+      className="text-center mt-16"
+    >Loading...</div>
+  }
 
   return (
     <div className="flex flex-col gap-9 ">
@@ -47,13 +84,13 @@ const UserInformation = () => {
           <div className="flex flex-col items-center gap-2">
             {/* avatar : */}
             <Avatar className='size-26' >
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarImage src={avatar_url || 'https://github.com/shadcn.png'} alt="User avatar" />
+              <AvatarFallback>User Avatar</AvatarFallback>
             </Avatar>
             {/* name : */}
-            <span className="font-semibold text-lg">khai huynh</span>
+            <span className="font-semibold text-lg">{full_name || email}</span>
             {/* thoi gian tham gia : */}
-            <span className="text-sm font-normal">Tham gia : 10/9/2005</span>
+            <span className="text-sm font-normal">Tham gia : {date_join}</span>
 
             <div className="flex gap-4">
               {/* so chuyen xe : */}
@@ -65,7 +102,7 @@ const UserInformation = () => {
               {/* diem so : */}
               <div className="flex p-2 border rounded-xl gap-2">
                 <MedalIcon className="text-yellow-500" />
-                <span className="font-bold">0 điểm</span>
+                <span className="font-bold">{points} điểm</span>
               </div>
             </div>
 
@@ -77,11 +114,11 @@ const UserInformation = () => {
             <div className="bg-[#f6f6f6] rounded-2xl p-4 px-6 flex flex-col gap-4">
               <div className="flex justify-between">
                 <span className="font-light text-sm">Ngày sinh</span>
-                <span className="font-semibold">19/7/2003</span>
+                <span className="font-semibold">{driver_license_dob}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-light text-sm">Giới tính</span>
-                <span className="font-semibold">Nam</span>
+                <span className="font-light text-sm">Hạng GPLX</span>
+                <span className="font-semibold">{driver_class}</span>
               </div>
             </div>
 
@@ -90,14 +127,21 @@ const UserInformation = () => {
               {/* div ben trai  */}
               <div className="flex gap-2">
                 <span className="font-light text-sm">Số điện thoại</span>
-                <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                  <BiError />
-                  <span className="hidden sm:block">Chưa xác thực</span>
-                </div>
+                {phone_number ?
+                  <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
+                    <CheckCheck className="text-green-500" size={12} />
+                    <span className="text-xs font-normal">Đã xác thực</span>
+                  </div>
+                  :
+                  <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
+                    <BiError />
+                    <span className="hidden sm:block">Chưa xác thực</span>
+                  </div>
+                }
               </div>
               {/* div ben phai  */}
               <div className="flex items-center gap-2 ">
-                <span className="text-xs xs:text-base font-semibold">Thêm số điện thoại</span>
+                <span className="text-xs xs:text-base font-semibold">{phone_number ? phone_number : 'Thêm số điện thoại'}</span>
                 <Pen className="hover:cursor-pointer" size={16} />
               </div>
             </div>
@@ -107,14 +151,14 @@ const UserInformation = () => {
               {/* div ben trai  */}
               <div className="flex gap-2 items-center">
                 <span className="font-light text-sm">Email</span>
-                <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                  <BiError />
-                  <span className="hidden sm:block">Chưa xác thực</span>
+                <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
+                  <CheckCheck className="text-green-500" size={12} />
+                  <span className="text-xs font-normal">Đã xác thực</span>
                 </div>
               </div>
               {/* div ben phai  */}
               <div className="flex items-center gap-2 ">
-                <span className="text-xs xs:text-base font-semibold">huynhvankhai198@gmail.com</span>
+                <span className="text-xs xs:text-base font-semibold">{email}</span>
                 {/* pop up update email form : */}
                 <Dialog open={open} onOpenChange={setOpen}>
                   <DialogTrigger asChild>
@@ -137,7 +181,7 @@ const UserInformation = () => {
 
 
       {/* Verify identity card : */}
-      <IdentityCardVerify />
+      {/* <IdentityCardVerify /> */}
     </div>
   )
 }

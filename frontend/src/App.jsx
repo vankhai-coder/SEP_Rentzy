@@ -41,7 +41,9 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
-          <Route path="/" element={<Account />}>
+          <Route path="/" element={<ProtectedRoute allowRole={['renter', 'owner', 'admin']}>
+            <Account />
+          </ProtectedRoute>}>
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
             <Route path="/favorites" element={<FavoritesPage />} />

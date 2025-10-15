@@ -25,7 +25,12 @@ const DriverLicenseVerify = () => {
         is2FaceMatch,
         is2FaceMatchError,
         is2FaceMatchLoading,
-        isVerifyDriverLicenseMatchWithwebcam
+        isVerifyDriverLicenseMatchWithwebcam,
+        // for veify account that fetch data from databse : 
+        driver_license_image_url,
+        driver_license_dob,
+        driver_license_name,
+        driver_license_number,
     } = useSelector((state) => state.userInformationStore);
 
     const dispatch = useDispatch()
@@ -262,12 +267,12 @@ const DriverLicenseVerify = () => {
                 <div
                     className="relative mx-auto w-[300px] h-[150px] sm:w-[400px] sm:h-[250px] rounded-xl bg-gray-100 bg-cover bg-center border shadow"
                     style={{
-                        backgroundImage: preview ? `url(${preview})` : "none",
+                        backgroundImage: preview ? `url(${preview})` : driver_license_image_url ? `url(${driver_license_image_url})` : '',
                     }}
                 >
                 </div>
                 {/* upload button :  */}
-                <div className={is2FaceMatch ? 'hidden' : 'text-center block'} >
+                <div className={is2FaceMatch || isVerifyDriverLicenseMatchWithwebcam ? 'hidden' : 'text-center block'} >
                     <label
                         htmlFor="upload"
                         className="inline-block bg-green-500 hover:bg-green-400 text-white px-4 py-2 rounded-md cursor-pointer transition-colors"
@@ -287,7 +292,7 @@ const DriverLicenseVerify = () => {
 
                 <Button
                     onClick={verifyDL}
-                    className={is2FaceMatch ? 'hidden' : 'text-center block w-1/2  sm:w-1/4 mx-auto'}
+                    className={is2FaceMatch || isVerifyDriverLicenseMatchWithwebcam ? 'hidden' : 'text-center block w-1/2  sm:w-1/4 mx-auto'}
                 >
                     {driverLicenseLoading ? <Loader2Icon className="mx-auto animate-spin" /> : 'Xác thực ngay'}
                 </Button>
@@ -300,7 +305,7 @@ const DriverLicenseVerify = () => {
                     <Input
                         disabled
                         placeholder='Nhập số GPLX đã cấp'
-                        value={driverLicenseNumber}
+                        value={driverLicenseNumber || driver_license_number}
                         className='border-gray-500 mt-2 py-6'
 
                     />
@@ -311,7 +316,7 @@ const DriverLicenseVerify = () => {
                     <Input
                         disabled
                         placeholder='Nhập đầy đủ họ tên'
-                        value={driverLicenseName}
+                        value={driverLicenseName || driver_license_name}
                         className='border-gray-500 mt-2 py-6'
 
                     />
@@ -322,7 +327,7 @@ const DriverLicenseVerify = () => {
                     <Input
                         disabled
                         placeholder='Nhập ngày sinh'
-                        value={driverLicenseDob}
+                        value={driverLicenseDob || driver_license_dob }
                         className='border-gray-500 mt-2 py-6'
 
                     />
@@ -332,7 +337,7 @@ const DriverLicenseVerify = () => {
                     <CircleQuestionMarkIcon size={16} className="hover:cursor-pointer" />
                 </div>
 
-                <div className={is2FaceMatch ? 'hidden' : 'flex flex-col gap-4'}>
+                <div className={is2FaceMatch || isVerifyDriverLicenseMatchWithwebcam ? 'hidden' : 'flex flex-col gap-4'}>
                     {/* chup anh khuon mat : */}
                     <span className="text-sm sm:text-xl font-semibold">Chụp ảnh khuôn mặt</span>
                     {/* hinh anh :  */}

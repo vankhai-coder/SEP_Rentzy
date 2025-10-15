@@ -5,7 +5,8 @@ import { sendEmail } from '../../utils/email/sendEmail.js';
 import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-
+import { decryptWithSecret } from '../../utils/cryptoUtil.js';
+import { getTemporaryImageUrl } from '../../utils/aws/s3.js'
 // redirect user to google login form and ask for permission : 
 export const googleLogin = (req, res) => {
     try {
@@ -608,4 +609,68 @@ export const verifyUpdatedEmail = async (req, res) => {
             ,
         });
     }
+};
+
+export const getBasicUserInformation = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        if (!userId) {
+            return res.status(400).json({ message: 'Missing userId!' });
+        }
+
+        const user = await db.User.findOne({
+            where: { user_id: userId },
+            attributes: [
+                "points",
+                "driver_class",
+                "driver_license_image_url",
+                "driver_license_dob",
+                "driver_license_name",
+                "driver_license_number",
+                "avatar_url",
+                "phone_number",
+                "email",
+                "full_name",
+                "created_at"
+            ],
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // ✅ Convert to plain object
+        const userData = user.get({ plain: true });
+
+        // Decrypt and modify
+        // modify data : hash => normal , format date :
+        userData.driver_license_number = userData.driver_license_number
+            ? decryptWithSecret(userData.driver_license_number, process.env.ENCRYPT_KEY)
+            : null;
+
+        userData.driver_license_dob = userData.driver_license_dob
+            ? decryptWithSecret(userData.driver_license_dob, process.env.ENCRYPT_KEY)
+            : null;
+
+        userData.driver_license_name = userData.driver_license_name
+            ? decryptWithSecret(userData.driver_license_name, process.env.ENCRYPT_KEY)
+            : null;
+
+        userData.driver_license_image_url = userData.driver_license_name
+            ? await getTemporaryImageUrl(userData.driver_license_image_url)
+            : null;
+
+        // Add new field (formatted date)
+        userData.date_join = new Date(userData.created_at).toLocaleDateString('en-GB'); // dd/mm/yyyy
+
+        // ✅ Return safely
+        res.status(200).json({
+            success: true,
+            user: userData,
+        });
+    } catch (err) {
+        console.error('Error in getBasicUserInformation:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+
 };

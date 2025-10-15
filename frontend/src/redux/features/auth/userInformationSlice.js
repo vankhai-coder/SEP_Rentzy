@@ -31,7 +31,22 @@ const initialState = {
   // verify updated email : 
   isVerifyUpdatedEmailSuccess: false,
   isVerifyUpdatedEmailLoading: false,
-  verifyUpdatedEmailError: ''
+  verifyUpdatedEmailError: '',
+
+  // get basic user information : 
+  points: 0,
+  driver_class: '',
+  driver_license_image_url: '',
+  driver_license_dob: '',
+  driver_license_name: '',
+  driver_license_number: '',
+  avatar_url: '',
+  phone_number: '',
+  date_join: '',
+  email: '',
+  full_name: '',
+  isLoadingGetBasicUserInformation: false,
+  errorGetBasicUserInformation: ''
 
 };
 
@@ -128,6 +143,26 @@ export const verifyUpdatedEmail = createAsyncThunk(
       return response.data; // backend should return { message: "..." }
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Lỗi khi cập nhật email!');
+    }
+  }
+);
+
+// getBasicUserInformation : 
+export const getBasicUserInformation = createAsyncThunk(
+  "user/getBasicUserInformation",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post("api/auth/get-basic-user-information");
+
+      // expect: { success: true, user : { points, driver_class, ... } }
+      return res.data;
+    } catch (err) {
+      console.error("Error in getBasicUserInformation:", err.message);
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          "Lỗi lấy thông tin cá nhân!",
+      });
     }
   }
 );
@@ -242,10 +277,66 @@ const userInformationSlice = createSlice({
         state.isVerifyUpdatedEmailLoading = false;
         state.verifyUpdatedEmailError = action.payload
         state.isVerifyUpdatedEmailSuccess = false
+      })
+      // getBasicUserInformation
+      // Pending
+      .addCase(getBasicUserInformation.pending, (state) => {
+        state.isLoadingGetBasicUserInformation = true;
+        state.errorGetBasicUserInformation = null;
+
+        state.points = 0;
+        state.driver_class = "";
+        state.driver_license_image_url = "";
+        state.driver_license_dob = "";
+        state.driver_license_name = "";
+        state.driver_license_number = "";
+        state.avatar_url = "";
+        state.phone_number = "";
+        state.email = "";
+        state.full_name = "";
+        state.date_join = ''
+      })
+      // Fulfilled
+      .addCase(getBasicUserInformation.fulfilled, (state, action) => {
+        state.isLoadingGetBasicUserInformation = false;
+        state.errorGetBasicUserInformation = null;
+
+        const user = action.payload?.user || {};
+
+        state.points = user.points || 0;
+        state.driver_class = user.driver_class || "";
+        state.driver_license_image_url = user.driver_license_image_url || "";
+        state.driver_license_dob = user.driver_license_dob || "";
+        state.driver_license_name = user.driver_license_name || "";
+        state.driver_license_number = user.driver_license_number || "";
+        state.avatar_url = user.avatar_url || "";
+        state.phone_number = user.phone_number || "";
+        state.email = user.email || "";
+        state.full_name = user.full_name || "";
+        state.date_join = user.date_join || "";
+        state.isVerifyDriverLicenseMatchWithwebcam = Boolean(user.driver_license_image_url)
+
+      })
+
+      // Rejected
+      .addCase(getBasicUserInformation.rejected, (state, action) => {
+        state.isLoadingGetBasicUserInformation = false;
+        state.errorGetBasicUserInformation = action.payload?.message || "Failed to load user info";
+
+        // Reset all fields when request fails
+        state.points = 0;
+        state.driver_class = "";
+        state.driver_license_image_url = "";
+        state.driver_license_dob = "";
+        state.driver_license_name = "";
+        state.driver_license_number = "";
+        state.avatar_url = "";
+        state.phone_number = "";
+        state.email = "";
+        state.full_name = "";
+        state.date_join = ''
       });
-  }
-
-
+  },
 });
 
 export const { resetUserInformationSlice } = userInformationSlice.actions
