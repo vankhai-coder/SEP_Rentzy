@@ -22,6 +22,7 @@ import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
+import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
