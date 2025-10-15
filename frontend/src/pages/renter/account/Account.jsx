@@ -25,8 +25,8 @@ import { BiLogOut } from "react-icons/bi";
 const Account = () => {
   const navigate = useNavigate();
 
-  const baseClass =
-    "flex items-center gap-2 py-4 text-lg hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
+    const baseClass =
+        "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
@@ -115,7 +115,7 @@ const Account = () => {
       </Select>
 
       {/* laptop : nav list */}
-      <div className="grid lg:grid-cols-3 gap-10">
+      <div className="grid lg:grid-cols-5 gap-10">
         {/* sidebar nav : */}
         <div className=" hidden lg:block col-span-1 sticky top-6 h-screen">
           <div>
@@ -225,7 +225,7 @@ const Account = () => {
           </div>
         </div>
         {/* outlet */}
-        <div className="col-span-2">
+        <div className="col-span-4">
           <Outlet />
         </div>
       </div>

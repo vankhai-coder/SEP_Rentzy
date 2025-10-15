@@ -62,7 +62,7 @@ export const getVehicleById = async (req, res) => {
     // === LẤY CÁC ĐÁNH GIÁ VỀ CHỦ XE (chỉ số sao + nội dung + người thuê) ===
     const ownerId = vehicle.owner_id;
     const reviews = await BookingReview.findAll({
-      attributes: ["review_id", "rating", "review_title", "review_content", "created_at"],
+      attributes: ["review_id", "rating", "review_content", "created_at"],
       include: [
         {
           model: Booking,
@@ -89,7 +89,7 @@ export const getVehicleById = async (req, res) => {
     vehicleData.owner_comments = reviews.map((r) => ({
       review_id: r.review_id,
       rating: r.rating,
-      comment: r.review_content ?? r.review_title ?? "",
+      comment: r.review_content ?? "",
       created_at: r.created_at,
       renter: r.booking?.renter
         ? {

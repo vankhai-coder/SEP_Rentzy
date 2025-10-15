@@ -1,8 +1,9 @@
-import Vehicle from "../../models/Vehicle.js";
-import Brand from "../../models/Brand.js";
-import User from "../../models/User.js";
+import db from "../../models/index.js";
 import { Op } from "sequelize";
+import cloudinary from '../../config/cloudinary.js';
 import axios from "axios";
+
+const { Vehicle, Brand, User, Booking } = db;
 
 export const geocodeLocation = async (address) => {
   try {
@@ -192,23 +193,108 @@ export const getOwnerVehicleById = async (req, res) => {
   }
 };
 
+// Helper function to upload image to Cloudinary
+const uploadImageToCloudinary = async (file) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "rentzy/vehicles",
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+          });
+        }
+      }
+    );
+    uploadStream.end(file.buffer);
+  });
+};
+
 // POST /api/owner/vehicles - Thêm xe mới
 export const createVehicle = async (req, res) => {
   try {
     const ownerId = req.user.userId;
+    
+    // Extract form data from multipart/form-data
+    const {
+      vehicle_type,
+      brand,
+      model,
+      year,
+      license_plate,
+      price_per_day,
+      location,
+      description,
+      fuel_type,
+      transmission,
+      seats,
+      engine_capacity,
+      fuel_consumption
+    } = req.body;
+
+    // Handle image uploads
+    let main_image_url = null;
+    let additional_images = [];
+
+    // Upload main image if provided
+    if (req.files && req.files.main_image && req.files.main_image[0]) {
+      const mainImageResult = await uploadImageToCloudinary(req.files.main_image[0]);
+      main_image_url = mainImageResult.url;
+    }
+
+    // Upload additional images if provided
+    if (req.files && req.files.extra_images) {
+      for (const file of req.files.extra_images) {
+        const imageResult = await uploadImageToCloudinary(file);
+        additional_images.push(imageResult.url);
+      }
+    }
+
     let vehicleData = {
-      ...req.body,
+      vehicle_type,
+      model,
+      year: parseInt(year),
+      license_plate,
+      price_per_day: parseFloat(price_per_day),
+      location,
+      description,
+      fuel_type,
+      transmission,
+      seats: seats ? parseInt(seats) : null,
+      engine_capacity,
+      fuel_consumption,
+      main_image_url,
+      additional_images: additional_images.length > 0 ? JSON.stringify(additional_images) : null,
       owner_id: ownerId,
       approvalStatus: "pending", // Mặc định chờ duyệt
       status: "available",
     };
 
-    // Geocode location nếu có
-    if (vehicleData.location) {
-      const geocodeResult = await geocodeLocation(vehicleData.location);
-      if (geocodeResult) {
-        vehicleData.latitude = geocodeResult.lat;
-        vehicleData.longitude = geocodeResult.lon;
+    // Xử lý brand: nếu gửi tên brand thì tìm brand_id
+    if (brand && !vehicleData.brand_id) {
+      const existingBrand = await Brand.findOne({
+        where: {
+          name: {
+            [Op.iLike]: `%${brand}%`
+          }
+        }
+      });
+      
+      if (existingBrand) {
+        vehicleData.brand_id = existingBrand.brand_id;
+      } else {
+        // Nếu không tìm thấy brand, tạo brand mới
+        const newBrand = await Brand.create({
+          name: brand,
+          category: vehicle_type || 'car'
+        });
+        vehicleData.brand_id = newBrand.brand_id;
       }
     }
 
