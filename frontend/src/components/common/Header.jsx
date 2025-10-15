@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
 import { Link } from "react-router-dom";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

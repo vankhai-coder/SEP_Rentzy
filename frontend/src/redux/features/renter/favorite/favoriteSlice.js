@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosInstance from "../../../../api/axiosInstance";
+import axiosInstance from "../../../../config/axiosInstance";
 
 // Fetch favorites
 export const fetchFavorites = createAsyncThunk(

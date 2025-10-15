@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/Home.jsx";
-import Layout from "./components/Layout.jsx";
+import HomePage from "./pages/renter/landingPage/Home.jsx";
+import Layout from "./components/common/Layout.jsx";
 import HomeCar from "./pages/renter/home/HomeCar.jsx";
 import HomeMotorbike from "./pages/renter/home/HomeMotorbike.jsx";
 import FavoritesPage from "./pages/renter/account/FavoritesPage.jsx";
@@ -21,7 +21,7 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
