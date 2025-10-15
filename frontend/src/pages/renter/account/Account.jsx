@@ -16,7 +16,7 @@ const Account = () => {
     const navigate = useNavigate()
 
     const baseClass =
-        "flex items-center gap-2 py-3 text-lg hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
+        "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
 
     const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
@@ -49,7 +49,7 @@ const Account = () => {
                 {/* sidebar nav : */}
                 <div className=' hidden lg:block col-span-1 sticky top-4 h-screen'>
                     <div>
-                        <div className="text-3xl font-bold text-center pb-4 border-b-1">
+                        <div className="text-2xl font-bold text-center pb-4 border-b-1">
                             Xin chào bạn!
                         </div>
 
