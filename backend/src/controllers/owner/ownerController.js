@@ -1,4 +1,3 @@
-
 import db from "../../models/index.js";
 import { Op } from "sequelize";
 import cloudinary from '../../config/cloudinary.js';
