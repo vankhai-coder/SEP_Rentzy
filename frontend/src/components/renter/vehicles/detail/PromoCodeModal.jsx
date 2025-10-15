@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axiosInstance from "@/api/axiosInstance";
+import axiosInstance from "../../../../config/axiosInstance"; // Giả sử bạn có file cấu hình axios
 
 export default function PromoCodeModal({ onConfirm, onCancel }) {
   const [query, setQuery] = useState("");
@@ -29,9 +29,11 @@ export default function PromoCodeModal({ onConfirm, onCancel }) {
           const end = v.valid_to ? new Date(v.valid_to) : null;
           const activeWindow = start && end ? now >= start && now <= end : true;
           const availableUsage =
-            v.usage_limit == null || Number(v.used_count || 0) < Number(v.usage_limit);
+            v.usage_limit == null ||
+            Number(v.used_count || 0) < Number(v.usage_limit);
           const expired = end ? now > end : false;
-          const eligible = Boolean(v.is_active) && activeWindow && availableUsage && !expired;
+          const eligible =
+            Boolean(v.is_active) && activeWindow && availableUsage && !expired;
 
           const type = v.discount_type === "PERCENT" ? "percent" : "flat";
           const value = Number(v.discount_value);
@@ -41,7 +43,9 @@ export default function PromoCodeModal({ onConfirm, onCancel }) {
           const label =
             type === "percent"
               ? `Giảm ${value}%${
-                  maxDiscount ? ` (tối đa ${maxDiscount.toLocaleString("vi-VN")}đ)` : ""
+                  maxDiscount
+                    ? ` (tối đa ${maxDiscount.toLocaleString("vi-VN")}đ)`
+                    : ""
                 }`
               : `Giảm ${value.toLocaleString("vi-VN")}đ`;
 
@@ -127,58 +131,58 @@ export default function PromoCodeModal({ onConfirm, onCancel }) {
               )}
 
               {error && !loading && (
-                <div className="text-sm text-red-600 px-1">
-                  {error}
-                </div>
+                <div className="text-sm text-red-600 px-1">{error}</div>
               )}
 
-              {!loading && !error && filtered.map((p) => {
-                const disabled = p.expired || !p.eligible;
-                return (
-                  <div
-                    key={p.code}
-                    className="flex items-center justify-between p-3 border rounded-md"
-                  >
-                    <div>
-                      <div
-                        className={`text-sm font-semibold ${
-                          disabled ? "text-gray-400" : "text-gray-800"
-                        }`}
-                      >
-                        {p.code}
-                      </div>
-                      <div
-                        className={`text-xs ${
-                          disabled ? "text-gray-400" : "text-gray-600"
-                        }`}
-                      >
-                        {p.title ? `${p.title} — ${p.label}` : p.label}
-                      </div>
-                      {p.expired && (
-                        <div className="text-xs text-orange-600 mt-1">
-                          Hết hạn
-                        </div>
-                      )}
-                      {!p.expired && !p.eligible && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          Mã khuyến mãi không khả dụng
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        disabled
-                          ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                          : "bg-green-600 text-white hover:bg-green-700"
-                      }`}
-                      disabled={disabled}
-                      onClick={() => onConfirm?.(p)}
+              {!loading &&
+                !error &&
+                filtered.map((p) => {
+                  const disabled = p.expired || !p.eligible;
+                  return (
+                    <div
+                      key={p.code}
+                      className="flex items-center justify-between p-3 border rounded-md"
                     >
-                      Áp dụng
-                    </button>
-                  </div>
-                );
-              })}
+                      <div>
+                        <div
+                          className={`text-sm font-semibold ${
+                            disabled ? "text-gray-400" : "text-gray-800"
+                          }`}
+                        >
+                          {p.code}
+                        </div>
+                        <div
+                          className={`text-xs ${
+                            disabled ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          {p.title ? `${p.title} — ${p.label}` : p.label}
+                        </div>
+                        {p.expired && (
+                          <div className="text-xs text-orange-600 mt-1">
+                            Hết hạn
+                          </div>
+                        )}
+                        {!p.expired && !p.eligible && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            Mã khuyến mãi không khả dụng
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                          disabled
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            : "bg-green-600 text-white hover:bg-green-700"
+                        }`}
+                        disabled={disabled}
+                        onClick={() => onConfirm?.(p)}
+                      >
+                        Áp dụng
+                      </button>
+                    </div>
+                  );
+                })}
 
               {!loading && !error && filtered.length === 0 && (
                 <div className="text-sm text-gray-500 px-1">
