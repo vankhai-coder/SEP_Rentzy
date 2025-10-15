@@ -26,7 +26,6 @@ const AddMotoBikeForm = () => {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [mainImage, setMainImage] = useState(null);
   const [extraImages, setExtraImages] = useState([]);
-  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -154,11 +153,7 @@ const AddMotoBikeForm = () => {
     setExtraImages(prev => [...prev, ...files]);
   };
 
-  const handleDocumentsChange = (e) => {
-    const files = Array.from(e.target.files);
-    setDocuments(prev => [...prev, ...files]);
-  };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -192,10 +187,6 @@ const AddMotoBikeForm = () => {
         submitData.append('extra_images', image);
       });
 
-      // Add documents
-      documents.forEach((doc) => {
-        submitData.append('documents', doc);
-      });
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
@@ -492,20 +483,6 @@ const AddMotoBikeForm = () => {
               />
             </div>
 
-            {/* Documents */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Giấy tờ xe (bắt buộc) *
-              </label>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                multiple
-                onChange={handleDocumentsChange}
-                required
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-            </div>
           </div>
         </div>
 
