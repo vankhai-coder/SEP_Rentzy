@@ -179,9 +179,29 @@ export const getOwnerVehicleById = async (req, res) => {
       });
     }
 
+    // Parse JSON strings to arrays (similar to renter controller)
+    const vehicleData = vehicle.toJSON();
+    if (
+      vehicleData.extra_images &&
+      typeof vehicleData.extra_images === "string"
+    ) {
+      try {
+        vehicleData.extra_images = JSON.parse(vehicleData.extra_images);
+      } catch (e) {
+        vehicleData.extra_images = [];
+      }
+    }
+    if (vehicleData.features && typeof vehicleData.features === "string") {
+      try {
+        vehicleData.features = JSON.parse(vehicleData.features);
+      } catch (e) {
+        vehicleData.features = [];
+      }
+    }
+
     res.json({
       success: true,
-      data: vehicle,
+      data: vehicleData,
     });
   } catch (error) {
     console.error("Error getting vehicle by id:", error);
