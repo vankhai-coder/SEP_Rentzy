@@ -1,7 +1,10 @@
 import express from "express";
 const BookingRoute = express.Router();
 
-import { getVehicleBookedDates } from "../../controllers/booking/bookingController.js";
+import { getVehicleBookedDates, createBooking } from "../../controllers/booking/bookingController.js";
+import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
-BookingRoute.get("/:vehicleId", getVehicleBookedDates);
+BookingRoute.get("/getDate/:vehicleId", getVehicleBookedDates);
+BookingRoute.post("/", verifyJWTToken, createBooking);
+
 export default BookingRoute;

@@ -6,8 +6,9 @@ import "react-datepicker/dist/react-datepicker.css";
 import "react-time-picker/dist/TimePicker.css";
 import "react-toastify/dist/ReactToastify.css";
 import './DateTimeSelector.css';
+import axios from 'axios';
 
-const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, initialEndDate, initialPickupTime, initialReturnTime, vehicleId }) => {
+function DateTimeSelector({ bookedDates, onDateTimeChange, initialStartDate, initialEndDate, initialPickupTime, initialReturnTime, vehicleId }) {
     // Không set ngày mặc định nếu không có initialStartDate/initialEndDate
     const [startDate, setStartDate] = useState(initialStartDate ? new Date(initialStartDate) : null);
     const [endDate, setEndDate] = useState(initialEndDate ? new Date(initialEndDate) : null);
@@ -38,23 +39,25 @@ const DateTimeSelector = ({ bookedDates, onDateTimeChange, initialStartDate, ini
     };
 
     useEffect(() => {
-        const endpoint = vehicleId
-            ? `/api/renter/booking/${vehicleId}`
-            : 'http://localhost:3000/api/renter/booking/4'; // fallback theo yêu cầu
+        const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const endpoint = `${VITE_API_URL}/api/renter/booking/getDate/${vehicleId}`;
 
         const fetchBookedDates = async () => {
             try {
-                const res = await fetch(endpoint);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const json = await res.json();
+                const res = await axios.get(endpoint, { headers: { 'Accept-Language': 'vi' } });
+                // SỬA: axios dùng status + data
+                if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
+                const json = res.data;
 
-                // Hỗ trợ cả trường hợp API trả mảng trực tiếp, hoặc trong json.data
+                // Hỗ trợ API trả mảng trực tiếp hoặc trong json.data
                 const raw = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
                 const normalized = normalizeBookings(raw);
-
+                console.log('Dữ liệu ngày đã đặt:', normalized);
                 setApiBookedDates(normalized);
             } catch (err) {
                 console.error('Lỗi tải ngày đã đặt:', err);
+                // Tùy chọn: báo toast cho người dùng
+                // toast.error('Không thể tải lịch đã đặt');
             }
         };
 

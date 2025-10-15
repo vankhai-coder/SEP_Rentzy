@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../../../api/axiosInstance";
+import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
 
 const AddCarForm = () => {  
