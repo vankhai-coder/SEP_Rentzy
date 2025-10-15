@@ -1,9 +1,10 @@
 // controllers/renter/bookingReviewController.js
 import db from "../../models/index.js";
 
-const { Booking, BookingReview, Vehicle } = db;
+const { Booking, BookingReview, Vehicle, User, PointsTransaction } = db;
 
 export const createBookingReview = async (req, res) => {
+  const transaction = await db.sequelize.transaction(); // ⚙️ dùng transaction để đảm bảo tính toàn vẹn
   try {
     const { booking_id, rating, review_content } = req.body;
     const renter_id = req.user.userId; // từ verifyJWTToken middleware
@@ -48,25 +49,62 @@ export const createBookingReview = async (req, res) => {
     }
 
     // 5️⃣ Tạo review
-    const newReview = await BookingReview.create({
-      booking_id,
-      rating,
-      review_content,
-    });
+    const newReview = await BookingReview.create(
+      {
+        booking_id,
+        rating,
+        review_content,
+      },
+      { transaction }
+    );
 
-    // 6️⃣ Lấy thông tin xe để phản hồi cho FE (nếu cần)
+    // 6️⃣ Cộng điểm cho renter
+    const POINTS_REWARD = 5000;
+
+    // Lấy user hiện tại
+    const user = await User.findByPk(renter_id, { transaction });
+
+    if (!user) {
+      throw new Error("Không tìm thấy người dùng.");
+    }
+
+    // Cập nhật điểm
+    const newBalance = user.points + POINTS_REWARD;
+    await user.update({ points: newBalance }, { transaction });
+
+    // 7️⃣ Ghi lịch sử điểm
+    await PointsTransaction.create(
+      {
+        user_id: renter_id,
+        transaction_type: "earn",
+        points_amount: POINTS_REWARD,
+        balance_after: newBalance,
+        reference_type: "booking",
+        reference_id: booking_id,
+        description: "Thưởng điểm khi đánh giá xe",
+      },
+      { transaction }
+    );
+
+    // 8️⃣ Lấy thông tin xe để trả về cho FE
     const vehicle = await Vehicle.findOne({
       where: { vehicle_id: booking.vehicle_id },
       attributes: ["vehicle_id", "model", "main_image_url", "owner_id"],
+      transaction,
     });
+
+    await transaction.commit();
 
     res.status(201).json({
       success: true,
-      message: "Đánh giá thành công!",
+      message: "Đánh giá thành công! Bạn được thưởng 5,000 điểm.",
       review: newReview,
       vehicle,
+      points_rewarded: POINTS_REWARD,
+      new_balance: newBalance,
     });
   } catch (error) {
+    await transaction.rollback();
     console.error("❌ Error creating booking review:", error);
     res.status(500).json({
       success: false,
