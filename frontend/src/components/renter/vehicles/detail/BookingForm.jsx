@@ -191,15 +191,19 @@ function BookingForm({ vehicle }) {
       voucherCode: appliedPromo?.code || null,
       usePoints,
       pointsToUse: usePoints ? pointsDiscount : 0,
+      // thêm deliveryFee FE đã tính khi chọn giao xe
+      deliveryFee: bookingData.deliveryOption === 'delivery' ? deliveryFee : 0,
     };
 
     try {
-      await axiosInstance.post('/api/bookings', payload);
+      // sửa endpoint đúng theo router BE
+      await axiosInstance.post('/api/renter/booking/createBooking', payload);
       alert('Đặt xe thành công!');
       console.log('Booking payload:', payload);
     } catch (err) {
       console.error('Lỗi khi đặt xe:', err);
-      alert('Đã có lỗi xảy ra, vui lòng thử lại.');
+      const message = err?.response?.data?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.';
+      alert(message);
     }
   };
 

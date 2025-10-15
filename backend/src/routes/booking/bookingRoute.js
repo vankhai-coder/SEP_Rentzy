@@ -5,6 +5,6 @@ import { getVehicleBookedDates, createBooking } from "../../controllers/booking/
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
 BookingRoute.get("/getDate/:vehicleId", getVehicleBookedDates);
-BookingRoute.post("/", verifyJWTToken, createBooking);
+BookingRoute.post("/createBooking", verifyJWTToken, createBooking);
 
 export default BookingRoute;

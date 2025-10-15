@@ -40,7 +40,7 @@ const Booking = sequelize.define(
     },
     // Tổng số ngày thuê
     total_days: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
-    // Tổng chi phí thuê xe (chưa bao gồm phí khác)
+    // Tổng chi phí thuê xe (chưa bao gồm phí khác) ngày * tiền thuê xe 1 ngày  ( 3 ngày *400)
     total_cost: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     // Số tiền giảm giá
     discount_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },

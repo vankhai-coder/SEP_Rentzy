@@ -12,6 +12,12 @@
     z-index: 1000;
 }
 
+.time-slot-disabled {
+  background-color: #e0e0e0;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .date-time-modal {
     background: white;
     border-radius: 8px;
@@ -295,6 +301,14 @@
     opacity: 0.5;
 }
 
+/* Hide visually the disabled days due to booking */
+.react-datepicker__day--disabled.blocked-day {
+    opacity: 0;
+    visibility: hidden;
+    display: none;
+    pointer-events: none;
+}
+
 /* Cải thiện time slots - làm mờ các slot không available */
 .time-slot.time-slot-disabled {
     background: #f8f9fa !important;
@@ -517,4 +531,10 @@
 .cancel-button:hover {
     background: #f8f9fa;
     border-color: #adb5bd;
+}
+
+/* Highlight nhẹ cho ngày có bất kỳ booking giờ */
+.react-datepicker__day.has-booking {
+  background-color: rgba(102, 126, 234, 0.12) !important;
+  color: #333 !important;
 }
