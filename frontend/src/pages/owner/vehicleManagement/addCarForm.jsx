@@ -13,6 +13,8 @@ const AddCarForm = () => {
     model: "",
     license_plate: "",
     location: "",
+    latitude: "",
+    longitude: "",
     price_per_day: "",
     seats: "",
     year: "",
@@ -26,8 +28,90 @@ const AddCarForm = () => {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [mainImage, setMainImage] = useState(null);
   const [extraImages, setExtraImages] = useState([]);
-  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  // Auto location function
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error('Trình duyệt không hỗ trợ định vị địa lý');
+      return;
+    }
+
+    setGettingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          console.log ("tọa độ xe " ,latitude, longitude);
+          
+          // Sử dụng Nominatim Search API
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${latitude},${longitude}`)}&countrycodes=vn&accept-language=vi&addressdetails=1&limit=5`
+          );
+          
+          if (!response.ok) {
+            throw new Error('Không thể lấy thông tin địa chỉ');
+          }
+          
+          const data = await response.json();
+          
+          if (data && data.length > 0) {
+            const address = data[0].display_name;
+            setFormData(prev => ({
+              ...prev,
+              location: address,
+              latitude: latitude,
+              longitude: longitude
+            }));
+            toast.success('Đã tự động điền địa chỉ và tọa độ hiện tại');
+          } else {
+            toast.warning('Không tìm thấy địa chỉ cho vị trí hiện tại');
+          }
+        } catch (error) {
+          console.error('Error getting address:', error);
+          toast.error('Lỗi khi lấy địa chỉ. Vui lòng thử lại.');
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setGettingLocation(false);
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error('Bạn đã từ chối quyền truy cập vị trí');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error('Không thể xác định vị trí hiện tại');
+            break;
+          case error.TIMEOUT:
+            toast.error('Hết thời gian chờ khi lấy vị trí');
+            break;
+          default:
+            toast.error('Lỗi không xác định khi lấy vị trí');
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
+  
+  const handleAutoLocationChange = (e) => {
+    const isChecked = e.target.checked;
+    setAutoLocationEnabled(isChecked);
+    
+    if (isChecked) {
+      getCurrentLocation();
+    }
+  };
 
   // Car features options
   const carFeatures = [
@@ -79,10 +163,7 @@ const AddCarForm = () => {
     setExtraImages(prev => [...prev, ...files]);
   };
 
-  const handleDocumentsChange = (e) => {
-    const files = Array.from(e.target.files);
-    setDocuments(prev => [...prev, ...files]);
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,6 +178,8 @@ const AddCarForm = () => {
       submitData.append('model', formData.model);
       submitData.append('license_plate', formData.license_plate);
       submitData.append('location', formData.location);
+      if (formData.latitude) submitData.append('latitude', formData.latitude);
+      if (formData.longitude) submitData.append('longitude', formData.longitude);
       submitData.append('price_per_day', formData.price_per_day);
       submitData.append('seats', formData.seats);
       submitData.append('year', formData.year);
@@ -114,11 +197,6 @@ const AddCarForm = () => {
       
       extraImages.forEach((image) => {
         submitData.append('extra_images', image);
-      });
-
-      // Add documents
-      documents.forEach((doc) => {
-        submitData.append('documents', doc);
       });
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
@@ -206,6 +284,29 @@ const AddCarForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Địa điểm *
                 </label>
+                
+                {/* Checkbox for auto location */}
+                <div className="flex items-center mb-3">
+                  <input
+                    type="checkbox"
+                    id="autoLocation"
+                    checked={autoLocationEnabled}
+                    onChange={handleAutoLocationChange}
+                    disabled={gettingLocation}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="autoLocation" className="ml-2 text-sm text-gray-700">
+                    {gettingLocation ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        Đang lấy vị trí...
+                      </span>
+                    ) : (
+                      'Thêm địa chỉ tự động'
+                    )}
+                  </label>
+                </div>
+                
                 <input
                   type="text"
                   name="location"
@@ -411,20 +512,6 @@ const AddCarForm = () => {
               
             </div>
 
-            {/* Documents */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Giấy tờ xe (bắt buộc) *
-              </label>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                multiple
-                onChange={handleDocumentsChange}
-                required
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-            </div>
           </div>
         </div>
 

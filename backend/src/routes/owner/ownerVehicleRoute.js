@@ -9,9 +9,12 @@ import {
   getOwnerVehicleStats
 } from "../../controllers/owner/ownerController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-
+import upload from "../../middlewares/multerConfig.js";
+import multer from "multer";
 const router = express.Router();
 
+const storage = multer.memoryStorage();
+const upload1 = multer({ storage: storage });
 // // Tất cả routes đều cần authentication
 // router.use(authenticateToken);
 
@@ -25,7 +28,10 @@ router.get("/vehicles/stats", verifyJWTToken, getOwnerVehicleStats);
 router.get("/vehicles/:id", verifyJWTToken, getOwnerVehicleById);
 
 // POST /api/owner/vehicles - Thêm xe mới
-router.post("/vehicles", verifyJWTToken, createVehicle);
+router.post("/vehicles", verifyJWTToken, upload1.fields([
+  { name: 'main_image', maxCount: 1 },
+  { name: 'extra_images', maxCount: 10 },
+]), createVehicle);
 
 // PUT /api/owner/vehicles/:id - Cập nhật thông tin xe
 router.put("/vehicles/:id", verifyJWTToken, updateVehicle);
