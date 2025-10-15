@@ -21,6 +21,7 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
+import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/" element={<Account />}>
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
+            <Route path="/booking-history" element={<BookingHistory />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/mytrips" element={<MyTrips />} />
             <Route path="/longtermrenting" element={<LongTermRenting />} />
@@ -55,7 +57,6 @@ const App = () => {
           <Route path="/cars/search" element={<SearchResults type="car" />} />
           {/* Vehicle Detail */}
           <Route path="/detail/:id" element={<VehicleDetail />} />
-
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />

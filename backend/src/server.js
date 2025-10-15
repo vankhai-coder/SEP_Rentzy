@@ -16,7 +16,7 @@ import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
 import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
 import BookingReviewRoute from "./routes/renter/bookingReviewRoute.js";
-
+import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 // booking route
 import BookingRoute from "./routes/booking/bookingRoute.js";
 
@@ -56,7 +56,7 @@ app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
 app.use("/api/renter/reviews", BookingReviewRoute);
-
+app.use("/api/renter/booking-history", BookingHistoryRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
