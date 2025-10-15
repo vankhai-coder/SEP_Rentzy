@@ -26,7 +26,7 @@ const VEHICLE_ICON = L.divIcon({
         color: white;
         font-size: 12px;
         font-weight: bold;
-      ">🚗</div>
+      "></div>
     </div>`,
   className: "",
   iconSize: [32, 32],
@@ -96,8 +96,10 @@ const forwardGeocode = async (address) => {
     const response = await fetch(url, { headers: { "Accept-Language": "vi" } });
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) {
+      console.log("forwardGeocode - Found result:", data[0]);
       return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
     }
+
     console.warn("forwardGeocode - No results for address:", address);
     return null;
   } catch (error) {
@@ -184,6 +186,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       const { latitude, longitude, location } = vehicle;
 
       if (latitude != null && longitude != null) {
+        console.log("Vehicle latitude:", latitude, "Vehicle longitude:", longitude);
         const coords = { lat: Number(latitude), lon: Number(longitude) };
         if (coords.lat >= -90 && coords.lat <= 90 && coords.lon >= -180 && coords.lon <= 180) {
           console.log("Using vehicle coordinates:", coords);
@@ -195,13 +198,14 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
           console.warn("Invalid vehicle coordinates:", { latitude, longitude });
         }
       }
-
+// nếu mà ko có latitude và longitude ko có  thì sẽ geocode từ location lấy ra coordinates
       if (location) {
         console.log("Geocoding vehicle.location:", location);
         const coords = await forwardGeocode(location);
         if (coords) {
           setVehicleCoords(coords);
           const addr = await reverseGeocode(coords.lat, coords.lon);
+          console.log("Geocoded address:", addr);
           setVehicleAddress(addr);
         } else {
           setVehicleAddress(location || "Không xác định được vị trí");
@@ -321,11 +325,6 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
         Địa chỉ giao và vị trí xe
       </h3>
 
-      {/* Vehicle Info */}
-      <div className="text-sm text-gray-600">
-        <span className="font-medium text-gray-700">Xe: </span>
-        {vehicle?.name || "Không xác định"}
-      </div>
       <div className="text-sm text-gray-600">
         <span className="font-medium text-gray-700">Vị trí xe: </span>
         {vehicleAddress || "Không xác định được vị trí"}
@@ -401,14 +400,14 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
           {vehicleCoords && (
             <Marker position={[vehicleCoords.lat, vehicleCoords.lon]} icon={VEHICLE_ICON}>
               <Tooltip permanent direction="top">
-                🚗 Vị trí xe
+                 Vị trí xe
               </Tooltip>
             </Marker>
           )}
           {userCoords && (
             <Marker position={[userCoords.lat, userCoords.lon]} icon={USER_ICON}>
               <Tooltip permanent direction="top">
-                📍 Bạn đang ở đây
+                 Bạn đang ở đây
               </Tooltip>
             </Marker>
           )}

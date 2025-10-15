@@ -2,7 +2,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
-
 const Voucher = sequelize.define(
   "Voucher",
   {
@@ -47,7 +46,7 @@ const Voucher = sequelize.define(
       type: DataTypes.DATE,
       allowNull: false,
     },
-    valid_to: { 
+    valid_to: {
       type: DataTypes.DATE,
       allowNull: false,
     },
@@ -55,9 +54,17 @@ const Voucher = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    usage_limit: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      defaultValue: null,
+    },
+    used_count: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      defaultValue: 0,
+    },
     image_url: {
       type: DataTypes.STRING(255),
-    }
+    },
   },
   {
     tableName: "vouchers",
