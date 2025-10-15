@@ -1,4 +1,3 @@
-// src/controllers/renter/bookingHistoryController.js
 import Booking from "../../models/Booking.js";
 import BookingReview from "../../models/BookingReview.js";
 import Vehicle from "../../models/Vehicle.js";
@@ -63,6 +62,78 @@ export const getBookingHistory = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi server khi lấy danh sách lịch sử đơn hàng",
+    });
+  }
+};
+
+// ✅ THÊM MỚI: Lấy chi tiết một booking (cho trang review)
+export const getBookingDetail = async (req, res) => {
+  try {
+    const { bookingId } = req.params; // booking_id từ URL params
+    const renter_id = req.user.userId; // Từ JWT
+
+    // Tìm booking theo ID và renter_id (chỉ cho phép xem booking của mình)
+    const booking = await Booking.findOne({
+      where: { booking_id: bookingId, renter_id },
+      include: [
+        {
+          model: Vehicle,
+          as: "Vehicle",
+          required: true,
+          attributes: [
+            "vehicle_id",
+            "model",
+            "license_plate",
+            "main_image_url",
+          ], // Lấy thêm fields cần cho detail
+        },
+        {
+          model: BookingReview,
+          as: "review",
+          required: false,
+          attributes: ["review_id", "rating", "review_content", "created_at"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Không tìm thấy đơn thuê này hoặc bạn không có quyền truy cập.",
+      });
+    }
+
+    // Format data cho frontend: { booking, vehicle, review }
+    const formattedData = {
+      booking: {
+        booking_id: booking.booking_id,
+        start_date: booking.start_date,
+        end_date: booking.end_date,
+        total_amount: parseFloat(booking.total_amount),
+        status: booking.status,
+        // Thêm fields khác nếu cần
+      },
+      vehicle: booking.Vehicle, // Full object Vehicle
+      review: booking.review
+        ? {
+            rating: booking.review.rating,
+            review_content: booking.review.review_content,
+            created_at: booking.review.created_at,
+          }
+        : null,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formattedData,
+      message: "Lấy chi tiết đơn thuê thành công",
+    });
+  } catch (error) {
+    console.error("Error in getBookingDetail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy chi tiết đơn thuê",
     });
   }
 };

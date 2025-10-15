@@ -22,6 +22,7 @@ import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
+import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
@@ -36,15 +37,23 @@ const App = () => {
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/logout" element={<Logout />} />
-          <Route path="/verify-updated-email" element={<VerifyUpdatedEmail />} />
+          <Route
+            path="/verify-updated-email"
+            element={<VerifyUpdatedEmail />}
+          />
 
           {/* Home : */}
           <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
-          <Route path="/" element={<ProtectedRoute allowRole={['renter', 'owner', 'admin']}>
-            <Account />
-          </ProtectedRoute>}>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute allowRole={["renter", "owner", "admin"]}>
+                <Account />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
             <Route path="/booking-history" element={<BookingHistory />} />
@@ -56,6 +65,15 @@ const App = () => {
             <Route path="/resetpw" element={<ResetPassword />} />
             <Route path="/deleteaccount" element={<DeleteAccount />} />
           </Route>
+
+          <Route
+            path="/booking-review/:bookingId"
+            element={
+              <ProtectedRoute allowRole={"renter"}>
+                <BookingReviewPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
           <Route path="/cars/search" element={<SearchResults type="car" />} />
