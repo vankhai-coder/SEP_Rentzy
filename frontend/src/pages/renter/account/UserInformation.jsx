@@ -5,121 +5,184 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { Cake, CarIcon, MedalIcon, Pen } from "lucide-react"
+import { CarIcon, CheckCheck, MedalIcon, Pen } from "lucide-react"
 import { BiError } from "react-icons/bi"
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import UpdateEmail from "@/components/renter/PersonalInformation/UpdateEmail"
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { getBasicUserInformation } from "@/redux/features/auth/userInformationSlice"
+import { toast } from "sonner"
 
 const UserInformation = () => {
+
+  // redux : 
+  const dispatch = useDispatch()
+  const {
+    points,
+    driver_class,
+    driver_license_dob,
+    avatar_url,
+    phone_number,
+    email,
+    full_name,
+    isLoadingGetBasicUserInformation,
+    errorGetBasicUserInformation,
+    date_join,
+  } = useSelector((state) => state.userInformationStore);
+
+  // open updated email dialog : 
+  const [open, setOpen] = useState(false)
+
+  // dispatch get basic user information: 
+  useEffect(() => {
+    dispatch(getBasicUserInformation())
+  }, [])
+
+
+  // toast if error : 
+  useEffect(() => {
+    if (errorGetBasicUserInformation) {
+      toast.error(errorGetBasicUserInformation)
+    }
+  }, [errorGetBasicUserInformation])
+
+  if (isLoadingGetBasicUserInformation) {
+    return <div
+      className="text-center mt-16"
+    >Loading...</div>
+  }
+
   return (
-   <div className="flex flex-col gap-9 ">
-    {/* basic detail : avatar , name , email , phone .... */}
-     <div className="bg-[#ffffff] rounded-2xl p-4 md:p-6">
+    <div className="flex flex-col gap-9 ">
+      {/* basic detail : avatar , name , email , phone .... */}
+      <div className="bg-[#ffffff] rounded-2xl p-4 md:p-6">
 
-      {/* thong tin tai khoan :  */}
-      <div className="flex items-center justify-between rounded-t-2xl py-4">
-        {/* thong tin tai khoan : */}
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-xl font-semibold">Thông tin tài khoản</span>
-          <Pen size={16} className="hover:cursor-pointer" />
-        </div>
-        {/* so chuyen xe : */}
-        <div className="hidden sm:flex items-end justify-between gap-2 border p-4 rounded-xl">
-          <CarIcon size={38} className="text-green-400" />
-          <span className="text-green-400 font-bold text-4xl">0</span>
-          <span>chuyến</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row md:justify-between gap-4" >
-
-        {/* avatar va thong tin ca nhan :  */}
-        {/* avatar :  */}
-        <div className="flex flex-col items-center gap-2">
-          {/* avatar : */}
-          <Avatar className='size-26' >
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-          {/* name : */}
-          <span className="font-semibold text-lg">khai huynh</span>
-          {/* thoi gian tham gia : */}
-          <span className="text-sm font-normal">Tham gia : 10/9/2005</span>
-
-          <div className="flex gap-4">
-            {/* so chuyen xe : */}
-            <div className="flex sm:hidden items-center justify-between gap-2 border p-1 rounded-xl">
-              <CarIcon size={26} className="text-green-400" />
-              <span className="text-green-400 font-bold text-xl">0</span>
-              <span>chuyến</span>
-            </div>
-            {/* diem so : */}
-            <div className="flex p-2 border rounded-xl gap-2">
-              <MedalIcon className="text-yellow-500" />
-              <span className="font-bold">0 điểm</span>
-            </div>
+        {/* thong tin tai khoan :  */}
+        <div className="flex items-center justify-between rounded-t-2xl py-4">
+          {/* thong tin tai khoan : */}
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xl font-semibold">Thông tin tài khoản</span>
+            <Pen size={16} className="hover:cursor-pointer" />
           </div>
-
+          {/* so chuyen xe : */}
+          <div className="hidden sm:flex items-end justify-between gap-2 border p-4 rounded-xl">
+            <CarIcon size={38} className="text-green-400" />
+            <span className="text-green-400 font-bold text-4xl">0</span>
+            <span>chuyến</span>
+          </div>
         </div>
 
-        {/* thong tin ca nhan : */}
-        <div className="">
-          {/* ngay sinh gioi tinh :  */}
-          <div className="bg-[#f6f6f6] rounded-2xl p-4 px-6 flex flex-col gap-4">
-            <div className="flex justify-between">
-              <span className="font-light text-sm">Ngày sinh</span>
-              <span className="font-semibold">19/7/2003</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-light text-sm">Giới tính</span>
-              <span className="font-semibold">Nam</span>
-            </div>
-          </div>
+        <div className="flex flex-col md:flex-row md:justify-between gap-4" >
 
-          {/* sdt :  */}
-          <div className="flex justify-between py-4 border-b ">
-            {/* div ben trai  */}
-            <div className="flex gap-2">
-              <span className="font-light text-sm">Số điện thoại</span>
-              <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                <BiError />
-                <span className="hidden sm:block">Chưa xác thực</span>
+          {/* avatar va thong tin ca nhan :  */}
+          {/* avatar :  */}
+          <div className="flex flex-col items-center gap-2">
+            {/* avatar : */}
+            <Avatar className='size-26' >
+              <AvatarImage src={avatar_url || 'https://github.com/shadcn.png'} alt="User avatar" />
+              <AvatarFallback>User Avatar</AvatarFallback>
+            </Avatar>
+            {/* name : */}
+            <span className="font-semibold text-lg">{full_name || email}</span>
+            {/* thoi gian tham gia : */}
+            <span className="text-sm font-normal">Tham gia : {date_join}</span>
+
+            <div className="flex gap-4">
+              {/* so chuyen xe : */}
+              <div className="flex sm:hidden items-center justify-between gap-2 border p-1 rounded-xl">
+                <CarIcon size={26} className="text-green-400" />
+                <span className="text-green-400 font-bold text-xl">0</span>
+                <span>chuyến</span>
+              </div>
+              {/* diem so : */}
+              <div className="flex p-2 border rounded-xl gap-2">
+                <MedalIcon className="text-yellow-500" />
+                <span className="font-bold">{points} điểm</span>
               </div>
             </div>
-            {/* div ben phai  */}
-            <div className="flex items-center gap-2 ">
-                <span className="text-xs xs:text-base font-semibold">Thêm số điện thoại</span>
-              <Pen className="hover:cursor-pointer" size={16} />
-            </div>
+
           </div>
 
-          {/* email : */}
-          <div className="flex justify-between py-4 border-b gap-4">
-            {/* div ben trai  */}
-            <div className="flex gap-2 items-center">
-              <span className="font-light text-sm">Email</span>
-              <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                <BiError />
-                <span className="hidden sm:block">Chưa xác thực</span>
+          {/* thong tin ca nhan : */}
+          <div className="">
+            {/* ngay sinh gioi tinh :  */}
+            <div className="bg-[#f6f6f6] rounded-2xl p-4 px-6 flex flex-col gap-4">
+              <div className="flex justify-between">
+                <span className="font-light text-sm">Ngày sinh</span>
+                <span className="font-semibold">{driver_license_dob}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-light text-sm">Hạng GPLX</span>
+                <span className="font-semibold">{driver_class}</span>
               </div>
             </div>
-            {/* div ben phai  */}
-            <div className="flex items-center gap-2 ">
-              <span className="text-xs xs:text-base font-semibold">huynhvankhai198@gmail.com</span>
-              <Pen className="hover:cursor-pointer" size={16} />
+
+            {/* sdt :  */}
+            <div className="flex justify-between py-4 border-b ">
+              {/* div ben trai  */}
+              <div className="flex gap-2">
+                <span className="font-light text-sm">Số điện thoại</span>
+                {phone_number ?
+                  <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
+                    <CheckCheck className="text-green-500" size={12} />
+                    <span className="text-xs font-normal">Đã xác thực</span>
+                  </div>
+                  :
+                  <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
+                    <BiError />
+                    <span className="hidden sm:block">Chưa xác thực</span>
+                  </div>
+                }
+              </div>
+              {/* div ben phai  */}
+              <div className="flex items-center gap-2 ">
+                <span className="text-xs xs:text-base font-semibold">{phone_number ? phone_number : 'Thêm số điện thoại'}</span>
+                <Pen className="hover:cursor-pointer" size={16} />
+              </div>
             </div>
+
+            {/* email : */}
+            <div className="flex justify-between py-4 border-b gap-4">
+              {/* div ben trai  */}
+              <div className="flex gap-2 items-center">
+                <span className="font-light text-sm">Email</span>
+                <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
+                  <CheckCheck className="text-green-500" size={12} />
+                  <span className="text-xs font-normal">Đã xác thực</span>
+                </div>
+              </div>
+              {/* div ben phai  */}
+              <div className="flex items-center gap-2 ">
+                <span className="text-xs xs:text-base font-semibold">{email}</span>
+                {/* pop up update email form : */}
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Pen className="hover:cursor-pointer" size={16} />
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <UpdateEmail setOpen={setOpen} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            {/*  */}
           </div>
-          {/*  */}
         </div>
+
       </div>
 
+      {/* Verify driver license : */}
+      <DriverLicenseVerify />
+
+
+      {/* Verify identity card : */}
+      {/* <IdentityCardVerify /> */}
     </div>
-
-    {/* Verify driver license : */}
-    <DriverLicenseVerify />
-
-
-    {/* Verify identity card : */}
-    <IdentityCardVerify />
-   </div>
   )
 }
 

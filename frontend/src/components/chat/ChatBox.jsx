@@ -5,7 +5,7 @@ import {
   addUserMessage,
 } from "@/redux/features/chat/chatOpenAiSlice";
 import { X, Send } from "lucide-react";
-import logo from "@/assets/images/logoChat.png";
+import logo from "/logoChat.png";
 import TypingDots from "./TypingDots";
 
 // chỉ hiển thị giờ:phút

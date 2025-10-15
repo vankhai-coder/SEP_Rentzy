@@ -3,7 +3,7 @@ import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
 import { checkAuth } from "@/redux/features/auth/authSlice.js";
-import ChatBox from "./chat/ChatBox";
+import ChatBox from "../chat/ChatBox.jsx";
 import { useLocation , useNavigate} from "react-router-dom";
 import { toast } from "sonner";
 
