@@ -13,6 +13,7 @@ const initialState = {
   driverLicenseNumber: '',
   driverLicenseName: '',
   driverLicenseDob: '',
+  driverLicenseClass: '',
   driverLicenseError: '',
   driverLicenseLoading: false,
   isVerifyDriverLicenseMatchWithwebcam: '',
@@ -70,7 +71,7 @@ export const verifyDriverLicense = createAsyncThunk(
 // check 2 image match (from one person)
 export const check2FaceMatch = createAsyncThunk(
   "faceMatch/check2FaceMatch",
-  async ({ image_1, image_2, driverLicenseName, driverLicenseDob, driverLicenseNumber }, { rejectWithValue }) => {
+  async ({ image_1, image_2, driverLicenseName, driverLicenseDob, driverLicenseNumber, driverLicenseClass }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
       formData.append("image_1", image_1);
@@ -85,6 +86,7 @@ export const check2FaceMatch = createAsyncThunk(
             driverLicenseName,
             driverLicenseDob,
             driverLicenseNumber,
+            driverLicenseClass
           },
         }
       );
@@ -169,6 +171,7 @@ const userInformationSlice = createSlice({
         state.driverLicenseNumber = data[0]?.id || '';
         state.driverLicenseName = data[0]?.name || '';
         state.driverLicenseDob = data[0]?.dob || '';
+        state.driverLicenseClass = data[0]?.class || '';
       })
 
       // Rejected

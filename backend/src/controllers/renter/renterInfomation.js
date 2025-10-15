@@ -103,12 +103,12 @@ export const check2FaceMatch = async (req, res) => {
             }
         });
 
-        const { driverLicenseName, driverLicenseDob, driverLicenseNumber } = req.query;
+        const { driverLicenseName, driverLicenseDob, driverLicenseNumber, driverLicenseClass } = req.query;
         // Check if any parameter is missing
-        if (!driverLicenseName || !driverLicenseDob || !driverLicenseNumber) {
+        if (!driverLicenseName || !driverLicenseDob || !driverLicenseNumber || !driverLicenseClass) {
             return res.status(400).json({
                 error: true,
-                message: "Missing required query parameters: driverLicenseName, driverLicenseDob, driverLicenseNumber",
+                message: "Missing required query parameters: driverLicenseName, driverLicenseDob,driverLicenseClass, driverLicenseNumber",
             });
         }
 
@@ -165,8 +165,8 @@ export const check2FaceMatch = async (req, res) => {
             await s3.send(new PutObjectCommand(uploadParams));
 
             // Create a short-lived signed URL :
-            // const imageUrl = await getTemporaryImageUrl(fileName)
-            // console.log("Uploaded to S3:", imageUrl);
+            const imageUrl = await getTemporaryImageUrl(fileName)
+            console.log("Uploaded to S3:", imageUrl);
 
         } catch (err) {
             console.error("Error uploading to S3:", err);
@@ -179,6 +179,7 @@ export const check2FaceMatch = async (req, res) => {
         user.driver_license_number = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
         user.driver_license_name = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
         user.driver_license_dob = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
+        user.driver_class = driverLicenseClass
 
         await user.save()
 

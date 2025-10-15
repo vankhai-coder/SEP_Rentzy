@@ -59,6 +59,9 @@ const User = sequelize.define(
       type: DataTypes.ENUM("pending", "approved", "rejected"),
       defaultValue: "pending",
     },
+    driver_class: {
+      type: DataTypes.STRING(10)
+    },
     national_id_number: {
       type: DataTypes.STRING(50),
     },
