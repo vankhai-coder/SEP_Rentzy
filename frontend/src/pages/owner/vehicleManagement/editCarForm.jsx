@@ -80,7 +80,7 @@ const EditCarForm = () => {
         setSelectedFeatures(vehicle.features || []);
         
         // Set current images
-        setCurrentMainImage(vehicle.main_image || "");
+        setCurrentMainImage(vehicle.main_image_url || "");
         setCurrentExtraImages(vehicle.extra_images || []);
         
         
@@ -628,7 +628,7 @@ const EditCarForm = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleMainImageChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
 
@@ -659,7 +659,7 @@ const EditCarForm = () => {
                   accept="image/*"
                   multiple
                   onChange={handleExtraImagesChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
             </div>

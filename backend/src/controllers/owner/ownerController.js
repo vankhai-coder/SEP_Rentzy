@@ -632,5 +632,3 @@ export const deleteVehicle = async (req, res) => {
     });
   }
 };
-
-

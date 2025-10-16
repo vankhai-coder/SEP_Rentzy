@@ -303,7 +303,7 @@ const EditMotoBikeForm = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/owner/vehicle-management')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             ← Quay lại
           </button>
@@ -573,7 +573,7 @@ const EditMotoBikeForm = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleMainImageChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
 
@@ -604,7 +604,7 @@ const EditMotoBikeForm = () => {
                   accept="image/*"
                   multiple
                   onChange={handleExtraImagesChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
             </div>
