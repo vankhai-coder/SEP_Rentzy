@@ -268,6 +268,39 @@
   color: #1f2937;
 }
 
+/* Payment Breakdown Section */
+.payment-breakdown {
+  background: #f0f9ff;
+  border: 2px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.payment-breakdown .summary-item {
+  margin-bottom: 12px;
+  padding: 8px 0;
+}
+
+.payment-breakdown .summary-label {
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.payment-breakdown .summary-value {
+  font-weight: 700;
+  color: #0c4a6e;
+}
+
+.payment-breakdown .summary-value.highlight {
+  color: #dc2626;
+  font-size: 18px;
+  background: #fef2f2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
 /* Payment Steps */
 .payment-steps-section {
   background: #f9fafb;

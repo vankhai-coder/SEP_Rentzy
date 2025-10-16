@@ -87,108 +87,107 @@ export const getVehicleBookedDates = async (req, res) => {
 export const getBookingById = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const userId = req.user?.userId;
+
+    const renterId = req.user?.userId;
+    console.log("🔍 Renter ID:", renterId);
 
     if (!bookingId) {
       return res.status(400).json({
         success: false,
-        message: "Booking ID is required"
+        message: "Booking ID is required",
       });
     }
 
     // Tìm booking với thông tin liên quan
     const booking = await Booking.findOne({
-      where: { 
+      where: {
         booking_id: bookingId,
-        renter_id: userId // Đảm bảo chỉ lấy booking của user hiện tại
+        renter_id: renterId, // Đảm bảo chỉ lấy booking của user hiện tại
       },
       include: [
         {
           model: Vehicle,
-          attributes: ['vehicle_id', 'model', 'location', 'price_per_day', 'main_image_url', 'extra_images']
+          attributes: [
+            "vehicle_id",
+            "model",
+            "location",
+            "price_per_day",
+            "main_image_url",
+            "extra_images",
+          ],
         },
         {
           model: User,
-          as: 'renter',
-          attributes: ['user_id', 'full_name', 'phone_number', 'email']
-        }
-      ]
+          as: "renter",
+          attributes: ["user_id", "full_name", "phone_number", "email"],
+        },
+      ],
     });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy thông tin đơn hàng"
+        message: "Không tìm thấy thông tin đơn hàng",
       });
     }
 
-    // Calculate financial details
-    const totalDays = booking.total_days;
-    const pricePerDay = booking.Vehicle ? booking.Vehicle.price_per_day : 0;
-    const baseCost = totalDays * pricePerDay; // Chi phí cơ bản (số ngày * giá thuê/ngày)
-    const deliveryFee = booking.delivery_fee || 0;
-    const discountAmount = booking.discount_amount || 0;
-    const pointsUsed = booking.points_used || 0;
-    
-    // Tính tổng tiền phải trả
-    const subtotal = baseCost + deliveryFee - discountAmount;
-    const totalAmount = subtotal > 0 ? subtotal : 0;
-    
-    // Tính tiền cọc (30% tổng tiền)
-    const depositAmount = Math.round(totalAmount * 0.3);
-    
-    // Tiền còn lại cần thanh toán
-    const remainingAmount = totalAmount - depositAmount;
-    
-    // Format response data
+    // Tạo response data đơn giản từ database
     const responseData = {
-      _id: booking.booking_id,
+      booking_id: booking.booking_id,
       startDate: booking.start_date,
       endDate: booking.end_date,
       startTime: booking.start_time,
       endTime: booking.end_time,
-      
-      // Thông tin tài chính chi tiết
-      totalDays: totalDays,
-      pricePerDay: pricePerDay,
-      baseCost: baseCost, // Chi phí thuê xe cơ bản
-      deliveryFee: deliveryFee, // Phí giao xe
-      discountAmount: discountAmount, // Số tiền giảm giá
-      pointsUsed: pointsUsed, // Điểm đã sử dụng
-      
-      // Tổng cộng
-      subtotal: subtotal, // Tổng phụ (baseCost + deliveryFee - discountAmount)
-      totalAmount: totalAmount, // Tổng tiền phải trả
-      depositAmount: depositAmount, // Tiền cọc (30%)
-      remainingAmount: remainingAmount, // Tiền còn lại
-      totalPaid: booking.total_paid || 0, // Tổng tiền đã thanh toán
-      
-      // Thông tin khác
       status: booking.status,
       pickupLocation: booking.pickup_location,
       returnLocation: booking.return_location,
+
+      // Thông tin tài chính
+      totalDays: booking.total_days,
+      pricePerDay: booking.Vehicle ? booking.Vehicle.price_per_day : "0.00",
+      totalCost: booking.total_cost,
+      deliveryFee: booking.delivery_fee || 0,
+      discountAmount: booking.discount_amount || 0,
+      pointsUsed: booking.points_used || 0,
+      totalAmount: booking.total_amount,
+      totalPaid: booking.total_paid || 0,
+
+      // Thông tin khác
       voucherCode: booking.voucher_code,
       pointsEarned: booking.points_earned || 0,
-      
-      // Thông tin xe và người thuê
-      vehicle: booking.Vehicle,
-      renter: booking.User,
-      
-      // Placeholder cho transactions
-      transactions: []
+
+      // Thông tin xe
+      vehicle: {
+        vehicle_id: booking.Vehicle.vehicle_id,
+        model: booking.Vehicle.model,
+        location: booking.Vehicle.location,
+        price_per_day: booking.Vehicle.price_per_day,
+        main_image_url: booking.Vehicle.main_image_url,
+        extra_images: booking.Vehicle.extra_images,
+      },
+
+      // Thông tin người thuê
+      renter: {
+        user_id: booking.renter.user_id,
+        full_name: booking.renter.full_name,
+        phone_number: booking.renter.phone_number,
+        email: booking.renter.email,
+      },
+
+      // Giao dịch
+      transactions: [],
     };
 
     return res.status(200).json({
       success: true,
-      booking: responseData
+      booking: responseData,
     });
-
   } catch (error) {
     console.error("❌ Error getting booking:", error);
     return res.status(500).json({
       success: false,
       message: "Lỗi hệ thống khi lấy thông tin booking",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -251,9 +250,9 @@ const buildBookedIntervals = async (vehicleId) => {
 
 /**
  * API TẠO BOOKING MỚI
- * 
+ *
  * Chức năng: Tạo một booking mới cho việc thuê xe
- * 
+ *
  * Quy trình xử lý:
  * 1. Xác thực người dùng và validate dữ liệu đầu vào
  * 2. Kiểm tra xe có tồn tại và khả dụng
@@ -262,7 +261,7 @@ const buildBookedIntervals = async (vehicleId) => {
  * 5. Tính toán chi phí (giá thuê, phí giao xe, voucher, điểm thưởng)
  * 6. Tạo booking trong database
  * 7. Cập nhật điểm thưởng của người dùng (nếu có sử dụng)
- * 
+ *
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  * @returns {Object} JSON response với thông tin booking đã tạo
@@ -273,46 +272,52 @@ export const createBooking = async (req, res) => {
     const renterId = req.user?.userId;
     console.log("🔍 Renter ID:", renterId);
     console.log("📝 Request Body:", req.body);
-    
+
     if (!renterId) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Bạn phải đăng nhập để đặt xe" 
+      return res.status(401).json({
+        success: false,
+        message: "Bạn phải đăng nhập để đặt xe",
       });
     }
 
     // ==================== BƯỚC 2: EXTRACT VÀ VALIDATE DỮ LIỆU ĐẦU VÀO ====================
     const {
-      vehicle_id,           // ID xe cần thuê
-      startDate,           // Ngày bắt đầu thuê (YYYY-MM-DD)
-      endDate,             // Ngày kết thúc thuê (YYYY-MM-DD)
-      startTime,           // Giờ bắt đầu thuê (HH:mm:ss)
-      endTime,             // Giờ kết thúc thuê (HH:mm:ss)
-      deliveryOption,      // Tùy chọn giao xe: "pickup" | "delivery"
-      pickupAddress,       // Địa chỉ giao xe (nếu chọn delivery)
-      returnAddress,       // Địa chỉ nhận xe trả (nếu chọn delivery)
-      deliveryFee,         // Phí giao xe
-      voucherCode,         // Mã voucher giảm giá
-      usePoints,           // Có sử dụng điểm thưởng không
-      pointsToUse,         // Số điểm thưởng muốn sử dụng
+      vehicle_id, // ID xe cần thuê
+      startDate, // Ngày bắt đầu thuê (YYYY-MM-DD)
+      endDate, // Ngày kết thúc thuê (YYYY-MM-DD)
+      startTime, // Giờ bắt đầu thuê (HH:mm:ss)
+      endTime, // Giờ kết thúc thuê (HH:mm:ss)
+      deliveryOption, // Tùy chọn giao xe: "pickup" | "delivery"
+      pickupAddress, // Địa chỉ giao xe (nếu chọn delivery)
+      returnAddress, // Địa chỉ nhận xe trả (nếu chọn delivery)
+      deliveryFee, // Phí giao xe
+      voucherCode, // Mã voucher giảm giá
+      usePoints, // Có sử dụng điểm thưởng không
+      pointsToUse, // Số điểm thưởng muốn sử dụng
     } = req.body || {};
 
-    console.log("⏰ Thời gian đặt xe:", { startDate, endDate, startTime, endTime });
+    console.log("⏰ Thời gian đặt xe:", {
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    });
 
     // Validate dữ liệu bắt buộc
     if (!vehicle_id || !startDate || !endDate || !startTime || !endTime) {
       return res.status(400).json({
         success: false,
-        message: "Thiếu thông tin bắt buộc: vehicle_id, startDate, endDate, startTime, endTime",
+        message:
+          "Thiếu thông tin bắt buộc: vehicle_id, startDate, endDate, startTime, endTime",
       });
     }
 
     // ==================== BƯỚC 3: KIỂM TRA XE CÓ TỒN TẠI ====================
     const vehicle = await Vehicle.findByPk(vehicle_id);
     if (!vehicle) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Không tìm thấy xe với ID đã cung cấp" 
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe với ID đã cung cấp",
       });
     }
 
@@ -320,18 +325,19 @@ export const createBooking = async (req, res) => {
       id: vehicle.vehicle_id,
       name: vehicle.vehicle_name,
       price_per_day: vehicle.price_per_day,
-      location: vehicle.location
+      location: vehicle.location,
     });
 
     // ==================== BƯỚC 4: PARSE VÀ VALIDATE THỜI GIAN ====================
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     // Kiểm tra định dạng ngày hợp lệ
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       return res.status(400).json({
         success: false,
-        message: "Định dạng ngày không hợp lệ. Vui lòng sử dụng format YYYY-MM-DD",
+        message:
+          "Định dạng ngày không hợp lệ. Vui lòng sử dụng format YYYY-MM-DD",
       });
     }
 
@@ -354,10 +360,10 @@ export const createBooking = async (req, res) => {
 
     // ==================== BƯỚC 5: KIỂM TRA XUNG ĐỘT LỊCH ĐẶT ====================
     console.log("🔍 Kiểm tra xung đột lịch đặt...");
-    
+
     // Lấy danh sách các khoảng thời gian đã được đặt
     const bookedIntervals = await buildBookedIntervals(vehicle_id);
-    
+
     // Tạo khoảng thời gian request với giờ cụ thể
     const requestStart = new Date(start);
     const requestEnd = new Date(end);
@@ -385,21 +391,24 @@ export const createBooking = async (req, res) => {
 
     console.log("📅 Khoảng thời gian request:", {
       start: requestStart.toISOString(),
-      end: requestEnd.toISOString()
+      end: requestEnd.toISOString(),
     });
 
     // Kiểm tra xung đột với các booking hiện có
     // Logic: Hai khoảng thời gian xung đột nếu: requestStart < bookedEnd && requestEnd > bookedStart
-    const hasConflict = bookedIntervals.some(({ startDateTime, endDateTime }) => {
-      const isConflict = requestStart < endDateTime && requestEnd > startDateTime;
-      if (isConflict) {
-        console.log("⚠️ Phát hiện xung đột với booking:", {
-          bookedStart: startDateTime.toISOString(),
-          bookedEnd: endDateTime.toISOString()
-        });
+    const hasConflict = bookedIntervals.some(
+      ({ startDateTime, endDateTime }) => {
+        const isConflict =
+          requestStart < endDateTime && requestEnd > startDateTime;
+        if (isConflict) {
+          console.log("⚠️ Phát hiện xung đột với booking:", {
+            bookedStart: startDateTime.toISOString(),
+            bookedEnd: endDateTime.toISOString(),
+          });
+        }
+        return isConflict;
       }
-      return isConflict;
-    });
+    );
 
     if (hasConflict) {
       return res.status(409).json({
@@ -411,7 +420,7 @@ export const createBooking = async (req, res) => {
     console.log("✅ Không có xung đột lịch đặt");
 
     // ==================== BƯỚC 6: TÍNH TOÁN CHI PHÍ CƠ BẢN ====================
-    
+
     // Tính số ngày thuê (làm tròn lên)
     const timeDiff = end.getTime() - start.getTime();
     const total_days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
@@ -430,7 +439,7 @@ export const createBooking = async (req, res) => {
     console.log("💰 Chi phí cơ bản:", {
       total_days,
       pricePerDay,
-      total_cost
+      total_cost,
     });
 
     // ==================== BƯỚC 7: XỬ LÝ ĐỊA ĐIỂM VÀ PHÍ GIAO XE ====================
@@ -453,9 +462,10 @@ export const createBooking = async (req, res) => {
 
       // Parse phí giao xe từ frontend
       const feeFromFE = Number(deliveryFee);
-      delivery_fee = Number.isFinite(feeFromFE) && feeFromFE >= 0 
-        ? Math.floor(feeFromFE) 
-        : 0;
+      delivery_fee =
+        Number.isFinite(feeFromFE) && feeFromFE >= 0
+          ? Math.floor(feeFromFE)
+          : 0;
     }
 
     // Tính subtotal (chưa bao gồm giảm giá và điểm)
@@ -466,7 +476,7 @@ export const createBooking = async (req, res) => {
       pickup_location,
       return_location,
       delivery_fee,
-      subtotal
+      subtotal,
     });
 
     // ==================== BƯỚC 8: XỬ LÝ VOUCHER GIẢM GIÁ ====================
@@ -475,12 +485,12 @@ export const createBooking = async (req, res) => {
 
     if (voucherCode) {
       console.log("🎫 Xử lý voucher:", voucherCode);
-      
+
       // Tìm voucher trong database
       const voucher = await Voucher.findOne({
         where: { code: voucherCode, is_active: true },
       });
-      
+
       if (!voucher) {
         return res.status(400).json({
           success: false,
@@ -498,10 +508,13 @@ export const createBooking = async (req, res) => {
       }
 
       // Kiểm tra giới hạn sử dụng
-      if (voucher.usage_limit != null && voucher.used_count >= voucher.usage_limit) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Voucher đã đạt giới hạn sử dụng" 
+      if (
+        voucher.usage_limit != null &&
+        voucher.used_count >= voucher.usage_limit
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher đã đạt giới hạn sử dụng",
         });
       }
 
@@ -516,14 +529,14 @@ export const createBooking = async (req, res) => {
 
       // Tính toán giảm giá
       const discountValue = parseFloat(voucher.discount_value || 0);
-      const maxDiscount = voucher.max_discount != null 
-        ? parseFloat(voucher.max_discount) 
-        : null;
+      const maxDiscount =
+        voucher.max_discount != null ? parseFloat(voucher.max_discount) : null;
 
       if (voucher.discount_type === "PERCENT") {
         // Giảm theo phần trăm
         const raw = (subtotal * discountValue) / 100;
-        discount_amount = maxDiscount != null ? Math.min(raw, maxDiscount) : raw;
+        discount_amount =
+          maxDiscount != null ? Math.min(raw, maxDiscount) : raw;
       } else {
         // Giảm theo số tiền cố định
         discount_amount = discountValue;
@@ -537,31 +550,34 @@ export const createBooking = async (req, res) => {
         type: voucher.discount_type,
         value: discountValue,
         maxDiscount,
-        discount_amount
+        discount_amount,
       });
     }
 
     // ==================== BƯỚC 9: XỬ LÝ ĐIỂM THƯỞNG ====================
     let points_used = 0;
-    
+
     if (usePoints && pointsToUse > 0) {
       console.log("⭐ Xử lý điểm thưởng:", pointsToUse);
-      
+
       // Tìm thông tin người dùng để kiểm tra điểm
-       const user = await User.findByPk(renterId);
-       if (!user || user.points < pointsToUse) {
-         return res.status(400).json({
-           success: false,
-           message: "Điểm thưởng không đủ hoặc không hợp lệ",
-         });
-       }
-      
+      const user = await User.findByPk(renterId);
+      if (!user || user.points < pointsToUse) {
+        return res.status(400).json({
+          success: false,
+          message: "Điểm thưởng không đủ hoặc không hợp lệ",
+        });
+      }
+
       points_used = pointsToUse;
       console.log("✅ Sử dụng điểm thưởng:", points_used);
     }
 
     // ==================== BƯỚC 10: TÍNH TỔNG TIỀN CUỐI CÙNG ====================
-    const total_amount = Math.max(0, Number((subtotal - discount_amount - points_used).toFixed(2)));
+    const total_amount = Math.max(
+      0,
+      Number((subtotal - discount_amount - points_used).toFixed(2))
+    );
 
     console.log("💳 Tổng kết chi phí:", {
       total_cost,
@@ -569,12 +585,12 @@ export const createBooking = async (req, res) => {
       subtotal,
       discount_amount,
       points_used,
-      total_amount
+      total_amount,
     });
 
     // ==================== BƯỚC 11: TẠO BOOKING TRONG DATABASE ====================
     console.log("💾 Tạo booking trong database...");
-    
+
     const booking = await Booking.create({
       renter_id: renterId,
       vehicle_id,
@@ -587,11 +603,11 @@ export const createBooking = async (req, res) => {
       discount_amount,
       delivery_fee,
       total_amount,
-      total_paid: 0,                    // Chưa thanh toán
+      total_paid: 0, // Chưa thanh toán
       voucher_code,
       points_used,
-      points_earned: 0,                 // Sẽ tính sau khi hoàn thành booking
-      status: "pending",                // Trạng thái chờ xác nhận
+      points_earned: 0, // Sẽ tính sau khi hoàn thành booking
+      status: "pending", // Trạng thái chờ xác nhận
       pickup_location,
       return_location,
     });
@@ -601,12 +617,12 @@ export const createBooking = async (req, res) => {
     // ==================== BƯỚC 12: CẬP NHẬT ĐIỂM THƯỞNG NGƯỜI DÙNG ====================
     if (points_used > 0) {
       console.log("🔄 Cập nhật điểm thưởng người dùng...");
-      
+
       await User.decrement("points", {
-         by: points_used,
-         where: { user_id: renterId },
-       });
-      
+        by: points_used,
+        where: { user_id: renterId },
+      });
+
       console.log(`✅ Đã trừ ${points_used} điểm từ tài khoản người dùng`);
     }
 
@@ -634,18 +650,17 @@ export const createBooking = async (req, res) => {
         created_at: booking.created_at,
       },
     });
-
   } catch (error) {
     // ==================== XỬ LÝ LỖI ====================
     console.error("❌ Error creating booking:", error);
-    
+
     // Log chi tiết lỗi để debug
     console.error("Error stack:", error.stack);
-    
+
     return res.status(500).json({
       success: false,
       message: "Lỗi hệ thống khi tạo booking",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };

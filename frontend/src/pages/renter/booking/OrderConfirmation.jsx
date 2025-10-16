@@ -19,6 +19,7 @@ const OrderConfirmation = () => {
     const fetchBookingDetails = async () => {
       try {
         const res = await axiosInstance.get(`/api/renter/booking/${bookingId}`);
+        console.log(res.data);
         setBooking(res.data.booking);
         setLoading(false);
 
@@ -68,28 +69,29 @@ const OrderConfirmation = () => {
     }).format(amount);
   };
 
-  // Tính toán các khoản phí
+  // Tính toán các khoản phí từ dữ liệu API
   const calculateFees = () => {
     if (!booking) return null;
 
-    // Sử dụng dữ liệu từ API mới
-    const baseCost = booking.baseCost || 0; // Chi phí thuê xe cơ bản (số ngày * giá/ngày)
-    const deliveryFee = booking.deliveryFee || 0; // Phí giao xe từ database
-    const discountAmount = booking.discountAmount || 0; // Giảm giá
+    // Sử dụng dữ liệu trực tiếp từ database
+    const totalCost = parseFloat(booking.totalCost) || 0; // Tổng chi phí thuê xe
+    const deliveryFee = parseFloat(booking.deliveryFee) || 0; // Phí giao xe
+    const discountAmount = parseFloat(booking.discountAmount) || 0; // Giảm giá
     const pointsUsed = booking.pointsUsed || 0; // Điểm đã sử dụng
-    
-    // Tiền cọc và tiền còn lại
-    const depositAmount = booking.depositAmount || 0; // Tiền cọc (30%)
-    const remainingAmount = booking.remainingAmount || 0; // Tiền còn lại
-    const totalAmount = booking.totalAmount || 0; // Tổng tiền phải trả
-    const totalPaid = booking.totalPaid || 0; // Tổng tiền đã thanh toán
+    const totalAmount = parseFloat(booking.totalAmount) || 0; // Tổng tiền phải trả
+    const totalPaid = parseFloat(booking.totalPaid) || 0; // Tổng tiền đã thanh toán
+
+    // Tính tiền cọc (30% tổng tiền)
+    const depositAmount = Math.round(totalAmount * 0.3);
+    // Tiền còn lại (70% tổng tiền)
+    const remainingAmount = totalAmount - depositAmount;
 
     // Thông tin chi tiết
     const totalDays = booking.totalDays || 0;
-    const pricePerDay = booking.pricePerDay || 0;
+    const pricePerDay = parseFloat(booking.pricePerDay) || 0;
 
     return {
-      baseCost,
+      totalCost,
       deliveryFee,
       discountAmount,
       pointsUsed,
@@ -98,8 +100,7 @@ const OrderConfirmation = () => {
       totalAmount,
       totalPaid,
       totalDays,
-      pricePerDay,
-      subtotal: booking.subtotal || 0
+      pricePerDay
     };
   };
 
@@ -186,11 +187,11 @@ const OrderConfirmation = () => {
             <div className="input-grid">
                 <div className="input-field">
                     <FaUser />
-                    <span className="display-field">{booking.renter.name || 'Chưa có thông tin tên'}</span>
+                    <span className="display-field">{booking.renter?.name || 'Chưa có thông tin tên'}</span>
                 </div>
                 <div className="input-field">
                     <FaPhone />
-                    <span className="display-field">{booking.renter.phone || 'Chưa có thông tin số điện thoại'}</span>
+                    <span className="display-field">{booking.renter?.phone || 'Chưa có thông tin số điện thoại'}</span>
                 </div>
             </div>
         )}
@@ -224,42 +225,39 @@ const OrderConfirmation = () => {
 
           <div className="summary-section">
             <div className="summary-item">
-              <span className="summary-label">Phí thuê xe ({fees?.totalDays || 0} ngày × {formatCurrency(fees?.pricePerDay || 0)})</span>
-              <span className="summary-value">{formatCurrency(fees?.baseCost || 0)}</span>
+              <span className="summary-label">Tổng tiền thuê xe ({fees?.totalDays || 0} ngày × {formatCurrency(fees?.pricePerDay || 0)})</span>
+              <span className="summary-value">{formatCurrency(fees?.totalCost || 0)}</span>
             </div>
-            {(fees?.deliveryFee || 0) > 0 && (
-              <div className="summary-item">
-                <span className="summary-label">Phí giao xe</span>
-                <span className="summary-value">{formatCurrency(fees?.deliveryFee || 0)}</span>
-              </div>
-            )}
-            {(fees?.discountAmount || 0) > 0 && (
-              <div className="summary-item">
-                <span className="summary-label">Giảm giá</span>
-                <span className="summary-value discount">-{formatCurrency(fees?.discountAmount || 0)}</span>
-              </div>
-            )}
-            {(fees?.pointsUsed || 0) > 0 && (
-              <div className="summary-item">
-                <span className="summary-label">Điểm đã sử dụng</span>
-                <span className="summary-value">{fees?.pointsUsed || 0} điểm</span>
-              </div>
-            )}
-            <div className="summary-item subtotal">
-              <span className="summary-label">Tạm tính</span>
-              <span className="summary-value">{formatCurrency(fees?.subtotal || 0)}</span>
-            </div>
+            
             <div className="summary-item">
-              <span className="summary-label">Tiền đặt cọc (30%)</span>
-              <span className="summary-value">{formatCurrency(fees?.depositAmount || 0)}</span>
+              <span className="summary-label">Phí giao xe</span>
+              <span className="summary-value">+{formatCurrency(fees?.deliveryFee || 0)}</span>
             </div>
+            
             <div className="summary-item">
-              <span className="summary-label">Tiền còn lại</span>
-              <span className="summary-value">{formatCurrency(fees?.remainingAmount || 0)}</span>
+              <span className="summary-label">Giảm giá voucher</span>
+              <span className="summary-value discount">-{formatCurrency(fees?.discountAmount || 0)}</span>
             </div>
+            
+            <div className="summary-item">
+              <span className="summary-label">Điểm sử dụng</span>
+              <span className="summary-value discount">-{fees?.pointsUsed || 0} điểm</span>
+            </div>
+            
             <div className="total-summary">
-              <span>Tổng cộng</span>
+              <span>Tổng tiền phải trả</span>
               <span>{formatCurrency(fees?.totalAmount || 0)}</span>
+            </div>
+            
+            <div className="payment-breakdown">
+              <div className="summary-item">
+                <span className="summary-label">Thanh toán trước (30%)</span>
+                <span className="summary-value highlight">{formatCurrency(fees?.depositAmount || 0)}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Thanh toán khi nhận xe (70%)</span>
+                <span className="summary-value">{formatCurrency(fees?.remainingAmount || 0)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -275,7 +273,7 @@ const OrderConfirmation = () => {
               <p className="payment-step-title">Thanh toán giữ chỗ qua Rentzy</p>
               <p className="payment-step-description">Tiền này để xác nhận đơn thuê và giữ xe, sẽ được trừ vào số tiền còn lại phải thanh toán khi nhận xe.</p>
             </div>
-            <span className="payment-amount">{formatCurrency(fees.holdFee)}</span>
+            <span className="payment-amount">{formatCurrency(fees?.depositAmount || 0)}</span>
           </div>
           <div className="payment-step">
             <div className={`payment-step-number ${isPaymentCompleted ? 'completed' : ''}`}>
@@ -283,10 +281,10 @@ const OrderConfirmation = () => {
             </div>
             <div className="payment-step-content">
               <p className="payment-step-title">Thanh toán số tiền còn lại khi nhận xe</p>
-              <p className="payment-step-description">Số tiền còn lại <span>{formatCurrency(fees.totalAmount - fees.holdFee)}</span></p>
-              <p className="payment-step-description">Tiền cọc xe sẽ được thanh toán sau khi hoàn thành chuyến đi <span>{formatCurrency(fees.deposit)}</span></p>
+              <p className="payment-step-description">Số tiền còn lại <span>{formatCurrency(fees?.remainingAmount || 0)}</span></p>
+              <p className="payment-step-description">Tiền cọc xe sẽ được thanh toán sau khi hoàn thành chuyến đi <span>{formatCurrency(fees?.depositAmount || 0)}</span></p>
             </div>
-            <span className="payment-amount">{formatCurrency(fees.totalAmount - fees.holdFee)}</span>
+            <span className="payment-amount">{formatCurrency(fees?.remainingAmount || 0)}</span>
           </div>
         </div>
 
