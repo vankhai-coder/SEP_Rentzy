@@ -532,7 +532,7 @@ const EditCarForm = () => {
 
           {/* Location */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Vị trí xe</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-6">Vị trí xe</h2> 
 
             <div className="space-y-4">
               <div>
