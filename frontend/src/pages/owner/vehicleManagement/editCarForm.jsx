@@ -9,9 +9,10 @@ const EditCarForm = () => {
   const [loading, setLoading] = useState(false);
   const [loadingVehicle, setLoadingVehicle] = useState(true);
   const [brands, setBrands] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+  
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
-  const [vehicleData, setVehicleData] = useState(null);
   
   const [formData, setFormData] = useState({
     brand: "",
@@ -25,18 +26,16 @@ const EditCarForm = () => {
     year: "",
     body_type: "",
     transmission: "",
-    fuel_type: "", // Sử dụng string thay vì select
+    fuel_type: "",  
     fuel_consumption: "",
     description: ""
   });
 
-  const [images, setImages] = useState({
-    main_image: null,
-    extra_images: []
-  });
 
   const [mainImage, setMainImage] = useState(null);
   const [extraImages, setExtraImages] = useState([]);
+  const [currentMainImage, setCurrentMainImage] = useState("");
+  const [currentExtraImages, setCurrentExtraImages] = useState([]);
   const [gettingLocation, setGettingLocation] = useState(false);
 
   // Load vehicle data
@@ -45,41 +44,47 @@ const EditCarForm = () => {
       try {
         setLoadingVehicle(true);
         const response = await axiosInstance.get(`/api/owner/vehicles/${id}`);
+        const vehicle = response.data.vehicle;
         
-        if (response.data.success) {
-          const vehicle = response.data.vehicle;
-          setVehicleData(vehicle);
-          
-          setFormData({
-            brand: vehicle.brand || "",
-            model: vehicle.model || "",
-            license_plate: vehicle.license_plate || "",
-            location: vehicle.location || "",
-            latitude: vehicle.latitude || "",
-            longitude: vehicle.longitude || "",
-            price_per_day: vehicle.price_per_day || "",
-            seats: vehicle.seats || "",
-            year: vehicle.year || "",
-            body_type: vehicle.body_type || "",
-            transmission: vehicle.transmission || "",
-            fuel_type: vehicle.fuel_type || "", // Load fuel_type as string
-            fuel_consumption: vehicle.fuel_consumption || "",
-            description: vehicle.description || ""
-          });
+        console.log("Vehicle data:", vehicle); // Để debug
+        console.log("Vehicle body_type:", vehicle.body_type);
+        console.log("Vehicle transmission:", vehicle.transmission);
+        console.log("Vehicle fuel_type:", vehicle.fuel_type);
+        console.log("Vehicle fuel_consumption:", vehicle.fuel_consumption);
+        console.log("Form data after setting:", {
+          body_type: vehicle.body_type || "",
+          transmission: vehicle.transmission || "",
+          fuel_type: vehicle.fuel_type || "",
+          fuel_consumption: vehicle.fuel_consumption || ""
+        });
+        
+        // Set form data
+        setFormData({
+          brand: vehicle.brand?.name || "",
+          model: vehicle.model || "",
+          license_plate: vehicle.license_plate || "",
+          location: vehicle.location || "",
+          latitude: vehicle.latitude || "",
+          longitude: vehicle.longitude || "",
+          price_per_day: vehicle.price_per_day || "",
+          year: vehicle.year || "",
+          seats: vehicle.seats || "",
+          body_type: vehicle.body_type || "",
+          transmission: vehicle.transmission || "",
+          fuel_type: vehicle.fuel_type || "",
+          fuel_consumption: vehicle.fuel_consumption || "",
+          description: vehicle.description || ""
+        });
 
-          // Parse features if they exist
-          if (vehicle.features) {
-            try {
-              const features = typeof vehicle.features === 'string' 
-                ? JSON.parse(vehicle.features) 
-                : vehicle.features;
-              setSelectedFeatures(Array.isArray(features) ? features : []);
-            } catch (error) {
-              console.error('Error parsing features:', error);
-              setSelectedFeatures([]);
-            }
-          }
-        }
+        // Set features
+        setSelectedFeatures(vehicle.features || []);
+        
+        // Set current images
+        setCurrentMainImage(vehicle.main_image || "");
+        setCurrentExtraImages(vehicle.extra_images || []);
+        
+        
+        
       } catch (error) {
         console.error('Error fetching vehicle:', error);
         toast.error('Không thể tải thông tin xe');
@@ -98,13 +103,14 @@ const EditCarForm = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
+        setLoadingBrands(true);
         const response = await axiosInstance.get('/api/owner/brands/category/car');
-        if (response.data.success) {
-          setBrands(response.data.data);
-        }
+        setBrands(response.data);
       } catch (error) {
         console.error('Error fetching brands:', error);
         toast.error('Không thể tải danh sách hãng xe');
+      } finally {
+        setLoadingBrands(false);
       }
     };
 
@@ -201,8 +207,6 @@ const EditCarForm = () => {
     "Cửa hít", "Cảnh báo điểm mù"
   ];
 
-  // Car body types
-  const bodyTypes = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Convertible', 'Wagon', 'Van'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -304,7 +308,7 @@ const EditCarForm = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/owner/vehicle-management')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             ← Quay lại
           </button>
@@ -337,22 +341,28 @@ const EditCarForm = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hãng xe *
+                    Thương hiệu *
                   </label>
-                  <select
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">-- Chọn hãng xe --</option>
-                    {brands.map((brand) => (
-                      <option key={brand.brand_id} value={brand.name}>
-                        {brand.name}
-                      </option>
-                    ))}
-                  </select>
+                  {loadingBrands ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100">
+                      Đang tải...
+                    </div>
+                  ) : (
+                    <select
+                      name="brand"
+                      value={formData.brand}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Chọn thương hiệu</option>
+                      {brands.map(brand => (
+                        <option key={brand.brand_id} value={brand.name}>
+                          {brand.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -386,28 +396,48 @@ const EditCarForm = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Số chỗ ngồi *
+                  </label>
+                  <input
+                    type="number"
+                    name="seats"
+                    value={formData.seats}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                    max="50"
+                    placeholder="Nhập số chỗ ngồi"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
               </div>
 
               {/* Right Column */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Số chỗ ngồi *
+                    Dạng thân xe *
                   </label>
                   <select
-                    name="seats"
-                    value={formData.seats}
+                    name="body_type"
+                    value={formData.body_type}
                     onChange={handleInputChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">-- Chọn số chỗ --</option>
-                    <option value="2">2 chỗ</option>
-                    <option value="4">4 chỗ</option>
-                    <option value="5">5 chỗ</option>
-                    <option value="7">7 chỗ</option>
-                    <option value="9">9 chỗ</option>
-                    <option value="16">16 chỗ</option>
+                    <option value="">Chọn dạng thân xe</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="hatchback">Hatchback</option>
+                    <option value="pickup">Pickup</option>
+                    <option value="coupe">Coupe</option>
+                    <option value="convertible">Convertible</option>
+                    <option value="minivan">Minivan</option>
+                    <option value="van">Van</option>
+                    <option value="mpv">MPV</option>
                   </select>
                 </div>
                     
@@ -422,7 +452,7 @@ const EditCarForm = () => {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">-- Chọn hộp số --</option>
+                    <option value="">Chọn hộp số</option>
                     <option value="manual">Số sàn</option>
                     <option value="automatic">Số tự động</option>
                   </select>
@@ -432,15 +462,19 @@ const EditCarForm = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Loại nhiên liệu *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="fuel_type"
                     value={formData.fuel_type}
                     onChange={handleInputChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="VD: Xăng, Diesel, Điện, Hybrid..."
-                  />
+                  >
+                    <option value="">Chọn loại nhiên liệu</option>
+                    <option value="petrol">Xăng</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="electric">Điện</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
                 </div>
 
                 <div>
@@ -459,40 +493,20 @@ const EditCarForm = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dạng thân xe *
+                    Giá thuê mỗi ngày (VNĐ) *
                   </label>
-                  <select
-                    name="body_type"
-                    value={formData.body_type}
+                  <input
+                    type="number"
+                    name="price_per_day"
+                    value={formData.price_per_day}
                     onChange={handleInputChange}
                     required
+                    min="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">-- Chọn dạng thân xe --</option>
-                    {bodyTypes.map(type => (
-                      <option key={type} value={type.toLowerCase()}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="VD: 500000"
+                  />
                 </div>
               </div>
-            </div>
-
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Giá thuê mỗi ngày (VNĐ) *
-              </label>
-              <input
-                type="number"
-                name="price_per_day"
-                value={formData.price_per_day}
-                onChange={handleInputChange}
-                required
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="VD: 500000"
-              />
             </div>
           </div>
 
@@ -592,89 +606,62 @@ const EditCarForm = () => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-6">Hình ảnh</h2>
             
-            {/* Current Main Image */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh chính hiện tại</h3>
-              {vehicleData?.main_image ? (
-                <div className="relative inline-block">
-                  <img
-                    src={`http://localhost:3000${vehicleData.main_image}`}
-                    alt="Main"
-                    className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
-                  />
-                </div>
-              ) : (
-                <div className="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500">Không có ảnh</span>
-                </div>
-              )}
-            </div>
-
-            {/* Upload New Main Image */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tải lên ảnh chính mới
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleMainImageChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {mainImage && (
-                <div className="mt-3">
-                  <img
-                    src={URL.createObjectURL(mainImage)}
-                    alt="New main"
-                    className="w-32 h-32 object-cover rounded-lg border-2 border-green-500"
+            <div className="space-y-6">
+              {/* Current Main Image */}
+              {currentMainImage && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh chính hiện tại</h3>
+                  <img 
+                    src={currentMainImage} 
+                    alt="Current main" 
+                    className="w-48 h-32 object-cover rounded-lg border"
                   />
                 </div>
               )}
-            </div>
 
-            {/* Current Extra Images */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh phụ hiện tại</h3>
-              {vehicleData?.extra_images && vehicleData.extra_images.length > 0 ? (
-                <div className="grid grid-cols-4 gap-3">
-                  {vehicleData.extra_images.map((image, index) => (
-                    <img
-                      key={index}
-                      src={`http://localhost:3000${image}`}
-                      alt={`Extra ${index + 1}`}
-                      className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-gray-500">Không có ảnh phụ</div>
-              )}
-            </div>
+              {/* Main Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ảnh chính mới (tùy chọn)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleMainImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-            {/* Upload New Extra Images */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tải lên ảnh phụ mới
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleExtraImagesChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {extraImages.length > 0 && (
-                <div className="mt-3 grid grid-cols-4 gap-3">
-                  {extraImages.map((image, index) => (
-                    <img
-                      key={index}
-                      src={URL.createObjectURL(image)}
-                      alt={`New extra ${index + 1}`}
-                      className="w-24 h-24 object-cover rounded-lg border-2 border-green-500"
-                    />
-                  ))}
+              {/* Current Extra Images */}
+              {currentExtraImages.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh phụ hiện tại</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {currentExtraImages.map((img, index) => (
+                      <img 
+                        key={index}
+                        src={img} 
+                        alt={`Current extra ${index}`} 
+                        className="w-full h-24 object-cover rounded-lg border"
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
+
+              {/* Extra Images Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ảnh phụ mới (tùy chọn)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleExtraImagesChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
 
@@ -683,14 +670,14 @@ const EditCarForm = () => {
             <button
               type="button"
               onClick={() => navigate('/owner/vehicle-management')}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg border border-blue-600 hover:bg-blue-700 hover:border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Đang cập nhật...' : 'Cập nhật xe'}
             </button>
