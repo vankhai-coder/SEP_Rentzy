@@ -24,6 +24,9 @@ import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 
+// booking
+import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
+
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 const App = () => {
   return (
@@ -55,7 +58,9 @@ const App = () => {
           <Route path="/cars/search" element={<SearchResults type="car" />} />
           {/* Vehicle Detail */}
           <Route path="/detail/:id" element={<VehicleDetail />} />
-
+          
+          {/* Order Confirmation */}
+          <Route path="/order-confirmation/:bookingId" element={<OrderConfirmation />} />
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />

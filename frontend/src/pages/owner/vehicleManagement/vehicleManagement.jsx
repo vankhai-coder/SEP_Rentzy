@@ -1,77 +1,82 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../../api/axiosInstance';
-import { toast } from 'react-toastify';
-import { 
-  MdSearch, 
-  MdAdd, 
-  MdVisibility, 
-  MdEdit, 
-  MdLock, 
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../../config/axiosInstance";
+import { toast } from "react-toastify";
+import {
+  MdSearch,
+  MdAdd,
+  MdVisibility,
+  MdEdit,
+  MdLock,
   MdLockOpen,
   MdDelete,
   MdRefresh,
   MdDirectionsCar,
-  MdTwoWheeler
-} from 'react-icons/md';
-import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
-
+  MdTwoWheeler,
+} from "react-icons/md";
+import SidebarOwner from "@/components/SidebarOwner/SidebarOwner";
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState('DESC');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("DESC");
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    itemsPerPage: 10
-});
-const [stats, setStats] = useState({
+    itemsPerPage: 10,
+  });
+  const [stats, setStats] = useState({
     totalVehicles: 0,
-    totalRentals: 0
-});
-const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
+    totalRentals: 0,
+  });
+  const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   // Fetch vehicles data
-const fetchVehicles = useCallback(async () => {
+  const fetchVehicles = useCallback(async () => {
     try {
-    setLoading(true);
-    const params = new URLSearchParams({
+      setLoading(true);
+      const params = new URLSearchParams({
         page: pagination.currentPage,
         limit: pagination.itemsPerPage,
         sortBy,
         sortOrder,
-        ...(searchTerm && { search: searchTerm })
-    });
+        ...(searchTerm && { search: searchTerm }),
+      });
 
-    const response = await axiosInstance.get(`/api/owner/vehicles?${params}`);
-    
-    if (response.data.success) {
+      const response = await axiosInstance.get(`/api/owner/vehicles?${params}`);
+
+      if (response.data.success) {
         setVehicles(response.data.data.vehicles);
         setPagination(response.data.data.pagination);
-    }
+      }
     } catch (error) {
-    console.error('Error fetching vehicles:', error);
-    toast.error('Lỗi khi tải danh sách xe');
+      console.error("Error fetching vehicles:", error);
+      toast.error("Lỗi khi tải danh sách xe");
     } finally {
-    setLoading(false);
+      setLoading(false);
     }
-}, [pagination.currentPage, pagination.itemsPerPage, sortBy, sortOrder, searchTerm]);
+  }, [
+    pagination.currentPage,
+    pagination.itemsPerPage,
+    sortBy,
+    sortOrder,
+    searchTerm,
+  ]);
 
   // Fetch vehicle stats
   const fetchStats = async () => {
     try {
-      const response = await axiosInstance.get('/api/owner/vehicles/stats');
+      const response = await axiosInstance.get("/api/owner/vehicles/stats");
       if (response.data.success) {
         setStats(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
@@ -83,26 +88,29 @@ const fetchVehicles = useCallback(async () => {
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
     fetchVehicles();
   };
 
   // Handle status toggle
   const handleStatusToggle = async (vehicleId, currentStatus) => {
     try {
-      const newStatus = currentStatus === 'available' ? 'blocked' : 'available';
-      
-      const response = await axiosInstance.patch(`/owner/vehicles/${vehicleId}/status`, {
-        status: newStatus
-      });
+      const newStatus = currentStatus === "available" ? "blocked" : "available";
+
+      const response = await axiosInstance.patch(
+        `/owner/vehicles/${vehicleId}/status`,
+        {
+          status: newStatus,
+        }
+      );
 
       if (response.data.success) {
         toast.success(response.data.message);
         fetchVehicles();
       }
     } catch (error) {
-      console.error('Error updating vehicle status:', error);
-      toast.error('Lỗi khi cập nhật trạng thái xe');
+      console.error("Error updating vehicle status:", error);
+      toast.error("Lỗi khi cập nhật trạng thái xe");
     }
   };
 
@@ -111,7 +119,7 @@ const fetchVehicles = useCallback(async () => {
   //   if (window.confirm(`Bạn có chắc chắn muốn xóa xe "${vehicleName}"?`)) {
   //     try {
   //       const response = await axiosInstance.delete(`/owner/vehicles/${vehicleId}`);
-        
+
   //       if (response.data.success) {
   //         toast.success('Xóa xe thành công');
   //         fetchVehicles();
@@ -127,30 +135,30 @@ const fetchVehicles = useCallback(async () => {
   // Handle vehicle type selection
   const handleAddCar = () => {
     setShowVehicleTypeModal(false);
-    navigate('/owner/add-car');
+    navigate("/owner/add-car");
   };
 
   const handleAddMotorbike = () => {
     setShowVehicleTypeModal(false);
-    navigate('/owner/add-motorbike');
+    navigate("/owner/add-motorbike");
   };
 
   // Format price
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   // Get status badge
   const getStatusBadge = (status) => {
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
-    
+
     switch (status) {
-      case 'available':
+      case "available":
         return `${baseClasses} bg-green-100 text-green-800`;
-      case 'blocked':
+      case "blocked":
         return `${baseClasses} bg-red-100 text-red-800`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`;
@@ -160,13 +168,13 @@ const fetchVehicles = useCallback(async () => {
   // Get approval badge
   const getApprovalBadge = (approvalStatus) => {
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
-    
+
     switch (approvalStatus) {
-      case 'approved':
+      case "approved":
         return `${baseClasses} bg-green-100 text-green-800`;
-      case 'pending':
+      case "pending":
         return `${baseClasses} bg-yellow-100 text-yellow-800`;
-      case 'rejected':
+      case "rejected":
         return `${baseClasses} bg-red-100 text-red-800`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`;
@@ -176,10 +184,10 @@ const fetchVehicles = useCallback(async () => {
   // Get status text in Vietnamese
   const getStatusText = (status) => {
     switch (status) {
-      case 'available':
-        return 'CÓ SẴN';
-      case 'blocked':
-        return 'BỊ KHÓA';
+      case "available":
+        return "CÓ SẴN";
+      case "blocked":
+        return "BỊ KHÓA";
       default:
         return status;
     }
@@ -188,12 +196,12 @@ const fetchVehicles = useCallback(async () => {
   // Get approval text in Vietnamese
   const getApprovalText = (approvalStatus) => {
     switch (approvalStatus) {
-      case 'approved':
-        return 'ĐÃ DUYỆT';
-      case 'pending':
-        return 'CHỜ DUYỆT';
-      case 'rejected':
-        return 'TỪ CHỐI';
+      case "approved":
+        return "ĐÃ DUYỆT";
+      case "pending":
+        return "CHỜ DUYỆT";
+      case "rejected":
+        return "TỪ CHỐI";
       default:
         return approvalStatus;
     }
@@ -209,13 +217,16 @@ const fetchVehicles = useCallback(async () => {
 
   return (
     <div className="w-full">
-        {/* Header */}
-        <div className="mb-6">
+      {/* Header */}
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Quản lý xe của bạn
         </h1>
         <p className="text-gray-600">
-          Tổng số xe: <span className="font-semibold text-blue-600">{stats.totalVehicles}</span>
+          Tổng số xe:{" "}
+          <span className="font-semibold text-blue-600">
+            {stats.totalVehicles}
+          </span>
         </p>
       </div>
 
@@ -245,7 +256,7 @@ const fetchVehicles = useCallback(async () => {
             <select
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
-                const [field, order] = e.target.value.split('-');
+                const [field, order] = e.target.value.split("-");
                 setSortBy(field);
                 setSortOrder(order);
               }}
@@ -261,8 +272,8 @@ const fetchVehicles = useCallback(async () => {
 
             <button
               onClick={() => {
-                setSearchTerm('');
-                setPagination(prev => ({ ...prev, currentPage: 1 }));
+                setSearchTerm("");
+                setPagination((prev) => ({ ...prev, currentPage: 1 }));
                 fetchVehicles();
               }}
               className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -300,7 +311,10 @@ const fetchVehicles = useCallback(async () => {
             <tbody className="divide-y divide-gray-200">
               {vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="8"
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     Chưa có xe nào. Hãy thêm xe đầu tiên của bạn!
                   </td>
                 </tr>
@@ -309,7 +323,7 @@ const fetchVehicles = useCallback(async () => {
                   <tr key={vehicle.vehicle_id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <img
-                        src={vehicle.main_image_url || '/default_avt.jpg'}
+                        src={vehicle.main_image_url || "/default_avt.jpg"}
                         alt={vehicle.model}
                         className="w-16 h-12 object-cover rounded"
                       />
@@ -339,35 +353,48 @@ const fetchVehicles = useCallback(async () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={getApprovalBadge(vehicle.approvalStatus)}>
+                      <span
+                        className={getApprovalBadge(vehicle.approvalStatus)}
+                      >
                         {getApprovalText(vehicle.approvalStatus)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/owner/vehicles/${vehicle.vehicle_id}`)}
+                          onClick={() =>
+                            navigate(`/owner/vehicles/${vehicle.vehicle_id}`)
+                          }
                           className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors flex items-center gap-1"
                         >
                           <MdVisibility className="w-4 h-4" />
                           Chi tiết
                         </button>
                         <button
-                          onClick={() => navigate(`/owner/vehicles/${vehicle.vehicle_id}/edit`)}
+                          onClick={() =>
+                            navigate(
+                              `/owner/vehicles/${vehicle.vehicle_id}/edit`
+                            )
+                          }
                           className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
                         >
                           <MdEdit className="w-4 h-4" />
                           Sửa
                         </button>
                         <button
-                          onClick={() => handleStatusToggle(vehicle.vehicle_id, vehicle.status)}
+                          onClick={() =>
+                            handleStatusToggle(
+                              vehicle.vehicle_id,
+                              vehicle.status
+                            )
+                          }
                           className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
-                            vehicle.status === 'available'
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            vehicle.status === "available"
+                              ? "bg-red-100 text-red-700 hover:bg-red-200"
+                              : "bg-green-100 text-green-700 hover:bg-green-200"
                           }`}
                         >
-                          {vehicle.status === 'available' ? (
+                          {vehicle.status === "available" ? (
                             <>
                               <MdLock className="w-4 h-4" />
                               Khóa
@@ -399,13 +426,22 @@ const fetchVehicles = useCallback(async () => {
         {pagination.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Hiển thị {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} đến{' '}
-              {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} trong tổng số{' '}
-              {pagination.totalItems} xe
+              Hiển thị{" "}
+              {(pagination.currentPage - 1) * pagination.itemsPerPage + 1} đến{" "}
+              {Math.min(
+                pagination.currentPage * pagination.itemsPerPage,
+                pagination.totalItems
+              )}{" "}
+              trong tổng số {pagination.totalItems} xe
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    currentPage: prev.currentPage - 1,
+                  }))
+                }
                 disabled={pagination.currentPage === 1}
                 className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
@@ -415,7 +451,12 @@ const fetchVehicles = useCallback(async () => {
                 {pagination.currentPage} / {pagination.totalPages}
               </span>
               <button
-                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    currentPage: prev.currentPage + 1,
+                  }))
+                }
                 disabled={pagination.currentPage === pagination.totalPages}
                 className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
@@ -434,7 +475,7 @@ const fetchVehicles = useCallback(async () => {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Chọn loại xe mà bạn muốn thêm
               </h2>
-              
+
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleAddCar}
@@ -443,7 +484,7 @@ const fetchVehicles = useCallback(async () => {
                   <MdDirectionsCar className="w-5 h-5" />
                   Thêm ô tô
                 </button>
-                
+
                 <button
                   onClick={handleAddMotorbike}
                   className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
@@ -452,7 +493,7 @@ const fetchVehicles = useCallback(async () => {
                   Thêm xe máy
                 </button>
               </div>
-              
+
               <button
                 onClick={() => setShowVehicleTypeModal(false)}
                 className="mt-4 w-full px-4 py-2 text-gray-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors "

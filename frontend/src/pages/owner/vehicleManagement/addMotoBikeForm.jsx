@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../../../api/axiosInstance";
+import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
 
 const AddMotoBikeForm = () => {
   const navigate = useNavigate();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     brand: "",
@@ -18,7 +18,7 @@ const AddMotoBikeForm = () => {
     engine_capacity: "",
     fuel_type: "",
     fuel_consumption: "",
-    description: ""
+    description: "",
   });
 
   const [selectedFeatures, setSelectedFeatures] = useState([]);
@@ -29,11 +29,19 @@ const AddMotoBikeForm = () => {
 
   // Motorbike features options
   const motorbikeFeatures = [
-     
-    "Định vị GPS", "Khe cắm USB", 
-    "Đèn LED", "Phanh ABS", "Phanh đĩa", "Giảm xóc",
-    "Yên da", "Yên bọc da", "Khung thép", "Khung nhôm", "Bình xăng lớn",
-    "Khoá thông minh", "Chống trộm"
+    "Định vị GPS",
+    "Khe cắm USB",
+    "Đèn LED",
+    "Phanh ABS",
+    "Phanh đĩa",
+    "Giảm xóc",
+    "Yên da",
+    "Yên bọc da",
+    "Khung thép",
+    "Khung nhôm",
+    "Bình xăng lớn",
+    "Khoá thông minh",
+    "Chống trộm",
   ];
 
   // Bike type options
@@ -41,21 +49,21 @@ const AddMotoBikeForm = () => {
     { value: "scooter", label: "Xe tay ga" },
     { value: "manual", label: "Xe số" },
     { value: "clutch", label: "Xe côn tay" },
-    { value: "electric", label: "Xe điện" }
+    { value: "electric", label: "Xe điện" },
   ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFeatureToggle = (feature) => {
-    setSelectedFeatures(prev => 
-      prev.includes(feature) 
-        ? prev.filter(f => f !== feature)
+    setSelectedFeatures((prev) =>
+      prev.includes(feature)
+        ? prev.filter((f) => f !== feature)
         : [...prev, feature]
     );
   };
@@ -68,12 +76,12 @@ const AddMotoBikeForm = () => {
 
   const handleExtraImagesChange = (e) => {
     const files = Array.from(e.target.files);
-    setExtraImages(prev => [...prev, ...files]);
+    setExtraImages((prev) => [...prev, ...files]);
   };
 
   const handleDocumentsChange = (e) => {
     const files = Array.from(e.target.files);
-    setDocuments(prev => [...prev, ...files]);
+    setDocuments((prev) => [...prev, ...files]);
   };
 
   const handleSubmit = async (e) => {
@@ -82,69 +90,78 @@ const AddMotoBikeForm = () => {
 
     try {
       const submitData = new FormData();
-      
+
       // Add form data
-      submitData.append('vehicle_type', 'motorbike');
-      submitData.append('brand', formData.brand);
-      submitData.append('model', formData.model);
-      submitData.append('license_plate', formData.license_plate);
-      submitData.append('location', formData.location);
-      submitData.append('price_per_day', formData.price_per_day);
-      submitData.append('year', formData.year);
-      submitData.append('bike_type', formData.bike_type);
-      submitData.append('engine_capacity', formData.engine_capacity);
-      submitData.append('fuel_type', formData.fuel_type);
-      submitData.append('fuel_consumption', formData.fuel_consumption);
-      submitData.append('description', formData.description);
-      submitData.append('features', JSON.stringify(selectedFeatures));
+      submitData.append("vehicle_type", "motorbike");
+      submitData.append("brand", formData.brand);
+      submitData.append("model", formData.model);
+      submitData.append("license_plate", formData.license_plate);
+      submitData.append("location", formData.location);
+      submitData.append("price_per_day", formData.price_per_day);
+      submitData.append("year", formData.year);
+      submitData.append("bike_type", formData.bike_type);
+      submitData.append("engine_capacity", formData.engine_capacity);
+      submitData.append("fuel_type", formData.fuel_type);
+      submitData.append("fuel_consumption", formData.fuel_consumption);
+      submitData.append("description", formData.description);
+      submitData.append("features", JSON.stringify(selectedFeatures));
 
       // Add images
       if (mainImage) {
-        submitData.append('main_image', mainImage);
+        submitData.append("main_image", mainImage);
       }
-      
+
       extraImages.forEach((image) => {
-        submitData.append('extra_images', image);
+        submitData.append("extra_images", image);
       });
 
       // Add documents
       documents.forEach((doc) => {
-        submitData.append('documents', doc);
+        submitData.append("documents", doc);
       });
 
-      const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const response = await axiosInstance.post(
+        "/api/owner/vehicles",
+        submitData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
-      });
+      );
 
       if (response.data.success) {
-        toast.success('Đăng xe máy thành công!');
-        navigate('/owner/vehicle-management');
+        toast.success("Đăng xe máy thành công!");
+        navigate("/owner/vehicle-management");
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error('Lỗi khi đăng xe máy. Vui lòng thử lại.');
+      console.error("Error submitting form:", error);
+      toast.error("Lỗi khi đăng xe máy. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
-    return (
-        <div className="w-full">
+  return (
+    <div className="w-full">
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
         <p className="text-green-700 font-medium">
-          Hãy vui lòng điền các thông tin chính xác của xe máy và giấy tờ xe hợp lệ.
+          Hãy vui lòng điền các thông tin chính xác của xe máy và giấy tờ xe hợp
+          lệ.
         </p>
       </div>
 
-      <h1 className="text-3xl font-bold text-blue-600 mb-6">🏍️ Đăng xe máy cho thuê</h1>
-      
+      <h1 className="text-3xl font-bold text-blue-600 mb-6">
+        🏍️ Đăng xe máy cho thuê
+      </h1>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Vehicle Information */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Thông tin xe máy</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Thông tin xe máy
+          </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
@@ -256,7 +273,7 @@ const AddMotoBikeForm = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">-- Chọn loại xe máy --</option>
-                  {bikeTypes.map(type => (
+                  {bikeTypes.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
                     </option>
@@ -310,24 +327,26 @@ const AddMotoBikeForm = () => {
                   placeholder="VD: 1.5 L/100km hoặc 2 kWh/100km"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                    </div>
-                </div>
+              </div>
             </div>
+          </div>
         </div>
 
         {/* Features Section */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Tính năng</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Tính năng
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {motorbikeFeatures.map(feature => (
+            {motorbikeFeatures.map((feature) => (
               <button
                 key={feature}
                 type="button"
                 onClick={() => handleFeatureToggle(feature)}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   selectedFeatures.includes(feature)
-                    ? 'bg-green-100 border-green-500 text-green-800'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                    ? "bg-green-100 border-green-500 text-green-800"
+                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {feature}
@@ -351,8 +370,10 @@ const AddMotoBikeForm = () => {
 
         {/* File Upload Sections */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Hình ảnh và giấy tờ</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Hình ảnh và giấy tờ
+          </h2>
+
           <div className="space-y-6">
             {/* Main Image */}
             <div>
@@ -403,7 +424,7 @@ const AddMotoBikeForm = () => {
         <div className="flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => navigate('/owner/vehicle-management')}
+            onClick={() => navigate("/owner/vehicle-management")}
             className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             Hủy
@@ -419,7 +440,7 @@ const AddMotoBikeForm = () => {
                 Đang xử lý...
               </>
             ) : (
-              'Đăng xe máy cho thuê'
+              "Đăng xe máy cho thuê"
             )}
           </button>
         </div>
