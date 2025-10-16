@@ -69,7 +69,7 @@ const fetchVehicles = useCallback(async () => {
         ...(debouncedSearchTerm && { search: debouncedSearchTerm })
     });
 
-    const response = await axiosInstance.get(`/api/owner/vehicles?${params}`);
+    const response = await axiosInstance.get(`/owner/vehicles?${params}`);
     
     if (response.data.success) {
         setVehicles(response.data.data.vehicles);
@@ -86,7 +86,7 @@ const fetchVehicles = useCallback(async () => {
   // Fetch vehicle stats
   const fetchStats = async () => {
     try {
-      const response = await axiosInstance.get('/api/owner/vehicles/stats');
+      const response = await axiosInstance.get('/owner/vehicles/stats');
       if (response.data.success) {
         setStats(response.data.data);
       }

@@ -43,7 +43,7 @@ const EditMotoBikeForm = () => {
     const fetchVehicleData = async () => {
       try {
         setLoadingVehicle(true);
-        const response = await axiosInstance.get(`/api/owner/vehicles/${id}`);
+        const response = await axiosInstance.get(`/owner/vehicles/${id}`);
         const vehicle = response.data.vehicle;
         
         // Set form data
