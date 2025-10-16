@@ -34,7 +34,10 @@ router.post("/vehicles", verifyJWTToken, upload1.fields([
 ]), createVehicle);
 
 // PUT /api/owner/vehicles/:id - Cập nhật thông tin xe
-router.put("/vehicles/:id", verifyJWTToken, updateVehicle);
+router.put("/vehicles/:id", verifyJWTToken, upload1.fields([
+  { name: 'main_image', maxCount: 1 },
+  { name: 'extra_images', maxCount: 10 },
+]), updateVehicle);
 
 // PATCH /api/owner/vehicles/:id/status - Cập nhật trạng thái xe (available/blocked)
 router.patch("/vehicles/:id/status", verifyJWTToken, updateVehicleStatus);

@@ -366,7 +366,12 @@ const fetchVehicles = useCallback(async () => {
                           Chi tiết
                         </button>
                         <button
-                          onClick={() => navigate(`/owner/vehicles/${vehicle.vehicle_id}/edit`)}
+                          onClick={() => {
+                            const editPath = vehicle.vehicle_type === 'car' 
+                              ? `/owner/edit-car/${vehicle.vehicle_id}`
+                              : `/owner/edit-motorbike/${vehicle.vehicle_id}`;
+                            navigate(editPath);
+                          }}
                           className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
                         >
                           <MdEdit className="w-4 h-4" />

@@ -202,6 +202,7 @@ export const getOwnerVehicleById = async (req, res) => {
     res.json({
       success: true,
       data: vehicleData,
+      vehicle: vehicleData,
     });
   } catch (error) {
     console.error("Error getting vehicle by id:", error);
@@ -396,8 +397,99 @@ export const updateVehicle = async (req, res) => {
       });
     }
 
+    // Extract form data from multipart/form-data
+    const {
+      vehicle_type,
+      brand,
+      model,
+      year,
+      license_plate,
+      price_per_day,
+      location,
+      description,
+      fuel_type,
+      transmission,
+      seats,
+      bike_type,
+      engine_capacity,
+      fuel_consumption,
+      latitude,
+      longitude,
+      features,
+    } = req.body;
+
+    // Handle image uploads
+    let main_image_url = vehicle.main_image_url; // Keep existing if no new image
+    let additional_images = [];
+
+    // Parse existing extra images
+    try {
+      if (vehicle.extra_images && typeof vehicle.extra_images === 'string') {
+        additional_images = JSON.parse(vehicle.extra_images);
+      }
+    } catch (e) {
+      additional_images = [];
+    }
+
+    // Upload new main image if provided
+    if (req.files && req.files.main_image && req.files.main_image[0]) {
+      const mainImageResult = await uploadImageToCloudinary(req.files.main_image[0]);
+      main_image_url = mainImageResult.url;
+    }
+
+    // Upload new additional images if provided
+    if (req.files && req.files.extra_images) {
+      additional_images = []; // Replace all extra images with new ones
+      for (const file of req.files.extra_images) {
+        const imageResult = await uploadImageToCloudinary(file);
+        additional_images.push(imageResult.url);
+      }
+    }
+
+    let updateData = {
+      model,
+      year: year ? parseInt(year) : vehicle.year,
+      license_plate,
+      price_per_day: price_per_day ? parseFloat(price_per_day) : vehicle.price_per_day,
+      location,
+      description,
+      fuel_type,
+      transmission,
+      seats: seats ? parseInt(seats) : vehicle.seats,
+      bike_type,
+      engine_capacity,
+      fuel_consumption,
+      main_image_url,
+      extra_images: JSON.stringify(additional_images),
+      latitude: latitude ? parseFloat(latitude) : vehicle.latitude,
+      longitude: longitude ? parseFloat(longitude) : vehicle.longitude,
+      features: features ? JSON.parse(features) : vehicle.features
+    };
+
+    // Xử lý brand: nếu gửi tên brand thì tìm brand_id
+    if (brand && brand !== vehicle.brand?.name) {
+      const existingBrand = await Brand.findOne({
+        where: {
+          name: {
+            [Op.like]: `%${brand}%`
+          }
+        }
+      });
+      
+      if (existingBrand) {
+        updateData.brand_id = existingBrand.brand_id;
+      } else {
+        // Nếu không tìm thấy brand, tạo brand mới
+        const newBrand = await Brand.create({
+          name: brand,
+          category: vehicle_type || vehicle.vehicle_type || 'car'
+        });
+        updateData.brand_id = newBrand.brand_id;
+      }
+    }
+
     // Cập nhật thông tin xe
-    await vehicle.update(req.body);
+    await vehicle.update(updateData);
 
     // Lấy thông tin xe đã cập nhật
     const updatedVehicle = await Vehicle.findByPk(id, {
@@ -410,13 +502,51 @@ export const updateVehicle = async (req, res) => {
       ],
     });
 
+    // Parse JSON strings to arrays for response
+    const vehicleData = updatedVehicle.toJSON();
+    if (vehicleData.extra_images && typeof vehicleData.extra_images === "string") {
+      try {
+        vehicleData.extra_images = JSON.parse(vehicleData.extra_images);
+      } catch (e) {
+        vehicleData.extra_images = [];
+      }
+    }
+    if (vehicleData.features && typeof vehicleData.features === "string") {
+      try {
+        vehicleData.features = JSON.parse(vehicleData.features);
+      } catch (e) {
+        vehicleData.features = [];
+      }
+    }
+
     res.json({
       success: true,
       message: "Cập nhật xe thành công",
-      data: updatedVehicle,
+      vehicle: vehicleData,
     });
   } catch (error) {
     console.error("Error updating vehicle:", error);
+    
+    // Xử lý lỗi unique constraint cho license_plate
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      if (error.errors && error.errors[0] && error.errors[0].path === 'license_plate') {
+        return res.status(400).json({
+          success: false,
+          message: "Biển số xe đã tồn tại trong hệ thống",
+          error: "DUPLICATE_LICENSE_PLATE",
+        });
+      }
+    }
+    
+    // Xử lý lỗi validation khác
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu không hợp lệ",
+        error: error.errors.map(err => err.message).join(', '),
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Lỗi khi cập nhật xe",

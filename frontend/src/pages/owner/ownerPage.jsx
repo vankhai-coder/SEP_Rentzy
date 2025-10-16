@@ -4,6 +4,8 @@ import VehicleManagement from './vehicleManagement/vehicleManagement.jsx';
 import VehicleDetail from './vehicleManagement/VehicleDetail.jsx';
 import AddCarForm from './vehicleManagement/addCarForm.jsx';
 import AddMotoBikeForm from './vehicleManagement/addMotoBikeForm.jsx';
+import EditCarForm from './vehicleManagement/editCarForm.jsx';
+import EditMotoBikeForm from './vehicleManagement/editMotoBikeForm.jsx';
 import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 const OwnerPage = () => {
   return (
@@ -16,6 +18,8 @@ const OwnerPage = () => {
           <Route path="/vehicles/:id" element={<VehicleDetail />} />
           <Route path="/add-car" element={<AddCarForm />} />
           <Route path="/add-motorbike" element={<AddMotoBikeForm />} />
+          <Route path="/edit-car/:id" element={<EditCarForm />} />
+          <Route path="/edit-motorbike/:id" element={<EditMotoBikeForm />} />
           <Route path="/booking-management" element={<div className="p-6"><h1 className="text-2xl font-bold">Quản lý đơn thuê</h1></div>} />
           <Route path="/cancel-requests" element={<div className="p-6"><h1 className="text-2xl font-bold">Duyệt đơn hủy</h1></div>} />
           <Route path="/revenue" element={<div className="p-6"><h1 className="text-2xl font-bold">Doanh thu</h1></div>} />
