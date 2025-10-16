@@ -207,6 +207,30 @@ const EditCarForm = () => {
     "Cửa hít", "Cảnh báo điểm mù"
   ];
 
+  // body type options
+  const bodyTypes = [
+    { value: "sedan", label: "Sedan" },
+    { value: "suv", label: "SUV" },
+    { value: "hatchback", label: "Hatchback" },
+    { value: "convertible", label: "Convertible" },
+    { value: "coupe", label: "Coupe" },
+    { value: "minivan", label: "Minivan" },
+    { value: "pickup", label: "Pickup" },
+    { value: "van", label: "Van" },
+    { value: "mpv", label: "MPV" }
+  ];
+
+  const fuelTypes = [
+    { value: "petrol", label: "Xăng" },
+    { value: "diesel", label: "Diesel" },
+    { value: "electric", label: "Điện" },
+    { value: "hybrid", label: "Hybrid" }
+  ];
+
+  const transmissionTypes = [
+    { value: "manual", label: "Số sàn" },
+    { value: "automatic", label: "Số tự động" }
+  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -429,15 +453,11 @@ const EditCarForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Chọn dạng thân xe</option>
-                    <option value="sedan">Sedan</option>
-                    <option value="suv">SUV</option>
-                    <option value="hatchback">Hatchback</option>
-                    <option value="pickup">Pickup</option>
-                    <option value="coupe">Coupe</option>
-                    <option value="convertible">Convertible</option>
-                    <option value="minivan">Minivan</option>
-                    <option value="van">Van</option>
-                    <option value="mpv">MPV</option>
+                    {bodyTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                     
@@ -453,8 +473,11 @@ const EditCarForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Chọn hộp số</option>
-                    <option value="manual">Số sàn</option>
-                    <option value="automatic">Số tự động</option>
+                    {transmissionTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -470,10 +493,11 @@ const EditCarForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Chọn loại nhiên liệu</option>
-                    <option value="petrol">Xăng</option>
-                    <option value="diesel">Diesel</option>
-                    <option value="electric">Điện</option>
-                    <option value="hybrid">Hybrid</option>
+                    {fuelTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
