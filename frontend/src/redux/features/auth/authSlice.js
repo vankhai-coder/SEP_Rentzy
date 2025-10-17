@@ -41,7 +41,7 @@ export const checkAuth = createAsyncThunk(
     "user/checkAuth",
     async (_, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.get(`/auth/check-auth`)
+            const res = await axiosInstance.get(`/api/auth/check-auth`)
             return res.data;
         } catch (err) {
             return rejectWithValue(err.response?.data?.message || "Auth check failed");
@@ -54,7 +54,7 @@ export const logoutUser = createAsyncThunk(
     "user/logoutUser",
     async (_, { rejectWithValue }) => {
         try {
-            await axiosInstance.get(`/auth/logout`)
+            await axiosInstance.get(`${import.meta.env.VITE_API_URL}/api/auth/logout`)
             return true; // success
         } catch (err) {
             return rejectWithValue(err.response?.data || "Logout failed");
@@ -68,7 +68,7 @@ export const register = createAsyncThunk(
     async ({ email, password }, { rejectWithValue }) => {
         try {
             const res = await axiosInstance.post(
-                `/auth/register`,
+                `/api/auth/register`,
                 { email, password }
             );
             return res.data;
@@ -84,7 +84,7 @@ export const verifyEmail = createAsyncThunk(
     async ({ email, verifyEmailToken }, { rejectWithValue }) => {
         try {
             const res = await axiosInstance.post(
-                `/auth/verify-email`,
+                `${import.meta.env.VITE_API_URL}/api/auth/verify-email`,
                 {
                     email,
                     verifyEmailToken,
@@ -104,7 +104,7 @@ export const loginUser = createAsyncThunk(
     "user/loginUser",
     async ({ email, password }, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.post("/auth/login", { email, password });
+            const res = await axiosInstance.post("/api/auth/login", { email, password });
             return res.data; // { success, user : {userId , role , email , avatar} }
         } catch (err) {
             return rejectWithValue({
@@ -120,7 +120,7 @@ export const requestVerifyEmail = createAsyncThunk(
     "user/requestVerifyEmail",
     async (email, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.post("/auth/request-create-verify-email", { email });
+            const res = await axiosInstance.post("/api/auth/request-create-verify-email", { email });
             return res.data; // { success: true, message: 'Verification email sent!' }
         } catch (err) {
             return rejectWithValue(err.response?.data || { message: "Error sending verification email" });
@@ -133,7 +133,7 @@ export const requestResetPassword = createAsyncThunk(
     "user/requestResetPassword",
     async (email, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.post("/auth/request-reset-password", { email });
+            const res = await axiosInstance.post("/api/auth/request-reset-password", { email });
             return res.data; // { success: true, message: '...' }
         } catch (err) {
             return rejectWithValue(
@@ -148,7 +148,7 @@ export const resetPassword = createAsyncThunk(
     "user/resetPassword",
     async ({ email, resetPasswordToken, password }, { rejectWithValue }) => {
         try {
-            const res = await axiosInstance.post("/auth/reset-password", {
+            const res = await axiosInstance.post("/api/auth/reset-password", {
                 email,
                 resetPasswordToken,
                 password,
