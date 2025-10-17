@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaUser, FaPhone,FaRegCircle, FaCalendarAlt, FaMapMarkerAlt, FaCheck, FaCar, FaCircle } from 'react-icons/fa';
+import { 
+  FaArrowLeft, 
+  FaUser, 
+  FaPhone, 
+  FaRegCircle, 
+  FaCalendarAlt, 
+  FaMapMarkerAlt, 
+  FaCheck, 
+  FaCar, 
+  FaClock, 
+  FaTag, 
+  FaStar,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaExclamationTriangle,
+  FaMoneyBillWave,
+  FaGift,
+  FaCoins
+} from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 import './OrderConfirmation.css';
 import axiosInstance from "@/config/axiosInstance";
+
 const OrderConfirmation = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState('UNKNOWN'); // PENDING, COMPLETED, FAILED, CANCELED
-
-  // Constants
-  const HOLD_FEE = 500000; // Tiền giữ chỗ
-  const DELIVERY_FEE = 200000; // Phí giao xe 2 chiều
+  const [paymentStatus, setPaymentStatus] = useState('UNKNOWN');
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -23,7 +38,6 @@ const OrderConfirmation = () => {
         setBooking(res.data.booking);
         setLoading(false);
 
-        // Determine payment status from transactions
         const depositTransaction = res.data.booking.transactions.find(
           t => t.type === 'DEPOSIT' && t.paymentMethod === 'MOMO'
         );
@@ -46,7 +60,6 @@ const OrderConfirmation = () => {
     }
   }, [bookingId, navigate]);
 
-  // Add back button handler
   const handleBack = () => {
     navigate(-1);
   };
@@ -56,10 +69,27 @@ const OrderConfirmation = () => {
     return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5);
+  };
+
+  const getStatusText = (status) => {
+    const statusMap = {
+      'pending': 'Chờ xác nhận',
+      'deposit_paid': 'Đã đặt cọc',
+      'rental_paid': 'Đã thanh toán toàn bộ',
+      'confirmed': 'Đã xác nhận',
+      'in_progress': 'Đang thuê',
+      'completed': 'Hoàn thành',
+      'cancel_requested': 'Yêu cầu hủy',
+      'canceled': 'Đã hủy'
+    };
+    return statusMap[status] || status;
   };
 
   const formatCurrency = (amount) => {
@@ -69,45 +99,7 @@ const OrderConfirmation = () => {
     }).format(amount);
   };
 
-  // Tính toán các khoản phí từ dữ liệu API
-  const calculateFees = () => {
-    if (!booking) return null;
-
-    // Sử dụng dữ liệu trực tiếp từ database
-    const totalCost = parseFloat(booking.totalCost) || 0; // Tổng chi phí thuê xe
-    const deliveryFee = parseFloat(booking.deliveryFee) || 0; // Phí giao xe
-    const discountAmount = parseFloat(booking.discountAmount) || 0; // Giảm giá
-    const pointsUsed = booking.pointsUsed || 0; // Điểm đã sử dụng
-    const totalAmount = parseFloat(booking.totalAmount) || 0; // Tổng tiền phải trả
-    const totalPaid = parseFloat(booking.totalPaid) || 0; // Tổng tiền đã thanh toán
-
-    // Tính tiền cọc (30% tổng tiền)
-    const depositAmount = Math.round(totalAmount * 0.3);
-    // Tiền còn lại (70% tổng tiền)
-    const remainingAmount = totalAmount - depositAmount;
-
-    // Thông tin chi tiết
-    const totalDays = booking.totalDays || 0;
-    const pricePerDay = parseFloat(booking.pricePerDay) || 0;
-
-    return {
-      totalCost,
-      deliveryFee,
-      discountAmount,
-      pointsUsed,
-      depositAmount,
-      remainingAmount,
-      totalAmount,
-      totalPaid,
-      totalDays,
-      pricePerDay
-    };
-  };
-
-  const fees = calculateFees();
-
   const handleConfirm = async () => {
-    // Directly navigate to the payment page
     if (booking && booking._id) {
       navigate(`/payment-deposit/${booking._id}`);
     } else {
@@ -123,189 +115,403 @@ const OrderConfirmation = () => {
   const isPaymentFailedOrCanceled = paymentStatus === 'FAILED' || paymentStatus === 'CANCELED';
 
   if (loading) {
-    return <div className="loading">Đang tải thông tin...</div>;
+    return (
+      <div className="order-confirmation-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Đang tải thông tin đơn hàng...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="error">{error}</div>;
+    return (
+      <div className="order-confirmation-container">
+        <div className="error-container">
+          <FaTimesCircle className="error-icon" />
+          <h2>Có lỗi xảy ra</h2>
+          <p>{error}</p>
+          <button onClick={handleBack} className="back-button">
+            <FaArrowLeft /> Quay lại
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!booking) {
-    return <div className="error">Không tìm thấy thông tin đơn hàng</div>;
+    return (
+      <div className="order-confirmation-container">
+        <div className="error-container">
+          <FaExclamationTriangle className="error-icon" />
+          <h2>Không tìm thấy đơn hàng</h2>
+          <p>Đơn hàng bạn tìm kiếm không tồn tại hoặc đã bị xóa</p>
+          <button onClick={handleBackToHome} className="back-button">
+            <FaArrowLeft /> Về trang chủ
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <>
     <div className="order-confirmation-container">
       <div className="order-card">
-        <div className="back-link" onClick={handleBack}>
-          <FaArrowLeft className="mr-2" />
-          <span className="font-semibold">Quay lại</span>
-        </div>
+        {/* Header */}
+        <header className="order-header">
+          <button className="back-button" onClick={handleBack}>
+            <FaArrowLeft />
+            <span>Quay lại</span>
+          </button>
+          <h1 className="page-title">Xác nhận đơn hàng</h1>
+        </header>
 
-        <div className="progress-steps">
+        {/* Progress Steps */}
+        <section className="progress-section">
+          <div className="progress-steps">
             <div className="progress-step completed">
-              <div className="step-icon">
+              <div className="step-circle">
                 <FaCheck />
               </div>
-              <span className="step-text">Tìm và chọn xe</span>
+              <span className="step-label">Chọn xe</span>
             </div>
-            <div className="progress-divider completed"></div>
-            <div className={`progress-step completed ${isPaymentCompleted ? 'completed' : 'current'}`}>
-              <div className="step-icon">
+            
+            <div className="progress-line completed"></div>
+            
+            <div className="progress-step completed">
+              <div className="step-circle">
                 <FaCheck />
               </div>
-              <span className="step-text">Xác nhận đơn hàng</span>
+              <span className="step-label">Xác nhận</span>
             </div>
-            <div className={`progress-divider ${isPaymentCompleted ? 'completed' : ''}`}></div>
+            
+            <div className="progress-line"></div>
+            
             <div className={`progress-step ${isPaymentCompleted ? 'completed' : 'current'}`}>
-              <div className="step-icon">
+              <div className="step-circle">
+                {isPaymentCompleted ? <FaCheck /> : <FaMoneyBillWave />}
+              </div>
+              <span className="step-label">Thanh toán</span>
+            </div>
+            
+            <div className="progress-line"></div>
+            
+            <div className={`progress-step ${isPaymentCompleted ? 'current' : ''}`}>
+              <div className="step-circle">
                 <FaCar />
               </div>
-              <span className="step-text">Thanh toán giữ chỗ</span>
-            </div>
-            <div className={`progress-divider ${isPaymentCompleted ? 'completed' : ''}`}></div>
-            <div className={`progress-step ${isPaymentCompleted ? 'completed' : ''}`}>
-              <div className="step-icon">
-                <FaRegCircle />
-              </div>
-              <span className="step-text">Tải app & lấy xe</span>
+              <span className="step-label">Nhận xe</span>
             </div>
           </div>
+        </section>
 
-        <h2 className="section-title text-center">
-            {isPaymentCompleted ? 'Thanh toán giữ chỗ thành công!' : isPaymentFailedOrCanceled ? 'Thanh toán thất bại hoặc đã hủy.' : 'Đang chờ xác nhận thanh toán...'}
-        </h2>
-        {isPaymentCompleted && (
-            <div className="payment-success-message text-center">
-                <p>Mã đơn hàng của bạn: <strong>{booking._id}</strong></p>
-                <p>Cảm ơn bạn đã thanh toán thành công</p>
-            </div>
-        )}
-
-        {!isPaymentCompleted && (
-            <div className="input-grid">
-                <div className="input-field">
-                    <FaUser />
-                    <span className="display-field">{booking.renter?.name || 'Chưa có thông tin tên'}</span>
+        {/* Status Message */}
+        <section className="status-section">
+          {isPaymentCompleted && (
+            <div className="status-card success">
+              <div className="status-icon">
+                <FaCheckCircle />
+              </div>
+              <div className="status-content">
+                <h2>Thanh toán thành công!</h2>
+                <p>Đơn hàng của bạn đã được xác nhận. Chúng tôi sẽ liên hệ với bạn sớm nhất để xác nhận thời gian nhận xe.</p>
+                <div className="order-code">
+                  <span>Mã đơn hàng: <strong>{booking.booking_id}</strong></span>
                 </div>
-                <div className="input-field">
-                    <FaPhone />
-                    <span className="display-field">{booking.renter?.phone || 'Chưa có thông tin số điện thoại'}</span>
+              </div>
+            </div>
+          )}
+          
+          {isPaymentFailedOrCanceled && (
+            <div className="status-card error">
+              <div className="status-icon">
+                <FaTimesCircle />
+              </div>
+              <div className="status-content">
+                <h2>Thanh toán thất bại</h2>
+                <p>Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+              </div>
+            </div>
+          )}
+          
+
+        </section>
+
+        {/* Main Content */}
+        <div className="main-content">
+          {/* Customer Information */}
+          {booking.renter && (
+            <section className="info-section">
+              <h3 className="section-title">
+                <FaUser className="title-icon" />
+                Thông tin khách hàng
+              </h3>
+              <div className="info-card">
+                <div className="info-row">
+                  <div className="info-item">
+                    <FaUser className="info-icon" />
+                    <div className="info-content">
+                      <span className="info-label">Họ và tên</span>
+                      <span className="info-value">{booking.renter.full_name || booking.renter.name || 'Chưa cập nhật'}</span>
+                    </div>
+                  </div>
+                  <div className="info-item">
+                    <FaPhone className="info-icon" />
+                    <div className="info-content">
+                      <span className="info-label">Số điện thoại</span>
+                      <span className="info-value">{booking.renter.phone_number || booking.renter.phone || 'Chưa cập nhật'}</span>
+                    </div>
+                  </div>
                 </div>
-            </div>
-        )}
-
-        <h2 className="section-title">Thông tin đơn hàng</h2>
-
-        <div className="order-details-section">
-          <div className="order-detail-item">
-            <FaCalendarAlt />
-            <div>
-              <p className="detail-label">Thời gian thuê</p>
-              <p className="detail-value">
-                {formatDate(booking.startDate)} đến {formatDate(booking.endDate)}
-              </p>
-            </div>
-          </div>
-          <div className="order-detail-item">
-            <FaMapMarkerAlt />
-            <div>
-              <p className="detail-label">Địa điểm nhận xe</p>
-              <p className="detail-value">{booking.pickupLocation}</p>
-            </div>
-          </div>
-          <div className="order-detail-item">
-            <FaMapMarkerAlt />
-            <div>
-              <p className="detail-label">Địa điểm trả xe</p>
-              <p className="detail-value">{booking.returnLocation}</p>
-            </div>
-          </div>
-
-          <div className="summary-section">
-            <div className="summary-item">
-              <span className="summary-label">Tổng tiền thuê xe ({fees?.totalDays || 0} ngày × {formatCurrency(fees?.pricePerDay || 0)})</span>
-              <span className="summary-value">{formatCurrency(fees?.totalCost || 0)}</span>
-            </div>
-            
-            <div className="summary-item">
-              <span className="summary-label">Phí giao xe</span>
-              <span className="summary-value">+{formatCurrency(fees?.deliveryFee || 0)}</span>
-            </div>
-            
-            <div className="summary-item">
-              <span className="summary-label">Giảm giá voucher</span>
-              <span className="summary-value discount">-{formatCurrency(fees?.discountAmount || 0)}</span>
-            </div>
-            
-            <div className="summary-item">
-              <span className="summary-label">Điểm sử dụng</span>
-              <span className="summary-value discount">-{fees?.pointsUsed || 0} điểm</span>
-            </div>
-            
-            <div className="total-summary">
-              <span>Tổng tiền phải trả</span>
-              <span>{formatCurrency(fees?.totalAmount || 0)}</span>
-            </div>
-            
-            <div className="payment-breakdown">
-              <div className="summary-item">
-                <span className="summary-label">Thanh toán trước (30%)</span>
-                <span className="summary-value highlight">{formatCurrency(fees?.depositAmount || 0)}</span>
               </div>
-              <div className="summary-item">
-                <span className="summary-label">Thanh toán khi nhận xe (70%)</span>
-                <span className="summary-value">{formatCurrency(fees?.remainingAmount || 0)}</span>
+            </section>
+          )}
+
+          {/* Vehicle Information */}
+          {booking.vehicle && (
+            <section className="info-section">
+              <h3 className="section-title">
+                <FaCar className="title-icon" />
+                Thông tin xe
+              </h3>
+              <div className="vehicle-card">
+                <div className="vehicle-image-container">
+                  {booking.vehicle.main_image_url ? (
+                    <img 
+                      src={booking.vehicle.main_image_url} 
+                      alt={booking.vehicle.model}
+                      className="vehicle-image"
+                    />
+                  ) : (
+                    <div className="vehicle-placeholder">
+                      <FaCar />
+                    </div>
+                  )}
+                </div>
+                <div className="vehicle-info">
+                  <h4 className="vehicle-model">{booking.vehicle.model}</h4>
+                  <div className="vehicle-details">
+                    <div className="vehicle-detail">
+                      <FaMapMarkerAlt className="detail-icon" />
+                      <span>{booking.vehicle.location}</span>
+                    </div>
+                    <div className="vehicle-detail">
+                      <FaMoneyBillWave className="detail-icon" />
+                      <span>{formatCurrency(booking.vehicle.price_per_day)}/ngày</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Booking Time */}
+          <section className="info-section">
+            <h3 className="section-title">
+              <FaCalendarAlt className="title-icon" />
+              Thời gian thuê xe
+            </h3>
+            <div className="info-card">
+              <div className="info-row">
+                <div className="info-item">
+                  <FaCalendarAlt className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Ngày nhận xe</span>
+                    <span className="info-value">{formatDate(booking.startDate)} - {formatTime(booking.startTime)}</span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <FaCalendarAlt className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Ngày trả xe</span>
+                    <span className="info-value">{formatDate(booking.endDate)} - {formatTime(booking.endTime)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="info-row">
+                <div className="info-item">
+                  <FaClock className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Tổng thời gian thuê</span>
+                    <span className="info-value">{booking.totalDays} ngày</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
+
+          {/* Location Information */}
+          <section className="info-section">
+            <h3 className="section-title">
+              <FaMapMarkerAlt className="title-icon" />
+              Địa điểm
+            </h3>
+            <div className="info-card">
+              <div className="info-row">
+                <div className="info-item">
+                  <FaMapMarkerAlt className="info-icon pickup" />
+                  <div className="info-content">
+                    <span className="info-label">Địa điểm nhận xe</span>
+                    <span className="info-value">{booking.pickupLocation}</span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <FaMapMarkerAlt className="info-icon return" />
+                  <div className="info-content">
+                    <span className="info-label">Địa điểm trả xe</span>
+                    <span className="info-value">{booking.returnLocation}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Payment Details */}
+          <section className="info-section">
+            <h3 className="section-title">
+              <FaMoneyBillWave className="title-icon" />
+              Chi tiết thanh toán
+            </h3>
+            <div className="payment-card">
+              <div className="payment-breakdown">
+                <div className="payment-item">
+                  <span className="payment-label">Giá thuê xe ({booking.totalDays} ngày)</span>
+                  <span className="payment-value">{formatCurrency(booking.totalCost)}</span>
+                </div>
+                
+                <div className="payment-item">
+                  <span className="payment-label">Phí giao xe</span>
+                  <span className="payment-value">
+                    {booking.deliveryFee > 0 ? `+${formatCurrency(booking.deliveryFee)}` : 'Miễn phí'}
+                  </span>
+                </div>
+
+                {booking.voucherCode && (
+                  <div className="payment-item voucher">
+                    <span className="payment-label">
+                      <FaGift className="payment-icon" />
+                      Mã voucher: {booking.voucherCode}
+                    </span>
+                    <span className="payment-value discount">
+                      -{formatCurrency(booking.discountAmount || 0)}
+                    </span>
+                  </div>
+                )}
+
+                {booking.pointsUsed > 0 && (
+                  <div className="payment-item points">
+                    <span className="payment-label">
+                      <FaCoins className="payment-icon" />
+                      Điểm đã sử dụng ({booking.pointsUsed} điểm)
+                    </span>
+                    <span className="payment-value discount">
+                      -{formatCurrency(booking.pointsUsed * 1000)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="payment-divider"></div>
+                
+                <div className="payment-item total">
+                  <span className="payment-label">Tổng tiền</span>
+                  <span className="payment-value">{formatCurrency(booking.totalAmount)}</span>
+                </div>
+              </div>
+
+              <div className="payment-method">
+                <h4 className="payment-method-title">Phương thức thanh toán</h4>
+                <div className="payment-split">
+                  <div className="payment-item paid">
+                    <span className="payment-label">Thanh toán trước (30%)</span>
+                    <span className="payment-value">{formatCurrency(Math.round(booking.totalAmount * 0.3))}</span>
+                  </div>
+                  <div className="payment-item remaining">
+                    <span className="payment-label">Thanh toán khi nhận xe (70%)</span>
+                    <span className="payment-value">{formatCurrency(booking.totalAmount - Math.round(booking.totalAmount * 0.3))}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Payment Policy */}
+          <section className="policy-section">
+            <div className="policy-card">
+              <div className="policy-header">
+                <FaClock className="policy-icon" />
+                <h4>Chính sách thanh toán</h4>
+              </div>
+              <div className="policy-content">
+                <div className="policy-item">
+                  <span className="policy-step">1</span>
+                  <span className="policy-text">Thanh toán trước <strong>30%</strong> tổng giá trị để xác nhận đặt xe</span>
+                </div>
+                <div className="policy-item">
+                  <span className="policy-step">2</span>
+                  <span className="policy-text">Thanh toán <strong>70%</strong> còn lại khi nhận xe</span>
+                </div>
+                <div className="policy-item">
+                  <span className="policy-step">3</span>
+                  <span className="policy-text">Hỗ trợ thanh toán bằng <strong>tiền mặt</strong> hoặc <strong>chuyển khoản</strong></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Order Information */}
+          <section className="info-section">
+            <h3 className="section-title">
+              <FaTag className="title-icon" />
+              Thông tin đơn hàng
+            </h3>
+            <div className="info-card">
+              <div className="info-row">
+                <div className="info-item">
+                  <FaTag className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Mã đơn hàng</span>
+                    <span className="info-value">{booking.booking_id}</span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <FaCalendarAlt className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Ngày tạo</span>
+                    <span className="info-value">{formatDate(booking.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="info-row">
+                <div className="info-item">
+                  <FaStar className="info-icon" />
+                  <div className="info-content">
+                    <span className="info-label">Trạng thái</span>
+                    <span className={`info-value status-badge status-${booking.status}`}>
+                      {getStatusText(booking.status)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <h2 className="section-title">Các bước thanh toán</h2>
-
-        <div className="payment-steps-section">
-          <div className="payment-step">
-            <div className="payment-step-number">
-              1
-            </div>
-            <div className="payment-step-content">
-              <p className="payment-step-title">Thanh toán giữ chỗ qua Rentzy</p>
-              <p className="payment-step-description">Tiền này để xác nhận đơn thuê và giữ xe, sẽ được trừ vào số tiền còn lại phải thanh toán khi nhận xe.</p>
-            </div>
-            <span className="payment-amount">{formatCurrency(fees?.depositAmount || 0)}</span>
-          </div>
-          <div className="payment-step">
-            <div className={`payment-step-number ${isPaymentCompleted ? 'completed' : ''}`}>
-              2
-            </div>
-            <div className="payment-step-content">
-              <p className="payment-step-title">Thanh toán số tiền còn lại khi nhận xe</p>
-              <p className="payment-step-description">Số tiền còn lại <span>{formatCurrency(fees?.remainingAmount || 0)}</span></p>
-              <p className="payment-step-description">Tiền cọc xe sẽ được thanh toán sau khi hoàn thành chuyến đi <span>{formatCurrency(fees?.depositAmount || 0)}</span></p>
-            </div>
-            <span className="payment-amount">{formatCurrency(fees?.remainingAmount || 0)}</span>
-          </div>
-        </div>
-
-        <div className="action-buttons">
-            {!isPaymentCompleted && (
-                <button className="confirm-button" onClick={handleConfirm}>
-                    Đi đến thanh toán giữ chỗ
-                </button>
-            )}
-        </div>
-
-        <p className="terms-text">
-          Bằng việc chuyển giữ chỗ và thuê xe, bạn đồng ý với <a href="#">Điều khoản sử dụng</a> và <a href="#">Chính sách bảo mật</a>
-        </p>
-
-        <button className="back-to-home-button" onClick={handleBackToHome}>
-          Quay về trang chủ
-        </button>
+        {/* Action Buttons */}
+        <footer className="action-section">
+          {!isPaymentCompleted && !isPaymentFailedOrCanceled && (
+            <button className="primary-button" onClick={handleConfirm}>
+              <FaMoneyBillWave />
+              Thanh toán giữ chỗ
+            </button>
+          )}
+          <button className="secondary-button" onClick={handleBackToHome}>
+            <FaArrowLeft />
+            Quay về trang chủ
+          </button>
+        </footer>
       </div>
     </div>
-    </>
   );
 };
 
