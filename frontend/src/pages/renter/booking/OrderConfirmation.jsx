@@ -100,8 +100,8 @@ const OrderConfirmation = () => {
   };
 
   const handleConfirm = async () => {
-    if (booking && booking._id) {
-      navigate(`/payment-deposit/${booking._id}`);
+    if (booking && booking.booking_id) {
+      navigate(`/payment-deposit/${booking.booking_id}`);
     } else {
       console.error('Booking ID not available for navigation.');
     }
@@ -415,7 +415,7 @@ const OrderConfirmation = () => {
                 
                 <div className="payment-item total">
                   <span className="payment-label">Tổng tiền</span>
-                  <span className="payment-value">{formatCurrency(booking.totalAmount)}</span>
+                  <span className="payment-value">{formatCurrency(booking.totalCost)}</span>
                 </div>
               </div>
 
@@ -424,11 +424,11 @@ const OrderConfirmation = () => {
                 <div className="payment-split">
                   <div className="payment-item paid">
                     <span className="payment-label">Thanh toán trước (30%)</span>
-                    <span className="payment-value">{formatCurrency(Math.round(booking.totalAmount * 0.3))}</span>
+                    <span className="payment-value">{formatCurrency(Math.round(booking.totalCost * 0.3))}</span>
                   </div>
                   <div className="payment-item remaining">
                     <span className="payment-label">Thanh toán khi nhận xe (70%)</span>
-                    <span className="payment-value">{formatCurrency(booking.totalAmount - Math.round(booking.totalAmount * 0.3))}</span>
+                    <span className="payment-value">{formatCurrency(booking.totalCost - Math.round(booking.totalCost * 0.3))}</span>
                   </div>
                 </div>
               </div>

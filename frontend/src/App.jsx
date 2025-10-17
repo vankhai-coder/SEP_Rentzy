@@ -28,6 +28,7 @@ import OwnerPage from "./pages/owner/ownerPage.jsx";
 
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
+import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
@@ -85,6 +86,10 @@ const App = () => {
           
           {/* Order Confirmation */}
           <Route path="/order-confirmation/:bookingId" element={<OrderConfirmation />} />
+          {/* Payment Deposit */}
+          <Route path="/payment-deposit/:bookingId" element={<PaymentDeposit />} />
+
+
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />

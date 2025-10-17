@@ -28,6 +28,9 @@ import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
 import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
+// payment
+import PaymentRoute from "./routes/payment/paymentRoute.js";
+
 // init app :
 const app = express();
 
@@ -73,6 +76,9 @@ app.use("/api/renter/info", RenterInfoRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
+
+// payment route
+app.use("/api/payment", PaymentRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
