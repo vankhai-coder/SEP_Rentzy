@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axiosInstance from "@/config/axiosInstance";
+import axiosInstance from "../../../../config/axiosInstance"; // Giả sử bạn có file cấu hình axios
 
 export default function PromoCodeModal({ onConfirm, onCancel }) {
   const [query, setQuery] = useState("");

@@ -5,6 +5,8 @@ import brandReducer from "../features/renter/brand/brandSlice";
 import favoriteReducer from "../features/renter/favorite/favoriteSlice";
 import chatReducer from "../features/chat/chatOpenAiSlice.js";
 import userInformationReducer from "../features/auth/userInformationSlice.js";
+import bookingHistoryReducer from "../features/renter/bookingHistory/bookingHistorySlice";
+import bookingReviewReducer from "../features/renter/bookingReview/bookingReviewSlice.js";
 export const store = configureStore({
   reducer: {
     userStore: UserReducer,
@@ -13,5 +15,7 @@ export const store = configureStore({
     favoriteStore: favoriteReducer,
     chat: chatReducer,
     userInformationStore: userInformationReducer,
+    bookingHistory: bookingHistoryReducer,
+    bookingReview: bookingReviewReducer,
   },
 });

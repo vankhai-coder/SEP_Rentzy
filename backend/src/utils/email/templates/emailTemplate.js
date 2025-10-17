@@ -51,21 +51,21 @@ export const verifyEmailTemplate = (verifyLink) => {
     </head>
     <body>
       <div class="container">
-        <h2>Email Verification</h2>
-        <p>Hello,</p>
-        <p>Thank you for signing up! Please verify your email address by clicking the button below:</p>
-        <a href="${verifyLink}" class="button">Verify Email</a>
-        <p>If you didn’t create an account, you can safely ignore this email.</p>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} Rentzy. All rights reserved.</p>
-        </div>
+       <h2>Xác Minh Email</h2>
+<p>Xin chào,</p>
+<p>Vui lòng xác minh địa chỉ email của bạn bằng cách nhấn vào nút bên dưới:</p>
+<a href="${verifyLink}" class="button">Xác Minh Email</a>
+<p>Nếu bạn không tạo tài khoản, bạn có thể bỏ qua email này một cách an toàn.</p>
+<div class="footer">
+  <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
+</div>
       </div>
     </body>
   </html>
   `;
 }
 
-export const resetPasswordTemplate = (resetLink, username = "there") => {
+export const resetPasswordTemplate = (resetLink, username = "bạn") => {
   return `
   <!DOCTYPE html>
   <html>
@@ -115,15 +115,16 @@ export const resetPasswordTemplate = (resetLink, username = "there") => {
   </head>
   <body>
     <div class="container">
-      <h2>Hello ${username},</h2>
-      <p>You recently requested to reset your password. Click the button below to reset it:</p>
-      <p>
-        <a class="btn" href="${resetLink}" target="_blank">Reset Password</a>
-      </p>
-      <p>If you didn’t request this, you can safely ignore this email.</p>
-      <div class="footer">
-        <p>© ${new Date().getFullYear()} Rentzy. All rights reserved.</p>
-      </div>
+     <h2>Xin chào ${username},</h2>
+<p>Bạn vừa yêu cầu đặt lại mật khẩu của mình. Nhấn vào nút bên dưới để đặt lại mật khẩu:</p>
+<p>
+  <a class="btn" href="${resetLink}" target="_blank">Đặt Lại Mật Khẩu</a>
+</p>
+<p>Nếu bạn không gửi yêu cầu này, bạn có thể bỏ qua email này một cách an toàn.</p>
+<div class="footer">
+  <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
+</div>
+
     </div>
   </body>
   </html>

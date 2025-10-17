@@ -30,7 +30,7 @@ const VerifyEmail = () => {
   // toast when success : 
   useEffect(() => {
     if (isVerifyEmailSuccess) {
-      toast.success('Verify email successfully!');
+      toast.success('Cập nhật email thành công!');
       navigate('/');
     }
   }, [isVerifyEmailSuccess, navigate]);

@@ -16,7 +16,7 @@ import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
 import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
 import BookingReviewRoute from "./routes/renter/bookingReviewRoute.js";
-
+import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 // booking route
 import BookingRoute from "./routes/booking/bookingRoute.js";
 
@@ -24,6 +24,8 @@ import BookingRoute from "./routes/booking/bookingRoute.js";
 import VoucherRoute from "./routes/renter/voucherRoute.js";
 
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
+import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
+import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
 // init app :
@@ -59,11 +61,14 @@ app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
 app.use("/api/renter/reviews", BookingReviewRoute);
-
+app.use("/api/renter/booking-history", BookingHistoryRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
+// owner route
 app.use("/api/owner", OwnerVehicleRoute);
+app.use("/api/owner/brands", OwnerBrandRoute);
+app.use("/api/owner/dashboard", OwnerDashboardRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 
 // voucher route
@@ -76,8 +81,8 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({ alter: false });
-    console.log(" All models synced!");
+    await db.sequelize.sync();
+    console.log("✅ All models synced!");
   } catch (err) {
     console.error(" Error syncing models:", err);
   }
