@@ -25,6 +25,7 @@ import VoucherRoute from "./routes/renter/voucherRoute.js";
 
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
 import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
+import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
 // init app :
@@ -67,6 +68,7 @@ app.use("/api/renter/booking", BookingRoute);
 // owner route
 app.use("/api/owner", OwnerVehicleRoute);
 app.use("/api/owner/brands", OwnerBrandRoute);
+app.use("/api/owner/dashboard", OwnerDashboardRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 
 // voucher route
