@@ -216,24 +216,22 @@ const buildBookedIntervals = async (vehicleId) => {
       const { start_date, end_date, start_time, end_time } = b;
       if (!start_date || !end_date) return null;
 
-      const startDateTime = new Date(start_date);
-      const endDateTime = new Date(end_date);
-
-      // Set start time (default to 00:00 if not provided)
-      if (start_time) {
-        const [h, m, s] = start_time.split(":").map(Number);
-        startDateTime.setHours(h || 0, m || 0, s || 0, 0);
-      } else {
-        startDateTime.setHours(0, 0, 0, 0);
-      }
-
-      // Set end time (default to 23:59:59 if not provided)
-      if (end_time) {
-        const [h, m, s] = end_time.split(":").map(Number);
-        endDateTime.setHours(h || 23, m || 59, s || 59, 999);
-      } else {
-        endDateTime.setHours(23, 59, 59, 999);
-      }
+      // Tạo datetime theo múi giờ Việt Nam
+      // Lấy ngày từ database (đã lưu theo VN timezone)
+      const startDate = new Date(start_date);
+      const endDate = new Date(end_date);
+      
+      // Format ngày theo định dạng YYYY-MM-DD
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      // Tạo datetime string với múi giờ Việt Nam
+      const startTimeStr = start_time || '00:00:00';
+      const endTimeStr = end_time || '23:59:59';
+      
+      // Tạo datetime với timezone +07:00 (Việt Nam)
+      const startDateTime = new Date(`${startDateStr}T${startTimeStr}+07:00`);
+      const endDateTime = new Date(`${endDateStr}T${endTimeStr}+07:00`);
 
       // Remove the 1-hour buffer to align with getDate API
       // Ensure the interval matches exactly what getDate returns
@@ -329,15 +327,37 @@ export const createBooking = async (req, res) => {
     });
 
     // ==================== BƯỚC 4: PARSE VÀ VALIDATE THỜI GIAN ====================
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    console.log("📅 Dữ liệu thời gian nhận được:", {
+      startDate,
+      endDate,
+      startTime,
+      endTime
+    });
+
+    // Tạo datetime theo múi giờ Việt Nam (UTC+7)
+    // Sử dụng format ISO với timezone offset để đảm bảo đúng múi giờ
+    const vietnamOffset = '+07:00';
+    const startDateTimeStr = `${startDate}T${startTime || '00:00:00'}${vietnamOffset}`;
+    const endDateTimeStr = `${endDate}T${endTime || '23:59:59'}${vietnamOffset}`;
+    
+    const start = new Date(startDateTimeStr);
+    const end = new Date(endDateTimeStr);
+
+    console.log("🕐 Datetime sau khi parse với múi giờ VN:", {
+      startInput: startDateTimeStr,
+      endInput: endDateTimeStr,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      startVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      endVN: end.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+    });
 
     // Kiểm tra định dạng ngày hợp lệ
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       return res.status(400).json({
         success: false,
         message:
-          "Định dạng ngày không hợp lệ. Vui lòng sử dụng format YYYY-MM-DD",
+          "Định dạng ngày/giờ không hợp lệ. Vui lòng sử dụng format YYYY-MM-DD và HH:mm:ss",
       });
     }
 
@@ -349,8 +369,20 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Kiểm tra không được đặt xe trong quá khứ
+    // Kiểm tra thời gian bắt đầu không được trong quá khứ
+    // Lấy thời gian hiện tại theo múi giờ Việt Nam
     const now = new Date();
+    const nowVN = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    
+    console.log("⏰ So sánh thời gian:", {
+      currentTimeUTC: now.toISOString(),
+      currentTimeVN: nowVN.toISOString(),
+      currentTimeVNLocal: now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      startTime: start.toISOString(),
+      startTimeVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      isStartInPast: start < now
+    });
+    
     if (start < now) {
       return res.status(400).json({
         success: false,
@@ -364,19 +396,16 @@ export const createBooking = async (req, res) => {
     // Lấy danh sách các khoảng thời gian đã được đặt
     const bookedIntervals = await buildBookedIntervals(vehicle_id);
 
-    // Tạo khoảng thời gian request với giờ cụ thể
-    const requestStart = new Date(start);
-    const requestEnd = new Date(end);
+    // Sử dụng trực tiếp start và end đã được parse đúng múi giờ Việt Nam
+    const requestStart = start;
+    const requestEnd = end;
 
-    // Set thời gian cụ thể cho request
-    if (startTime) {
-      const [h, m, s] = startTime.split(":").map(Number);
-      requestStart.setHours(h || 0, m || 0, s || 0, 0);
-    }
-    if (endTime) {
-      const [h, m, s] = endTime.split(":").map(Number);
-      requestEnd.setHours(h || 23, m || 59, s || 59, 999);
-    }
+    console.log("📅 Khoảng thời gian request:", {
+      start: requestStart.toISOString(),
+      end: requestEnd.toISOString(),
+      startVN: requestStart.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      endVN: requestEnd.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+    });
 
     if (
       Number.isNaN(requestStart.getTime()) ||
@@ -389,11 +418,6 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    console.log("📅 Khoảng thời gian request:", {
-      start: requestStart.toISOString(),
-      end: requestEnd.toISOString(),
-    });
-
     // Kiểm tra xung đột với các booking hiện có
     // Logic: Hai khoảng thời gian xung đột nếu: requestStart < bookedEnd && requestEnd > bookedStart
     const hasConflict = bookedIntervals.some(
@@ -404,6 +428,12 @@ export const createBooking = async (req, res) => {
           console.log("⚠️ Phát hiện xung đột với booking:", {
             bookedStart: startDateTime.toISOString(),
             bookedEnd: endDateTime.toISOString(),
+            bookedStartVN: startDateTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+            bookedEndVN: endDateTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+            requestStart: requestStart.toISOString(),
+            requestEnd: requestEnd.toISOString(),
+            requestStartVN: requestStart.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+            requestEndVN: requestEnd.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
           });
         }
         return isConflict;
@@ -591,11 +621,31 @@ export const createBooking = async (req, res) => {
     // ==================== BƯỚC 11: TẠO BOOKING TRONG DATABASE ====================
     console.log("💾 Tạo booking trong database...");
 
+    // Tách ngày và giờ để lưu đúng format theo múi giờ Việt Nam
+    // Lưu trực tiếp string date để tránh timezone conversion
+    const startDateOnly = startDate; // Lưu trực tiếp string "2025-10-19"
+    const endDateOnly = endDate;     // Lưu trực tiếp string "2025-10-19"
+    
+    console.log("💾 Lưu booking với thông tin:", {
+      originalStartDate: startDate,
+      originalEndDate: endDate,
+      originalStartTime: startTime,
+      originalEndTime: endTime,
+      startDateOnly: startDateOnly, // Đã là string rồi
+      endDateOnly: endDateOnly,     // Đã là string rồi
+      startTimeOnly: startTime,
+      endTimeOnly: endTime,
+      fullStartDateTime: start.toISOString(),
+      fullEndDateTime: end.toISOString(),
+      startVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      endVN: end.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+    });
+
     const booking = await Booking.create({
       renter_id: renterId,
       vehicle_id,
-      start_date: start,
-      end_date: end,
+      start_date: startDateOnly,
+      end_date: endDateOnly,
       start_time: startTime,
       end_time: endTime,
       total_days,
