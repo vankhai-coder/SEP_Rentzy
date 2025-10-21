@@ -356,6 +356,25 @@ const VehicleDetail = () => {
                           </div>
                         </div>
                       )}
+
+                      {vehicle.body_type && (
+                        <div className="flex items-center gap-3">
+                          <MdDirectionsCar className="w-6 h-6 text-blue-600" />
+                          <div>
+                            <div className="text-sm text-gray-500">Kiểu xe</div>
+                            <div className="font-medium">
+                              {vehicle.body_type === 'sedan' ? 'Sedan' :
+                               vehicle.body_type === 'suv' ? 'SUV' :
+                               vehicle.body_type === 'hatchback' ? 'Hatchback' :
+                               vehicle.body_type === 'convertible' ? 'Convertible' :
+                               vehicle.body_type === 'coupe' ? 'Coupe' :
+                               vehicle.body_type === 'minivan' ? 'Minivan' :
+                               vehicle.body_type === 'pickup' ? 'Pickup' :
+                               vehicle.body_type === 'van' ? 'Van' : 'MPV'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 
