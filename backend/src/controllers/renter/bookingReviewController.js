@@ -125,6 +125,20 @@ export const getReviewsByVehicle = async (req, res) => {
           as: "booking",
           where: { vehicle_id },
           attributes: ["vehicle_id", "renter_id"],
+          include: [
+            // ✅ THÊM MỚI: Nested include Vehicle để tránh alias mismatch và cung cấp data đầy đủ cho FE (model, image, plate)
+            {
+              model: Vehicle,
+              as: "vehicle", // ✅ SỬA: Bắt buộc dùng 'as: "vehicle"' để khớp association (tránh EagerLoadingError)
+              attributes: [
+                "vehicle_id",
+                "model",
+                "main_image_url",
+                "license_plate",
+                "price_per_day",
+              ],
+            },
+          ],
         },
       ],
       order: [["created_at", "DESC"]],
