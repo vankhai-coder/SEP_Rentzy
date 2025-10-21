@@ -19,14 +19,15 @@ import {
   MapPinCheck,
   Trash2,
   User,
+  Star,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 
 const Account = () => {
   const navigate = useNavigate();
 
-    const baseClass =
-        "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
+  const baseClass =
+    "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
@@ -56,8 +57,13 @@ const Account = () => {
               value="/account/booking-history"
             >
               <List /> Danh sách thuê xe
-            </SelectItem>{" "}
-            {/* Thêm mới */}
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/account/my-reviews"
+            >
+              <Star /> Đánh giá của tôi
+            </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
               value="/favorites"
@@ -148,6 +154,14 @@ const Account = () => {
               }
             >
               <List size={20} /> Danh sách thuê xe
+            </NavLink>
+            <NavLink
+              to="/my-reviews"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <Star size={20} /> Đánh giá của tôi
             </NavLink>
             <NavLink
               to="/favorites"

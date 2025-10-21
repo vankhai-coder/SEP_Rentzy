@@ -60,10 +60,36 @@ export const createReview = createAsyncThunk(
   }
 );
 
+// ✅ THÊM MỚI: Async thunk fetch my reviews (danh sách đánh giá của user)
+export const fetchMyReviews = createAsyncThunk(
+  "bookingReview/fetchMyReviews",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/renter/reviews/my-reviews`,
+        {
+          method: "GET",
+          credentials: "include", // Gửi JWT cookie
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Không thể lấy danh sách đánh giá");
+      }
+      const data = await response.json();
+      return data; // Trả về { success: true, reviews: [...], totalReviews: n }
+    } catch (error) {
+      return rejectWithValue(error.message || "Lỗi khi lấy đánh giá của bạn");
+    }
+  }
+);
+
 const bookingReviewSlice = createSlice({
   name: "bookingReview",
   initialState: {
     bookingDetail: null,
+    // ✅ THÊM MỚI: State cho my reviews
+    myReviews: [],
+    totalReviews: 0,
     loading: false,
     error: null,
   },
@@ -74,6 +100,11 @@ const bookingReviewSlice = createSlice({
     clearBookingDetail: (state) => {
       // Clear khi navigate away
       state.bookingDetail = null;
+    },
+    // ✅ THÊM MỚI: Reducer clear my reviews (optional, dùng khi leave page)
+    clearMyReviews: (state) => {
+      state.myReviews = [];
+      state.totalReviews = 0;
     },
   },
   extraReducers: (builder) => {
@@ -110,9 +141,29 @@ const bookingReviewSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         toast.error(`Lỗi: ${action.payload}`);
+      })
+      // ✅ THÊM MỚI: Cases cho fetchMyReviews
+      .addCase(fetchMyReviews.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyReviews.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myReviews = action.payload.reviews || []; // Lưu array reviews
+        state.totalReviews = action.payload.totalReviews || 0;
+        if (action.payload.success === false) {
+          state.error = action.payload.message || "Không có dữ liệu";
+        }
+      })
+      .addCase(fetchMyReviews.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(`Lỗi: ${action.payload}`);
       });
   },
 });
 
-export const { clearError, clearBookingDetail } = bookingReviewSlice.actions;
+// ✅ SỬA: Export thêm action clearMyReviews
+export const { clearError, clearBookingDetail, clearMyReviews } =
+  bookingReviewSlice.actions;
 export default bookingReviewSlice.reducer;

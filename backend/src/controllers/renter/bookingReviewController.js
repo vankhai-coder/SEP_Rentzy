@@ -125,6 +125,20 @@ export const getReviewsByVehicle = async (req, res) => {
           as: "booking",
           where: { vehicle_id },
           attributes: ["vehicle_id", "renter_id"],
+          include: [
+            // ✅ THÊM MỚI: Nested include Vehicle để tránh alias mismatch và cung cấp data đầy đủ cho FE (model, image, plate)
+            {
+              model: Vehicle,
+              as: "vehicle", // ✅ SỬA: Bắt buộc dùng 'as: "vehicle"' để khớp association (tránh EagerLoadingError)
+              attributes: [
+                "vehicle_id",
+                "model",
+                "main_image_url",
+                "license_plate",
+                "price_per_day",
+              ],
+            },
+          ],
         },
       ],
       order: [["created_at", "DESC"]],
@@ -136,5 +150,66 @@ export const getReviewsByVehicle = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Lỗi server khi lấy đánh giá." });
+  }
+};
+
+// Lấy tất cả review của người dùng đang đăng nhập (các đánh giá mà renter đã đánh giá)
+export const getMyReviews = async (req, res) => {
+  try {
+    const renter_id = req.user.userId; // từ verifyJWTToken middleware
+    const { sortBy = "created_at" } = req.query; //Query param sortBy (mặc định: created_at DESC - đánh giá mới nhất trước)
+
+    // Xây dựng order clause dựa trên sortBy (linh hoạt: created_at, start_date, rating)
+    let orderClause = [["created_at", "DESC"]];
+    if (sortBy === "start_date") {
+      orderClause = [["booking", "start_date", "DESC"]]; // Sắp xếp theo ngày bắt đầu booking (nested sort)
+    } else if (sortBy === "rating") {
+      orderClause = [["rating", "DESC"]]; // Đánh giá cao nhất trước
+    } // Else: Giữ created_at DESC
+
+    const reviews = await BookingReview.findAll({
+      include: [
+        {
+          model: Booking,
+          as: "booking",
+          where: { renter_id },
+          attributes: [
+            "booking_id",
+            "vehicle_id",
+            "start_date",
+            "end_date",
+            "total_amount",
+            "status",
+          ],
+          include: [
+            {
+              model: Vehicle,
+              as: "vehicle", // Giả sử có association Booking -> Vehicle as "vehicle"
+              attributes: [
+                "vehicle_id",
+                "model",
+                "main_image_url",
+                "license_plate",
+                "price_per_day",
+              ],
+            },
+          ],
+        },
+      ],
+      order: orderClause, // Áp dụng order động (trước đây chỉ fixed created_at)
+    });
+
+    res.json({
+      success: true,
+      reviews,
+      totalReviews: reviews.length,
+      sortBy, // Trả về info sort để FE biết (optional)
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy đánh giá của người dùng: ", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy đánh giá của bạn.",
+    });
   }
 };

@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
 
-const AddCarForm = () => {  
+const AddCarForm = () => {
   const navigate = useNavigate();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     brand: "",
@@ -22,7 +22,7 @@ const AddCarForm = () => {
     transmission: "",
     fuel_type: "",
     fuel_consumption: "",
-    description: ""
+    description: "",
   });
 
   const [selectedFeatures, setSelectedFeatures] = useState([]);
@@ -31,7 +31,7 @@ const AddCarForm = () => {
   const [loading, setLoading] = useState(false);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
-  
+
   // State cho danh sách brands
   const [brands, setBrands] = useState([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
@@ -62,24 +62,24 @@ const AddCarForm = () => {
     }
 
     setGettingLocation(true);
-    
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          console.log ("tọa độ xe " ,latitude, longitude);
-          
+          console.log("tọa độ xe ", latitude, longitude);
+
           // Sử dụng Nominatim Search API
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${latitude},${longitude}`)}&countrycodes=vn&accept-language=vi&addressdetails=1&limit=5`
           );
-          
+
           if (!response.ok) {
             throw new Error('Không thể lấy thông tin địa chỉ');
           }
-          
+
           const data = await response.json();
-          
+
           if (data && data.length > 0) {
             const address = data[0].display_name;
             setFormData(prev => ({
@@ -102,7 +102,7 @@ const AddCarForm = () => {
       (error) => {
         console.error('Geolocation error:', error);
         setGettingLocation(false);
-        
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
             toast.error('Bạn đã từ chối quyền truy cập vị trí');
@@ -125,11 +125,11 @@ const AddCarForm = () => {
       }
     );
   };
-  
+
   const handleAutoLocationChange = (e) => {
     const isChecked = e.target.checked;
     setAutoLocationEnabled(isChecked);
-    
+
     if (isChecked) {
       getCurrentLocation();
     }
@@ -137,39 +137,53 @@ const AddCarForm = () => {
 
   // Car features options
   const carFeatures = [
-    "Bản đồ", "Bluetooth", "Camera 360", "Camera cập lề", "Camera hành trình",
-    "Camera lùi", "Cảm biến lốp", "Cảm biến va chạm", "Cảnh báo tốc độ",
-    "Cửa sổ trời", "Định vị GPS", "Ghế trẻ em", "Khe cắm USB", "Lốp dự phòng",
-    "Màn hình DVD", "Nắp thùng xe bán tải", "ETC", "Túi khí an toàn",
-    "Cửa hít", "Cảnh báo điểm mù"
+    "Bản đồ",
+    "Bluetooth",
+    "Camera 360",
+    "Camera cập lề",
+    "Camera hành trình",
+    "Camera lùi",
+    "Cảm biến lốp",
+    "Cảm biến va chạm",
+    "Cảnh báo tốc độ",
+    "Cửa sổ trời",
+    "Định vị GPS",
+    "Ghế trẻ em",
+    "Khe cắm USB",
+    "Lốp dự phòng",
+    "Màn hình DVD",
+    "Nắp thùng xe bán tải",
+    "ETC",
+    "Túi khí an toàn",
+    "Cửa hít",
+    "Cảnh báo điểm mù",
   ];
 
   // Body type options
   const bodyTypes = [
     "sedan",
-        "suv",
-        "hatchback",
-        "convertible",
-        "coupe",
-        "minivan",
-        "pickup",
-        "van",
-        "mpv"
+    "suv",
+    "hatchback",
+    "convertible",
+    "coupe",
+    "minivan",
+    "pickup",
+    "van",
+    "mpv",
   ];
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFeatureToggle = (feature) => {
-    setSelectedFeatures(prev => 
-      prev.includes(feature) 
-        ? prev.filter(f => f !== feature)
+    setSelectedFeatures((prev) =>
+      prev.includes(feature)
+        ? prev.filter((f) => f !== feature)
         : [...prev, feature]
     );
   };
@@ -182,7 +196,7 @@ const AddCarForm = () => {
 
   const handleExtraImagesChange = (e) => {
     const files = Array.from(e.target.files);
-    setExtraImages(prev => [...prev, ...files]);
+    setExtraImages((prev) => [...prev, ...files]);
   };
 
   const handleSubmit = async (e) => {
@@ -191,7 +205,7 @@ const AddCarForm = () => {
 
     try {
       const submitData = new FormData();
-      
+
       // Add form data
       submitData.append('vehicle_type', 'car');
       submitData.append('brand', formData.brand);
@@ -212,18 +226,19 @@ const AddCarForm = () => {
 
       // Add images
       if (mainImage) {
-        submitData.append('main_image', mainImage);
+        submitData.append("main_image", mainImage);
       }
-      
+
       extraImages.forEach((image) => {
-        submitData.append('extra_images', image);
+        submitData.append("extra_images", image);
       });
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
-      });
+      }
+      );
 
       // Kiểm tra cả status code và success field
       if (response.status === 201 && response.data.success) {
@@ -235,7 +250,7 @@ const AddCarForm = () => {
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      
+
       // Xử lý lỗi chi tiết hơn
       if (error.response) {
         // Server trả về response với error status
@@ -256,7 +271,7 @@ const AddCarForm = () => {
     }
   };
 
-    return (
+  return (
     <div className="w-full">
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
         <p className="text-green-700 font-medium">
@@ -264,13 +279,17 @@ const AddCarForm = () => {
         </p>
       </div>
 
-      <h1 className="text-3xl font-bold text-blue-600 mb-6">🚗 Đăng xe ô tô cho thuê</h1>
-      
+      <h1 className="text-3xl font-bold text-blue-600 mb-6">
+        🚗 Đăng xe ô tô cho thuê
+      </h1>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Vehicle Information */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Thông tin xe</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Thông tin xe
+          </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
@@ -334,8 +353,8 @@ const AddCarForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Địa điểm *
                 </label>
- 
-                
+
+
                 <input
                   type="text"
                   name="location"
@@ -346,28 +365,28 @@ const AddCarForm = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-                   
-                {/* Checkbox for auto location */}
-                <div className="flex items-center mb-3">
-                  <input
-                    type="checkbox"
-                    id="autoLocation"
-                    checked={autoLocationEnabled}
-                    onChange={handleAutoLocationChange}
-                    disabled={gettingLocation}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="autoLocation" className="ml-2 text-sm text-gray-700">
-                    {gettingLocation ? (
-                      <span className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                        Đang lấy vị trí...
-                      </span>
-                    ) : (
-                      'Thêm địa chỉ tự động'
-                    )}
-                  </label>
-                </div>
+
+              {/* Checkbox for auto location */}
+              <div className="flex items-center mb-3">
+                <input
+                  type="checkbox"
+                  id="autoLocation"
+                  checked={autoLocationEnabled}
+                  onChange={handleAutoLocationChange}
+                  disabled={gettingLocation}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="autoLocation" className="ml-2 text-sm text-gray-700">
+                  {gettingLocation ? (
+                    <span className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                      Đang lấy vị trí...
+                    </span>
+                  ) : (
+                    'Thêm địa chỉ tự động'
+                  )}
+                </label>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -434,7 +453,7 @@ const AddCarForm = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">-- Chọn dạng thân xe --</option>
-                  {bodyTypes.map(type => (
+                  {bodyTypes.map((type) => (
                     <option key={type} value={type.toLowerCase()}>
                       {type}
                     </option>
@@ -497,18 +516,19 @@ const AddCarForm = () => {
 
         {/* Features Section */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Tính năng</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Tính năng
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {carFeatures.map(feature => (
+            {carFeatures.map((feature) => (
               <button
                 key={feature}
                 type="button"
                 onClick={() => handleFeatureToggle(feature)}
-                className={`p-3 rounded-lg border-2 transition-colors ${
-                  selectedFeatures.includes(feature)
-                    ? 'bg-green-100 border-green-500 text-green-800'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`p-3 rounded-lg border-2 transition-colors ${selectedFeatures.includes(feature)
+                  ? "bg-green-100 border-green-500 text-green-800"
+                  : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                  }`}
               >
                 {feature}
               </button>
@@ -531,8 +551,10 @@ const AddCarForm = () => {
 
         {/* File Upload Sections */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Hình ảnh và giấy tờ</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+            Hình ảnh và giấy tờ
+          </h2>
+
           <div className="space-y-6">
             {/* Main Image */}
             <div>
@@ -560,7 +582,6 @@ const AddCarForm = () => {
                 onChange={handleExtraImagesChange}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
-              
             </div>
           </div>
         </div>
@@ -569,7 +590,7 @@ const AddCarForm = () => {
         <div className="flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => navigate('/owner/vehicle-management')}
+            onClick={() => navigate("/owner/vehicle-management")}
             className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             Hủy
@@ -585,12 +606,12 @@ const AddCarForm = () => {
                 Đang xử lý...
               </>
             ) : (
-              'Đăng xe cho thuê'
+              "Đăng xe cho thuê"
             )}
           </button>
         </div>
       </form>
-        </div>
+    </div>
   );
 };
 

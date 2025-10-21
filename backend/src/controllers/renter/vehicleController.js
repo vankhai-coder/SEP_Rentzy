@@ -74,6 +74,7 @@ export const getVehicleById = async (req, res) => {
               attributes: [], // không cần trả dữ liệu xe
               where: { owner_id: ownerId },
               required: true,
+              as: "vehicle",
             },
             {
               model: User,

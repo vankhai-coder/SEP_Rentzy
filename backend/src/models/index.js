@@ -69,15 +69,23 @@ Vehicle.belongsTo(User, { as: "owner", foreignKey: "owner_id" });
 
 // Vehicle ↔ Booking
 Vehicle.hasMany(Booking, { foreignKey: "vehicle_id" });
-Booking.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+Booking.belongsTo(Vehicle, { foreignKey: "vehicle_id", as: "vehicle" });
 
 // User ↔ Booking
 User.hasMany(Booking, { foreignKey: "renter_id", as: "RenterBookings" });
 Booking.belongsTo(User, { as: "renter", foreignKey: "renter_id" });
 
 // Voucher ↔ Booking
-Voucher.hasMany(Booking, { foreignKey: "voucher_code", sourceKey: "code", as: "bookings" });
-Booking.belongsTo(Voucher, { foreignKey: "voucher_code", targetKey: "code", as: "voucher" });
+Voucher.hasMany(Booking, {
+  foreignKey: "voucher_code",
+  sourceKey: "code",
+  as: "bookings",
+});
+Booking.belongsTo(Voucher, {
+  foreignKey: "voucher_code",
+  targetKey: "code",
+  as: "voucher",
+});
 
 // User ↔ Favorite
 User.hasMany(Favorite, { foreignKey: "user_id" });

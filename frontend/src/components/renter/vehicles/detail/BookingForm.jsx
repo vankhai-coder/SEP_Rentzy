@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import axiosInstance from "../../../../config/axiosInstance"; // Giả sử bạn có file cấu hình axios
 import DateTimeSelector from "./DateTimeSelector";
@@ -7,6 +8,8 @@ import AddressSelector from "./AddressSelector";
 import PromoCodeModal from "./PromoCodeModal";
 
 function BookingForm({ vehicle }) {
+  const navigate = useNavigate();
+  
   // State declarations
   const [bookingData, setBookingData] = useState({
     startDate: "",
@@ -124,11 +127,14 @@ function BookingForm({ vehicle }) {
   // Handle address confirmation
   const handleAddressConfirm = (address, coords, distance) => {
     setDeliveryDistanceKm(distance);
-    const fee = Math.round(distance * 20000 * 2); // 20k/km, round trip
+    
+    // Tính phí giao xe (luôn tính 2 chiều)
+    const fee = Math.round(distance * 20000 * 2);
+    
     setBookingData((prev) => ({
       ...prev,
       pickupAddress: address,
-      returnAddress: address,
+      returnAddress: address, // Mặc định returnAddress giống pickupAddress
       deliveryCoords: coords,
     }));
     setDeliveryFee(fee);
@@ -147,6 +153,8 @@ function BookingForm({ vehicle }) {
     }));
     setDeliveryFee(0);
   };
+
+
 
   // Handle date and time change
   const handleDateTimeChange = (data) => {
@@ -201,17 +209,26 @@ function BookingForm({ vehicle }) {
       usePoints,
       pointsToUse: usePoints ? pointsDiscount : 0,
       // thêm deliveryFee FE đã tính khi chọn giao xe
-      deliveryFee: bookingData.deliveryOption === 'delivery' ? deliveryFee : 0,
+      deliveryFee: bookingData.deliveryOption === "delivery" ? deliveryFee : 0,
     };
 
     try {
       // sửa endpoint đúng theo router BE
-      await axiosInstance.post('/api/renter/booking/createBooking', payload);
-      alert('Đặt xe thành công!');
-      console.log('Booking payload:', payload);
+      const response = await axiosInstance.post("/api/renter/booking/createBooking", payload);
+      console.log("Booking payload:", payload);
+      console.log("Booking response:", response.data);
+      
+      // Chuyển hướng đến trang xác nhận đơn hàng với booking ID
+      const bookingId = response.data.data?.booking_id;
+      if (bookingId) {
+        navigate(`/order-confirmation/${bookingId}`);
+      } else {
+        alert("Đặt xe thành công!");
+      }
     } catch (err) {
-      console.error('Lỗi khi đặt xe:', err);
-      const message = err?.response?.data?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.';
+      console.error("Lỗi khi đặt xe:", err);
+      const message =
+        err?.response?.data?.message || "Đã có lỗi xảy ra, vui lòng thử lại.";
       alert(message);
     }
   };
@@ -334,6 +351,10 @@ function BookingForm({ vehicle }) {
                 )}
             </div>
           </div>
+
+
+
+
         </div>
 
         {/* Total Price */}
@@ -354,7 +375,9 @@ function BookingForm({ vehicle }) {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Phí giao xe (20.000 đ/km * 2 chiều)</span>
+                <span>
+                  Phí giao xe (20.000 đ/km * 2 chiều)
+                </span>
                 <span>{deliveryFee.toLocaleString("vi-VN")} đ</span>
               </div>
             </div>

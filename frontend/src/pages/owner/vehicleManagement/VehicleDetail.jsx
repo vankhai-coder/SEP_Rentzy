@@ -38,7 +38,7 @@ const VehicleDetail = () => {
   const fetchVehicleDetail = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/owner/vehicles/${id}`);
+      const response = await axiosInstance.get(`/owner/vehicles/${id}`);
       
       if (response.data.success) {
         setVehicle(response.data.data);

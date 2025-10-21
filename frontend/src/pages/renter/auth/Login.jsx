@@ -47,11 +47,10 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
   useEffect(() => {
     if (isLoginSuccess) {
       toast.success('Đăng nhập thành công!')
-      if (role === 'owner') {
-        navigate('/owner', { replace: true })
-      }
+      // Không tự động chuyển sang trang chủ xe (owner) để người dùng tự lựa chọn
+      // Nếu cần điều hướng, có thể dựa vào nơi mở modal hoặc để user tự chọn menu
     }
-  }, [isLoginSuccess, role])
+  }, [isLoginSuccess])
 
   // if request to create veirfy email link success , toast it : 
   useEffect(() => {

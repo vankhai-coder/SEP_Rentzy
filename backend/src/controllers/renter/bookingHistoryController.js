@@ -4,7 +4,7 @@ import Vehicle from "../../models/Vehicle.js";
 
 export const getBookingHistory = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, sortBy = "start_date" } = req.query; // ✅ Thêm query param 'sortBy' để linh hoạt: 'created_at' (mặc định cũ), 'start_date' (ngày nhận xe), 'booking_id' (mã đơn)
     const whereClause = {
       renter_id: req.user.userId, // Lấy từ JWT token (req.user.userId)
     };
@@ -13,12 +13,20 @@ export const getBookingHistory = async (req, res) => {
       whereClause.status = status;
     }
 
+    // ✅ Xây dựng order clause dựa trên sortBy (mặc định: start_date DESC - sắp xếp theo ngày nhận xe gần nhất trước, tránh lộn xộn)
+    let orderClause = [["start_date", "DESC"]];
+    if (sortBy === "created_at") {
+      orderClause = [["created_at", "DESC"]];
+    } else if (sortBy === "booking_id") {
+      orderClause = [["booking_id", "DESC"]]; // Mã đơn mới nhất trước (hoặc ASC nếu muốn cũ nhất)
+    } // Else: giữ start_date DESC
+
     const bookings = await Booking.findAll({
       where: whereClause,
       include: [
         {
           model: Vehicle,
-          as: "Vehicle",
+          as: "vehicle", // ✅ Sửa alias từ "Vehicle" (uppercase) thành "vehicle" (lowercase) để khớp với association trong models/index.js (tránh SequelizeEagerLoadingError)
           required: true,
           attributes: ["model", "license_plate"], // ❌ Không lấy brand
         },
@@ -29,13 +37,13 @@ export const getBookingHistory = async (req, res) => {
           attributes: ["review_id", "rating", "review_content", "created_at"],
         },
       ],
-      order: [["created_at", "DESC"]],
+      order: orderClause, // ✅ Áp dụng order động
     });
 
     // Format dữ liệu trả về cho frontend
     const formattedBookings = bookings.map((booking) => ({
       booking_id: booking.booking_id,
-      vehicle: `${booking.Vehicle.model} (${booking.Vehicle.license_plate})`, // ✅ Không có brand
+      vehicle: `${booking.vehicle.model} (${booking.vehicle.license_plate})`, // ✅ Sửa từ booking.Vehicle thành booking.vehicle (lowercase)
       start_date: booking.start_date,
       end_date: booking.end_date,
       total_amount: parseFloat(booking.total_amount),
@@ -56,6 +64,7 @@ export const getBookingHistory = async (req, res) => {
       success: true,
       data: formattedBookings,
       message: "Lấy danh sách lịch sử đơn hàng thành công",
+      sortBy: sortBy, // ✅ Trả về info sort để FE biết (optional)
     });
   } catch (error) {
     console.error("Error in getBookingHistory:", error);
@@ -78,7 +87,7 @@ export const getBookingDetail = async (req, res) => {
       include: [
         {
           model: Vehicle,
-          as: "Vehicle",
+          as: "vehicle", // ✅ Sửa alias từ "Vehicle" (uppercase) thành "vehicle" (lowercase) để khớp với association
           required: true,
           attributes: [
             "vehicle_id",
@@ -114,7 +123,7 @@ export const getBookingDetail = async (req, res) => {
         status: booking.status,
         // Thêm fields khác nếu cần
       },
-      vehicle: booking.Vehicle, // Full object Vehicle
+      vehicle: booking.vehicle, // ✅ Sửa từ booking.Vehicle thành booking.vehicle (lowercase)
       review: booking.review
         ? {
             rating: booking.review.rating,
