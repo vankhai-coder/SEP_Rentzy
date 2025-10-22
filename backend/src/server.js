@@ -65,6 +65,8 @@ app.use("/api/chat", ChatOpenAiRoute);
 app.use("/api/renter/reviews", BookingReviewRoute);
 app.use("/api/renter/booking-history", BookingHistoryRoute);
 app.use("/api/renter/reports", VehicleReportRoute);
+app.use("/api/renter/info", RenterInfoRoute);
+
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
@@ -73,7 +75,6 @@ app.use("/api/owner", OwnerVehicleRoute);
 app.use("/api/owner/brands", OwnerBrandRoute);
 app.use("/api/owner/dashboard", OwnerDashboardRoute);
 app.use("/api/owner/overview", OwnerOverviewRoute);
-app.use("/api/renter/info", RenterInfoRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

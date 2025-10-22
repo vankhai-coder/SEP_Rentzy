@@ -46,7 +46,12 @@ const initialState = {
   email: '',
   full_name: '',
   isLoadingGetBasicUserInformation: false,
-  errorGetBasicUserInformation: ''
+  errorGetBasicUserInformation: '',
+
+  // update full name :
+  isLoadingUpdateFullName: false,
+  isUpdateFullNameSuccess: false,
+  errorUpdateFullName: ''
 
 };
 
@@ -167,6 +172,27 @@ export const getBasicUserInformation = createAsyncThunk(
   }
 );
 
+// update full name :
+export const updateFullName = createAsyncThunk(
+  "user/updateFullName",
+  async ({ fullName }, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post("/api/renter/info/update-full-name", { fullName });
+
+      // expect: { success: true, fullName: "..." }
+      return res.data;
+    }
+    catch (err) {
+      console.error("Error in updateFullName:", err.message);
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          "Lỗi cập nhật tên đầy đủ!",
+      });
+    }
+  }
+);
+
 const userInformationSlice = createSlice({
   name: "userInformation",
   initialState,
@@ -180,6 +206,11 @@ const userInformationSlice = createSlice({
       state.isVerifyUpdatedEmailSuccess = false;
       state.isVerifyUpdatedEmailLoading = false;
       state.verifyUpdatedEmailError = '';
+      // update full name :
+      state.isLoadingUpdateFullName = false;
+      state.isUpdateFullNameSuccess = false;
+      state.errorUpdateFullName = '';
+      // 
     },
   },
   extraReducers: (builder) => {
@@ -335,7 +366,31 @@ const userInformationSlice = createSlice({
         state.email = "";
         state.full_name = "";
         state.date_join = ''
-      });
+      })
+
+      // update full name :
+      // Pending
+      .addCase(updateFullName.pending, (state) => {
+        state.isLoadingUpdateFullName = true;
+        state.isUpdateFullNameSuccess = false;
+        state.errorUpdateFullName = '';
+      })
+      // Fulfilled
+      .addCase(updateFullName.fulfilled, (state, action) => {
+        state.isLoadingUpdateFullName = false;
+        state.isUpdateFullNameSuccess = true;
+        state.errorUpdateFullName = '';
+
+        // update full name in state
+        state.full_name = action.payload.fullName || state.full_name;
+      })
+      // Rejected
+      .addCase(updateFullName.rejected, (state, action) => {
+        state.isLoadingUpdateFullName = false;
+        state.isUpdateFullNameSuccess = false;
+        state.errorUpdateFullName = action.payload?.message || 'Cập nhật tên thất bại!';
+      })
+
   },
 });
 

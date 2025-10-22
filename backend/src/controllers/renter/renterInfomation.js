@@ -191,3 +191,35 @@ export const check2FaceMatch = async (req, res) => {
         return res.status(500).json(error.response?.data);
     }
 }
+
+// update full name  : 
+export const updateFullName = async (req, res) => {
+    try {
+        const { fullName } = req.body;
+
+        // check if fullName is provided
+        if (!fullName || fullName.trim() === '') {
+            return res.status(400).json({ message: 'Vui lòng cung cấp tên đầy đủ hợp lệ!' });
+        }
+
+        // check if user exist : 
+        const user = await User.findOne({
+            where: {
+                user_id: req.user?.userId
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        user.full_name = fullName;
+        await user.save();
+
+        return res.status(200).json({ message: 'Cập nhật tên thành công!', fullName: user.full_name });
+
+    } catch (error) {
+        console.error("Error updating full name :", error.message);
+        return res.status(500).json({ message: error.message });
+    }
+}

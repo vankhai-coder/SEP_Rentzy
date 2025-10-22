@@ -15,8 +15,17 @@ import {
 import UpdateEmail from "@/components/renter/PersonalInformation/UpdateEmail"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { getBasicUserInformation } from "@/redux/features/auth/userInformationSlice"
+import { getBasicUserInformation, resetUserInformationSlice, updateFullName } from "@/redux/features/auth/userInformationSlice"
 import { toast } from "sonner"
+import {
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const UserInformation = () => {
 
@@ -33,10 +42,19 @@ const UserInformation = () => {
     isLoadingGetBasicUserInformation,
     errorGetBasicUserInformation,
     date_join,
+    // update full name :
+    isLoadingUpdateFullName,
+    isUpdateFullNameSuccess,
+    errorUpdateFullName
   } = useSelector((state) => state.userInformationStore);
 
   // open updated email dialog : 
   const [open, setOpen] = useState(false)
+
+  // state for update full name :
+  const [newFullName, setNewFullName] = useState('')
+  // state for update name dialog :
+  const [updateNewNameOpen, setUpdateNewNameOpen] = useState(false)
 
   // dispatch get basic user information: 
   useEffect(() => {
@@ -50,6 +68,28 @@ const UserInformation = () => {
       toast.error(errorGetBasicUserInformation)
     }
   }, [errorGetBasicUserInformation])
+
+
+  // toast if update full name error  :
+  useEffect(() => {
+    if (errorUpdateFullName) {
+      toast.error(errorUpdateFullName)
+    }
+  }, [errorUpdateFullName])
+
+  // toast if update full name success :
+  useEffect(() => {
+    if (isUpdateFullNameSuccess) {
+      toast.success('Cập nhật tên thành công!')
+      // clear input :
+      setNewFullName('')
+      // clear success state in redux :
+      dispatch(resetUserInformationSlice())
+      // close dialog :
+      setUpdateNewNameOpen(false)
+    }
+  }, [isUpdateFullNameSuccess])
+
 
   if (isLoadingGetBasicUserInformation) {
     return <div
@@ -84,11 +124,54 @@ const UserInformation = () => {
           <div className="flex flex-col items-center gap-2">
             {/* avatar : */}
             <Avatar className='size-26' >
-              <AvatarImage src={avatar_url || 'https://github.com/shadcn.png'} alt="User avatar" />
+              <AvatarImage src={avatar_url || '/default_avt.jpg'} alt="User avatar" />
               <AvatarFallback>User Avatar</AvatarFallback>
             </Avatar>
-            {/* name : */}
-            <span className="font-semibold text-lg">{full_name || email}</span>
+            <div className="flex items-center gap-4">
+              {/* name : */}
+              <span className="font-semibold text-lg">{full_name || email}</span>
+
+              {/* update pen : */}
+              <Dialog  onOpenChange={setUpdateNewNameOpen} open={updateNewNameOpen} >
+                <DialogTrigger asChild>
+                  <Pen size={16} className="ml-1 hover:cursor-pointer"
+                  />
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Cập nhập tên mới </DialogTitle>
+                    <DialogDescription>
+                    </DialogDescription>
+                  </DialogHeader>
+                  {/* input to update new name : */}
+                  <Input
+                    type="text"
+                    placeholder="Nhập tên mới"
+                    className="mt-4"
+                    value={newFullName}
+                    onChange={(e) => setNewFullName(e.target.value)}
+                  />
+                  {/* update button : disable if new name is empty or the same with last one , and loading spiner when updating */}
+                  <Button
+                    className="mt-4 w-full"
+                    disabled={newFullName.trim() === '' || newFullName === full_name || newFullName === email}
+                    onClick={() => {
+                      // dispatch update full name action :
+                      dispatch(updateFullName({ fullName: newFullName }))
+                    }}
+                  >
+                    {isLoadingUpdateFullName ? 'Đang cập nhật...' : 'Cập nhật tên'}
+                  </Button>
+
+
+                  <DialogFooter>
+                    <DialogClose asChild>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+            </div>
             {/* thoi gian tham gia : */}
             <span className="text-sm font-normal">Tham gia : {date_join}</span>
 
