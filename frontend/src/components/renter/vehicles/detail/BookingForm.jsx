@@ -1,15 +1,22 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import axiosInstance from "../../../../config/axiosInstance"; // Giả sử bạn có file cấu hình axios
 import DateTimeSelector from "./DateTimeSelector";
 import AddressSelector from "./AddressSelector";
 import PromoCodeModal from "./PromoCodeModal";
+import {
+  checkIfReported,
+  resetReportState,
+} from "../../../../redux/features/renter/vehicleReport/vehicleReportSlice";
+import VehicleReportModal from "../../../../components/renter/vehicleReport/VehicleReportModal";
 
 function BookingForm({ vehicle }) {
   const navigate = useNavigate();
-  
+  const dispatch = useDispatch();
+
   // State declarations
   const [bookingData, setBookingData] = useState({
     startDate: "",
@@ -26,11 +33,14 @@ function BookingForm({ vehicle }) {
   const [showDateTimeSelector, setShowDateTimeSelector] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showPromoModal, setShowPromoModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryDistanceKm, setDeliveryDistanceKm] = useState(0);
   const [userPoints, setUserPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
+
+  const { isReported } = useSelector((state) => state.vehicleReport);
 
   // Fetch user points
   useEffect(() => {
@@ -47,6 +57,14 @@ function BookingForm({ vehicle }) {
     };
     fetchPoints();
   }, []);
+
+  // Report vehicle check
+  useEffect(() => {
+    if (vehicle?.vehicle_id) {
+      dispatch(checkIfReported(vehicle.vehicle_id));
+    }
+    return () => dispatch(resetReportState());
+  }, [dispatch, vehicle?.vehicle_id]);
 
   // Format date and time for display
   const formatDateTime = () => {
@@ -127,10 +145,10 @@ function BookingForm({ vehicle }) {
   // Handle address confirmation
   const handleAddressConfirm = (address, coords, distance) => {
     setDeliveryDistanceKm(distance);
-    
+
     // Tính phí giao xe (luôn tính 2 chiều)
     const fee = Math.round(distance * 20000 * 2);
-    
+
     setBookingData((prev) => ({
       ...prev,
       pickupAddress: address,
@@ -153,8 +171,6 @@ function BookingForm({ vehicle }) {
     }));
     setDeliveryFee(0);
   };
-
-
 
   // Handle date and time change
   const handleDateTimeChange = (data) => {
@@ -214,10 +230,13 @@ function BookingForm({ vehicle }) {
 
     try {
       // sửa endpoint đúng theo router BE
-      const response = await axiosInstance.post("/api/renter/booking/createBooking", payload);
+      const response = await axiosInstance.post(
+        "/api/renter/booking/createBooking",
+        payload
+      );
       console.log("Booking payload:", payload);
       console.log("Booking response:", response.data);
-      
+
       // Chuyển hướng đến trang xác nhận đơn hàng với booking ID
       const bookingId = response.data.data?.booking_id;
       if (bookingId) {
@@ -351,10 +370,6 @@ function BookingForm({ vehicle }) {
                 )}
             </div>
           </div>
-
-
-
-
         </div>
 
         {/* Total Price */}
@@ -375,9 +390,7 @@ function BookingForm({ vehicle }) {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>
-                  Phí giao xe (20.000 đ/km * 2 chiều)
-                </span>
+                <span>Phí giao xe (20.000 đ/km * 2 chiều)</span>
                 <span>{deliveryFee.toLocaleString("vi-VN")} đ</span>
               </div>
             </div>
@@ -479,6 +492,18 @@ function BookingForm({ vehicle }) {
         >
           Đặt xe ngay
         </button>
+
+        {/* Report Vehicle */}
+        <div className="border-t border-gray-200 pt-4 border-b border-black pb-2 mt-4">
+          <button
+            onClick={() => setShowReportModal(true)}
+            disabled={isReported}
+            className="w-full flex items-center justify-center gap-2 text-base font-medium text-gray-800 hover:text-black cursor-pointer transition-colors duration-200"
+          >
+            <span className="text-base">🚩</span>
+            {isReported ? "Bạn đã báo cáo xe này" : "Báo cáo xe này"}
+          </button>
+        </div>
       </div>
 
       {showDateTimeSelector && (
@@ -536,6 +561,17 @@ function BookingForm({ vehicle }) {
           <PromoCodeModal
             onConfirm={handlePromoConfirm}
             onCancel={() => setShowPromoModal(false)}
+          />,
+          document.body
+        )}
+
+      {showReportModal &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <VehicleReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            vehicleId={vehicle.vehicle_id}
           />,
           document.body
         )}
