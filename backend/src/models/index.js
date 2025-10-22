@@ -100,8 +100,8 @@ Vehicle.hasMany(VehicleReport, { foreignKey: "vehicle_id" });
 VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
 
 // User ↔ VehicleReport
-User.hasMany(VehicleReport, { foreignKey: "user_id" });
-VehicleReport.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(VehicleReport, { foreignKey: "user_id", as: "reports" });
+VehicleReport.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 // === BẢNG PHỤ THUỘC BOOKING ===
 
