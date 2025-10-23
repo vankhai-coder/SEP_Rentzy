@@ -27,6 +27,7 @@ const autoCancelExpiredBookings = async () => {
       include: [
         {
           model: Vehicle,
+          as: "vehicle", 
           attributes: ["vehicle_id", "model", "owner_id"],
         },
       ],
@@ -62,11 +63,11 @@ const autoCancelExpiredBookings = async () => {
         }
 
         // Tạo thông báo cho owner
-        if (booking.Vehicle && booking.Vehicle.owner_id) {
+        if (booking.vehicle && booking.vehicle.owner_id) {
           await Notification.create({
-            user_id: booking.Vehicle.owner_id,
+            user_id: booking.vehicle.owner_id,
             title: "Booking đã hết hạn",
-            content: `Booking cho xe ${booking.Vehicle.model} đã bị hủy tự động do hết thời gian thanh toán.`,
+            content: `Booking cho xe ${booking.vehicle.model} đã bị hủy tự động do hết thời gian thanh toán.`,
             type: "rental",
             is_read: false,
           });

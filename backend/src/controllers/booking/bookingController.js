@@ -111,6 +111,7 @@ export const getBookingById = async (req, res) => {
       include: [
         {
           model: Vehicle,
+          as: "vehicle", 
           attributes: [
             "vehicle_id",
             "model",
@@ -171,7 +172,7 @@ export const getBookingById = async (req, res) => {
 
       // Thông tin tài chính
       totalDays: booking.total_days,
-      pricePerDay: booking.Vehicle ? booking.Vehicle.price_per_day : "0.00",
+      pricePerDay: booking.vehicle ? booking.vehicle.price_per_day : "0.00",
       totalCost: booking.total_cost,
       deliveryFee: booking.delivery_fee || 0,
       discountAmount: booking.discount_amount || 0,
@@ -186,12 +187,12 @@ export const getBookingById = async (req, res) => {
       created_at: booking.created_at,
       // Thông tin xe
       vehicle: {
-        vehicle_id: booking.Vehicle.vehicle_id,
-        model: booking.Vehicle.model,
-        location: booking.Vehicle.location,
-        price_per_day: booking.Vehicle.price_per_day,
-        main_image_url: booking.Vehicle.main_image_url,
-        extra_images: booking.Vehicle.extra_images,
+        vehicle_id: booking.vehicle.vehicle_id,
+        model: booking.vehicle.model,
+        location: booking.vehicle.location,
+        price_per_day: booking.vehicle.price_per_day,
+        main_image_url: booking.vehicle.main_image_url,
+        extra_images: booking.vehicle.extra_images,
       },
 
       // Thông tin người thuê
@@ -786,7 +787,7 @@ const getBookingByIdContract = async (req, res) => {
       include: [
         { model: User, as: "renter", attributes: ["user_name", "phone"] },
         { model: User, as: "owner", attributes: ["user_name", "phone"] },
-        { model: Vehicle, attributes: ["vehicle_name", "license_plate"] },
+        { model: Vehicle, as: "vehicle", attributes: ["vehicle_name", "license_plate"] },
       ],
     });
 
@@ -844,6 +845,7 @@ export const deleteBooking = async (req, res) => {
       include: [
         {
           model: Vehicle,
+          as: "vehicle", 
           attributes: ["vehicle_id", "model", "owner_id"],
         },
       ],
@@ -883,11 +885,11 @@ export const deleteBooking = async (req, res) => {
     }
 
     // Tạo thông báo cho owner (nếu cần)
-    if (booking.Vehicle && booking.Vehicle.owner_id) {
+    if (booking.vehicle && booking.vehicle.owner_id) {
       await Notification.create({
-        user_id: booking.Vehicle.owner_id,
+        user_id: booking.vehicle.owner_id,
         title: "Booking đã bị hủy",
-        content: `Booking cho xe ${booking.Vehicle.model} đã bị hủy bởi người thuê.`,
+        content: `Booking cho xe ${booking.vehicle.model} đã bị hủy bởi người thuê.`,
         type: "rental",
         is_read: false,
       });
