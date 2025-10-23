@@ -1,5 +1,6 @@
 import { PayOS } from "@payos/node";
-import crypto from "crypto";
+
+import { Op } from "sequelize";
 import db from "../../models/index.js";
 
 const { Booking, Transaction, User } = db;
@@ -35,7 +36,6 @@ const createPayOSLink = async (req, res) => {
     // Đặt cọc là 30% của tổng thanh toán thực tế (total_amount)
     const totalAmount = booking.total_amount || 0;
     const amount = Math.floor(totalAmount * 0.3);
-    console.log("DEBUG PayOS:", { bookingId, totalAmount, amount });
 
     if (totalAmount < 1000) {
       return res
@@ -52,13 +52,16 @@ const createPayOSLink = async (req, res) => {
     // orderCode: số dương nhỏ hơn 9007199254740991, duy nhất
     let orderCode;
     if (
+      // đã có trong database
       booking.order_code &&
       typeof booking.order_code === "number" &&
       booking.order_code > 0 &&
       booking.order_code < 9007199254740991
     ) {
+      // lấy mã cũ dùng
       orderCode = booking.order_code;
     } else {
+      // tạo mã mới
       orderCode = Number(String(Date.now()).slice(-10));
       await booking.update({ order_code: orderCode });
     }
@@ -73,10 +76,27 @@ const createPayOSLink = async (req, res) => {
       },
     });
 
-    // Nếu có giao dịch đang chờ xử lý, tái sử dụng
+    // Kiểm tra timeout cho transaction pending (15 phút)
+    const TRANSACTION_TIMEOUT = 15 * 60 * 1000; // 15 phút
     if (transaction) {
-      console.log("Existing pending PayOS transaction found. Reusing...");
-    } else {
+      const transactionAge =
+        Date.now() - new Date(transaction.created_at).getTime();
+
+      if (transactionAge > TRANSACTION_TIMEOUT) {
+        console.log(
+          "Pending deposit transaction expired. Marking as CANCELLED and creating new one..."
+        );
+        await transaction.update({
+          status: "CANCELLED",
+          note: transaction.note + " - Hủy do timeout",
+        });
+        transaction = null; // Đặt về null để tạo transaction mới
+      } else {
+        console.log("Existing pending PayOS transaction found. Reusing...");
+      }
+    }
+
+    if (!transaction) {
       // Nếu không có, tạo một bản ghi giao dịch mới
       console.log("No pending PayOS transaction found. Creating a new one...");
       transaction = await Transaction.create({
@@ -91,7 +111,7 @@ const createPayOSLink = async (req, res) => {
     }
 
     // description tối đa 25 ký tự
-    const description = `Coc don ${orderCode}`;
+    const description = `Cọc đơn ${orderCode}`;
     const body = {
       orderCode,
       amount,
@@ -128,6 +148,7 @@ const createPayOSLink = async (req, res) => {
 // PAYOS: Webhook nhận thông báo thanh toán
 const handlePayOSWebhook = async (req, res) => {
   try {
+    console.log("PayOS webhook received");
     console.log("chạy web hook lấy data ");
     console.log("Webhook raw body:", req.body);
 
@@ -142,19 +163,12 @@ const handlePayOSWebhook = async (req, res) => {
       // Tìm booking theo order_code hoặc order_code_remaining
       const booking = await Booking.findOne({
         where: {
-          [db.sequelize.Op.or]: [
+          [Op.or]: [
             { order_code: data.orderCode },
             { order_code_remaining: data.orderCode },
           ],
         },
       });
-
-      console.log(
-        "Booking found:",
-        booking ? booking.booking_id : null,
-        "Status:",
-        booking ? booking.status : null
-      );
 
       if (!booking) {
         return res.json({
@@ -168,7 +182,10 @@ const handlePayOSWebhook = async (req, res) => {
         booking.order_code === data.orderCode &&
         booking.status === "pending"
       ) {
-        await booking.update({ status: "deposit_paid" });
+        await booking.update({
+          status: "deposit_paid",
+          total_paid: Number(data.amount),
+        });
         console.log("DEBUG PayOS:", {
           bookingId: booking.booking_id,
           amount: data.amount,
@@ -180,11 +197,17 @@ const handlePayOSWebhook = async (req, res) => {
       }
 
       // Nếu là thanh toán phần còn lại
+
+      let totalPaid = Number(data.amount) + Number(booking.total_paid);
+
       if (
         booking.order_code_remaining === data.orderCode &&
         booking.status === "deposit_paid"
       ) {
-        await booking.update({ status: "fully_paid" });
+        await booking.update({
+          status: "fully_paid",
+          total_paid: totalPaid,
+        });
         console.log(
           "Booking status updated to fully_paid:",
           booking.booking_id
@@ -296,12 +319,29 @@ const createPayOSLinkForRemaining = async (req, res) => {
       },
     });
 
-    // Nếu có giao dịch đang chờ xử lý, tái sử dụng
+    // Kiểm tra timeout cho transaction pending (15 phút)
+    const TRANSACTION_TIMEOUT = 15 * 60 * 1000; // 15 phút
     if (transaction) {
-      console.log(
-        "Existing pending PayOS RENTAL transaction found. Reusing..."
-      );
-    } else {
+      const transactionAge =
+        Date.now() - new Date(transaction.created_at).getTime();
+
+      if (transactionAge > TRANSACTION_TIMEOUT) {
+        console.log(
+          "Pending transaction expired. Marking as CANCELLED and creating new one..."
+        );
+        await transaction.update({
+          status: "CANCELLED",
+          note: transaction.note + " - Hủy do timeout",
+        });
+        transaction = null; // Đặt về null để tạo transaction mới
+      } else {
+        console.log(
+          "Existing pending PayOS RENTAL transaction found. Reusing..."
+        );
+      }
+    }
+
+    if (!transaction) {
       // Nếu không có, tạo một bản ghi giao dịch mới
       console.log(
         "No pending PayOS RENTAL transaction found. Creating a new one..."

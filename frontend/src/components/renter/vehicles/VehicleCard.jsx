@@ -23,7 +23,10 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
     favorites.some((fav) => fav.vehicle_id === vehicle.vehicle_id)
   );
 
-  const handleFavorite = async () => {
+  const handleFavorite = async (e) => {
+    // Prevent event bubbling to stop navigation when clicking heart
+    e.stopPropagation();
+    
     if (!userId) {
       toast.info("Vui lòng đăng nhập để thêm yêu thích!");
       navigate("/renter/auth/login");
@@ -64,9 +67,6 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
       setIsFavoriteLocal(!newIsFavorite);
       toast.error(error || "Có lỗi xảy ra khi cập nhật yêu thích!");
     }
-
-   
-
   };
     // ✨ Thêm function để navigate đến trang detail
   const handleCardClick = () => {

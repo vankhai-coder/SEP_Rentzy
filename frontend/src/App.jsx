@@ -21,7 +21,10 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
+// booking list renter 
 import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
+import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/BookingDetailsPage.jsx";
+
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
@@ -29,9 +32,13 @@ import OwnerPage from "./pages/owner/ownerPage.jsx";
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
 import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
+// import ContractPage from "./pages/renter/booking/ContractPage.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
+
+// Test pages
+
 const App = () => {
   return (
     <Router>
@@ -61,6 +68,9 @@ const App = () => {
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
             <Route path="/booking-history" element={<BookingHistory />} />
+            {/* booking detail renter */}
+            <Route path="/booking-history/booking-detail/:id" element={<BookingDetailsPage />} />
+
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/mytrips" element={<MyTrips />} />
             <Route path="/longtermrenting" element={<LongTermRenting />} />
@@ -88,6 +98,9 @@ const App = () => {
           <Route path="/order-confirmation/:bookingId" element={<OrderConfirmation />} />
           {/* Payment Deposit */}
           <Route path="/payment-deposit/:bookingId" element={<PaymentDeposit />} />
+          {/* Contract Page */}
+          {/* <Route path="/contract/:bookingId" element={<ContractPage />} /> */}
+
 
 
 
@@ -109,7 +122,7 @@ const App = () => {
 
           {/* ADMIN ROUTES :  */}
 
-          {/* 404 fallback */}
+          {/* Catch-all route */}
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Layout>

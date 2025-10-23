@@ -65,13 +65,14 @@ function BookingForm({ vehicle }) {
 
   // Calculate rental days
   const calculateDays = () => {
-    if (!bookingData.startDate || !bookingData.endDate) return 0;
+    if (!bookingData.startDate || !bookingData.endDate || !bookingData.startTime || !bookingData.endTime) return 0;
     const start = new Date(bookingData.startDate);
     const end = new Date(bookingData.endDate);
-    if (isNaN(start) || isNaN(end)) return 0;
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays || 1;
+    const [ph] = bookingData.startTime.split(":").map(Number);
+    const [rh] = bookingData.endTime.split(":").map(Number);
+    start.setHours(ph, 0, 0, 0);
+    end.setHours(rh, 0, 0, 0);
+    return Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) || 1;
   };
 
   // Move calculations and useMemo to top level
@@ -221,7 +222,7 @@ function BookingForm({ vehicle }) {
       // Chuyển hướng đến trang xác nhận đơn hàng với booking ID
       const bookingId = response.data.data?.booking_id;
       if (bookingId) {
-        navigate(`/order-confirmation/${bookingId}`);
+        navigate(`/payment-deposit/${bookingId}`);
       } else {
         alert("Đặt xe thành công!");
       }

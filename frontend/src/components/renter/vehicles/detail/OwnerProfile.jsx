@@ -144,27 +144,6 @@ const OwnerProfile = ({ vehicle }) => {
             </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-sm text-gray-500">Tỉ lệ phản hồi</div>
-            <div className="text-lg font-bold">100%</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-500">Phản hồi trong</div>
-            <div className="text-lg font-bold">5 phút</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-500">Tỉ lệ đồng ý</div>
-            <div className="text-lg font-bold">100%</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 text-blue-900 rounded-md p-4 text-sm">
-        <span className="font-medium">Chủ xe </span>
-        có thời gian phản hồi nhanh chóng, tỉ lệ đồng ý cao, mức giá cạnh tranh
-        & dịch vụ nhận được nhiều đánh giá tốt từ khách hàng.
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

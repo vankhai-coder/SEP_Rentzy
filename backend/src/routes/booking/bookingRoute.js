@@ -5,6 +5,8 @@ import {
   getVehicleBookedDates,
   createBooking,
   getBookingById,
+  deleteBooking,
+  triggerAutoCancelExpiredBookings,
 } from "../../controllers/booking/bookingController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 import { checkVerificationForBooking } from "../../middlewares/verificationMiddleware.js";
@@ -17,5 +19,9 @@ BookingRoute.post(
   checkVerificationForBooking,
   createBooking
 );
+BookingRoute.delete("/:bookingId", verifyJWTToken, deleteBooking);
+
+// Manual trigger for auto-cancel 
+BookingRoute.post("/admin/auto-cancel-expired", triggerAutoCancelExpiredBookings);
 
 export default BookingRoute;

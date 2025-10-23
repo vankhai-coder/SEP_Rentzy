@@ -15,8 +15,7 @@ const statusMap = {
   // Dịch status sang tiếng Việt
   pending: "Chờ xác nhận",
   deposit_paid: "Đã đặt cọc",
-  rental_paid: "Đã thanh toán toàn bộ",
-  confirmed: "Đã xác nhận",
+  fully_paid: "Đã thanh toán toàn bộ",
   in_progress: "Đang thuê",
   completed: "Hoàn thành",
   cancel_requested: "Yêu cầu hủy",
