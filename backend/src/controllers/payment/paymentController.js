@@ -1,9 +1,14 @@
 import { PayOS } from "@payos/node";
-
+import crypto from "crypto";
 import { Op } from "sequelize";
 import db from "../../models/index.js";
+import { sendEmail } from "../../utils/email/sendEmail.js";
+import {
+  paymentSuccessTemplateForRenter,
+  paymentSuccessTemplateForOwner,
+} from "../../utils/email/templates/emailTemplate.js";
 
-const { Booking, Transaction, User } = db;
+const { Booking, Transaction, User, Notification } = db;
 
 const payOS = new PayOS({
   clientId: process.env.PAYOS_CLIENT_ID,
@@ -253,6 +258,81 @@ const handlePayOSWebhook = async (req, res) => {
               : "Thanh toán phần còn lại qua PayOS",
         });
         console.log("PayOS transaction created:", newTx.transaction_id);
+      }
+      // tạo thông báo và gửi email cho renter và owner khi có mà thanh toán thành công
+      const isDepositPayment = booking.order_code === data.orderCode;
+      const paymentTypeText = isDepositPayment ? "đặt cọc" : "phần còn lại";
+
+      // Lấy thông tin đầy đủ để gửi email
+      const vehicle = await db.Vehicle.findByPk(booking.vehicle_id);
+      const renter = await db.User.findByPk(booking.renter_id);
+      const owner = vehicle ? await db.User.findByPk(vehicle.owner_id) : null;
+
+      if (!vehicle || !renter || !owner) {
+        console.error("Missing required data for email:", {
+          vehicle: !!vehicle,
+          renter: !!renter,
+          owner: !!owner,
+        });
+      }
+
+      // Thông báo cho người thuê
+      await Notification.create({
+        user_id: booking.renter_id,
+        title: "Thanh toán thành công",
+        content: `Thanh toán ${paymentTypeText} cho booking #${booking.booking_id} thành công.`,
+        type: "rental",
+      });
+
+      // Gửi email cho người thuê
+      if (renter && vehicle) {
+        try {
+          await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: renter.email,
+            subject: `Thanh toán ${paymentTypeText} thành công - Booking #${booking.booking_id}`,
+            html: paymentSuccessTemplateForRenter(
+              booking.booking_id,
+              paymentTypeText,
+              data.amount,
+              vehicle.vehicle_model || vehicle.vehicle_name
+            ),
+          });
+          console.log("Email sent to renter:", renter.email);
+        } catch (emailError) {
+          console.error("Error sending email to renter:", emailError);
+        }
+      }
+
+      // Thông báo cho chủ xe
+      if (vehicle) {
+        await Notification.create({
+          user_id: vehicle.owner_id,
+          title: "Nhận được thanh toán",
+          content: `Nhận được thanh toán ${paymentTypeText} từ ${renter.full_name} cho booking #${booking.booking_id}.`,
+          type: "rental",
+        });
+
+        // Gửi email cho chủ xe
+        if (owner && renter) {
+          try {
+            await sendEmail({
+              from: process.env.GMAIL_USER,
+              to: owner.email,
+              subject: `Nhận được thanh toán ${paymentTypeText} - Booking #${booking.booking_id}`,
+              html: paymentSuccessTemplateForOwner(
+                booking.booking_id,
+                paymentTypeText,
+                data.amount,
+                vehicle.vehicle_model,
+                renter.full_name || renter.email
+              ),
+            });
+            console.log("Email sent to owner:", owner.email);
+          } catch (emailError) {
+            console.error("Error sending email to owner:", emailError);
+          }
+        }
       }
 
       return res.json({ success: true });
