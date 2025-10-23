@@ -30,6 +30,12 @@ import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
+// payment
+import PaymentRoute from "./routes/payment/paymentRoute.js";
+
+// cron jobs
+import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
+
 // init app :
 const app = express();
 
@@ -79,6 +85,9 @@ app.use("/api/owner/overview", OwnerOverviewRoute);
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
 
+// payment route
+app.use("/api/payment", PaymentRoute);
+
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
@@ -88,6 +97,9 @@ app.get("/", (req, res) => {
   try {
     await db.sequelize.sync({alter: true});
     console.log("✅ All models synced!");
+    
+    // Initialize cron jobs after database sync
+    initializeCronJobs();
   } catch (err) {
     console.error(" Error syncing models:", err);
   }
@@ -95,4 +107,23 @@ app.get("/", (req, res) => {
 
 // run server :
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  stopCronJobs();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully...');
+  stopCronJobs();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});

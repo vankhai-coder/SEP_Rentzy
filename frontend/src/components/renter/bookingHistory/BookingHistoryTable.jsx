@@ -143,7 +143,7 @@ const BookingHistoryTable = ({
                   <td className="px-6 py-3">
                     <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                       <Link
-                        to={`/booking-detail/${booking.booking_id}`}
+                        to={`/booking-history/booking-detail/${booking.booking_id}`}
                         className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-lg text-white bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 min-w-[80px]"
                       >
                         <Eye className="mr-1 h-3 w-3 flex-shrink-0" />

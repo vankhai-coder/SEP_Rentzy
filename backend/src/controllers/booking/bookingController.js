@@ -3,6 +3,10 @@ import Vehicle from "../../models/Vehicle.js";
 import User from "../../models/User.js";
 import { Op } from "sequelize";
 import Voucher from "../../models/Voucher.js";
+import { sendEmail } from "../../utils/email/sendEmail.js";
+import Transaction from "../../models/Transaction.js";
+import Notification from "../../models/Notification.js";
+import { autoCancelExpiredBookings } from "../../services/cronService.js";
 
 // Lấy lịch xe đã đặt theo vehicleId
 export const getVehicleBookedDates = async (req, res) => {
@@ -27,8 +31,8 @@ export const getVehicleBookedDates = async (req, res) => {
           [Op.in]: [
             "pending",
             "deposit_paid",
-            "rental_paid",
-            "accepted",
+            "fully_paid",
+            "cancel_requested",
             "in_progress",
           ],
         },
@@ -121,6 +125,20 @@ export const getBookingById = async (req, res) => {
           as: "renter",
           attributes: ["user_id", "full_name", "phone_number", "email"],
         },
+        {
+          model: Transaction,
+          attributes: [
+            "transaction_id",
+            "amount",
+            "type",
+            "status",
+            "payment_method",
+            "note",
+            "created_at",
+            "processed_at",
+          ],
+          required: false, // LEFT JOIN để lấy booking ngay cả khi chưa có transaction
+        },
       ],
     });
 
@@ -130,6 +148,15 @@ export const getBookingById = async (req, res) => {
         message: "Không tìm thấy thông tin đơn hàng",
       });
     }
+
+    // Debug log để kiểm tra dữ liệu từ database
+    console.log("Backend booking data:", {
+      booking_id: booking.booking_id,
+      status: booking.status,
+      created_at: booking.created_at,
+      statusType: typeof booking.status,
+      createdAtType: typeof booking.created_at,
+    });
 
     // Tạo response data đơn giản từ database
     const responseData = {
@@ -155,7 +182,8 @@ export const getBookingById = async (req, res) => {
       // Thông tin khác
       voucherCode: booking.voucher_code,
       pointsEarned: booking.points_earned || 0,
-
+      // giờ tạo
+      created_at: booking.created_at,
       // Thông tin xe
       vehicle: {
         vehicle_id: booking.Vehicle.vehicle_id,
@@ -174,8 +202,19 @@ export const getBookingById = async (req, res) => {
         email: booking.renter.email,
       },
 
-      // Giao dịch
-      transactions: [],
+      // Danh sách giao dịch
+      transactions: booking.Transactions
+        ? booking.Transactions.map((transaction) => ({
+            transaction_id: transaction.transaction_id,
+            amount: transaction.amount,
+            transaction_type: transaction.type, // Đổi tên để phù hợp với frontend
+            status: transaction.status,
+            payment_method: transaction.payment_method,
+            note: transaction.note,
+            created_at: transaction.created_at,
+            processed_at: transaction.processed_at,
+          }))
+        : [],
     };
 
     return res.status(200).json({
@@ -220,15 +259,15 @@ const buildBookedIntervals = async (vehicleId) => {
       // Lấy ngày từ database (đã lưu theo VN timezone)
       const startDate = new Date(start_date);
       const endDate = new Date(end_date);
-      
+
       // Format ngày theo định dạng YYYY-MM-DD
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
-      
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const endDateStr = endDate.toISOString().split("T")[0];
+
       // Tạo datetime string với múi giờ Việt Nam
-      const startTimeStr = start_time || '00:00:00';
-      const endTimeStr = end_time || '23:59:59';
-      
+      const startTimeStr = start_time || "00:00:00";
+      const endTimeStr = end_time || "23:59:59";
+
       // Tạo datetime với timezone +07:00 (Việt Nam)
       const startDateTime = new Date(`${startDateStr}T${startTimeStr}+07:00`);
       const endDateTime = new Date(`${endDateStr}T${endTimeStr}+07:00`);
@@ -331,15 +370,19 @@ export const createBooking = async (req, res) => {
       startDate,
       endDate,
       startTime,
-      endTime
+      endTime,
     });
 
     // Tạo datetime theo múi giờ Việt Nam (UTC+7)
     // Sử dụng format ISO với timezone offset để đảm bảo đúng múi giờ
-    const vietnamOffset = '+07:00';
-    const startDateTimeStr = `${startDate}T${startTime || '00:00:00'}${vietnamOffset}`;
-    const endDateTimeStr = `${endDate}T${endTime || '23:59:59'}${vietnamOffset}`;
-    
+    const vietnamOffset = "+07:00";
+    const startDateTimeStr = `${startDate}T${
+      startTime || "00:00:00"
+    }${vietnamOffset}`;
+    const endDateTimeStr = `${endDate}T${
+      endTime || "23:59:59"
+    }${vietnamOffset}`;
+
     const start = new Date(startDateTimeStr);
     const end = new Date(endDateTimeStr);
 
@@ -348,8 +391,8 @@ export const createBooking = async (req, res) => {
       endInput: endDateTimeStr,
       start: start.toISOString(),
       end: end.toISOString(),
-      startVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-      endVN: end.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+      startVN: start.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      endVN: end.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
     });
 
     // Kiểm tra định dạng ngày hợp lệ
@@ -372,17 +415,23 @@ export const createBooking = async (req, res) => {
     // Kiểm tra thời gian bắt đầu không được trong quá khứ
     // Lấy thời gian hiện tại theo múi giờ Việt Nam
     const now = new Date();
-    const nowVN = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    
+    const nowVN = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+    );
+
     console.log("⏰ So sánh thời gian:", {
       currentTimeUTC: now.toISOString(),
       currentTimeVN: nowVN.toISOString(),
-      currentTimeVNLocal: now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      currentTimeVNLocal: now.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
       startTime: start.toISOString(),
-      startTimeVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-      isStartInPast: start < now
+      startTimeVN: start.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
+      isStartInPast: start < now,
     });
-    
+
     if (start < now) {
       return res.status(400).json({
         success: false,
@@ -403,8 +452,12 @@ export const createBooking = async (req, res) => {
     console.log("📅 Khoảng thời gian request:", {
       start: requestStart.toISOString(),
       end: requestEnd.toISOString(),
-      startVN: requestStart.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-      endVN: requestEnd.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+      startVN: requestStart.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
+      endVN: requestEnd.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
     });
 
     if (
@@ -428,12 +481,20 @@ export const createBooking = async (req, res) => {
           console.log("⚠️ Phát hiện xung đột với booking:", {
             bookedStart: startDateTime.toISOString(),
             bookedEnd: endDateTime.toISOString(),
-            bookedStartVN: startDateTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-            bookedEndVN: endDateTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+            bookedStartVN: startDateTime.toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            }),
+            bookedEndVN: endDateTime.toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            }),
             requestStart: requestStart.toISOString(),
             requestEnd: requestEnd.toISOString(),
-            requestStartVN: requestStart.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-            requestEndVN: requestEnd.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+            requestStartVN: requestStart.toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            }),
+            requestEndVN: requestEnd.toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            }),
           });
         }
         return isConflict;
@@ -624,21 +685,21 @@ export const createBooking = async (req, res) => {
     // Tách ngày và giờ để lưu đúng format theo múi giờ Việt Nam
     // Lưu trực tiếp string date để tránh timezone conversion
     const startDateOnly = startDate; // Lưu trực tiếp string "2025-10-19"
-    const endDateOnly = endDate;     // Lưu trực tiếp string "2025-10-19"
-    
+    const endDateOnly = endDate; // Lưu trực tiếp string "2025-10-19"
+
     console.log("💾 Lưu booking với thông tin:", {
       originalStartDate: startDate,
       originalEndDate: endDate,
       originalStartTime: startTime,
       originalEndTime: endTime,
       startDateOnly: startDateOnly, // Đã là string rồi
-      endDateOnly: endDateOnly,     // Đã là string rồi
+      endDateOnly: endDateOnly, // Đã là string rồi
       startTimeOnly: startTime,
       endTimeOnly: endTime,
       fullStartDateTime: start.toISOString(),
       fullEndDateTime: end.toISOString(),
-      startVN: start.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-      endVN: end.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+      startVN: start.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      endVN: end.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
     });
 
     const booking = await Booking.create({
@@ -657,7 +718,7 @@ export const createBooking = async (req, res) => {
       voucher_code,
       points_used,
       points_earned: 0, // Sẽ tính sau khi hoàn thành booking
-      status: "pending", // Trạng thái chờ xác nhận
+      status: "pending", // Trạng thái chờ thanh toán
       pickup_location,
       return_location,
     });
@@ -673,7 +734,7 @@ export const createBooking = async (req, res) => {
         where: { user_id: renterId },
       });
 
-      console.log(`✅ Đã trừ ${points_used} điểm từ tài khoản người dùng`);
+      console.log(` Đã trừ ${points_used} điểm từ tài khoản người dùng`);
     }
 
     // ==================== BƯỚC 13: TRẢ VỀ KẾT QUẢ ====================
@@ -702,7 +763,7 @@ export const createBooking = async (req, res) => {
     });
   } catch (error) {
     // ==================== XỬ LÝ LỖI ====================
-    console.error("❌ Error creating booking:", error);
+    console.error("Error creating booking:", error);
 
     // Log chi tiết lỗi để debug
     console.error("Error stack:", error.stack);
@@ -710,6 +771,165 @@ export const createBooking = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Lỗi hệ thống khi tạo booking",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// lấy thông tin booking theo id để hiện thị trên contract page
+const getBookingByIdContract = async (req, res) => {
+  try {
+    const { booking_id } = req.params;
+
+    // Tìm booking trong database
+    const booking = await Booking.findByPk(booking_id, {
+      include: [
+        { model: User, as: "renter", attributes: ["user_name", "phone"] },
+        { model: User, as: "owner", attributes: ["user_name", "phone"] },
+        { model: Vehicle, attributes: ["vehicle_name", "license_plate"] },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking không tồn tại",
+      });
+    }
+
+    // Trả về thông tin booking
+    return res.status(200).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    console.error(" Error fetching booking:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy thông tin booking",
+    });
+  }
+};
+
+export { getBookingByIdContract };
+
+// ==================== DELETE BOOKING ====================
+export const deleteBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const renterId = req.user?.userId;
+
+    console.log("🗑️ Delete booking request:", { bookingId, renterId });
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required",
+      });
+    }
+
+    if (!renterId) {
+      return res.status(401).json({
+        success: false,
+        message: "Bạn phải đăng nhập để hủy booking",
+      });
+    }
+
+    // Tìm booking với thông tin liên quan
+    const booking = await Booking.findOne({
+      where: {
+        booking_id: bookingId,
+        renter_id: renterId, // Đảm bảo chỉ renter có thể hủy booking của mình
+      },
+      include: [
+        {
+          model: Vehicle,
+          attributes: ["vehicle_id", "model", "owner_id"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Không tìm thấy booking hoặc bạn không có quyền hủy booking này",
+      });
+    }
+
+    // Kiểm tra trạng thái booking - chỉ cho phép hủy booking ở trạng thái pending
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể hủy booking ở trạng thái chờ xác nhận",
+      });
+    }
+
+    // Cập nhật trạng thái booking thành "cancelled"
+    await booking.update({
+      status: "canceled",
+      updated_at: new Date(),
+    });
+
+    // Hoàn lại điểm thưởng nếu có sử dụng
+    if (booking.points_used > 0) {
+      await User.increment("points", {
+        by: booking.points_used,
+        where: { user_id: renterId },
+      });
+      console.log(
+        `Đã hoàn lại ${booking.points_used} điểm cho user ${renterId}`
+      );
+    }
+
+    // Tạo thông báo cho owner (nếu cần)
+    if (booking.Vehicle && booking.Vehicle.owner_id) {
+      await Notification.create({
+        user_id: booking.Vehicle.owner_id,
+        title: "Booking đã bị hủy",
+        content: `Booking cho xe ${booking.Vehicle.model} đã bị hủy bởi người thuê.`,
+        type: "rental",
+        is_read: false,
+      });
+    }
+
+    console.log("Booking đã được hủy thành công:", bookingId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã hủy booking thành công",
+      data: {
+        booking_id: booking.booking_id,
+        status: "cancelled",
+        points_refunded: booking.points_used || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi hệ thống khi hủy booking",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+//  MANUAL TRIGGER AUTO-CANCEL (FOR TESTING)
+export const triggerAutoCancelExpiredBookings = async (req, res) => {
+  try {
+    console.log("🔧 [MANUAL] Triggering auto-cancel expired bookings...");
+
+    await autoCancelExpiredBookings();
+
+    return res.status(200).json({
+      success: true,
+      message: "Auto-cancel process completed successfully",
+    });
+  } catch (error) {
+    console.error("❌ [MANUAL] Error triggering auto-cancel:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi thực hiện auto-cancel",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

@@ -1,0 +1,1969 @@
+@use 'sass:color';
+
+// Variables
+$primary-color: #6366f1;
+$success-color: #10b981;
+$warning-color: #eab308;
+$danger-color: #ef4444;
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+$white: #ffffff;
+
+$border-radius-sm: 0.375rem;
+$border-radius: 0.5rem;
+$border-radius-lg: 0.75rem;
+$border-radius-xl: 1rem;
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card {
+  background-color: $white;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow;
+  padding: 1.5rem;
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: $border-radius;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: $primary-color;
+  color: $white;
+  
+  &:hover:not(:disabled) {
+    background-color: color.adjust($primary-color, $lightness: -10%);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin button-success {
+  @include button-base;
+  background-color: $success-color;
+  color: $white;
+  
+  &:hover:not(:disabled) {
+    background-color: color.adjust($success-color, $lightness: -10%);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+}
+
+@mixin button-danger {
+  @include button-base;
+  background-color: $danger-color;
+  color: $white;
+  
+  &:hover:not(:disabled) {
+    background-color: color.adjust($danger-color, $lightness: -10%);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+}
+
+// Main Container
+.reservation-payment-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 2rem;
+  gap: 2rem;
+  align-items: center; // Căn giữa content
+  
+  // Max width and centering
+  max-width: 1400px; // Điều chỉnh max-width để phù hợp với layout cân bằng
+  margin: 0 auto;
+  width: 100%;
+
+  @media (max-width: 1400px) {
+    padding: 1.75rem;
+  }
+
+  @media (max-width: 1200px) {
+    padding: 1.5rem;
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+}
+
+// Progress Bar Section
+.progress-bar-wrapper {
+  width: 100%;
+  max-width: 1300px; // Điều chỉnh để phù hợp với content wrapper
+  @include card;
+  background: linear-gradient(135deg, $white 0%, #f8fafc 100%);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding: 0 3rem;
+    position: relative;
+
+    // Tạo thanh progress chính chạy giữa các icon
+    &::before {
+      content: '';
+      position: absolute;
+      top: 1.25rem;
+      left: 12.5%;
+      right: 12.5%;
+      height: 4px;
+      background: linear-gradient(90deg, 
+        $gray-200 0%, 
+        $gray-200 100%
+      );
+      border-radius: 2px;
+      z-index: 1;
+    }
+
+    // Thanh progress động dựa trên step hiện tại
+    &::after {
+      content: '';
+      position: absolute;
+      top: 1.25rem;
+      left: 12.5%;
+      height: 4px;
+      background: linear-gradient(90deg, 
+        $success-color 0%, 
+        #34d399 50%, 
+        $success-color 100%
+      );
+      border-radius: 2px;
+      z-index: 2;
+      transition: width 0.6s ease-in-out;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    // Responsive adjustments
+    @media (max-width: 1024px) {
+      padding: 0 2rem;
+      
+      &::before {
+        left: 12.5%;
+        right: 12.5%;
+      }
+      
+      &::after {
+        left: 12.5%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      padding: 0 1.5rem;
+      margin-bottom: 1.5rem;
+      
+      &::before {
+        left: 10%;
+        right: 10%;
+      }
+      
+      &::after {
+        left: 10%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      padding: 0 1rem;
+      
+      &::before {
+        left: 8%;
+        right: 8%;
+      }
+      
+      &::after {
+        left: 8%;
+      }
+    }
+  }
+
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    max-width: 150px;
+
+    .step-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      @include flex-center;
+      border-radius: 50%;
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      position: relative;
+      z-index: 10;
+      transition: all 0.3s ease;
+
+      &.active {
+        background-color: $success-color;
+        color: $white;
+        border: none;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+
+      &.current {
+        border: 3px solid $success-color;
+        color: $success-color;
+        background-color: $white;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+      }
+
+      &.inactive {
+        border: 3px solid $gray-300;
+        color: $gray-400;
+        background-color: $gray-50;
+      }
+    }
+
+    .step-text {
+      font-size: 0.75rem;
+      text-align: center;
+      line-height: 1.2;
+      max-width: 100%;
+      word-wrap: break-word;
+      font-weight: 500;
+      color: $gray-500;
+      padding: 0 0.25rem;
+
+      @media (max-width: 768px) {
+        font-size: 0.625rem;
+      }
+    }
+
+    &.completed .step-text {
+      color: $success-color;
+      font-weight: 600;
+    }
+  }
+
+  // Điều khiển độ rộng thanh progress dựa trên step
+  &.step-0 .progress-steps::after {
+    width: 0%;
+  }
+
+  &.step-1 .progress-steps::after {
+    width: 18.75%;
+  }
+
+  &.step-2 .progress-steps::after {
+    width: 37.5%;
+  }
+
+  &.step-3 .progress-steps::after {
+    width: 56.25%;
+  }
+
+  &.step-4 .progress-steps::after {
+    width: 75%;
+  }
+}
+
+// Countdown Timer Section
+.countdown-section {
+  width: 100%;
+  max-width: 1300px;
+  margin-bottom: 2rem;
+  
+  .booking-countdown {
+    @include card;
+    background: linear-gradient(135deg, #fef7f0 0%, #fff7ed 100%);
+    border: 2px solid #fed7aa;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    
+    // Animated background effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(251, 146, 60, 0.1) 50%, 
+        transparent 100%
+      );
+      animation: shimmer 3s infinite;
+      z-index: 1;
+    }
+    
+    .countdown-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      
+      .countdown-icon {
+        font-size: 1.5rem;
+        color: #ea580c;
+        animation: pulse 2s infinite;
+      }
+      
+      .countdown-text {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           gap: 0.5rem;
+           
+           .countdown-label {
+             font-size: 0.875rem;
+             font-weight: 600;
+             color: #9a3412;
+             text-align: center;
+             line-height: 1.4;
+           }
+           
+           .countdown-time {
+             font-size: 1.75rem;
+             font-weight: 700;
+             color: #ea580c;
+             font-family: 'Courier New', monospace;
+             text-shadow: 0 2px 4px rgba(234, 88, 12, 0.2);
+           }
+           
+           .countdown-info {
+             font-size: 0.75rem;
+             color: #6b7280;
+             font-weight: 500;
+             text-align: center;
+             margin-top: 0.25rem;
+           }
+           
+           .countdown-warning {
+             font-size: 0.75rem;
+             color: #dc2626;
+             font-weight: 600;
+             margin-top: 0.25rem;
+             text-align: center;
+             animation: warningBlink 1s infinite;
+           }
+         }
+    }
+    
+    // Warning state when time is running low
+    &.warning {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #fca5a5;
+      animation: warningPulse 1s infinite alternate;
+      
+      .countdown-time {
+        color: #dc2626;
+        animation: timeWarning 0.5s infinite alternate;
+      }
+      
+      .countdown-icon {
+        color: #dc2626;
+        animation: warningShake 0.5s infinite;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      padding: 1.25rem 1.5rem;
+      
+      .countdown-content {
+        flex-direction: column;
+        gap: 0.75rem;
+        
+        .countdown-icon {
+          font-size: 1.25rem;
+        }
+        
+        .countdown-text {
+          .countdown-time {
+            font-size: 1.5rem;
+          }
+        }
+      }
+    }
+    
+    @media (max-width: 480px) {
+      padding: 1rem;
+      
+      .countdown-content {
+        .countdown-text {
+          .countdown-time {
+            font-size: 1.25rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Countdown animations
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes warningPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+}
+
+@keyframes timeWarning {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes warningShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes warningBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.6;
+  }
+}
+
+// Content Wrapper
+.content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  width: 100%;
+  max-width: 1300px;
+  align-items: stretch; // Đảm bảo 2 cột có chiều cao bằng nhau
+  min-height: 600px; // Đặt chiều cao tối thiểu
+
+  @media (max-width: 1200px) {
+    gap: 2rem;
+    max-width: 1100px;
+  }
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 650px;
+    min-height: auto; // Bỏ min-height trên mobile
+  }
+
+  @media (max-width: 768px) {
+    gap: 1.25rem;
+    max-width: 580px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 1rem;
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+}
+
+// Payment Details Section
+.payment-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  min-width: 0; // Đảm bảo không bị overflow trong grid
+  height: 100%; // Chiều cao bằng với cột bên kia
+  
+  @media (max-width: 1024px) {
+    height: auto; // Trở về auto trên mobile
+  }
+  
+  @media (max-width: 768px) {
+    gap: 1.5rem;
+  }
+
+  .deposit-section-beautiful {
+    @include card;
+    text-align: left;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, $white 0%, #f8fafc 100%);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    flex: 1; // Chiếm không gian còn lại
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    @media (max-width: 1024px) {
+      flex: none; // Bỏ flex trên mobile
+    }
+
+    @media (max-width: 768px) {
+      padding: 2rem;
+    }
+
+    @media (max-width: 480px) {
+      padding: 1.5rem;
+    }
+
+    .deposit-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin-bottom: 1.5rem;
+      text-align: center;
+
+      @media (max-width: 768px) {
+        font-size: 1.375rem;
+        margin-bottom: 1.25rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+    }
+
+    .deposit-amount-large {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: $primary-color;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    // Location Section
+    .location-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background-color: $gray-50;
+      border-radius: $border-radius;
+      border: 1px solid $gray-200;
+
+      @media (max-width: 768px) {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+
+      @media (max-width: 480px) {
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .section-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $gray-900;
+        margin-bottom: 1rem;
+
+        @media (max-width: 768px) {
+          font-size: 1rem;
+          margin-bottom: 0.875rem;
+        }
+
+        @media (max-width: 480px) {
+          font-size: 0.9375rem;
+          margin-bottom: 0.75rem;
+        }
+
+        svg {
+          color: $primary-color;
+        }
+      }
+
+      .location-details {
+        .location-item {
+          @include flex-between;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid $gray-200;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .location-label {
+            font-weight: 500;
+            color: $gray-600;
+            flex-shrink: 0;
+            margin-right: 1rem;
+          }
+
+          .location-value {
+            font-weight: 600;
+            color: $gray-900;
+            text-align: right;
+            flex: 1;
+          }
+        }
+      }
+    }
+
+    // Payment Breakdown Section
+    .payment-breakdown-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background-color: $gray-50;
+      border-radius: $border-radius;
+      border: 1px solid $gray-200;
+
+      .section-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $gray-900;
+        margin-bottom: 1rem;
+
+        svg {
+          color: $primary-color;
+        }
+      }
+
+      .payment-breakdown {
+        .payment-item {
+          @include flex-between;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid $gray-200;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &.total-row {
+            border-top: 2px solid $primary-color;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            font-weight: 700;
+          }
+
+          .payment-label {
+            font-weight: 500;
+            color: $gray-600;
+            flex-shrink: 0;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            svg {
+              color: $primary-color;
+              font-size: 0.875rem;
+            }
+          }
+
+          .payment-value {
+            font-weight: 600;
+            color: $gray-900;
+            text-align: right;
+
+            &.positive {
+              color: $warning-color;
+            }
+
+            &.negative {
+              color: $success-color;
+            }
+
+            &.total {
+              color: $primary-color;
+              font-size: 1.125rem;
+              font-weight: 700;
+            }
+          }
+        }
+      }
+    }
+
+    // Payment Method Section
+    .payment-method-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background-color: $gray-50;
+      border-radius: $border-radius;
+      border: 1px solid $gray-200;
+
+      .section-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $gray-900;
+        margin-bottom: 1rem;
+
+        svg {
+          color: $primary-color;
+        }
+      }
+
+      .payment-methods {
+        .payment-method-item {
+          @include flex-between;
+          padding: 1rem;
+          border: 2px solid $gray-200;
+          border-radius: $border-radius;
+          margin-bottom: 0.75rem;
+          background-color: $white;
+          transition: all 0.3s ease;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          &.current {
+            border-color: $primary-color;
+            background-color: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+          }
+
+          .method-label {
+            font-weight: 600;
+            color: $gray-700;
+          }
+
+          .method-amount {
+            font-weight: 700;
+            color: $primary-color;
+            font-size: 1.125rem;
+          }
+        }
+      }
+    }
+
+    .payment-section {
+      margin-top: 2.5rem;
+      padding-top: 2.5rem;
+      border-top: 2px solid $gray-200;
+
+      @media (max-width: 768px) {
+        margin-top: 2rem;
+        padding-top: 2rem;
+      }
+
+      .section-subtitle {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $gray-900;
+        margin-bottom: 0.75rem;
+
+        @media (max-width: 768px) {
+          font-size: 1rem;
+          margin-bottom: 0.5rem;
+        }
+      }
+
+      .payment-instruction {
+        color: $gray-600;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+
+        @media (max-width: 768px) {
+          margin-bottom: 1.5rem;
+          line-height: 1.5;
+        }
+      }
+
+      .payment-button {
+        @include button-primary;
+        width: 100%;
+        padding: 1.25rem 2rem;
+        font-size: 1.0625rem;
+        font-weight: 600;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+
+        @media (max-width: 768px) {
+          padding: 1rem 1.5rem;
+          font-size: 1rem;
+        }
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 25px -8px rgba(99, 102, 241, 0.4);
+        }
+      }
+    }
+  }
+
+  .payment-expired-message,
+  .payment-success-message,
+  .payment-fail-message {
+    @include card;
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, $white 0%, #f8fafc 100%);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+
+    @media (max-width: 768px) {
+      padding: 2.5rem 1.5rem;
+    }
+
+    @media (max-width: 480px) {
+      padding: 2rem 1rem;
+    }
+
+    p {
+      margin-bottom: 1.25rem;
+      color: $gray-700;
+      line-height: 1.6;
+      font-size: 1.0625rem;
+
+      @media (max-width: 768px) {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      &:last-of-type {
+        margin-bottom: 2rem;
+
+        @media (max-width: 768px) {
+          margin-bottom: 1.5rem;
+        }
+      }
+
+      strong {
+        color: $gray-900;
+        font-weight: 600;
+      }
+    }
+
+    .confirm-button {
+      @include button-primary;
+      margin-right: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .back-to-home-button {
+      @include button-base;
+      background-color: $gray-100;
+      color: $gray-700;
+
+      &:hover {
+        background-color: $gray-200;
+      }
+    }
+  }
+
+  .contract-section {
+    text-align: center;
+    padding: 2rem;
+
+    p {
+      margin-bottom: 1.5rem;
+      color: $gray-700;
+      line-height: 1.5;
+    }
+
+    .contract-button {
+      @include button-success;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+    }
+  }
+
+  .cancel-booking-button {
+    @include button-danger;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .deposit-amount {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $success-color;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Order Summary Section
+.order-summary-section {
+  @include card;
+  height: 100%; // Chiều cao bằng với cột bên kia
+  padding: 0;
+  overflow: hidden;
+  position: sticky;
+  top: 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  min-width: 0; // Đảm bảo không bị overflow trong grid
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  
+  @media (max-width: 1024px) {
+    position: static;
+    top: auto;
+    height: fit-content; // Trở về fit-content trên mobile
+  }
+
+  // Modern Header với gradient
+  .summary-header {
+    background: white;
+    color: white;
+    padding: 1.5rem;
+    margin: 0;
+    border-radius: 1rem 1rem 0 0;
+    
+    .header-content {
+      align-items: center;
+      gap: 1rem;
+      text-align: center;
+      
+      .header-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        color: rgb(0, 0, 0);
+      }
+      
+      .header-subtitle {
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+        color: rgba(0, 0, 0, 0.8);
+      }
+    }
+  }
+
+  // Vehicle Card với hiệu ứng hover
+  .vehicle-card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    
+    .vehicle-image-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      
+      .vehicle-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: $gray-900;
+        margin: 0;
+        order: 1;
+      }
+      
+      .vehicle-brand {
+         display: inline-block;
+         color: white;
+         padding: 0.25rem 0.75rem;
+         border-radius: 1rem;
+         font-size: 0.75rem;
+         font-weight: 600;
+         margin-bottom: 0.5rem;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         order: 2;
+       }
+       
+       .vehicle-rating {
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         gap: 0.25rem;
+         font-size: 0.875rem;
+         order: 4;
+         margin-top: 0.5rem;
+         
+         .star-icon {
+           color: #fbbf24;
+         }
+         
+         .rating-count {
+           color: $gray-500;
+           margin-left: 0.25rem;
+         }
+       }
+      
+      .vehicle-image {
+        width: 100%;
+        max-width: 280px;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        order: 3;
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.15);
+        }
+      }
+      
+      .vehicle-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        
+        .badge-icon {
+          font-size: 0.75rem;
+        }
+      }
+    }
+    
+
+  }
+
+  // Booking Info Card
+  .booking-info-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin: 0 0 1.25rem 0;
+      
+      .title-icon {
+        color: #6366f1;
+        font-size: 1.125rem;
+      }
+    }
+    
+    .booking-info-grid {
+      display: grid;
+      gap: 1rem;
+      
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: #f1f5f9;
+          transform: translateY(-1px);
+        }
+        
+        .info-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.5rem;
+          height: 2.5rem;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          color: white;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
+          flex-shrink: 0;
+        }
+        
+        .info-content {
+          flex: 1;
+          
+          .info-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: $gray-500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+          }
+          
+          .info-value {
+            display: block;
+            font-weight: 600;
+            color: $gray-900;
+            font-size: 0.875rem;
+            
+            &.booking-id {
+              font-family: 'Courier New', monospace;
+              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              font-weight: 700;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Rental Period Card với Timeline
+  .rental-period-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin: 0 0 1.25rem 0;
+      
+      .title-icon {
+        color: #6366f1;
+        font-size: 1.125rem;
+      }
+    }
+    
+    .rental-timeline {
+      position: relative;
+      
+      .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        
+        &.pickup {
+          margin-bottom: 2rem;
+        }
+        
+        .timeline-dot {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 3rem;
+          height: 3rem;
+          border-radius: 50%;
+          font-size: 0.875rem;
+          color: white;
+          flex-shrink: 0;
+          z-index: 2;
+          
+          &.pickup-dot {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+          }
+          
+          &.return-dot {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+          }
+        }
+        
+        .timeline-content {
+          flex: 1;
+          
+          .timeline-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: $gray-500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+          }
+          
+          .timeline-value {
+            display: block;
+            font-weight: 600;
+            color: $gray-900;
+            font-size: 0.875rem;
+          }
+        }
+      }
+      
+      .timeline-connector {
+        position: absolute;
+        left: 1.5rem;
+        top: 3rem;
+        bottom: 3rem;
+        width: 2px;
+        background: linear-gradient(to bottom, #10b981, #f59e0b);
+        z-index: 1;
+      }
+    }
+  }
+
+  // Location Card
+  .location-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin: 0 0 1.25rem 0;
+      
+      .title-icon {
+        color: #6366f1;
+        font-size: 1.125rem;
+      }
+    }
+    
+    .location-wrapper {
+      // LocationInfo component sẽ được styled riêng
+    }
+  }
+
+  // Payment Summary Card
+  .payment-summary-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin: 0 0 1.25rem 0;
+      
+      .title-icon {
+        color: #10b981;
+        font-size: 1.125rem;
+      }
+    }
+    
+    .payment-breakdown {
+      .payment-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        &.total {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          color: white;
+          padding: 1rem;
+          border-radius: 0.75rem;
+          margin-top: 0.5rem;
+          border-bottom: none;
+        }
+        
+        .payment-label {
+          font-weight: 500;
+          color: inherit;
+        }
+        
+        .payment-value {
+          font-weight: 700;
+          font-size: 1rem;
+          
+          &.deposit {
+            color: #10b981;
+          }
+          
+          &.remaining {
+            color: #f59e0b;
+          }
+          
+          &.total-amount {
+            color: white;
+            font-size: 1.125rem;
+          }
+        }
+      }
+     }
+   }
+
+   // Responsive Design cho OrderSummary
+   @media (max-width: 768px) {
+     .summary-header {
+       padding: 1rem;
+       
+       .header-content {
+         flex-direction: column;
+         text-align: center;
+         gap: 0.5rem;
+    
+         .header-icon {
+           font-size: 1.25rem;
+           padding: 0.2rem;
+         }
+       
+         .header-title {
+           font-size: 1.5rem;
+         }
+
+       }
+     }
+     
+     .vehicle-card {
+       padding: 1rem;
+       
+       .vehicle-image-container {
+         .vehicle-image {
+           max-width: 240px;
+           height: 150px;
+         }
+         
+         .vehicle-badge {
+           top: 0.5rem;
+           right: 0.5rem;
+           padding: 0.375rem 0.5rem;
+           font-size: 0.7rem;
+         }
+       }
+       
+       .vehicle-info {
+         .vehicle-name {
+           font-size: 1rem;
+         }
+         
+         .vehicle-rating {
+           font-size: 0.8rem;
+         }
+       }
+     }
+     
+     .booking-info-card,
+     .rental-period-card,
+     .location-card,
+     .payment-summary-card {
+       padding: 1rem;
+       margin-bottom: 0.75rem;
+       
+       .card-title {
+         font-size: 0.9rem;
+         margin-bottom: 1rem;
+         
+         .title-icon {
+           font-size: 1rem;
+         }
+       }
+     }
+     
+     .booking-info-grid {
+       .info-item {
+         padding: 0.5rem;
+         
+         .info-icon {
+           width: 2rem;
+           height: 2rem;
+           font-size: 0.75rem;
+         }
+         
+         .info-content {
+           .info-label {
+             font-size: 0.7rem;
+           }
+           
+           .info-value {
+             font-size: 0.8rem;
+           }
+         }
+       }
+     }
+     
+     .rental-timeline {
+       .timeline-item {
+         .timeline-dot {
+           width: 2.5rem;
+           height: 2.5rem;
+           font-size: 0.75rem;
+         }
+         
+         .timeline-content {
+           .timeline-label {
+             font-size: 0.7rem;
+           }
+           
+           .timeline-value {
+             font-size: 0.8rem;
+           }
+         }
+       }
+       
+       .timeline-connector {
+         left: 1.25rem;
+       }
+     }
+     
+     .payment-breakdown {
+       .payment-row {
+         padding: 0.5rem 0;
+         
+         &.total {
+           padding: 0.75rem;
+         }
+         
+         .payment-label {
+           font-size: 0.875rem;
+         }
+         
+         .payment-value {
+           font-size: 0.875rem;
+           
+           &.total-amount {
+             font-size: 1rem;
+           }
+         }
+       }
+     }
+   }
+
+   @media (max-width: 480px) {
+     .vehicle-card {
+       .vehicle-image-container {
+         .vehicle-image {
+           max-width: 200px;
+           height: 120px;
+         }
+       }
+     }
+     
+     .booking-info-grid {
+       .info-item {
+         flex-direction: column;
+         text-align: center;
+         gap: 0.5rem;
+         
+         .info-content {
+           .info-label,
+           .info-value {
+             text-align: center;
+           }
+         }
+       }
+     }
+     
+     .rental-timeline {
+       .timeline-item {
+         flex-direction: column;
+         text-align: center;
+         gap: 0.5rem;
+         
+         &.pickup {
+           margin-bottom: 1.5rem;
+         }
+         
+         .timeline-content {
+           .timeline-label,
+           .timeline-value {
+             text-align: center;
+           }
+         }
+       }
+       
+       .timeline-connector {
+         display: none; // Ẩn connector trên mobile nhỏ
+       }
+     }
+   }
+ 
+   // Payment Steps Summary
+  .payment-steps-summary {
+    .payment-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid $gray-200;
+      border-radius: $border-radius;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      &.completed {
+        border-color: $success-color;
+        background-color: rgba(16, 185, 129, 0.05);
+      }
+
+      .step-number {
+        @include flex-center;
+        width: 2rem;
+        height: 2rem;
+        background-color: $gray-200;
+        color: $gray-600;
+        border-radius: 50%;
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+
+      &.completed .step-number {
+        background-color: $success-color;
+        color: $white;
+      }
+
+      .step-content {
+        flex: 1;
+
+        .step-title {
+          font-weight: 600;
+          color: $gray-900;
+          margin-bottom: 0.25rem;
+        }
+
+        .step-description {
+          font-size: 0.875rem;
+          color: $gray-600;
+          line-height: 1.4;
+        }
+
+        .sub-details {
+          margin-top: 0.5rem;
+          font-size: 0.875rem;
+          color: $gray-600;
+
+          span {
+            font-weight: 600;
+            color: $gray-900;
+          }
+        }
+      }
+
+      .step-amount {
+        font-weight: 700;
+        color: $primary-color;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+// Booking Details Components
+.booking-details-wrapper {
+  margin: 2rem 0;
+
+  section {
+    margin-bottom: 2rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $gray-900;
+      margin-bottom: 1.25rem;
+
+      svg {
+        color: $primary-color;
+      }
+    }
+
+    .bg-white {
+      @include card;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+
+      &.grid-cols-1 {
+        grid-template-columns: 1fr;
+      }
+
+      &.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+
+        @media (min-width: 768px) {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    }
+
+    .flex {
+      display: flex;
+
+      &.items-start {
+        align-items: flex-start;
+      }
+
+      &.items-center {
+        align-items: center;
+      }
+
+      &.justify-between {
+        justify-content: space-between;
+      }
+
+      &.gap-2 {
+        gap: 0.5rem;
+      }
+
+      &.gap-3 {
+        gap: 0.75rem;
+      }
+
+      &.gap-4 {
+        gap: 1rem;
+      }
+    }
+
+    // Typography
+    .text-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+
+    .text-base {
+      font-size: 1rem;
+      line-height: 1.5rem;
+    }
+
+    .text-lg {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+
+    .font-medium {
+      font-weight: 500;
+    }
+
+    .font-semibold {
+      font-weight: 600;
+    }
+
+    .font-bold {
+      font-weight: 700;
+    }
+
+    // Colors
+    .text-gray-600 {
+      color: $gray-600;
+    }
+
+    .text-gray-700 {
+      color: $gray-700;
+    }
+
+    .text-gray-900 {
+      color: $gray-900;
+    }
+
+    .text-indigo-500 {
+      color: $primary-color;
+    }
+
+    .text-green-500 {
+      color: $success-color;
+    }
+
+    .block {
+      display: block;
+    }
+
+    // Spacing
+    .py-3 {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .p-4 {
+      padding: 1rem;
+    }
+
+    .pt-6 {
+      padding-top: 1.5rem;
+    }
+
+    .mb-4 {
+      margin-bottom: 1rem;
+    }
+
+    .mb-6 {
+      margin-bottom: 1.5rem;
+    }
+
+    .my-4 {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mt-1 {
+      margin-top: 0.25rem;
+    }
+
+    // Borders
+    .border-b {
+      border-bottom-width: 1px;
+    }
+
+    .border-t {
+      border-top-width: 1px;
+    }
+
+    .border-gray-100 {
+      border-color: $gray-100;
+    }
+
+    .border-gray-200 {
+      border-color: $gray-200;
+    }
+
+    .border-green-500 {
+      border-color: $success-color;
+    }
+
+    .border-yellow-500 {
+      border-color: $warning-color;
+    }
+
+    // Backgrounds
+    .bg-green-50 {
+      background-color: rgba(16, 185, 129, 0.05);
+    }
+
+    .bg-yellow-50 {
+      background-color: rgba(234, 179, 8, 0.05);
+    }
+
+    .rounded-lg {
+      border-radius: $border-radius;
+    }
+
+    .h-px {
+      height: 1px;
+      background-color: $gray-200;
+    }
+  }
+}
+
+// Loading and Error States
+.loading-screen,
+.error-screen {
+  @include flex-center;
+  min-height: 50vh;
+  font-size: 1.125rem;
+  color: $gray-600;
+}
+
+.error-screen {
+  color: $danger-color;
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .booking-details-wrapper {
+    section .grid.md\\:grid-cols-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .reservation-payment-container {
+    padding: 0.75rem;
+  }
+
+  .progress-bar-wrapper {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .content-wrapper {
+    gap: 1rem;
+  }
+
+  .payment-details-section,
+  .order-summary-section {
+    padding: 1rem;
+  }
+
+  .deposit-section-beautiful {
+    padding: 1.5rem;
+
+    .deposit-amount-large {
+      font-size: 2rem;
+    }
+  }
+
+  .car-image-container .car-image {
+    height: 150px;
+  }
+
+  .payment-steps-summary .payment-step-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+
+    .step-content {
+      order: 2;
+    }
+
+    .step-amount {
+      order: 3;
+      font-size: 1.125rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .reservation-payment-container {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .progress-steps {
+    padding: 0 0.5rem;
+  }
+
+  .progress-step {
+    max-width: 120px;
+
+    .step-icon {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.875rem;
+    }
+
+    .step-text {
+      font-size: 0.625rem;
+    }
+  }
+
+  .deposit-section-beautiful {
+    padding: 1rem;
+
+    .deposit-amount-large {
+      font-size: 1.75rem;
+    }
+  }
+
+  .payment-details-section,
+  .order-summary-section {
+    padding: 0.75rem;
+  }
+}

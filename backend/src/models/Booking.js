@@ -58,6 +58,8 @@ const Booking = sequelize.define(
     // Số điểm được tích lũy từ đơn hàng này
     points_earned: { type: DataTypes.INTEGER, defaultValue: 0 },
 
+    // Mã đơn hàng cho thanh toán đặt cọc
+    order_code: { type: DataTypes.BIGINT, unique: true },
     // Mã đơn hàng còn lại (dùng cho thanh toán)
     order_code_remaining: { type: DataTypes.BIGINT, unique: true },
 
@@ -66,8 +68,7 @@ const Booking = sequelize.define(
       type: DataTypes.ENUM(
         "pending", // Chờ xác nhận
         "deposit_paid", // Đã đặt cọc
-        "rental_paid", // Đã thanh toán toàn bộ
-        "confirmed", // Đã xác nhận
+        "fully_paid", // Đã thanh toán toàn bộ
         "in_progress", // Đang thuê
         "completed", // Hoàn thành
         "cancel_requested", // Yêu cầu hủy
