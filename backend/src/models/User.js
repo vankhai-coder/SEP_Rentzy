@@ -22,8 +22,8 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    phone_number: {
-      type: DataTypes.STRING(20),
+    phone_number: {  // will be hashed
+      type: DataTypes.TEXT,
     },
     phone_verified: {
       type: DataTypes.BOOLEAN,

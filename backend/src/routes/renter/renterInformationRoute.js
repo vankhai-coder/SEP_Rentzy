@@ -2,7 +2,7 @@ import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
 import { check2FaceMatch, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomation.js";
 import upload from '../../middlewares/multerConfig.js'
-import { getBasicUserInformation, updateAvatarToCloudinary } from "../../controllers/auth/authController.js";
+import { getBasicUserInformation, sendOTPUsingTwilio, updateAvatarToCloudinary, verifyOTPUsingTwilio } from "../../controllers/auth/authController.js";
 
 const router = express.Router();
 
@@ -23,5 +23,11 @@ router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformati
 
 // update avatar :
 router.post('/update-avatar', verifyJWTToken, upload.single("avatarImage"), updateAvatarToCloudinary);
+
+// sending opt using twilio :
+router.post('/send-otp', sendOTPUsingTwilio);
+
+// verify otp code using twilio :
+router.post('/verify-otp', verifyOTPUsingTwilio);
 
 export default router;

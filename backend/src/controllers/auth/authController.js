@@ -731,3 +731,122 @@ export const updateAvatarToCloudinary = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+// sending otp using twilio :
+export const sendOTPUsingTwilio = async (req, res) => {
+    try {
+        const { phoneNumber } = req.body || {};
+
+        // 1. Validate input
+        if (!phoneNumber) {
+            return res.status(400).json({
+                success: false, message: "Vui lòng nhập số điện thoại."
+            });
+        }
+        // 1.1 check if phone number is already in use by another user :
+        // unHash phone number to compare :
+        // get all users with phone number not null : 
+        const usersWithPhoneNumber = await db.User.findAll({
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                }
+            }
+        });
+        for (const user of usersWithPhoneNumber) {
+            if (user.phone_number) {
+                const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+                if (decryptedPhoneNumber === phoneNumber) {
+                    return res.status(400).json({
+                        success: false, message: "Số điện thoại này đã được sử dụng!"
+                    });
+                }
+            }
+        }
+        // 1.2 format phone number to E.164 format if needed (assuming input is in local format)
+        let formattedPhoneNumber = phoneNumber;
+        if (!phoneNumber.startsWith('+')) {
+            // Assuming country code is +84 (Vietnam) for example
+            formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+        }
+
+        // 2. Send OTP using Twilio Verify Service
+        // add try catch to import twilio error
+        try {
+            const twilio = await import('twilio');
+            const client = twilio.default(
+                process.env.TWILIO_ACCOUNT_SID,
+                process.env.TWILIO_AUTH_TOKEN
+            );
+
+            await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+                .verifications
+                .create({ to: formattedPhoneNumber, channel: 'sms' });
+        } catch (error) {
+            console.error("Twilio error:", error);
+            return res.status(500).json({
+                success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
+            });
+        }
+
+        // 3. Response
+        return res.status(200).json({
+            success: true,
+            message: "Mã OTP đã được gửi đến số điện thoại của bạn.",
+        });
+    } catch (error) {
+        console.error("sendOTPUsingTwilio error:", error);
+        return res.status(500).json({
+            success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
+        });
+    }
+}
+
+// verify OTP using twilio :
+export const verifyOTPUsingTwilio = async (req, res) => {
+    try {
+        const { phoneNumber, otpCode } = req.body || {};
+
+        // 1. Validate input
+        if (!phoneNumber || !otpCode) {
+            return res.status(400).json({
+                success: false, message: "Vui lòng nhập số điện thoại và mã OTP."
+            });
+        }
+        // 2. Verify OTP using Twilio Verify Service
+        let verificationCheck;
+        try {
+            const twilio = await import('twilio');
+            const client = twilio.default(
+                process.env.TWILIO_ACCOUNT_SID,
+                process.env.TWILIO_AUTH_TOKEN
+            );
+
+            verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+                .verificationChecks
+                .create({ to: phoneNumber, code: otpCode });
+        } catch (error) {
+            // console.error("Twilio error:", error.message);
+            return res.status(500).json({
+                success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
+            });
+        }
+
+        if (verificationCheck.status !== 'approved') {
+            return res.status(400).json({
+                success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
+            });
+        }
+
+        // 3. Response
+        return res.status(200).json({
+            success: true,
+            message: "Xác minh mã OTP thành công.",
+        });
+    } catch (error) {
+        console.error("verifyOTPUsingTwilio error:", error);
+        return res.status(500).json({
+            success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
+        });
+    }
+}
