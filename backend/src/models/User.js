@@ -15,7 +15,7 @@ const User = sequelize.define(
     },
     email: {
       type: DataTypes.STRING(150),
-      allowNull: false,
+      allowNull: true, // can be null because user can register with phone number only
       unique: true,
     },
     email_verified: {
@@ -36,6 +36,10 @@ const User = sequelize.define(
       type: DataTypes.STRING(255),
     },
     avatar_url: {
+      type: DataTypes.STRING(255),
+    },
+    // public_id from cloudinary :
+    avatar_public_id: {
       type: DataTypes.STRING(255),
     },
     role: {
@@ -95,7 +99,7 @@ const User = sequelize.define(
       defaultValue: DataTypes.NOW,
     },
     authMethod: {
-      type: DataTypes.ENUM('oauth', 'email'),
+      type: DataTypes.ENUM('oauth', 'email', 'phone'),
       allowNull: false
     },
     resetPasswordToken: {

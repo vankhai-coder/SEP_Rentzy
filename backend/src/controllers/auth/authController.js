@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { decryptWithSecret } from '../../utils/cryptoUtil.js';
 import { getTemporaryImageUrl } from '../../utils/aws/s3.js'
+import { v2 as cloudinary } from 'cloudinary';
 // redirect user to google login form and ask for permission : 
 export const googleLogin = (req, res) => {
     try {
@@ -611,6 +612,7 @@ export const verifyUpdatedEmail = async (req, res) => {
     }
 };
 
+// get basic user information :
 export const getBasicUserInformation = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -678,57 +680,73 @@ export const getBasicUserInformation = async (req, res) => {
 // update avatar to cloudinary :
 export const updateAvatarToCloudinary = async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.user?.userId;
         if (!userId) {
             return res.status(400).json({ message: 'Không thể tìm thấy người dùng!' });
         }
+
         if (!req.file) {
             return res.status(400).json({ message: 'Không tìm thấy avatar đăng lên!' });
         }
-        // multer will save file to memory storage , so we can get file buffer from req.file.buffer
-        const fileBuffer = req.file.buffer;
 
-        // upload to cloudinary :
-        const cloudinary = await import('cloudinary');
-        const { v2: cloudinaryV2 } = cloudinary;
-        cloudinaryV2.config({
+        // Configure Cloudinary
+        cloudinary.config({
             cloud_name: process.env.CLOUD_NAME,
             api_key: process.env.CLOUD_API_KEY,
             api_secret: process.env.CLOUD_API_SECRET,
         });
 
-        const uploadResult = await cloudinaryV2.uploader.upload_stream(
-            {
-                folder: 'avatars',
-                public_id: `avatar_user_${userId}_${Date.now()}`,
-                overwrite: true,
-                resource_type: 'image',
-            },
-            async (error, result) => {
-                if (error) {
-                    console.error('Cloudinary upload error:', error);
-                    return res.status(500).json({ message: 'Lỗi khi tải ảnh lên Cloudinary' });
+        const fileBuffer = req.file.buffer;
+
+        // Get current user info (to delete old avatar if exists)
+        const user = await db.User.findOne({ where: { user_id: userId } });
+
+        // Upload the new avatar (wrap upload_stream in a Promise)
+        const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'avatars',
+                    public_id: `avatar_user_${userId}_${Date.now()}`,
+                    overwrite: true,
+                    resource_type: 'image',
+                },
+                (error, result) => {
+                    if (error) return reject(error);
+                    resolve(result);
                 }
-                // update user avatar_url in db :   
-                await db.User.update(
-                    { avatar_url: result.secure_url },
-                    { where: { user_id: userId } }
-                );
-                return res.status(200).json({
-                    success: true,
-                    message: 'Cập nhật avatar thành công!',
-                    avatarUrl: result.secure_url,
-                });
+            );
+
+            // send file buffer to the stream
+            stream.end(fileBuffer);
+        });
+
+        // Delete old avatar from Cloudinary (if exists)
+        if (user?.avatar_public_id) {
+            try {
+                await cloudinary.uploader.destroy(user.avatar_public_id);
+                console.log('Old avatar deleted from Cloudinary');
+            } catch (err) {
+                console.warn('Failed to delete old avatar:', err);
             }
+        }
+
+        // Update user in DB
+        await db.User.update(
+            {
+                avatar_url: result.secure_url,
+                avatar_public_id: result.public_id,
+            },
+            { where: { user_id: userId } }
         );
 
-        // Write the file buffer to the upload stream
-        uploadResult.end(fileBuffer);
-
-
+        return res.status(200).json({
+            success: true,
+            message: 'Cập nhật avatar thành công!',
+            avatarUrl: result.secure_url,
+        });
     } catch (err) {
         console.error('Error in updateAvatarToCloudinary:', err);
-        res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
