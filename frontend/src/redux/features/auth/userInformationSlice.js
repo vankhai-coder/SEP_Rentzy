@@ -3,7 +3,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   // phone number 
-  isVerifyPhoneNumber: true,
+  isVerifyPhoneNumber: false,
 
   // identity card : 
   isVerifyNationalId: true,
@@ -57,6 +57,16 @@ const initialState = {
   isLoadingUpdateAvatar: false,
   isUpdateAvatarSuccess: false,
   errorUpdateAvatar: '',
+
+  // send request to send otp to phone number :
+  sendOtpToPhoneNumberSuccess: false,
+  isLoadingSendOtpToPhoneNumber: false,
+  errorWhenSendOtpToPhoneNumber: '',
+
+  // verify otp for phone number :
+  verifyOtpForPhoneNumberSuccess: false,
+  isLoadingVerifyOtpForPhoneNumber: false,
+  errorWhenVerifyOtpForPhoneNumber: '',
 
 };
 
@@ -229,6 +239,53 @@ export const updateAvatar = createAsyncThunk(
   }
 );
 
+// request to send otp to phone number :
+export const sendOtpToPhoneNumber = createAsyncThunk(
+  "user/sendOtpToPhoneNumber",
+  async ({ phoneNumber }, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post(
+        "/api/renter/info/send-otp",
+        { phoneNumber }
+      );
+
+      // expect: { success: true, message: "..." }
+      return res.data;
+    } catch (err) {
+      console.error("Error in sendOtpToPhoneNumber:", err.message);
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          "Lỗi gửi mã OTP đến số điện thoại!",
+      });
+    }
+  }
+);
+
+// verify otp for phone number :
+export const verifyOtpForPhoneNumber = createAsyncThunk(
+  "user/verifyOtpForPhoneNumber",
+  async ({ phoneNumber, otpCode }, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post(
+        "/api/renter/info/verify-otp",
+        { phoneNumber, otpCode }
+      );
+
+      // expect: { success: true, message: "..." , phone_number: "..." }
+      return res.data;
+    } catch (err) {
+      console.error("Error in verifyOtpForPhoneNumber:", err.message);
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          "Lỗi xác thực mã OTP cho số điện thoại!",
+      });
+    }
+  }
+);
+
+
 const userInformationSlice = createSlice({
   name: "userInformation",
   initialState,
@@ -250,6 +307,14 @@ const userInformationSlice = createSlice({
       state.isLoadingUpdateAvatar = false;
       state.isUpdateAvatarSuccess = false;
       state.errorUpdateAvatar = '';
+      // reset phone number otp state :
+      state.sendOtpToPhoneNumberSuccess = false;
+      state.isLoadingSendOtpToPhoneNumber = false;
+      state.errorWhenSendOtpToPhoneNumber = '';
+      // verify otp for phone number :
+      state.verifyOtpForPhoneNumberSuccess = false;
+      state.isLoadingVerifyOtpForPhoneNumber = false;
+      state.errorWhenVerifyOtpForPhoneNumber = '';
     },
   },
   extraReducers: (builder) => {
@@ -385,6 +450,7 @@ const userInformationSlice = createSlice({
         state.full_name = user.full_name || "";
         state.date_join = user.date_join || "";
         state.isVerifyDriverLicenseMatchWithwebcam = Boolean(user.driver_license_image_url)
+        state.isVerifyPhoneNumber = Boolean(user.phone_number)
 
       })
 
@@ -451,6 +517,46 @@ const userInformationSlice = createSlice({
         state.isLoadingUpdateAvatar = false;
         state.isUpdateAvatarSuccess = false;
         state.errorUpdateAvatar = action.payload?.message || 'Cập nhật ảnh đại diện thất bại!';
+      })
+      // send otp to phone number :
+      // --- PENDING ---
+      .addCase(sendOtpToPhoneNumber.pending, (state) => {
+        state.isLoadingSendOtpToPhoneNumber = true;
+        state.errorWhenSendOtpToPhoneNumber = null;
+        state.sendOtpToPhoneNumberSuccess = null;
+      })
+      // --- FULFILLED ---
+      .addCase(sendOtpToPhoneNumber.fulfilled, (state, action) => {
+        state.isLoadingSendOtpToPhoneNumber = false;
+        state.errorWhenSendOtpToPhoneNumber = null;
+        state.sendOtpToPhoneNumberSuccess = action.payload.message
+      })
+      // --- REJECTED ---
+      .addCase(sendOtpToPhoneNumber.rejected, (state, action) => {
+        state.isLoadingSendOtpToPhoneNumber = false;
+        state.errorWhenSendOtpToPhoneNumber = action.payload.message
+        state.sendOtpToPhoneNumberSuccess = false
+      })
+      // verify otp for phone number :
+      // --- PENDING ---
+      .addCase(verifyOtpForPhoneNumber.pending, (state) => {
+        state.isLoadingVerifyOtpForPhoneNumber = true;
+        state.errorWhenVerifyOtpForPhoneNumber = null;
+        state.verifyOtpForPhoneNumberSuccess = null;
+      })
+      // --- FULFILLED ---
+      .addCase(verifyOtpForPhoneNumber.fulfilled, (state, action) => {
+        state.isLoadingVerifyOtpForPhoneNumber = false;
+        state.errorWhenVerifyOtpForPhoneNumber = null;
+        state.verifyOtpForPhoneNumberSuccess = action.payload.message
+        state.isVerifyPhoneNumber = true;
+        state.phone_number = action.payload.phone_number
+      })
+      // --- REJECTED ---
+      .addCase(verifyOtpForPhoneNumber.rejected, (state, action) => {
+        state.isLoadingVerifyOtpForPhoneNumber = false;
+        state.errorWhenVerifyOtpForPhoneNumber = action.payload.message
+        state.verifyOtpForPhoneNumberSuccess = false
       });
 
   },

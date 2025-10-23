@@ -1,5 +1,5 @@
 import DriverLicenseVerify from "@/components/renter/PersonalCardVerify/DriverLicenseVerify"
-import IdentityCardVerify from "@/components/renter/PersonalCardVerify/IdentityCardVerify"
+// import IdentityCardVerify from "@/components/renter/PersonalCardVerify/IdentityCardVerify"
 import {
   Avatar,
   AvatarFallback,
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { is } from "date-fns/locale"
+import UpdatePhone from "@/components/renter/PersonalInformation/UpdatePhone"
 
 const UserInformation = () => {
 
@@ -383,7 +383,7 @@ const UserInformation = () => {
               {/* div ben phai  */}
               <div className="flex items-center gap-2 ">
                 <span className="text-xs xs:text-base font-semibold">{phone_number ? phone_number : 'Thêm số điện thoại'}</span>
-                <Pen className="hover:cursor-pointer" size={16} />
+                <UpdatePhone />
               </div>
             </div>
 
