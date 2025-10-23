@@ -3,7 +3,8 @@ import { verifyJWTToken } from '../../middlewares/authMiddleware.js';
 import {
     createPayOSLink,
     handlePayOSWebhook,
-    createPayOSLinkForRemaining
+    createPayOSLinkForRemaining,
+    forceRefreshPayment
 } from '../../controllers/payment/paymentController.js';
 
 const router = express.Router();
@@ -12,6 +13,8 @@ const router = express.Router();
 router.post('/payos/link', verifyJWTToken, createPayOSLink);
 // PayOS Remaining Payment Route
 router.post('/payos/remaining-link', verifyJWTToken, createPayOSLinkForRemaining);
+// PayOS Force Refresh Payment Session Route
+router.post('/payos/force-refresh', verifyJWTToken, forceRefreshPayment);
 // PayOS Webhook Route
 router.post('/payos/webhook', handlePayOSWebhook);
 

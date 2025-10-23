@@ -53,6 +53,11 @@ const Transaction = sequelize.define(
     },
     processed_at: { type: DataTypes.DATE },
     note: { type: DataTypes.TEXT },
+    checkout_url: { 
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "PayOS checkout URL for payment"
+    },
 
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },

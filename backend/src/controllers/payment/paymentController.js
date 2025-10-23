@@ -16,6 +16,64 @@ const payOS = new PayOS({
   checksumKey: process.env.PAYOS_CHECKSUM_KEY,
 });
 
+// Helper function để hủy PayOS payment session
+const cancelPayOSSession = async (orderCode, reason = "timeout") => {
+  const timestamp = new Date().toISOString();
+  console.log(`🔄 [${timestamp}] Attempting to cancel PayOS session: ${orderCode} (reason: ${reason})`);
+  
+  try {
+    await payOS.paymentRequests.cancel(orderCode);
+    console.log(`✅ [${timestamp}] Successfully cancelled PayOS session: ${orderCode} (${reason})`);
+    return true;
+  } catch (error) {
+    console.log(`⚠️ [${timestamp}] Could not cancel PayOS session ${orderCode}:`, error.message);
+    console.log(`📋 [${timestamp}] Cancel error details:`, {
+      orderCode,
+      reason,
+      errorCode: error.code,
+      errorMessage: error.message,
+      timestamp
+    });
+    // Không throw error vì có thể session đã hết hạn hoặc đã được xử lý
+    return false;
+  }
+};
+
+// Helper function để force refresh payment session
+const forceRefreshPaymentSession = async (bookingId, paymentType = "DEPOSIT") => {
+  try {
+    // Tìm tất cả pending transactions cho booking này
+    const pendingTransactions = await Transaction.findAll({
+      where: {
+        booking_id: bookingId,
+        payment_method: "PAYOS",
+        status: "PENDING",
+        type: paymentType,
+      },
+    });
+
+    for (const transaction of pendingTransactions) {
+      const booking = await Booking.findByPk(bookingId);
+      const orderCode = paymentType === "DEPOSIT" ? booking.order_code : booking.order_code_remaining;
+      
+      if (orderCode) {
+        await cancelPayOSSession(orderCode, "force_refresh");
+      }
+      
+      await transaction.update({
+        status: "CANCELLED",
+        note: transaction.note + " - Hủy do tạo session mới",
+      });
+    }
+    
+    console.log(`🔄 Force refreshed payment sessions for booking ${bookingId}`);
+    return true;
+  } catch (error) {
+    console.error("Error force refreshing payment session:", error);
+    return false;
+  }
+};
+
 // PAYOS: Tạo link thanh toán cho đặt cọc
 const createPayOSLink = async (req, res) => {
   try {
@@ -89,8 +147,12 @@ const createPayOSLink = async (req, res) => {
 
       if (transactionAge > TRANSACTION_TIMEOUT) {
         console.log(
-          "Pending deposit transaction expired. Marking as CANCELLED and creating new one..."
+          "Pending transaction expired. Cancelling PayOS session and creating new one..."
         );
+        
+        // Hủy PayOS payment session cũ
+        await cancelPayOSSession(orderCode, "timeout");
+        
         await transaction.update({
           status: "CANCELLED",
           note: transaction.note + " - Hủy do timeout",
@@ -98,9 +160,26 @@ const createPayOSLink = async (req, res) => {
         transaction = null; // Đặt về null để tạo transaction mới
       } else {
         console.log("Existing pending PayOS transaction found. Reusing...");
+        // Nếu có checkout_url đã lưu, return luôn
+        if (transaction.checkout_url) {
+          const timestamp = new Date().toISOString();
+          console.log(`♻️ [${timestamp}] Reusing existing PayOS checkout URL:`, {
+            orderCode,
+            checkoutUrl: transaction.checkout_url,
+            bookingId,
+            transactionId: transaction.transaction_id,
+            paymentType: "DEPOSIT"
+          });
+          return res.json({ payUrl: transaction.checkout_url });
+        }
       }
     }
 
+    // Chỉ tạo PayOS request mới khi:
+    // 1. Không có transaction (transaction = null)
+    // 2. Có transaction nhưng chưa có checkout_url
+    let needCreatePayOSRequest = false;
+    
     if (!transaction) {
       // Nếu không có, tạo một bản ghi giao dịch mới
       console.log("No pending PayOS transaction found. Creating a new one...");
@@ -113,28 +192,56 @@ const createPayOSLink = async (req, res) => {
         payment_method: "PAYOS",
         note: `Thanh toán đặt cọc booking #${bookingId} qua PayOS`,
       });
+      needCreatePayOSRequest = true;
+    } else if (!transaction.checkout_url) {
+      // Transaction có nhưng chưa có checkout_url
+      console.log("Transaction exists but no checkout_url. Creating PayOS request...");
+      needCreatePayOSRequest = true;
     }
 
-    // description tối đa 25 ký tự
-    const description = `Cọc đơn ${orderCode}`;
-    const body = {
-      orderCode,
-      amount,
-      description,
-      returnUrl,
-      cancelUrl,
-    };
+    if (needCreatePayOSRequest) {
+      // description tối đa 25 ký tự
+      const description = `Cọc đơn ${orderCode}`;
+      const body = {
+        orderCode,
+        amount,
+        description,
+        returnUrl,
+        cancelUrl,
+      };
 
-    const paymentLinkResponse = await payOS.paymentRequests.create(body);
-
-    if (paymentLinkResponse && paymentLinkResponse.checkoutUrl) {
-      return res.json({ payUrl: paymentLinkResponse.checkoutUrl });
-    } else {
-      console.error("PayOS unexpected response:", paymentLinkResponse);
-      return res.status(500).json({
-        error: "Không lấy được link thanh toán từ PayOS.",
-        payos: paymentLinkResponse,
+      const timestamp = new Date().toISOString();
+      console.log(`🚀 [${timestamp}] Creating PayOS payment request:`, {
+        orderCode,
+        amount,
+        description,
+        bookingId,
+        transactionId: transaction.transaction_id,
+        paymentType: "DEPOSIT"
       });
+
+      const paymentLinkResponse = await payOS.paymentRequests.create(body);
+
+      if (paymentLinkResponse && paymentLinkResponse.checkoutUrl) {
+        // Lưu checkout_url vào transaction
+        await transaction.update({
+          checkout_url: paymentLinkResponse.checkoutUrl
+        });
+        
+        console.log(`✅ [${timestamp}] PayOS payment link created successfully:`, {
+          orderCode,
+          checkoutUrl: paymentLinkResponse.checkoutUrl,
+          bookingId,
+          transactionId: transaction.transaction_id
+        });
+        return res.json({ payUrl: paymentLinkResponse.checkoutUrl });
+      } else {
+        console.error(`❌ [${timestamp}] PayOS unexpected response:`, paymentLinkResponse);
+        return res.status(500).json({
+          error: "Không lấy được link thanh toán từ PayOS.",
+          payos: paymentLinkResponse,
+        });
+      }
     }
   } catch (error) {
     console.error(
@@ -407,8 +514,12 @@ const createPayOSLinkForRemaining = async (req, res) => {
 
       if (transactionAge > TRANSACTION_TIMEOUT) {
         console.log(
-          "Pending transaction expired. Marking as CANCELLED and creating new one..."
+          "Pending transaction expired. Cancelling PayOS session and creating new one..."
         );
+        
+        // Hủy PayOS payment session cũ
+        await cancelPayOSSession(orderCodeRemaining, "timeout");
+        
         await transaction.update({
           status: "CANCELLED",
           note: transaction.note + " - Hủy do timeout",
@@ -418,8 +529,25 @@ const createPayOSLinkForRemaining = async (req, res) => {
         console.log(
           "Existing pending PayOS RENTAL transaction found. Reusing..."
         );
+        // Nếu có checkout_url đã lưu, return luôn
+        if (transaction.checkout_url) {
+          const timestamp = new Date().toISOString();
+          console.log(`♻️ [${timestamp}] Reusing existing PayOS RENTAL checkout URL:`, {
+            orderCode: orderCodeRemaining,
+            checkoutUrl: transaction.checkout_url,
+            bookingId,
+            transactionId: transaction.transaction_id,
+            paymentType: "RENTAL"
+          });
+          return res.json({ payUrl: transaction.checkout_url });
+        }
       }
     }
+
+    // Chỉ tạo PayOS request mới khi:
+    // 1. Không có transaction (transaction = null)
+    // 2. Có transaction nhưng chưa có checkout_url
+    let needCreatePayOSRequest = false;
 
     if (!transaction) {
       // Nếu không có, tạo một bản ghi giao dịch mới
@@ -435,25 +563,54 @@ const createPayOSLinkForRemaining = async (req, res) => {
         payment_method: "PAYOS",
         note: `Thanh toán phần còn lại booking #${bookingId} qua PayOS`,
       });
+      needCreatePayOSRequest = true;
+    } else if (!transaction.checkout_url) {
+      // Transaction có nhưng chưa có checkout_url
+      console.log("RENTAL transaction exists but no checkout_url. Creating PayOS request...");
+      needCreatePayOSRequest = true;
     }
 
-    const description = `Con lai ${orderCodeRemaining}`;
-    const body = {
-      orderCode: orderCodeRemaining,
-      amount: remaining,
-      description,
-      returnUrl,
-      cancelUrl,
-    };
+    if (needCreatePayOSRequest) {
+      const description = `Con lai ${orderCodeRemaining}`;
+      const body = {
+        orderCode: orderCodeRemaining,
+        amount: remaining,
+        description,
+        returnUrl,
+        cancelUrl,
+      };
 
-    const paymentLinkResponse = await payOS.paymentRequests.create(body);
+      const timestamp = new Date().toISOString();
+      console.log(`🚀 [${timestamp}] Creating PayOS remaining payment request:`, {
+        orderCode: orderCodeRemaining,
+        amount: remaining,
+        description,
+        bookingId,
+        transactionId: transaction.transaction_id,
+        paymentType: "RENTAL"
+      });
 
-    if (paymentLinkResponse && paymentLinkResponse.checkoutUrl) {
-      return res.json({ payUrl: paymentLinkResponse.checkoutUrl });
-    } else {
-      return res
-        .status(500)
-        .json({ error: "Không lấy được link thanh toán từ PayOS." });
+      const paymentLinkResponse = await payOS.paymentRequests.create(body);
+
+      if (paymentLinkResponse && paymentLinkResponse.checkoutUrl) {
+        // Lưu checkout_url vào transaction
+        await transaction.update({
+          checkout_url: paymentLinkResponse.checkoutUrl
+        });
+        
+        console.log(`✅ [${timestamp}] PayOS remaining payment link created successfully:`, {
+          orderCode: orderCodeRemaining,
+          checkoutUrl: paymentLinkResponse.checkoutUrl,
+          bookingId,
+          transactionId: transaction.transaction_id
+        });
+        return res.json({ payUrl: paymentLinkResponse.checkoutUrl });
+      } else {
+        console.error(`❌ [${timestamp}] PayOS unexpected response for remaining payment:`, paymentLinkResponse);
+        return res
+          .status(500)
+          .json({ error: "Không lấy được link thanh toán từ PayOS." });
+      }
     }
   } catch (error) {
     return res.status(500).json({
@@ -463,4 +620,46 @@ const createPayOSLinkForRemaining = async (req, res) => {
   }
 };
 
-export { createPayOSLink, handlePayOSWebhook, createPayOSLinkForRemaining };
+// API để force refresh payment session khi có vấn đề
+const forceRefreshPayment = async (req, res) => {
+  try {
+    const { bookingId, paymentType = "DEPOSIT" } = req.body;
+    
+    if (!bookingId) {
+      return res.status(400).json({ error: "Thiếu booking ID" });
+    }
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: "Không tìm thấy booking" });
+    }
+
+    console.log(`🔄 Force refreshing payment session for booking ${bookingId}, type: ${paymentType}`);
+    
+    const success = await forceRefreshPaymentSession(bookingId, paymentType);
+    
+    if (success) {
+      return res.json({ 
+        success: true, 
+        message: "Đã làm mới phiên thanh toán. Vui lòng tạo link thanh toán mới." 
+      });
+    } else {
+      return res.status(500).json({ 
+        error: "Không thể làm mới phiên thanh toán" 
+      });
+    }
+  } catch (error) {
+    console.error("Force refresh payment error:", error);
+    return res.status(500).json({
+      error: "Lỗi khi làm mới phiên thanh toán",
+      detail: error.message,
+    });
+  }
+};
+
+export { 
+  createPayOSLink, 
+  handlePayOSWebhook, 
+  createPayOSLinkForRemaining, 
+  forceRefreshPayment 
+};

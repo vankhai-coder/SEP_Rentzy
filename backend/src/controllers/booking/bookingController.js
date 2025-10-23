@@ -763,7 +763,7 @@ export const createBooking = async (req, res) => {
     });
   } catch (error) {
     // ==================== XỬ LÝ LỖI ====================
-    console.error("❌ Error creating booking:", error);
+    console.error("Error creating booking:", error);
 
     // Log chi tiết lỗi để debug
     console.error("Error stack:", error.stack);
@@ -803,7 +803,7 @@ const getBookingByIdContract = async (req, res) => {
       data: booking,
     });
   } catch (error) {
-    console.error("❌ Error fetching booking:", error);
+    console.error(" Error fetching booking:", error);
     return res.status(500).json({
       success: false,
       message: "Lỗi server khi lấy thông tin booking",
@@ -878,7 +878,7 @@ export const deleteBooking = async (req, res) => {
         where: { user_id: renterId },
       });
       console.log(
-        `✅ Đã hoàn lại ${booking.points_used} điểm cho user ${renterId}`
+        `Đã hoàn lại ${booking.points_used} điểm cho user ${renterId}`
       );
     }
 
@@ -893,7 +893,7 @@ export const deleteBooking = async (req, res) => {
       });
     }
 
-    console.log("✅ Booking đã được hủy thành công:", bookingId);
+    console.log("Booking đã được hủy thành công:", bookingId);
 
     return res.status(200).json({
       success: true,
@@ -905,7 +905,7 @@ export const deleteBooking = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Error deleting booking:", error);
+    console.error("Error deleting booking:", error);
     return res.status(500).json({
       success: false,
       message: "Lỗi hệ thống khi hủy booking",
@@ -914,7 +914,7 @@ export const deleteBooking = async (req, res) => {
   }
 };
 
-// ==================== MANUAL TRIGGER AUTO-CANCEL (FOR TESTING) ====================
+//  MANUAL TRIGGER AUTO-CANCEL (FOR TESTING)
 export const triggerAutoCancelExpiredBookings = async (req, res) => {
   try {
     console.log("🔧 [MANUAL] Triggering auto-cancel expired bookings...");
