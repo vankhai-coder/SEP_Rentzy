@@ -38,7 +38,6 @@ router.post('/request-update-email', verifyJWTToken, requestUpdateEmail)
 // veriry updated email : 
 router.post('/verify-updated-email', verifyUpdatedEmail)
 
-// get basic user information: 
-router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformation)
+
 
 export default router 

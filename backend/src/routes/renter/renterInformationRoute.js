@@ -2,6 +2,7 @@ import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
 import { check2FaceMatch, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomation.js";
 import upload from '../../middlewares/multerConfig.js'
+import { getBasicUserInformation, updateAvatarToCloudinary } from "../../controllers/auth/authController.js";
 
 const router = express.Router();
 
@@ -16,5 +17,11 @@ router.post('/check-2-face-match', verifyJWTToken, upload.fields([{ name: 'image
 
 // update full name :
 router.post('/update-full-name', verifyJWTToken, updateFullName);
+
+// get basic user information: 
+router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformation);
+
+// update avatar :
+router.post('/update-avatar', verifyJWTToken, upload.single("avatarImage"), updateAvatarToCloudinary);
 
 export default router;

@@ -51,7 +51,12 @@ const initialState = {
   // update full name :
   isLoadingUpdateFullName: false,
   isUpdateFullNameSuccess: false,
-  errorUpdateFullName: ''
+  errorUpdateFullName: '',
+
+  // update avatar :
+  isLoadingUpdateAvatar: false,
+  isUpdateAvatarSuccess: false,
+  errorUpdateAvatar: '',
 
 };
 
@@ -157,7 +162,7 @@ export const getBasicUserInformation = createAsyncThunk(
   "user/getBasicUserInformation",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.post("api/auth/get-basic-user-information");
+      const res = await axiosInstance.post("api/renter/info/get-basic-user-information");
 
       // expect: { success: true, user : { points, driver_class, ... } }
       return res.data;
@@ -193,6 +198,37 @@ export const updateFullName = createAsyncThunk(
   }
 );
 
+// update avatar :
+export const updateAvatar = createAsyncThunk(
+  "user/updateAvatar",
+  async ({ avatarImage }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("avatarImage", avatarImage);
+
+      const res = await axiosInstance.post(
+        "/api/renter/info/update-avatar",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // expect: { success: true, avatarUrl: "..." }
+      return res.data;
+    } catch (err) {
+      console.error("Error in updateAvatar:", err.message);
+      return rejectWithValue({
+        message:
+          err.response?.data?.message ||
+          "Lỗi cập nhật ảnh đại diện!",
+      });
+    }
+  }
+);
+
 const userInformationSlice = createSlice({
   name: "userInformation",
   initialState,
@@ -210,7 +246,10 @@ const userInformationSlice = createSlice({
       state.isLoadingUpdateFullName = false;
       state.isUpdateFullNameSuccess = false;
       state.errorUpdateFullName = '';
-      // 
+      // update avatar :
+      state.isLoadingUpdateAvatar = false;
+      state.isUpdateAvatarSuccess = false;
+      state.errorUpdateAvatar = '';
     },
   },
   extraReducers: (builder) => {
@@ -390,6 +429,29 @@ const userInformationSlice = createSlice({
         state.isUpdateFullNameSuccess = false;
         state.errorUpdateFullName = action.payload?.message || 'Cập nhật tên thất bại!';
       })
+
+      // update avatar :
+      // Pending
+      .addCase(updateAvatar.pending, (state) => {
+        state.isLoadingUpdateAvatar = true;
+        state.isUpdateAvatarSuccess = false;
+        state.errorUpdateAvatar = '';
+      })
+      // Fulfilled
+      .addCase(updateAvatar.fulfilled, (state, action) => {
+        state.isLoadingUpdateAvatar = false;
+        state.isUpdateAvatarSuccess = true;
+        state.errorUpdateAvatar = '';
+
+        // update avatar url in state
+        state.avatar_url = action.payload.avatarUrl || state.avatar_url;
+      })
+      // Rejected
+      .addCase(updateAvatar.rejected, (state, action) => {
+        state.isLoadingUpdateAvatar = false;
+        state.isUpdateAvatarSuccess = false;
+        state.errorUpdateAvatar = action.payload?.message || 'Cập nhật ảnh đại diện thất bại!';
+      });
 
   },
 });

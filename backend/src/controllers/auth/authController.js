@@ -674,3 +674,60 @@ export const getBasicUserInformation = async (req, res) => {
     }
 
 };
+
+// update avatar to cloudinary :
+export const updateAvatarToCloudinary = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        if (!userId) {
+            return res.status(400).json({ message: 'Không thể tìm thấy người dùng!' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'Không tìm thấy avatar đăng lên!' });
+        }
+        // multer will save file to memory storage , so we can get file buffer from req.file.buffer
+        const fileBuffer = req.file.buffer;
+
+        // upload to cloudinary :
+        const cloudinary = await import('cloudinary');
+        const { v2: cloudinaryV2 } = cloudinary;
+        cloudinaryV2.config({
+            cloud_name: process.env.CLOUD_NAME,
+            api_key: process.env.CLOUD_API_KEY,
+            api_secret: process.env.CLOUD_API_SECRET,
+        });
+
+        const uploadResult = await cloudinaryV2.uploader.upload_stream(
+            {
+                folder: 'avatars',
+                public_id: `avatar_user_${userId}_${Date.now()}`,
+                overwrite: true,
+                resource_type: 'image',
+            },
+            async (error, result) => {
+                if (error) {
+                    console.error('Cloudinary upload error:', error);
+                    return res.status(500).json({ message: 'Lỗi khi tải ảnh lên Cloudinary' });
+                }
+                // update user avatar_url in db :   
+                await db.User.update(
+                    { avatar_url: result.secure_url },
+                    { where: { user_id: userId } }
+                );
+                return res.status(200).json({
+                    success: true,
+                    message: 'Cập nhật avatar thành công!',
+                    avatarUrl: result.secure_url,
+                });
+            }
+        );
+
+        // Write the file buffer to the upload stream
+        uploadResult.end(fileBuffer);
+
+
+    } catch (err) {
+        console.error('Error in updateAvatarToCloudinary:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

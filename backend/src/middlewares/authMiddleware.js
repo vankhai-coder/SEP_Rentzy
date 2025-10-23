@@ -5,7 +5,7 @@ export const verifyJWTToken = async (req, res, next) => {
   try {
     // 1. Get token from cookie
     const { token } = req.cookies;
-    console.log("token:", token);
+    // console.log("token:", token);
     if (!token) {
       return res
         .status(401)

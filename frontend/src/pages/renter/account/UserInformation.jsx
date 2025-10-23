@@ -15,7 +15,7 @@ import {
 import UpdateEmail from "@/components/renter/PersonalInformation/UpdateEmail"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { getBasicUserInformation, resetUserInformationSlice, updateFullName } from "@/redux/features/auth/userInformationSlice"
+import { getBasicUserInformation, resetUserInformationSlice, updateAvatar, updateFullName } from "@/redux/features/auth/userInformationSlice"
 import { toast } from "sonner"
 import {
   DialogClose,
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { is } from "date-fns/locale"
 
 const UserInformation = () => {
 
@@ -45,7 +46,11 @@ const UserInformation = () => {
     // update full name :
     isLoadingUpdateFullName,
     isUpdateFullNameSuccess,
-    errorUpdateFullName
+    errorUpdateFullName,
+    // update avatar :
+    isLoadingUpdateAvatar,
+    isUpdateAvatarSuccess,
+    errorUpdateAvatar,
   } = useSelector((state) => state.userInformationStore);
 
   // open updated email dialog : 
@@ -55,6 +60,58 @@ const UserInformation = () => {
   const [newFullName, setNewFullName] = useState('')
   // state for update name dialog :
   const [updateNewNameOpen, setUpdateNewNameOpen] = useState(false)
+
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+
+  // state for open/close update avatar dialog :
+  const [updateAvatarDialogOpen, setUpdateAvatarDialogOpen] = useState(false);
+
+  // useEffect to clear preview avatar and avatar file when dialog is closed :
+  useEffect(() => {
+    if (!updateAvatarDialogOpen) {
+      // reset preview avatar :
+      setPreviewAvatarUrl(null);
+      setAvatarFile(null);
+    }
+  }, [updateAvatarDialogOpen]);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0]; // use optional chaining to avoid undefined errors
+    if (!file) return; // no file selected
+
+    // validate image type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn tệp hình ảnh hợp lệ.");
+      e.target.value = null;
+      return;
+    }
+
+    // cleanup old preview (avoid memory leak)
+    if (previewAvatarUrl) {
+      URL.revokeObjectURL(previewAvatarUrl);
+    }
+
+    // set new file and preview
+    setAvatarFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewAvatarUrl(objectUrl);
+    console.log("Selected avatar file:", objectUrl);
+
+    // allow reselecting same image again
+    e.target.value = null;
+  };
+
+
+  // cleanup object url to avoid memory leak :
+  useEffect(() => {
+    return () => {
+      if (previewAvatarUrl) {
+        URL.revokeObjectURL(previewAvatarUrl);
+      }
+    };
+  }, [previewAvatarUrl]);
+
 
   // dispatch get basic user information: 
   useEffect(() => {
@@ -74,6 +131,12 @@ const UserInformation = () => {
   useEffect(() => {
     if (errorUpdateFullName) {
       toast.error(errorUpdateFullName)
+      // clear input :
+      setNewFullName('')
+      // clear success state in redux :
+      dispatch(resetUserInformationSlice())
+      // close dialog :
+      setUpdateNewNameOpen(false)
     }
   }, [errorUpdateFullName])
 
@@ -89,6 +152,34 @@ const UserInformation = () => {
       setUpdateNewNameOpen(false)
     }
   }, [isUpdateFullNameSuccess])
+
+  // toast if update avatar error  :
+  useEffect(() => {
+    if (errorUpdateAvatar) {
+      toast.error(errorUpdateAvatar)
+      // clear preview avatar :
+      setPreviewAvatarUrl(null);
+      setAvatarFile(null);
+      // clear success state in redux :
+      dispatch(resetUserInformationSlice())
+      // close dialog :
+      setUpdateAvatarDialogOpen(false)
+    }
+  }, [errorUpdateAvatar])
+
+  // toast if update avatar success :
+  useEffect(() => {
+    if (isUpdateAvatarSuccess) {
+      toast.success('Cập nhật ảnh đại diện thành công!')
+      // clear preview avatar :
+      setPreviewAvatarUrl(null);
+      setAvatarFile(null);
+      // clear success state in redux :
+      dispatch(resetUserInformationSlice())
+      // close dialog :
+      setUpdateAvatarDialogOpen(false)
+    }
+  }, [isUpdateAvatarSuccess])
 
 
   if (isLoadingGetBasicUserInformation) {
@@ -123,16 +214,83 @@ const UserInformation = () => {
           {/* avatar :  */}
           <div className="flex flex-col items-center gap-2">
             {/* avatar : */}
-            <Avatar className='size-26' >
-              <AvatarImage src={avatar_url || '/default_avt.jpg'} alt="User avatar" />
-              <AvatarFallback>User Avatar</AvatarFallback>
-            </Avatar>
+            <Dialog onOpenChange={setUpdateAvatarDialogOpen} open={updateAvatarDialogOpen} >
+              <DialogTrigger asChild>
+                <Avatar className='size-26' >
+                  <AvatarImage src={avatar_url || '/default_avt.jpg'} alt="User avatar" className={'hover:cursor-pointer hover:opacity-60 '} />
+                  <AvatarFallback>User Avatar</AvatarFallback>
+                </Avatar>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle> Chọn ảnh đại diện mới</DialogTitle>
+                  <DialogDescription>
+                  </DialogDescription>
+                </DialogHeader>
+
+                {/* preview avatar  */}
+                <Avatar className='size-40 mx-auto mt-4' >
+                  <AvatarImage src={previewAvatarUrl || avatar_url || '/default_avt.jpg'} alt="Chọn ảnh đại diện mới" className={' '} />
+                  <AvatarFallback>Update Avatar</AvatarFallback>
+                </Avatar>
+                {/* choose image button , disappear when have previewAvatarUrl */}
+                <label
+                  htmlFor="imageUpload"
+                  className={`mt-4 w-full mx-auto ${previewAvatarUrl ? 'hidden' : ''}`}
+                >
+                  <div className="w-full border px-4 py-2 rounded-md text-sm text-center cursor-pointer">
+                    Chọn ảnh từ thiết bị
+                  </div>
+                </label>
+                <input
+                  id="imageUpload"
+                  hidden
+                  type="file"
+                  accept="image/*"
+                  className="mt-4 w-full  "
+                  onChange={handleAvatarChange}
+                />
+                {/* choose another image button : */}
+                {previewAvatarUrl &&
+                  <Button
+                    variant="outline"
+                    className="mt-4 w-full"
+                    onClick={() => {
+                      // reset preview avatar :
+                      setPreviewAvatarUrl(null);
+                      setAvatarFile(null);
+                    }}
+                  >
+                    Chọn ảnh khác
+                  </Button>
+                }
+
+                {/* update avatar button */}
+                {previewAvatarUrl &&
+                  <Button
+                    className=" w-full"
+                    onClick={() => {
+                      // dispatch update avatar action :
+                      dispatch(updateAvatar({ avatarImage: avatarFile }));
+                    }}
+                  >
+                    {isLoadingUpdateAvatar ? 'Đang cập nhật...' : 'Cập nhật ảnh đại diện'}
+                  </Button>
+                }
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <div className="flex items-center gap-4">
               {/* name : */}
               <span className="font-semibold text-lg">{full_name || email}</span>
 
               {/* update pen : */}
-              <Dialog  onOpenChange={setUpdateNewNameOpen} open={updateNewNameOpen} >
+              <Dialog onOpenChange={setUpdateNewNameOpen} open={updateNewNameOpen} >
                 <DialogTrigger asChild>
                   <Pen size={16} className="ml-1 hover:cursor-pointer"
                   />
