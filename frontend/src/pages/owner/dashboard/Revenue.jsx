@@ -25,7 +25,7 @@ const Revenue = () => {
   const fetchRevenueData = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/revenue', {
+      const response = await axiosInstance.get('api/owner/dashboard/revenue', {
         params: { period: selectedPeriod }
       });
 

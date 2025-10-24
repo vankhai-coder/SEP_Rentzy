@@ -12,7 +12,7 @@ const CancelRequests = () => {
   const fetchCancelRequests = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/cancel-requests');
+      const response = await axiosInstance.get('api/owner/dashboard/cancel-requests');
 
       if (response.data.success) {
         setCancelRequests(response.data.data.cancelRequests);

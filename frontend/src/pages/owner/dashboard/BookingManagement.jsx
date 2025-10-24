@@ -40,7 +40,7 @@ const BookingManagement = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/bookings', {
+      const response = await axiosInstance.get('api/owner/dashboard/bookings', {
         params: filters
       });
 

@@ -11,13 +11,13 @@ import {
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar
 } from 'recharts';
 
 const OverViewManagement = () => {
@@ -27,8 +27,9 @@ const OverViewManagement = () => {
   const [topVehicles, setTopVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedPeriod, setSelectedPeriod] = useState('day');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
   // Fetch overview stats
   const fetchOverviewStats = async () => {
@@ -44,13 +45,20 @@ const OverViewManagement = () => {
   };
 
   // Fetch revenue chart data
-  const fetchRevenueChart = async () => {
+  const fetchRevenueChart = async (period, year, month) => {
     try {
+      const params = { 
+        period: period,
+        year: year
+      };
+      
+      // Thêm tham số month nếu period là 'day'
+      if (period === 'day') {
+        params.month = month;
+      }
+      
       const response = await axiosInstance.get('/api/owner/overview/revenue-chart', {
-        params: { 
-          period: selectedPeriod,
-          year: selectedYear
-        }
+        params
       });
       if (response.data.success) {
         setRevenueChart(response.data.data);
@@ -94,7 +102,7 @@ const OverViewManagement = () => {
     try {
       await Promise.all([
         fetchOverviewStats(),
-        fetchRevenueChart(),
+        fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth),
         fetchTopRenters(),
         fetchTopVehicles()
       ]);
@@ -107,35 +115,71 @@ const OverViewManagement = () => {
   };
 
   useEffect(() => {
+    console.log('=== OverViewManagement: Initial load ===');
     loadAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    fetchRevenueChart();
-  }, [selectedPeriod, selectedYear]);
+    console.log('=== OverViewManagement: Period/Year/Month changed ===');
+    console.log('selectedPeriod:', selectedPeriod);
+    console.log('selectedYear:', selectedYear);
+    console.log('selectedMonth:', selectedMonth);
+    fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth);
+  }, [selectedPeriod, selectedYear, selectedMonth]);
 
   // Format currency
   const formatCurrency = (amount) => {
+    if (!amount || amount === 0) return '0 ₫';
+    
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Format currency for chart (shorter format)
+  const formatCurrencyShort = (amount) => {
+    if (!amount || amount === 0) return '0';
+    
+    if (amount >= 1000000000) {
+      return `${(amount / 1000000000).toFixed(1)}B ₫`;
+    } else if (amount >= 1000000) {
+      return `${(amount / 1000000).toFixed(1)}M ₫`;
+    } else if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(0)}K ₫`;
+    }
+    
+    return `${amount.toLocaleString('vi-VN')} ₫`;
   };
 
   // Format chart data based on period
   const formatChartData = (data) => {
+    if (!data || data.length === 0) return [];
+    
     return data.map(item => {
       let label = item.period;
+      
       if (selectedPeriod === 'day') {
-        label = new Date(item.period).toLocaleDateString('vi-VN');
+        // Format: DD/MM
+        const date = new Date(item.period);
+        label = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       } else if (selectedPeriod === 'month') {
+        // Format: MM/YYYY
         const [year, month] = item.period.split('-');
-        label = `${month}/${year}`;
+        label = `${month.padStart(2, '0')}/${year}`;
+      } else if (selectedPeriod === 'year') {
+        // Format: YYYY
+        label = item.period;
       }
+      
       return {
         ...item,
         label,
-        revenue: item.revenue || 0
+        revenue: parseFloat(item.revenue) || 0,
+        bookingCount: parseInt(item.bookingCount) || 0
       };
     });
   };
@@ -237,6 +281,32 @@ const OverViewManagement = () => {
                 <option value="year">Theo năm</option>
               </select>
 
+              {/* Month Selector for day view */}
+              {selectedPeriod === 'day' && (
+                <>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                      <option key={month} value={month}>
+                        Tháng {month}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+
               {/* Year Selector for month view */}
               {selectedPeriod === 'month' && (
                 <select
@@ -254,22 +324,45 @@ const OverViewManagement = () => {
 
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={formatChartData(revenueChart)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" />
-                <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                <Tooltip 
-                  formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                  labelFormatter={(label) => `Thời gian: ${label}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
-                  dot={{ fill: '#3B82F6' }}
-                />
-              </LineChart>
+              {selectedPeriod === 'day' ? (
+                <BarChart data={formatChartData(revenueChart)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="label" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    fontSize={12}
+                  />
+                  <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                    labelFormatter={(label) => `Ngày: ${label}`}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#3B82F6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={formatChartData(revenueChart)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                    labelFormatter={(label) => `Thời gian: ${label}`}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#3B82F6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3B82F6' }}
+                  />
+                </LineChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -334,7 +427,7 @@ const OverViewManagement = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-8">Chưa có dữ liệu xe</p>
+                <p className="text-gray-500 text-center py-8">Chưa có xe được thuê</p>
               )}
             </div>
           </div>

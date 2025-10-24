@@ -327,18 +327,17 @@ const EditCarForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/owner/vehicle-management')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            ← Quay lại
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Chỉnh sửa ô tô</h1>
-          <p className="text-gray-600 mt-2">Cập nhật thông tin xe của bạn</p>
-        </div>
+    <div className="w-full">
+      {/* Information Banner */}
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+        <p className="text-blue-700">
+          Hãy vui lòng cập nhật các thông tin chính xác của xe và giấy tờ xe hợp lệ.
+        </p>
+      </div>
+
+      <h1 className="text-3xl font-bold text-blue-600 mb-6">
+        🚗 Chỉnh sửa ô tô
+      </h1>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
@@ -437,10 +436,49 @@ const EditCarForm = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Địa điểm *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="VD: Hà Nội, TP.HCM, Đà Nẵng..."
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                   
+                {/* Checkbox for auto location */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="autoLocation"
+                    checked={autoLocationEnabled}
+                    onChange={handleAutoLocationChange}
+                    disabled={gettingLocation}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="autoLocation" className="ml-2 text-sm text-gray-700">
+                    {gettingLocation ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                        Đang lấy vị trí...
+                      </span>
+                    ) : (
+                      'Thêm địa chỉ tự động'
+                    )}
+                  </label>
+                </div>
+
               </div>
 
               {/* Right Column */}
               <div className="space-y-4">
+                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Dạng thân xe *
@@ -568,50 +606,7 @@ const EditCarForm = () => {
             </div>
           </div>
 
-          {/* Location */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Vị trí xe</h2> 
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa điểm *
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="VD: Hà Nội, TP.HCM, Đà Nẵng..."
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-                   
-              {/* Checkbox for auto location */}
-              <div className="flex items-center mb-3">
-                <input
-                  type="checkbox"
-                  id="autoLocation"
-                  checked={autoLocationEnabled}
-                  onChange={handleAutoLocationChange}
-                  disabled={gettingLocation}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="autoLocation" className="ml-2 text-sm text-gray-700">
-                  {gettingLocation ? (
-                    <span className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      Đang lấy vị trí...
-                    </span>
-                  ) : (
-                    'Thêm địa chỉ tự động'
-                  )}
-                </label>
-              </div>
-
-            </div>
-          </div>
 
           {/* Description */}
           <div className="bg-white rounded-lg shadow-lg p-6">
@@ -654,6 +649,15 @@ const EditCarForm = () => {
                   onChange={handleMainImageChange}
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {mainImage && (
+                  <div className="mt-2">
+                    <img
+                      src={URL.createObjectURL(mainImage)}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Current Extra Images */}
@@ -685,6 +689,18 @@ const EditCarForm = () => {
                   onChange={handleExtraImagesChange}
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {extraImages.length > 0 && (
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {extraImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={URL.createObjectURL(image)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -707,7 +723,6 @@ const EditCarForm = () => {
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 };

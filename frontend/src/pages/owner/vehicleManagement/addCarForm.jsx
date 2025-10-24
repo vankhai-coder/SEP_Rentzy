@@ -568,6 +568,15 @@ const AddCarForm = () => {
                 required
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {mainImage && (
+                  <div className="mt-2">
+                    <img
+                      src={URL.createObjectURL(mainImage)}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
             </div>
 
             {/* Extra Images */}
@@ -582,6 +591,18 @@ const AddCarForm = () => {
                 onChange={handleExtraImagesChange}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {extraImages.length > 0 && (
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {extraImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={URL.createObjectURL(image)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
         </div>

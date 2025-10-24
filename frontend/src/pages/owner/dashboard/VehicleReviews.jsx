@@ -18,7 +18,7 @@ const VehicleReviews = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/vehicle-reviews', {
+      const response = await axiosInstance.get('api/owner/dashboard/vehicle-reviews', {
         params: filters
       });
 

@@ -31,7 +31,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/notifications', {
+      const response = await axiosInstance.get('api/owner/dashboard/notifications', {
         params: filters
       });
 
