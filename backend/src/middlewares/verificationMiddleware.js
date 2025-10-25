@@ -10,7 +10,7 @@ import User from "../models/User.js";
 export const checkVerificationForBooking = async (req, res, next) => {
   try {
     const userId = req.user.userId;
-    console.log("userId:", userId);   
+    console.log("userId:", userId);
 
     // Lấy thông tin user từ database
     const user = await User.findByPk(userId, {
@@ -49,8 +49,7 @@ export const checkVerificationForBooking = async (req, res, next) => {
       let message = "Bạn cần xác minh GPLX trước khi đặt xe";
 
       if (user.driver_license_status === "pending") {
-        message =
-          "GPLX của bạn đang chờ phê duyệt. Vui lòng đợi xác nhận từ admin";
+        message = "Bạn cần xác minh GPLX trước khi đặt xe";
       } else if (user.driver_license_status === "rejected") {
         message =
           "GPLX của bạn đã bị từ chối. Vui lòng cập nhật lại thông tin GPLX";

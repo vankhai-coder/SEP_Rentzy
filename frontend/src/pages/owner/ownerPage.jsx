@@ -10,6 +10,7 @@ import EditCarForm from './vehicleManagement/editCarForm.jsx';
 import EditMotoBikeForm from './vehicleManagement/editMotoBikeForm.jsx';
 import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 import BookingManagement from './dashboard/BookingManagement.jsx';
+import BookingDetail from './dashboard/BookingDetail.jsx';
 import CancelRequests from './dashboard/CancelRequests.jsx';
 import Revenue from './dashboard/Revenue.jsx';
 import VehicleReviews from './dashboard/VehicleReviews.jsx';
@@ -41,6 +42,11 @@ const OwnerPage = () => {
           <Route path="/booking-management" element={
             <AuthRequired>
               <BookingManagement />
+            </AuthRequired>
+          } />
+          <Route path="/booking-management/detail/:id" element={
+            <AuthRequired>
+              <BookingDetail />
             </AuthRequired>
           } />
           <Route path="/cancel-requests" element={

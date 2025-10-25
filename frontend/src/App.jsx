@@ -32,7 +32,7 @@ import OwnerPage from "./pages/owner/ownerPage.jsx";
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
 import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
-// import ContractPage from "./pages/renter/booking/ContractPage.jsx";
+ import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
@@ -100,7 +100,7 @@ const App = () => {
           {/* Payment Deposit */}
           <Route path="/payment-deposit/:bookingId" element={<PaymentDeposit />} />
           {/* Contract Page */}
-          {/* <Route path="/contract/:bookingId" element={<ContractPage />} /> */}
+           <Route path="/contract/:bookingId" element={<ContractPage />} /> 
 
 
 

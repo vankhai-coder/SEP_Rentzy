@@ -2,7 +2,9 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
-const BookingHandover = sequelize.define("BookingHandover", {
+const BookingHandover = sequelize.define(
+  "BookingHandover",
+  {
     // ID bàn giao xe (khóa chính)
     handover_id: {
       type: DataTypes.BIGINT.UNSIGNED,
@@ -90,8 +92,9 @@ const BookingHandover = sequelize.define("BookingHandover", {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-  }, {
-  tableName: "booking_handovers",
+  },
+  {
+    tableName: "booking_handovers",
     timestamps: false,
     indexes: [
       { fields: ["booking_id"] },

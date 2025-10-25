@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getOwnerBookings,
+  getBookingDetail,
   getCancelRequests,
   approveCancelRequest,
   rejectCancelRequest,
@@ -32,6 +33,8 @@ router.use(verifyJWTToken);
 
 // 1. Quản lý đơn thuê
 router.get("/bookings", getOwnerBookings);
+// xem chi tiết xe
+router.get("/bookings/:id", getBookingDetail);
 
 // 2. Duyệt đơn hủy
 router.get("/cancel-requests", getCancelRequests);
