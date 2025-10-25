@@ -1,0 +1,444 @@
+.contract-booking {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+
+  .contract-booking-container {
+    width: 210mm; // A4 width exactly
+    min-height: 297mm; // A4 height
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  // Screen-only elements (hidden when printing)
+  .screen-only {
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      gap: 10px;
+
+      .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s ease;
+
+        &.btn-primary {
+          background-color: #007bff;
+          color: white;
+          &:hover {
+            background-color: #0056b3;
+          }
+        }
+
+        &.btn-secondary {
+          background-color: #6c757d;
+          color: white;
+          &:hover {
+            background-color: #545b62;
+          }
+        }
+
+        &.btn-success {
+          background-color: #28a745;
+          color: white;
+          &:hover {
+            background-color: #1e7e34;
+          }
+        }
+
+        &.btn-warning {
+          background-color: #ffc107;
+          color: #212529;
+          &:hover {
+            background-color: #e0a800;
+          }
+        }
+      }
+    }
+  }
+
+  // Contract content
+  .contract-content {
+    padding: 25mm 20mm 25mm 25mm; // Standard document margins
+    font-family: 'Times New Roman', 'Liberation Serif', serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #000;
+    background: white;
+    text-align: justify;
+    min-height: calc(297mm - 50mm); // A4 height minus top/bottom margins
+
+    // Document header
+    .document-header {
+      text-align: center;
+      margin-bottom: 8mm;
+
+      .country-header {
+        margin-bottom: 20px;
+
+        .country-name {
+          font-size: 14px;
+          font-weight: bold;
+          text-transform: uppercase;
+          margin-bottom: 2mm;
+          letter-spacing: 0.5px;
+        }
+
+        .country-motto {
+          font-size: 13px;
+          font-style: italic;
+          margin-bottom: 6mm;
+          text-decoration: underline;
+        }
+
+        .separator-line {
+          font-size: 12px;
+          letter-spacing: 1px;
+          margin-bottom: 20px;
+        }
+      }
+
+      .contract-title {
+        h1 {
+          font-size: 18px;
+          font-weight: bold;
+          text-transform: uppercase;
+          margin: 0;
+          text-decoration: underline;
+        }
+      }
+    }
+
+    // Contract introduction
+    .contract-intro {
+      text-align: center;
+      margin-bottom: 8mm;
+      
+      .contract-title {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 4mm;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .contract-number {
+        font-size: 13px;
+        margin-bottom: 2mm;
+        font-weight: 500;
+      }
+      
+      .legal-basis {
+        font-size: 12px;
+        font-style: italic;
+        margin-bottom: 6mm;
+        color: #333;
+      }
+
+      p {
+        margin: 8px 0;
+        text-indent: 20px;
+      }
+
+      .fill-blank {
+        border-bottom: 1px dotted #000;
+        min-width: 50px;
+        display: inline-block;
+        text-align: center;
+        font-weight: bold;
+      }
+    }
+
+    // Parties section
+    .parties-section {
+      margin-bottom: 20px;
+
+      .party-section {
+        margin-bottom: 6mm;
+
+        .party-title {
+          font-weight: bold;
+          font-size: 14px;
+          margin-bottom: 3mm;
+          text-transform: uppercase;
+          color: #000;
+        }
+
+        .party-info {
+          margin-left: 5mm;
+          
+          p {
+            margin-bottom: 2mm;
+            line-height: 1.6;
+            
+            strong {
+              font-weight: bold;
+              min-width: 35mm;
+              display: inline-block;
+            }
+          }
+        }
+      }
+    }
+
+    // Vehicle section
+    .vehicle-section {
+      margin-bottom: 6mm;
+      
+      .vehicle-title {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 3mm;
+        text-transform: uppercase;
+      }
+      
+      .vehicle-info {
+        margin-left: 5mm;
+        
+        p {
+          margin-bottom: 2mm;
+          line-height: 1.6;
+          
+          strong {
+            font-weight: bold;
+            min-width: 35mm;
+            display: inline-block;
+          }
+        }
+      }
+
+      p {
+        margin: 8px 0;
+        text-indent: 20px;
+
+        .fill-blank {
+          border-bottom: 1px dotted #000;
+          min-width: 80px;
+          display: inline-block;
+          text-align: center;
+          font-weight: normal;
+        }
+      }
+    }
+
+    // Terms section
+    .terms-section {
+      margin-bottom: 6mm;
+      
+      .article {
+        margin-bottom: 5mm;
+        
+        .article-title {
+          font-weight: bold;
+          font-size: 14px;
+          margin-bottom: 3mm;
+          text-transform: uppercase;
+          color: #000;
+        }
+        
+        .article-content {
+          margin-left: 4mm;
+          
+          p {
+            margin-bottom: 3mm;
+            text-indent: 8mm;
+            line-height: 1.6;
+          }
+          
+          ul {
+            margin-left: 6mm;
+            
+            li {
+              margin-bottom: 2mm;
+              line-height: 1.5;
+            }
+          }
+        }
+      }
+
+      p {
+        margin: 8px 0;
+        text-indent: 20px;
+        text-align: justify;
+
+        .fill-blank {
+          border-bottom: 1px dotted #000;
+          min-width: 80px;
+          display: inline-block;
+          text-align: center;
+          font-weight: normal;
+        }
+      }
+    }
+
+    // Important notes
+    .important-notes {
+      margin-bottom: 30px;
+
+      p {
+        margin: 8px 0;
+        text-indent: 20px;
+        text-align: justify;
+      }
+    }
+
+    // Signature section
+    .signature-section {
+      margin-top: 10mm;
+      page-break-inside: avoid;
+      
+      .contract-date {
+        text-align: center;
+        margin-bottom: 8mm;
+        font-style: italic;
+        font-size: 13px;
+      }
+      
+      .signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10mm;
+        
+        .signature-block {
+          text-align: center;
+          width: 45%;
+          
+          .signature-title {
+            font-weight: bold;
+            margin-bottom: 4mm;
+            text-transform: uppercase;
+            font-size: 13px;
+          }
+          
+          .signature-space {
+            height: 20mm;
+            margin: 5mm 0;
+          }
+          
+          .signature-name {
+            border-top: 1px solid #000;
+            padding-top: 2mm;
+            font-style: italic;
+            font-size: 12px;
+          }
+        }
+      }
+    }
+
+    // Loading and error states
+    .loading-state,
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+
+      .error-message {
+        margin-bottom: 20px;
+
+        h2 {
+          color: #dc3545;
+          margin-bottom: 10px;
+        }
+
+        p {
+          color: #6c757d;
+        }
+      }
+
+      .retry-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+
+        &:hover {
+          background-color: #0056b3;
+        }
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  .contract-booking {
+    background: white !important;
+    padding: 0 !important;
+
+    .contract-booking-container {
+      max-width: none !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      width: 210mm !important;
+      min-height: 297mm !important;
+      page-break-after: always;
+    }
+
+    .screen-only {
+      display: none !important;
+    }
+
+    .contract-content {
+      padding: 25mm 20mm 25mm 25mm !important;
+      font-size: 12px !important;
+      line-height: 1.4 !important;
+
+      .document-header {
+        margin-bottom: 20px !important;
+      }
+
+      .signature-section {
+        page-break-inside: avoid;
+        margin-top: 30px !important;
+      }
+
+      .terms-section,
+      .important-notes {
+        page-break-inside: avoid;
+      }
+      
+      // Adjust font sizes for print
+      .contract-title {
+        font-size: 15px !important;
+      }
+      
+      .article-title {
+        font-size: 13px !important;
+      }
+      
+      .party-title {
+        font-size: 13px !important;
+      }
+    }
+  }
+
+  // Ensure proper page breaks
+  .party-section,
+  .vehicle-section {
+    page-break-inside: avoid;
+  }
+}

@@ -20,6 +20,7 @@ import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
 // booking route
 import BookingRoute from "./routes/booking/bookingRoute.js";
+import HandoverRoute from "./routes/booking/handoverRoute.js";
 
 // voucher route
 import VoucherRoute from "./routes/renter/voucherRoute.js";
@@ -43,6 +44,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// static files for uploads
+app.use('/uploads', express.static('uploads'));
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN,
@@ -75,6 +79,9 @@ app.use("/api/renter/info", RenterInfoRoute);
 
 // booking route
 app.use("/api/renter/booking", BookingRoute);
+
+// handover route
+app.use("/api/handover", HandoverRoute);
 
 // owner route
 app.use("/api/owner", OwnerVehicleRoute);

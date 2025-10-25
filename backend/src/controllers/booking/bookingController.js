@@ -102,7 +102,7 @@ export const getBookingById = async (req, res) => {
       });
     }
 
-    // Tìm booking với thông tin liên quan
+    // Tìm booking với thông tin liên quan đầy đủ
     const booking = await Booking.findOne({
       where: {
         booking_id: bookingId,
@@ -111,20 +111,68 @@ export const getBookingById = async (req, res) => {
       include: [
         {
           model: Vehicle,
-          as: "vehicle", 
+          as: "vehicle",
           attributes: [
             "vehicle_id",
+            "owner_id",
+            "brand_id",
+            "vehicle_type",
+            "license_plate",
             "model",
-            "location",
+            "year",
             "price_per_day",
+            "description",
             "main_image_url",
             "extra_images",
+            "features",
+            "location",
+            "latitude",
+            "longitude",
+            "transmission",
+            "body_type",
+            "seats",
+            "fuel_type",
+            "bike_type",
+            "engine_capacity",
+            "approvalStatus",
+            "status",
+            "rent_count",
+            "created_at",
+            "updated_at"
+          ],
+          include: [
+            {
+              model: User,
+              as: "owner",
+              attributes: [
+                "user_id",
+                "full_name",
+                "email",
+                "phone_number",
+                "avatar_url",
+                "role",
+                "driver_license_status",
+                "national_id_status",
+                "points",
+                "is_active",
+                "created_at"
+              ],
+            },
           ],
         },
         {
           model: User,
           as: "renter",
-          attributes: ["user_id", "full_name", "phone_number", "email"],
+          attributes: [
+            "user_id",
+            "full_name",
+            "phone_number",
+            "email",
+            "avatar_url",
+            "driver_license_status",
+            "national_id_status",
+            "points"
+          ],
         },
         {
           model: Transaction,
@@ -155,11 +203,13 @@ export const getBookingById = async (req, res) => {
       booking_id: booking.booking_id,
       status: booking.status,
       created_at: booking.created_at,
+      vehicle_id: booking.vehicle?.vehicle_id,
+      owner_id: booking.vehicle?.owner?.user_id,
       statusType: typeof booking.status,
       createdAtType: typeof booking.created_at,
     });
 
-    // Tạo response data đơn giản từ database
+    // Tạo response data đầy đủ từ database
     const responseData = {
       booking_id: booking.booking_id,
       startDate: booking.start_date,
@@ -183,25 +233,69 @@ export const getBookingById = async (req, res) => {
       // Thông tin khác
       voucherCode: booking.voucher_code,
       pointsEarned: booking.points_earned || 0,
-      // giờ tạo
+      orderCode: booking.order_code,
+      orderCodeRemaining: booking.order_code_remaining,
+      
+      // Thời gian tạo và cập nhật
       created_at: booking.created_at,
-      // Thông tin xe
-      vehicle: {
+      updated_at: booking.updated_at,
+
+      // Thông tin xe đầy đủ
+      vehicle: booking.vehicle ? {
         vehicle_id: booking.vehicle.vehicle_id,
+        owner_id: booking.vehicle.owner_id,
+        brand_id: booking.vehicle.brand_id,
+        vehicle_type: booking.vehicle.vehicle_type,
+        license_plate: booking.vehicle.license_plate,
         model: booking.vehicle.model,
-        location: booking.vehicle.location,
+        year: booking.vehicle.year,
         price_per_day: booking.vehicle.price_per_day,
+        description: booking.vehicle.description,
         main_image_url: booking.vehicle.main_image_url,
         extra_images: booking.vehicle.extra_images,
-      },
+        features: booking.vehicle.features,
+        location: booking.vehicle.location,
+        latitude: booking.vehicle.latitude,
+        longitude: booking.vehicle.longitude,
+        transmission: booking.vehicle.transmission,
+        body_type: booking.vehicle.body_type,
+        seats: booking.vehicle.seats,
+        fuel_type: booking.vehicle.fuel_type,
+        bike_type: booking.vehicle.bike_type,
+        engine_capacity: booking.vehicle.engine_capacity,
+        approvalStatus: booking.vehicle.approvalStatus,
+        status: booking.vehicle.status,
+        rent_count: booking.vehicle.rent_count,
+        created_at: booking.vehicle.created_at,
+        updated_at: booking.vehicle.updated_at,
+        
+        // Thông tin chủ xe
+         owner: booking.vehicle.owner ? {
+           user_id: booking.vehicle.owner.user_id,
+           full_name: booking.vehicle.owner.full_name,
+           email: booking.vehicle.owner.email,
+           phone_number: booking.vehicle.owner.phone_number,
+           avatar_url: booking.vehicle.owner.avatar_url,
+           role: booking.vehicle.owner.role,
+           driver_license_status: booking.vehicle.owner.driver_license_status,
+           national_id_status: booking.vehicle.owner.national_id_status,
+           points: booking.vehicle.owner.points,
+           is_active: booking.vehicle.owner.is_active,
+           created_at: booking.vehicle.owner.created_at,
+         } : null,
+      } : null,
 
-      // Thông tin người thuê
-      renter: {
+      // Thông tin người thuê đầy đủ
+      renter: booking.renter ? {
         user_id: booking.renter.user_id,
         full_name: booking.renter.full_name,
         phone_number: booking.renter.phone_number,
         email: booking.renter.email,
-      },
+        avatar_url: booking.renter.avatar_url,
+        driver_license_status: booking.renter.driver_license_status,
+        national_id_status: booking.renter.national_id_status,
+        points: booking.renter.points,
+      } : null,
 
       // Danh sách giao dịch
       transactions: booking.Transactions
@@ -787,7 +881,11 @@ const getBookingByIdContract = async (req, res) => {
       include: [
         { model: User, as: "renter", attributes: ["user_name", "phone"] },
         { model: User, as: "owner", attributes: ["user_name", "phone"] },
-        { model: Vehicle, as: "vehicle", attributes: ["vehicle_name", "license_plate"] },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["vehicle_name", "license_plate"],
+        },
       ],
     });
 
@@ -845,7 +943,7 @@ export const deleteBooking = async (req, res) => {
       include: [
         {
           model: Vehicle,
-          as: "vehicle", 
+          as: "vehicle",
           attributes: ["vehicle_id", "model", "owner_id"],
         },
       ],

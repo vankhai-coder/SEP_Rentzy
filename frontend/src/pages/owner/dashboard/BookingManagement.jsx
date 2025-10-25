@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { MdCalendarToday, MdPerson, MdDirectionsCar, MdAttachMoney, MdSearch, MdFilterList } from 'react-icons/md';
 
 const BookingManagement = () => {
+  const navigate = useNavigate();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,7 +43,7 @@ const BookingManagement = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/owner/dashboard/bookings', {
+      const response = await axiosInstance.get('/api/owner/dashboard/bookings', {
         params: filters
       });
 
@@ -82,6 +85,10 @@ const BookingManagement = () => {
   const formatDateTime = (dateString, timeString) => {
     const date = new Date(`${dateString}T${timeString}`);
     return date.toLocaleString('vi-VN');
+  };
+
+  const handleRowClick = (bookingId) => {
+    navigate(`/owner/booking-management/detail/${bookingId}`);
   };
 
   if (loading) {
@@ -247,11 +254,17 @@ const BookingManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {bookings.map((booking) => (
-                  <tr key={booking.booking_id} className="hover:bg-gray-50">
+                  <tr 
+                    key={booking.booking_id} 
+                    className="hover:bg-gray-50"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -313,6 +326,17 @@ const BookingManagement = () => {
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status] || 'bg-gray-100 text-gray-800'}`}>
                         {statusLabels[booking.status] || booking.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRowClick(booking.booking_id);
+                        }}
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                      >
+                        Chi tiết
+                      </button>
                     </td>
                   </tr>
                 ))}

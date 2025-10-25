@@ -621,6 +621,81 @@ export const markNotificationAsRead = async (req, res) => {
   }
 };
 
+// GET /api/owner/dashboard/bookings/:id - Lấy chi tiết đơn thuê
+export const getBookingDetail = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+
+    // Lấy danh sách xe của owner để kiểm tra quyền truy cập
+    const ownerVehicles = await Vehicle.findAll({
+      where: { owner_id: ownerId },
+      attributes: ['vehicle_id']
+    });
+
+    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+
+    if (vehicleIds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe nào của bạn",
+      });
+    }
+
+    // Lấy chi tiết booking
+    const booking = await Booking.findOne({
+      where: {
+        booking_id: id,
+        vehicle_id: { [Op.in]: vehicleIds }
+      },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: [
+            "vehicle_id", 
+            "model", 
+            "license_plate", 
+            "main_image_url", 
+            "price_per_day",
+            "location"
+          ]
+        },
+        {
+          model: User,
+          as: "renter",
+          attributes: [
+            "user_id", 
+            "full_name", 
+            "email", 
+            "phone_number"
+          ]
+        }
+      ]
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: booking
+    });
+
+  } catch (error) {
+    console.error("Error getting booking detail:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy chi tiết đơn thuê",
+      error: error.message,
+    });
+  }
+};
+
 // PATCH /api/owner/notifications/mark-all-read - Đánh dấu tất cả đã đọc
 export const markAllNotificationsAsRead = async (req, res) => {
   try {

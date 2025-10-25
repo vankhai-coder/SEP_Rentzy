@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaInfoCircle } from 'react-icons/fa';
 import axiosInstance from '@/config/axiosInstance';
+import HandoverImageViewer from '@/components/common/HandoverImageViewer';
 import './BookingDetailsPage.scss';
 
 const BookingDetailsPage = () => {
@@ -61,6 +62,8 @@ const BookingDetailsPage = () => {
       setLoading(false);
     }
   };
+
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -255,7 +258,30 @@ const BookingDetailsPage = () => {
           </div>
         </div>
 
-        {/* Thông tin thời gian và địa điểm */}
+        {/* Pre-Rental Images Section */}
+        <div className="pre-rental-images-section">
+          <HandoverImageViewer 
+            bookingId={booking.booking_id}
+            booking={booking}
+            userRole="renter"
+            imageType="pre-rental"
+            onConfirmSuccess={fetchBookingDetails}
+          />
+        </div>
+
+        {/* Post-Rental Images Section */}
+        <div className="pre-rental-images-section">
+          <HandoverImageViewer 
+            bookingId={booking.booking_id}
+            booking={booking}
+            userRole="renter"
+            imageType="post-rental"
+            onConfirmSuccess={fetchBookingDetails}
+          />
+        </div>
+
+
+        {/* Thời gian và địa điểm */}
         <div className="rental-details-section">
           <div className="rental-time">
             <h3>Thời gian thuê</h3>

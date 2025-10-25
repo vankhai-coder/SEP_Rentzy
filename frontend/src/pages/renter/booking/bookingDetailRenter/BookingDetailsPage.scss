@@ -13,6 +13,15 @@
   }
 }
 
+// Pre-Rental Images Section
+.pre-rental-images-section {
+  margin: 24px 0;
+  
+  @media (max-width: 768px) {
+    margin: 16px 0;
+  }
+}
+
 // Header Section
 .booking-header {
   display: flex;
@@ -614,6 +623,184 @@
     
     &:hover {
       background: #2563eb;
+    }
+  }
+}
+
+// Confirm Receipt Section
+.confirm-receipt-section {
+  margin: 24px 0;
+  
+  .confirm-receipt-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    
+    h3 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    
+    .conditions-check {
+      margin-bottom: 24px;
+      
+      .condition-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f5f9;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        .condition-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+        }
+        
+        &.satisfied {
+          .condition-icon {
+            background: #10b981;
+            color: white;
+          }
+          
+          span:not(.condition-icon) {
+            color: #059669;
+          }
+        }
+        
+        &.not-satisfied {
+          .condition-icon {
+            background: #ef4444;
+            color: white;
+          }
+          
+          span:not(.condition-icon) {
+            color: #dc2626;
+          }
+        }
+      }
+    }
+    
+    .receipt-confirmed {
+      .success-message {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        
+        .success-icon {
+          width: 24px;
+          height: 24px;
+          background: #10b981;
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+        }
+        
+        span:not(.success-icon) {
+          color: #059669;
+          font-weight: 600;
+        }
+      }
+      
+      .handover-time {
+        color: #64748b;
+        font-size: 14px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+    }
+    
+    .receipt-action {
+      .confirm-receipt-btn {
+        width: 100%;
+        padding: 16px 24px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        &:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+      
+      .waiting-message {
+        padding: 16px;
+        background: #fef3c7;
+        border: 1px solid #fbbf24;
+        border-radius: 12px;
+        text-align: center;
+        
+        span {
+          color: #92400e;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    margin: 16px 0;
+    
+    .confirm-receipt-card {
+      padding: 20px;
+      
+      h3 {
+        font-size: 18px;
+      }
+      
+      .conditions-check {
+        .condition-item {
+          gap: 8px;
+          padding: 8px 0;
+          
+          span:not(.condition-icon) {
+            font-size: 14px;
+          }
+        }
+      }
+      
+      .receipt-action {
+        .confirm-receipt-btn {
+          padding: 14px 20px;
+          font-size: 15px;
+        }
+      }
     }
   }
 }

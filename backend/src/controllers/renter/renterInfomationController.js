@@ -8,6 +8,37 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Helper function to safely decrypt phone number
+const safeDecryptPhoneNumber = (encryptedPhone) => {
+    try {
+        // Check if the data looks like valid Base64
+        if (!encryptedPhone || typeof encryptedPhone !== 'string') {
+            return null;
+        }
+        
+        // Basic Base64 validation
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        if (!base64Regex.test(encryptedPhone)) {
+            console.warn('Phone number is not valid Base64, might be unencrypted:', encryptedPhone);
+            return encryptedPhone; // Return as-is if not encrypted
+        }
+        
+        // Try to decode Base64 to check if it has the right structure
+        const decoded = Buffer.from(encryptedPhone, 'base64');
+        if (decoded.length < 44) { // salt(16) + iv(12) + tag(16) = 44 minimum
+            console.warn('Encrypted phone data too short, might be unencrypted:', encryptedPhone);
+            return encryptedPhone; // Return as-is if structure is wrong
+        }
+        
+        // Attempt decryption
+        return decryptWithSecret(encryptedPhone, process.env.ENCRYPT_KEY);
+    } catch (error) {
+        console.error('Failed to decrypt phone number:', error.message);
+        console.warn('Returning phone number as-is, might be unencrypted data');
+        return encryptedPhone; // Return original value if decryption fails
+    }
+};
+
 export const verifyDriverLicenseCard = async (req, res) => {
     try {
 
@@ -277,8 +308,9 @@ export const getBasicUserInformation = async (req, res) => {
             ? await getTemporaryImageUrl(userData.driver_license_image_url)
             : null;
 
+        // Safe phone number decryption with validation
         userData.phone_number = userData.phone_number
-            ? decryptWithSecret(userData.phone_number, process.env.ENCRYPT_KEY)
+            ? safeDecryptPhoneNumber(userData.phone_number)
             : null;
 
         // Add new field (formatted date)
