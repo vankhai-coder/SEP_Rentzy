@@ -96,6 +96,7 @@ const LocationModal = ({
           setSelectedLocation(
             `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
           );
+          setSearchQuery(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
         } finally {
           setIsLoadingLocation(false);
         }
@@ -180,6 +181,13 @@ const LocationModal = ({
     toast.success(`Đã chọn ${city.name}`);
   };
 
+  // FIX: Cập nhật selectedLocation theo searchQuery khi user nhập tay (cho phép lưu trực tiếp mà không cần search)
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setSelectedLocation(value); // Sync trực tiếp để save được ngay khi typing
+  };
+
   const handleSaveLocation = () => {
     if (selectedLocation.trim() === "") {
       toast.error("Vui lòng nhập hoặc chọn địa điểm.");
@@ -219,7 +227,7 @@ const LocationModal = ({
               type="text"
               placeholder="Nhập địa điểm (VD: 304 Phan Bội Châu, Huế)"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleInputChange} // FIX: Sử dụng handler mới để sync selectedLocation
               className="w-full pl-10 pr-20 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button

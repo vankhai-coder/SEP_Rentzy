@@ -136,6 +136,30 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "ID hãng xe không hợp lệ" });
     }
+    // Thêm validation cho pagination và sort
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    if (isNaN(pageNum) || pageNum < 1) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Số trang không hợp lệ" });
+    }
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      // Giới hạn max 100 để tránh overload
+      return res
+        .status(400)
+        .json({ success: false, message: "Giới hạn trang không hợp lệ" });
+    }
+    if (!["price_per_day", "year"].includes(sort_by)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Tiêu chí sắp xếp không hợp lệ" });
+    }
+    if (!["ASC", "DESC"].includes(sort_order)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Thứ tự sắp xếp không hợp lệ" });
+    }
 
     // Build where clause cơ bản cho Vehicle
     const vehicleWhere = {
@@ -231,25 +255,26 @@ export const searchVehicles = async (req, res) => {
     }
 
     // Pagination
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
 
-    // Count total
+    // Count total - FIX: Thêm as: 'brand' vào include để khớp alias
     const total = await Vehicle.count({
       where: finalWhere,
-      include: [{ model: Brand }],
+      include: [{ model: Brand, as: "brand" }], // SỬA: Thêm as: 'brand'
     });
 
-    // Fetch data
+    // Fetch data - FIX: Thêm as: 'brand' vào include
     const vehicles = await Vehicle.findAll({
       where: finalWhere,
       include: [
         {
           model: Brand,
           attributes: ["name", "logo_url", "category"],
+          as: "brand", // SỬA: Thêm as: 'brand'
         },
       ],
       order: [[sort_by, sort_order]],
-      limit: parseInt(limit),
+      limit: limitNum,
       offset,
     });
 
@@ -257,10 +282,10 @@ export const searchVehicles = async (req, res) => {
       success: true,
       data: vehicles,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNum,
+        limit: limitNum,
         total,
-        total_pages: Math.ceil(total / parseInt(limit)),
+        total_pages: Math.ceil(total / limitNum),
       },
     });
   } catch (error) {

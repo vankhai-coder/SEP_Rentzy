@@ -131,6 +131,7 @@ const Vehicle = sequelize.define(
       { name: "idx_vehicles_type", fields: ["vehicle_type"] },
       { name: "idx_vehicles_status", fields: ["status"] },
       { name: "idx_vehicles_location", fields: ["location"] },
+      { name: "idx_vehicles_approval", fields: ["approvalStatus"] },
     ],
   }
 );
