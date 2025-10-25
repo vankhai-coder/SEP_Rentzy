@@ -1,0 +1,33 @@
+import express from "express";
+import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
+import { check2FaceMatch, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import upload from '../../middlewares/multerConfig.js'
+import { getBasicUserInformation, sendOTPUsingTwilio, updateAvatarToCloudinary, verifyOTPUsingTwilio } from "../../controllers/renter/renterInfomationController.js";
+
+const router = express.Router();
+
+// verify driver license card : 
+router.post('/verify/driver-license-card', verifyJWTToken, upload.single("image"), verifyDriverLicenseCard)
+
+// verify driver identity card :
+router.post('/verify/identify-card', verifyJWTToken, upload.single("image"), verifyIdentityCard)
+
+// check 2 face match : 
+router.post('/check-2-face-match', verifyJWTToken, upload.fields([{ name: 'image_1', maxCount: 1 }, { name: 'image_2', maxCount: 1 }]), check2FaceMatch)
+
+// update full name :
+router.post('/update-full-name', verifyJWTToken, updateFullName);
+
+// get basic user information: 
+router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformation);
+
+// update avatar :
+router.post('/update-avatar', verifyJWTToken, upload.single("avatarImage"), updateAvatarToCloudinary);
+
+// sending opt using twilio :
+router.post('/send-otp', verifyJWTToken, sendOTPUsingTwilio);
+
+// verify otp code using twilio :
+router.post('/verify-otp', verifyJWTToken, verifyOTPUsingTwilio);
+
+export default router;

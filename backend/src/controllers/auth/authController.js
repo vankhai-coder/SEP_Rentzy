@@ -1,10 +1,13 @@
+import { Op } from 'sequelize';
 import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
 import { sendEmail } from '../../utils/email/sendEmail.js';
 import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-
+import { decryptWithSecret } from '../../utils/cryptoUtil.js';
+import { getTemporaryImageUrl } from '../../utils/aws/s3.js'
+import { v2 as cloudinary } from 'cloudinary';
 // redirect user to google login form and ask for permission : 
 export const googleLogin = (req, res) => {
     try {
@@ -60,11 +63,15 @@ export const googleCallback = async (req, res) => {
         });
 
         const user = await userRes.json();
+        // user = {id , email , name , picture}
 
         // Check if user already exist : 
         const existUser = await db.User.findOne({
             where: {
-                email: user.email,
+                [Op.or]: [
+                    { email: user.email },
+                    { google_id: user.id }
+                ]
             }
         });
 
@@ -265,7 +272,7 @@ export const login = async (req, res) => {
         }
         // 1.1 check if this email is register by google oauth method : 
         if (existUser && existUser.authMethod === 'oauth') {
-            return res.status(400).json({message : 'Email này đã được dùng để đăng nhập với Google!'})
+            return res.status(400).json({ message: 'Email này đã được dùng để đăng nhập với Google!' })
         }
 
         // 2. Check if email is verified
@@ -467,3 +474,141 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
+// request to create verify email : 
+export const requestUpdateEmail = async (req, res) => {
+    try {
+        const { updatedEmail } = req.body || {};
+
+        // 0. Check if updatedEmail is provided
+        if (!updatedEmail) {
+            return res
+                .status(400)
+                .json({
+                    success: false, message: "Vui lòng nhập email!"
+                });
+        }
+
+        // 1. Check if user exists by user_id from req.user in verifyJWTToken : 
+        const user_id = req.user.userId
+        if (!user_id) {
+            console.log('Can not get user_id from req.user')
+            return res.status(400).json({ message: 'Không thể tìm thấy user!' })
+        }
+        const user = await db.User.findOne({ where: { user_id } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({
+                    success: false, message: "Không tìm thấy người dùng!"
+                });
+        }
+        // 2. check if updateEmail is already in use ! : 
+        const updatedEmailAlreadyInUse = await db.User.findOne({
+            where: {
+                [Op.or]: [
+                    { email: updatedEmail },
+                    { updatedEmail: updatedEmail }
+                ]
+            }
+        });
+        if (updatedEmailAlreadyInUse) {
+            return res.status(400).json({ message: 'Email này đã được sử dụng!' })
+        }
+        // save updatedEmail : 
+        user.updatedEmail = updatedEmail
+
+        // 3. Create verify email token
+        const verifyEmailToken = crypto.randomBytes(32).toString("hex");
+        user.verifyEmailToken = verifyEmailToken;
+        await user.save();
+
+        // 4. Send verification email
+        const verifyLink = `${process.env.CLIENT_ORIGIN}/verify-updated-email?email=${encodeURIComponent(
+            updatedEmail
+        )}&verifyEmailToken=${verifyEmailToken}`;
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: updatedEmail,
+            subject: "Verify Your Email",
+            html: verifyEmailTemplate(verifyLink),
+        });
+
+        // 5. Response
+        return res
+            .status(200)
+            .json({
+                success: true, message: "Đã gửi email xác thực!"
+            });
+    } catch (error) {
+        console.error("Error in requestUpdateEmail:", error.message);
+        return res
+            .status(500)
+            .json({
+                success: false, message: "Có lỗi từ máy chủ. Vui lòng thử lại."
+            });
+    }
+};
+
+// verify updated email : 
+export const verifyUpdatedEmail = async (req, res) => {
+    try {
+        const { updatedEmail, verifyEmailToken } = req.body || {};
+
+        // 1. Check if email & token exist in body
+        if (!updatedEmail || !verifyEmailToken) {
+            return res
+                .status(400)
+                .json({
+                    success: false, message: "Thiếu email hoặc mã xác minh trong yêu cầu!"
+                });
+        }
+
+        // 2. Find user by email
+        const user = await db.User.findOne({ where: { updatedEmail } });
+        if (!user) {
+            return res
+                .status(404)
+                .json({
+                    success: false, message: "Không tìm thấy người dùng!"
+                });
+        }
+
+        // 3. Check if token matches
+        if (user.verifyEmailToken !== verifyEmailToken) {
+            return res
+                .status(400)
+                .json({
+                    success: false, message: "Token không hợp lệ hoặc đã hết hạn!"
+                });
+        }
+
+        // 4. Token matches → update user
+        user.verifyEmailToken = null; // delete token
+        user.email_verified = true;
+        user.email = updatedEmail
+        user.updatedEmail = ''
+        await user.save();
+
+        // 5. Create cookie 
+        createCookie(res, user.user_id, user.role, user.avatar_url, user.email)
+
+        // 6. Respond
+        return res.status(200).json({
+            success: true,
+            user: {
+                userId: user.user_id,
+                role: user.role,
+                email: user.email
+            }
+        })
+    } catch (error) {
+        console.error("Error verifying email:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Lỗi hệ thống, vui lòng thử lại sau!"
+            ,
+        });
+    }
+};
+

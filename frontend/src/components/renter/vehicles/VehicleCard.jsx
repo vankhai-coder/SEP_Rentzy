@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState } from "react";
 
+
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("vi-VN").format(value) + " VND";
 };
@@ -22,7 +23,10 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
     favorites.some((fav) => fav.vehicle_id === vehicle.vehicle_id)
   );
 
-  const handleFavorite = async () => {
+  const handleFavorite = async (e) => {
+    // Prevent event bubbling to stop navigation when clicking heart
+    e.stopPropagation();
+    
     if (!userId) {
       toast.info("Vui lòng đăng nhập để thêm yêu thích!");
       navigate("/renter/auth/login");
@@ -64,9 +68,16 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
       toast.error(error || "Có lỗi xảy ra khi cập nhật yêu thích!");
     }
   };
+    // ✨ Thêm function để navigate đến trang detail
+  const handleCardClick = () => {
+    navigate(`/detail/${vehicle.vehicle_id}`);
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100">
+    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100"
+    // thêm onclick vào
+    onClick={handleCardClick}
+    >
       <div className="relative">
         <img
           src={vehicle.main_image_url}
@@ -137,7 +148,7 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
           </div>
           <div className="flex items-center gap-1 text-gray-700 text-sm">
             <Star size={16} className="text-yellow-500" />
-            {vehicle.rating || "5.0"} ({vehicle.rent_count || "3"} chuyến)
+            {vehicle.rating ?? "5.0"} ({vehicle.rent_count ?? "3"} chuyến)
           </div>
         </div>
       </div>

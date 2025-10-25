@@ -14,6 +14,28 @@ import RenterVehicleRoute from "./routes/renter/vehicleRoute.js";
 import RenterBrandRoute from "./routes/renter/brandRoute.js";
 import RenterFavoriteRoute from "./routes/renter/favoriteRoute.js";
 import ChatOpenAiRoute from "./routes/chat/chatOpenAiRoute.js";
+import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
+import BookingReviewRoute from "./routes/renter/bookingReviewRoute.js";
+import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
+import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
+// booking route
+import BookingRoute from "./routes/booking/bookingRoute.js";
+
+// voucher route
+import VoucherRoute from "./routes/renter/voucherRoute.js";
+
+import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
+import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
+import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
+import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
+import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
+
+// payment
+import PaymentRoute from "./routes/payment/paymentRoute.js";
+
+// cron jobs
+import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
+
 // init app :
 const app = express();
 
@@ -39,10 +61,33 @@ app.use((req, res, next) => {
 
 // auth route :
 app.use("/api/auth", AuthRoute);
+app.use("/api/renter/vehicles/search", SearchVehicleRoute);
+
+// renter route :
 app.use("/api/renter/vehicles", RenterVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
+app.use("/api/renter/reviews", BookingReviewRoute);
+app.use("/api/renter/booking-history", BookingHistoryRoute);
+app.use("/api/renter/reports", VehicleReportRoute);
+app.use("/api/renter/info", RenterInfoRoute);
+
+// booking route
+app.use("/api/renter/booking", BookingRoute);
+
+// owner route
+app.use("/api/owner", OwnerVehicleRoute);
+app.use("/api/owner/brands", OwnerBrandRoute);
+app.use("/api/owner/dashboard", OwnerDashboardRoute);
+app.use("/api/owner/overview", OwnerOverviewRoute);
+
+// voucher route
+app.use("/api/renter/vouchers", VoucherRoute);
+
+// payment route
+app.use("/api/payment", PaymentRoute);
+
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
@@ -50,13 +95,37 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({ alter: true });
+    await db.sequelize.sync({});
     console.log("✅ All models synced!");
+
+    // Initialize cron jobs after database sync
+    initializeCronJobs();
   } catch (err) {
-    console.error("❌ Error syncing models:", err);
+    console.error(" Error syncing models:", err);
   }
 })();
 
 // run server :
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("🛑 SIGTERM received, shutting down gracefully...");
+  stopCronJobs();
+  server.close(() => {
+    console.log("✅ Server closed");
+    process.exit(0);
+  });
+});
+
+process.on("SIGINT", () => {
+  console.log("🛑 SIGINT received, shutting down gracefully...");
+  stopCronJobs();
+  server.close(() => {
+    console.log("✅ Server closed");
+    process.exit(0);
+  });
+});

@@ -67,7 +67,7 @@ const VehicleDetail = () => {
 
   return (
     <div className="min-h-screen bg-white font-inter">
-      <div className="max-w-7xl mx-auto p-5">
+      <div className="max-w-7xl mx-auto p-3">
 
         {/* Image Gallery - Full width at top */}
         <div className="mb-8">
@@ -75,16 +75,16 @@ const VehicleDetail = () => {
         </div>
 
         {/* Main Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-13 gap-5 items-start"> {/* gap khoảng cách các item 
           {/* Left Column - 7 parts */}
-          <div className="lg:col-span-7 space-y-8">
+          <div className="lg:col-span-9 space-y-7">
             <VehicleInfo vehicle={vehicle} />
             <RentalPolicies vehicle={vehicle} />
             <OwnerProfile vehicle={vehicle} />
           </div>
 
           {/* Right Column - 3 parts */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="sticky top-5">
               <BookingForm vehicle={vehicle} />
             </div>

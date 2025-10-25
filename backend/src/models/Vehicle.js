@@ -22,6 +22,11 @@ const Vehicle = sequelize.define(
       type: DataTypes.ENUM("car", "motorbike"),
       allowNull: false,
     },
+    license_plate: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+    },
     model: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -51,10 +56,31 @@ const Vehicle = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    latitude: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DOUBLE,
+      allowNull: true,
+    },
 
     // Car fields
     transmission: {
       type: DataTypes.ENUM("manual", "automatic"),
+    },
+    body_type: {
+      type: DataTypes.ENUM(
+        "sedan",
+        "suv",
+        "hatchback",
+        "convertible",
+        "coupe",
+        "minivan",
+        "pickup",
+        "van",
+        "mpv"
+      ),
     },
     seats: {
       type: DataTypes.TINYINT.UNSIGNED,
@@ -105,6 +131,7 @@ const Vehicle = sequelize.define(
       { name: "idx_vehicles_type", fields: ["vehicle_type"] },
       { name: "idx_vehicles_status", fields: ["status"] },
       { name: "idx_vehicles_location", fields: ["location"] },
+      { name: "idx_vehicles_approval", fields: ["approvalStatus"] },
     ],
   }
 );

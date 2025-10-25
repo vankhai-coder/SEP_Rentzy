@@ -1,156 +1,250 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 
-const VehicleGallery = ({ vehicle }) => {
+function VehicleGallery({ vehicle }) {
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAllImages, setShowAllImages] = useState(false);
-  
-  if (!vehicle) return null;
-  
-  const images = [];
-  
-  // Add main image if exists
-  if (vehicle.main_image_url) {
-    images.push(vehicle.main_image_url);
-  }
-  
-  // Add extra images if exists
-  if (vehicle.extra_images && Array.isArray(vehicle.extra_images)) {
-    images.push(...vehicle.extra_images);
-  }
-  
-  // If no images, show placeholder
-  if (images.length === 0) {
-    images.push('/api/placeholder/800/400');
-  }
+  const [modalSelectedImage, setModalSelectedImage] = useState(0);
+  const [isModalImageLoading, setIsModalImageLoading] = useState(false);
+  const [isMainImageLoading, setIsMainImageLoading] = useState(false);
 
-  // Modal hiển thị tất cả ảnh
+
+  const images = useMemo(() => {
+    if (!vehicle) return ["/api/placeholder/800/400"];
+    const main = vehicle?.main_image_url ? [vehicle.main_image_url] : [];
+    const extras = Array.isArray(vehicle?.extra_images) ? vehicle.extra_images : [];
+    const all = [...main, ...extras].filter(Boolean);
+    return all.length > 0 ? all : ["/api/placeholder/800/400"];
+  }, [vehicle]);
+
+  // Đảm bảo index luôn hợp lệ khi images thay đổi
+  useEffect(() => {
+    if (selectedImage >= images.length) setSelectedImage(0);
+    if (modalSelectedImage >= images.length) setModalSelectedImage(0);
+  }, [images, selectedImage, modalSelectedImage]);
+// Thêm hàm mở modal tại ảnh chỉ định (thumbnail/indicator)
+const openModalAt = useCallback((index) => {
+  setModalSelectedImage(index);
+  setShowAllImages(true);
+}, []);
+
+  useEffect(() => {
+    images.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, [images]);
+
+
+  const openModal = useCallback(() => {
+    // mở modal tại ảnh chính (index 0)
+    setModalSelectedImage(0);
+    setShowAllImages(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setSelectedImage(modalSelectedImage); // Đồng bộ về gallery ngoài
+    setShowAllImages(false);
+    setIsModalImageLoading(false);
+  }, [modalSelectedImage]);
+
+  const changeMainImage = (nextIndex) => {
+    setIsMainImageLoading(true);
+    setSelectedImage(nextIndex);
+  };
+
+
   const ImageModal = () => {
     if (!showAllImages) return null;
-    
+
+    const prev = () => {
+      setIsModalImageLoading(true);
+      setModalSelectedImage((p) => (p === 0 ? images.length - 1 : p - 1));
+    };
+
+    const next = () => {
+      setIsModalImageLoading(true);
+      setModalSelectedImage((p) => (p === images.length - 1 ? 0 : p + 1));
+    };
+
+    const handleImageLoad = () => setIsModalImageLoading(false);
+    const handleImageChange = (index) => {
+      setIsModalImageLoading(true);
+      setModalSelectedImage(index);
+    };
+
     return (
-      <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-        <div className="bg-white max-w-6xl max-h-[90vh] overflow-hidden border border-gray-300">
-          <div className="flex justify-between items-center p-4 border-b">
-            <h3 className="text-xl font-bold text-gray-800">Tất cả hình ảnh ({images.length})</h3>
-            <button 
-              onClick={() => setShowAllImages(false)}
-              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-            >
-              ×
-            </button>
+      <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 md:p-6 bg-gradient-to-b from-black/50 to-transparent">
+          <div className="flex items-center space-x-4">
+            <div className="text-white bg-white/10 px-4 py-2 rounded-full border border-white/20 backdrop-blur-sm">
+              {modalSelectedImage + 1} / {images.length}
+            </div>
+            <div className="hidden md:block text-white/70 text-sm">
+              {vehicle?.model || "Xe"} – Bộ sưu tập ảnh
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 p-4 max-h-[70vh] overflow-y-auto">
-            {images.map((image, index) => (
-              <div 
-                key={index}
-                className="aspect-video overflow-hidden cursor-pointer border border-gray-200"
-                onClick={() => {
-                  setSelectedImage(index);
-                  setShowAllImages(false);
-                }}
+          <button
+            onClick={closeModal}
+            className="text-white text-2xl hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Main image */}
+        <div className="flex-1 flex items-center justify-center relative">
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-4 bg-black/50 text-white rounded-full w-12 h-12 hover:bg-black/70 transition-colors backdrop-blur-sm z-10"
               >
-                <img
-                  src={image}
-                  alt={`${vehicle.model} - Image ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = '/api/placeholder/400/300';
-                  }}
-                />
+                ‹
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-4 bg-black/50 text-white rounded-full w-12 h-12 hover:bg-black/70 transition-colors backdrop-blur-sm z-10"
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <div className="relative max-w-full max-h-full">
+            {isModalImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
               </div>
-            ))}
+            )}
+            <img
+              key={modalSelectedImage}
+              src={images[modalSelectedImage]}
+              alt={`${vehicle?.model || "Xe"} - Ảnh ${modalSelectedImage + 1}`}
+              className={`max-w-full max-h-[80vh] object-contain rounded-lg shadow-xl transition-opacity duration-300 ${
+                isModalImageLoading ? "opacity-0" : "opacity-100"
+              }`}
+              onLoad={handleImageLoad}
+              onError={(e) => {
+                e.target.src = "/api/placeholder/800/600";
+                setIsModalImageLoading(false);
+              }}
+            />
           </div>
         </div>
+
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <div className="p-4 bg-black/30 flex justify-center gap-2 overflow-x-auto">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => handleImageChange(i)}
+                className={`w-16 h-12 border-2 rounded overflow-hidden transition-all ${
+                  modalSelectedImage === i
+                    ? "border-blue-500 scale-110 ring-2 ring-blue-300"
+                    : "border-gray-500 opacity-70 hover:opacity-100 hover:scale-105"
+                }`}
+              >
+                <img
+                  src={img}
+                  alt={`Thumbnail ${i + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => (e.target.src = "/api/placeholder/100/75")}
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
-  
+
   return (
     <>
-      <div className="bg-white overflow-hidden shadow-lg border border-gray-200">
-        <div className="grid grid-cols-10 gap-4 p-6 h-[500px]">
-          {/* Main Image Display - Left Side (7 columns) */}
-          <div className="col-span-7 relative w-full h-full overflow-hidden shadow-md border border-gray-200">
-            <img 
-              src={images[selectedImage]} 
-              alt={`${vehicle.model} - Image ${selectedImage + 1}`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = '/api/placeholder/800/400';
-              }}
-            />
-            {/* Image Counter */}
-            <div className="absolute bottom-4 right-4 bg-black text-white px-4 py-2 text-sm font-semibold border border-gray-300">
-              {selectedImage + 1} / {images.length}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-4 p-4 md:p-6 min-h-[400px] lg:min-h-[500px]">
+          {/* Main image - Responsive */}
+          <div className="w-full lg:w-[70%]">
+            <div
+              className="relative w-full h-[300px] md:h-[400px] lg:h-[600px] rounded-lg overflow-hidden cursor-pointer bg-gray-100 border"
+              onClick={openModal}
+            >
+              <img
+                src={images[0]}
+                alt={`${vehicle?.model || "Xe"} - Ảnh chính`}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  isMainImageLoading ? "opacity-0" : "opacity-100"
+                }`}
+                onLoad={() => setIsMainImageLoading(false)}
+                onError={(e) => {
+                  e.target.src = "/api/placeholder/800/600";
+                  setIsMainImageLoading(false);
+                }}
+              />
+
+              {/* Overlay cho mobile */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors lg:hidden" />
             </div>
           </div>
-          
-          {/* Thumbnail Grid - Right Side (3 columns) */}
-           <div className="col-span-3 flex flex-col gap-3 h-full">
-             {/* Hiển thị 3 ảnh phụ */}
-             {Array.from({ length: 3 }).map((_, index) => {
-               const imageIndex = index + 1; // Bỏ qua ảnh đầu tiên (ảnh chính)
-               const hasImage = images[imageIndex];
-               
-               return (
-                 <div 
-                   key={index}
-                   className={`relative flex-1 overflow-hidden shadow-sm ${
-                     hasImage 
-                       ? `cursor-pointer ${
-                           selectedImage === imageIndex 
-                             ? 'border-2 border-blue-500' 
-                             : 'border-2 border-gray-200'
-                         }`
-                       : 'border-2 border-gray-200 bg-white'
-                   }`}
-                   onClick={hasImage ? () => setSelectedImage(imageIndex) : undefined}
-                 >
-                   <div className="w-full h-full bg-white flex items-center justify-center">
-                      {hasImage ? (
-                        <>
-                          <img
-                            src={images[imageIndex]}
-                            alt={`${vehicle.model} thumbnail ${imageIndex + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = '/api/placeholder/300/200';
-                            }}
-                          />
-                          {/* Overlay cho ảnh thứ 3 nếu có nhiều hơn 3 ảnh phụ */}
-                          {index === 2 && images.length > 4 && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <span className="text-white text-sm font-semibold">+{images.length - 4}</span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-gray-300 text-3xl">
-                          📷
-                        </div>
-                      )}
-                    </div>
-                 </div>
-               );
-             })}
-             
-             {/* Nút xem tất cả ảnh */}
-             {images.length > 4 && (
-               <button
-                 onClick={() => setShowAllImages(true)}
-                 className="mt-2 bg-blue-500 text-white px-4 py-3 font-semibold text-sm shadow-md border border-gray-200"
-               >
-                 Xem tất cả ({images.length})
-               </button>
-             )}
-           </div>
+
+          {/* Thumbnails - Responsive */}
+          <div className="w-full lg:w-[30%] flex lg:flex-col gap-3">
+            <div className="flex lg:flex-col gap-3 flex-1">
+              {Array.from({ length: Math.min(3, images.length - 1) }).map((_, i) => {
+                const idx = i + 1;
+                const img = images[idx];
+                if (!img) return null;
+
+                return (
+                  <div
+                    key={i}
+                    className="relative h-[100px] md:h-[120px] lg:h-[170px] rounded-lg overflow-hidden border-2 cursor-pointer transition-all border-gray-200 hover:border-gray-400"
+                    onClick={() => openModalAt(idx)}
+                  >
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = "/api/placeholder/300/150";
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={openModal}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg shadow-md transition-all hover:scale-105 active:scale-95"
+            >
+              Xem tất cả ({images.length})
+            </button>
+          </div>
         </div>
+
+        {/* Image indicators for mobile */}
+        {images.length > 1 && (
+          <div className="lg:hidden flex justify-center gap-2 p-4">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => changeMainImage(index)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  selectedImage === index ? "bg-blue-600 w-6" : "bg-gray-300"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      
-      {/* Modal hiển thị tất cả ảnh */}
+
+      {/* Modal */}
       <ImageModal />
     </>
   );
-};
+}
 
 export default VehicleGallery;

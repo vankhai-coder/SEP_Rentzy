@@ -15,15 +15,15 @@ const User = sequelize.define(
     },
     email: {
       type: DataTypes.STRING(150),
-      allowNull: false,
+      allowNull: true, // can be null because user can register with phone number only
       unique: true,
     },
     email_verified: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    phone_number: {
-      type: DataTypes.STRING(20),
+    phone_number: {  // will be hashed
+      type: DataTypes.TEXT,
     },
     phone_verified: {
       type: DataTypes.BOOLEAN,
@@ -38,26 +38,33 @@ const User = sequelize.define(
     avatar_url: {
       type: DataTypes.STRING(255),
     },
+    // public_id from cloudinary :
+    avatar_public_id: {
+      type: DataTypes.STRING(255),
+    },
     role: {
       type: DataTypes.ENUM("renter", "owner", "admin"),
       allowNull: false,
       defaultValue: "renter",
     },
-    driver_license_number: {
-      type: DataTypes.STRING(50),
+    driver_license_number: {  // will be hashed
+      type: DataTypes.TEXT,
     },
-    driver_license_name: {
-      type: DataTypes.STRING(100),
+    driver_license_name: { // will be hashed
+      type: DataTypes.TEXT,
     },
-    driver_license_dob: {
-      type: DataTypes.DATEONLY,
+    driver_license_dob: { // will be hashed
+      type: DataTypes.TEXT,
     },
-    driver_license_image_url: {
+    driver_license_image_url: { // store key to aws s3 
       type: DataTypes.STRING(255),
     },
     driver_license_status: {
       type: DataTypes.ENUM("pending", "approved", "rejected"),
       defaultValue: "pending",
+    },
+    driver_class: {
+      type: DataTypes.STRING(10)
     },
     national_id_number: {
       type: DataTypes.STRING(50),
@@ -92,7 +99,7 @@ const User = sequelize.define(
       defaultValue: DataTypes.NOW,
     },
     authMethod: {
-      type: DataTypes.ENUM('oauth', 'email'),
+      type: DataTypes.ENUM('oauth', 'email', 'phone'),
       allowNull: false
     },
     resetPasswordToken: {
@@ -100,6 +107,10 @@ const User = sequelize.define(
     },
     verifyEmailToken: {
       type: DataTypes.STRING,
+    },
+    updatedEmail: {
+      type: DataTypes.STRING,
+      unique: true
     }
   },
   {
