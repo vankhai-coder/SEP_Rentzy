@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Select,
@@ -22,14 +21,27 @@ import {
   Star,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
+import { useSelector } from "react-redux";
 
 const Account = () => {
+
+  // check if user if logged in
+  const { userId  } = useSelector((state) => state.userStore);
+
   const navigate = useNavigate();
 
   const baseClass =
     "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
+
+  if(!userId){
+    return (
+      <div className="w-full py-20 text-center text-gray-500">
+        Vui lòng <Link to="/" className="text-blue-500 underline">đăng nhập</Link> để truy cập trang tài khoản của bạn.
+      </div>
+    );
+  }
 
   return (
     <div className="p-2 xs:px-8 sm:px-12 md:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16">

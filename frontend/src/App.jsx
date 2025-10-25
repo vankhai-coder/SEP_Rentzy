@@ -60,9 +60,9 @@ const App = () => {
           <Route
             path="/"
             element={
-              <ProtectedRoute allowRole={["renter", "owner", "admin"]}>
+              // <ProtectedRoute allowRole={["renter", "owner", "admin"]}>
                 <Account />
-              </ProtectedRoute>
+              // </ProtectedRoute>  
             }
           >
             <Route path="/account" element={<UserInformation />} />
