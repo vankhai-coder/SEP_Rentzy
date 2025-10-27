@@ -29,6 +29,9 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    login_with_phone_number_token: {
+      type: DataTypes.STRING(255),
+    },
     password_hash: {
       type: DataTypes.STRING(255),
     },

@@ -1,6 +1,6 @@
 import express from 'express'
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import {  googleCallback, googleLogin, login, logout, register, requestCreateVerifyEmail, requestResetPassword, requestUpdateEmail, resetPassword, verifyEmail, verifyUpdatedEmail } from '../../controllers/auth/authController.js'
+import { googleCallback, googleLogin, login, loginWithPhoneNumber, logout, register, registerWithPhoneNumber, requestCreateVerifyEmail, requestLoginWithPhoneNumberToken, requestResetPassword, requestUpdateEmail, resetPassword, verifyEmail, verifyPhoneNumberForRegistration, verifyUpdatedEmail } from '../../controllers/auth/authController.js'
 const router = express.Router()
 
 // check auth :
@@ -37,6 +37,18 @@ router.post('/request-update-email', verifyJWTToken, requestUpdateEmail)
 
 // veriry updated email : 
 router.post('/verify-updated-email', verifyUpdatedEmail)
+
+// register with phone number : 
+router.post('/register-with-phone-number', registerWithPhoneNumber)
+
+// verify phone number for registration :
+router.post('/verify-phone-number-for-registration', verifyPhoneNumberForRegistration)
+
+// login with phone number :
+router.post('/login-with-phone-number', loginWithPhoneNumber)
+
+// request send login_with_phone_number_token for login with phone number :
+router.post('/request-login-with-phone-number-token', requestLoginWithPhoneNumberToken)
 
 
 

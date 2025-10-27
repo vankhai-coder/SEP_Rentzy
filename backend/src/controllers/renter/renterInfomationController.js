@@ -15,21 +15,21 @@ const safeDecryptPhoneNumber = (encryptedPhone) => {
         if (!encryptedPhone || typeof encryptedPhone !== 'string') {
             return null;
         }
-        
+
         // Basic Base64 validation
         const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
         if (!base64Regex.test(encryptedPhone)) {
             console.warn('Phone number is not valid Base64, might be unencrypted:', encryptedPhone);
             return encryptedPhone; // Return as-is if not encrypted
         }
-        
+
         // Try to decode Base64 to check if it has the right structure
         const decoded = Buffer.from(encryptedPhone, 'base64');
         if (decoded.length < 44) { // salt(16) + iv(12) + tag(16) = 44 minimum
             console.warn('Encrypted phone data too short, might be unencrypted:', encryptedPhone);
             return encryptedPhone; // Return as-is if structure is wrong
         }
-        
+
         // Attempt decryption
         return decryptWithSecret(encryptedPhone, process.env.ENCRYPT_KEY);
     } catch (error) {
@@ -404,7 +404,7 @@ export const updateAvatarToCloudinary = async (req, res) => {
 };
 
 // sending otp using twilio :
-export const sendOTPUsingTwilio = async (req, res) => {
+export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
     try {
         const { phoneNumber } = req.body || {};
 
@@ -416,12 +416,12 @@ export const sendOTPUsingTwilio = async (req, res) => {
         }
         // 1.1 check if phone number is already in use by another user :
         // unHash phone number to compare :
-        // get all users with phone number not null : 
+        // get all users with phone number not null and phone_verified = true  : 
         const usersWithPhoneNumber = await db.User.findAll({
             where: {
-                phone_number: {
-                    [Op.ne]: null
-                }
+                phone_number: { [Op.ne]: null },
+                phone_verified: true,
+                user_id: { [Op.ne]: req.user?.userId } // exclude current user
             }
         });
         for (const user of usersWithPhoneNumber) {
@@ -436,7 +436,7 @@ export const sendOTPUsingTwilio = async (req, res) => {
         }
         // 1.2 format phone number to E.164 format if needed (assuming input is in local format)
         let formattedPhoneNumber = phoneNumber;
-        if (!phoneNumber.startsWith('+')) {
+        if (!phoneNumber.trim().startsWith('+84')) {
             // Assuming country code is +84 (Vietnam) for example
             formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
         }
@@ -466,7 +466,7 @@ export const sendOTPUsingTwilio = async (req, res) => {
             message: "Mã OTP đã được gửi đến số điện thoại của bạn.",
         });
     } catch (error) {
-        console.error("sendOTPUsingTwilio error:", error);
+        console.error("sendOTPUsingTwilioForUpdatePhoneNumber error:", error);
         return res.status(500).json({
             success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
         });
@@ -474,7 +474,7 @@ export const sendOTPUsingTwilio = async (req, res) => {
 }
 
 // verify OTP using twilio :
-export const verifyOTPUsingTwilio = async (req, res) => {
+export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
     try {
         // check if user exist : 
         const user = await db.User.findOne({
@@ -530,7 +530,7 @@ export const verifyOTPUsingTwilio = async (req, res) => {
 
         // 2.1 save phone number to user db
         // encrypt phone number before save to db
-        const encryptedPhoneNumber = encryptWithSecret(phoneNumber, process.env.ENCRYPT_KEY)
+        const encryptedPhoneNumber = encryptWithSecret(formattedPhoneNumber, process.env.ENCRYPT_KEY)
         user.phone_number = encryptedPhoneNumber
         user.phone_verified = true
 
@@ -543,7 +543,7 @@ export const verifyOTPUsingTwilio = async (req, res) => {
             phone_number: phoneNumber
         });
     } catch (error) {
-        console.error("verifyOTPUsingTwilio error:", error);
+        console.error("verifyOTPUsingTwilioForUpdatePhoneNumber error:", error);
         return res.status(500).json({
             success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
         });
