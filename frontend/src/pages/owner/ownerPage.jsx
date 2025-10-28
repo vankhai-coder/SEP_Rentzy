@@ -1,5 +1,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "@/redux/features/auth/authSlice";
 import VehicleManagement from "./vehicleManagement/vehicleManagement.jsx";
 import VehicleDetail from "./vehicleManagement/VehicleDetail.jsx";
 import AddCarForm from "./vehicleManagement/addCarForm.jsx";
@@ -16,9 +18,17 @@ import Notifications from "./dashboard/Notifications.jsx";
 import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
 const OwnerPage = () => {
+  const dispatch = useDispatch();
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    dispatch(logoutUser());
+    window.location.href = "/";
+  };
+
   return (
     <div className="flex min-h-screen">
-      <SidebarOwner />
+      <SidebarOwner handleLogout={handleLogout} />
       <div className="flex-grow ml-[250px] p-5 bg-gray-50 min-h-screen">
         <Routes>
           <Route path="/" element={<OverViewManagement />} />

@@ -102,9 +102,9 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({alter: false});
+    await db.sequelize.sync({});
     console.log("✅ All models synced!");
-    
+
     // Initialize cron jobs after database sync
     initializeCronJobs();
   } catch (err) {
@@ -114,23 +114,25 @@ app.get("/", (req, res) => {
 
 // run server :
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully...');
+process.on("SIGTERM", () => {
+  console.log("🛑 SIGTERM received, shutting down gracefully...");
   stopCronJobs();
   server.close(() => {
-    console.log('✅ Server closed');
+    console.log("✅ Server closed");
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
-  console.log('🛑 SIGINT received, shutting down gracefully...');
+process.on("SIGINT", () => {
+  console.log("🛑 SIGINT received, shutting down gracefully...");
   stopCronJobs();
   server.close(() => {
-    console.log('✅ Server closed');
+    console.log("✅ Server closed");
     process.exit(0);
   });
 });

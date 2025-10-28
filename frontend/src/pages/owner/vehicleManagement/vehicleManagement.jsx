@@ -111,7 +111,7 @@ const fetchVehicles = useCallback(async () => {
     try {
       const newStatus = currentStatus === 'available' ? 'blocked' : 'available';
       
-      const response = await axiosInstance.patch(`/owner/vehicles/${vehicleId}/status`, {
+      const response = await axiosInstance.patch(`/api/owner/vehicles/${vehicleId}/status`, {
         status: newStatus
       });
 
@@ -129,7 +129,7 @@ const fetchVehicles = useCallback(async () => {
   // const handleDelete = async (vehicleId, vehicleName) => {
   //   if (window.confirm(`Bạn có chắc chắn muốn xóa xe "${vehicleName}"?`)) {
   //     try {
-  //       const response = await axiosInstance.delete(`/owner/vehicles/${vehicleId}`);
+  //       const response = await axiosInstance.delete(`/api/owner/vehicles/${vehicleId}`);
         
   //       if (response.data.success) {
   //         toast.success('Xóa xe thành công');

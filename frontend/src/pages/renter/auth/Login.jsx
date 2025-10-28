@@ -4,17 +4,14 @@ import { EyeClosed, EyeIcon, Loader, Loader2Icon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
-const Login = ({ setRegisterOpen, setLoginOpen }) => {
+const Login = ({ setRegisterOpen, setLoginOpen, setIsLoginWithPhoneOpen }) => {
   // redux : 
   const { isLoadingLogin, isNotVerifyEmailError, isLoginSuccess, errorLogin,
     isLoadingRequest, isRequestSuccess, errorRequest,
     isLoadingRequestReset, isRequestResetSuccess, errorRequestReset,
-    role
   } = useSelector(state => state.userStore)
   const dispatch = useDispatch()
-  const navigate = useNavigate()
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,7 +68,7 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
     return () => {
       dispatch(resetState())
     }
-  }, [])
+  }, [dispatch])
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -147,7 +144,7 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
                 onClick={async () => {
                   if (email) {
                     await dispatch(requestResetPassword(email))
-                  }else{
+                  } else {
                     toast.error('Nhập email để gửi!')
                   }
                 }}
@@ -210,6 +207,19 @@ const Login = ({ setRegisterOpen, setLoginOpen }) => {
             Google
           </a>
         </div>
+
+        {/* button for login with phone number */}
+        <Button
+          className={'w-full mt-3'}
+          variant={'outline'}
+          onClick={() => {
+            setLoginOpen(false);
+            setIsLoginWithPhoneOpen(true);
+          }}
+        >
+          Đăng nhập bằng số điện thoại
+        </Button>
+
         {/* button for send request create veriyf email : */}
         {isNotVerifyEmailError &&
           <Button

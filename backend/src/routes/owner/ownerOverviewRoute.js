@@ -14,16 +14,19 @@ router.get("/test", (req, res) => {
   res.json({ success: true, message: "Overview API is working!" });
 });
 
-// API lấy thống kê tổng quan (tạm thời bỏ auth để test)
+
+router.use(verifyJWTToken);
+
+// API lấy thống kê tổng quan
 router.get("/stats", getOverviewStats);
 
-// API lấy dữ liệu biểu đồ doanh thu (tạm thời bỏ auth để test)
+// API lấy dữ liệu biểu đồ doanh thu
 router.get("/revenue-chart", getRevenueChart);
 
-// API lấy danh sách người thuê hàng đầu (tạm thời bỏ auth để test)
+// API lấy danh sách người thuê hàng đầu
 router.get("/top-renters", getTopRenters);
 
-// API lấy danh sách xe được thuê nhiều nhất (tạm thời bỏ auth để test)
+// API lấy danh sách xe được thuê nhiều nhất
 router.get("/top-vehicles", getTopVehicles);
 
 export default router;

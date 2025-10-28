@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
 
-const EditMotoBikeForm = () => {
+const AddMotoBikeForm = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -27,62 +26,13 @@ const EditMotoBikeForm = () => {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [mainImage, setMainImage] = useState(null);
   const [extraImages, setExtraImages] = useState([]);
-  const [currentMainImage, setCurrentMainImage] = useState("");
-  const [currentExtraImages, setCurrentExtraImages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingVehicle, setLoadingVehicle] = useState(true);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   
   // State cho danh sách brands
   const [brands, setBrands] = useState([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
-
-  // Fetch vehicle data
-  useEffect(() => {
-    const fetchVehicleData = async () => {
-      try {
-        setLoadingVehicle(true);
-        const response = await axiosInstance.get(`/api/owner/vehicles/${id}`);
-        const vehicle = response.data.vehicle;
-        
-        // Set form data
-        setFormData({
-          brand: vehicle.brand?.name || "",
-          model: vehicle.model || "",
-          license_plate: vehicle.license_plate || "",
-          location: vehicle.location || "",
-          latitude: vehicle.latitude || "",
-          longitude: vehicle.longitude || "",
-          price_per_day: vehicle.price_per_day || "",
-          year: vehicle.year || "",
-          bike_type: vehicle.bike_type || "",
-          engine_capacity: vehicle.engine_capacity || "",
-          fuel_type: vehicle.fuel_type || "",
-          fuel_consumption: vehicle.fuel_consumption || "",
-          description: vehicle.description || ""
-        });
-
-        // Set features
-        setSelectedFeatures(vehicle.features || []);
-        
-        // Set current images
-        setCurrentMainImage(vehicle.main_image_url || "");
-        setCurrentExtraImages(vehicle.extra_images || []);
-        
-      } catch (error) {
-        console.error('Error fetching vehicle:', error);
-        toast.error('Không thể tải thông tin xe');
-        navigate('/owner/vehicle-management');
-      } finally {
-        setLoadingVehicle(false);
-      }
-    };
-
-    if (id) {
-      fetchVehicleData();
-    }
-  }, [id, navigate]);
 
   // Fetch brands khi component mount
   useEffect(() => {
@@ -249,7 +199,7 @@ const EditMotoBikeForm = () => {
       submitData.append('description', formData.description);
       submitData.append('features', JSON.stringify(selectedFeatures));
 
-      // Add images only if new ones are selected
+      // Add images - required for new vehicle
       if (mainImage) {
         submitData.append('main_image', mainImage);
       }
@@ -258,20 +208,20 @@ const EditMotoBikeForm = () => {
         submitData.append('extra_images', image);
       });
 
-      const response = await axiosInstance.put(`/api/owner/vehicles/${id}`, submitData, {
+      const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      if (response.status === 200 && response.data.success) {
-        toast.success('Cập nhật xe thành công!');
+      if (response.status === 201 && response.data.success) {
+        toast.success('Thêm xe thành công!');
         navigate('/owner/vehicle-management');
       } else {
-        toast.error(response.data.message || 'Lỗi khi cập nhật xe. Vui lòng thử lại.');
+        toast.error(response.data.message || 'Lỗi khi thêm xe. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('Error updating vehicle:', error);
+      console.error('Error adding vehicle:', error);
       
       if (error.response) {
         const errorMessage = error.response.data?.message || 'Lỗi từ server';
@@ -286,32 +236,19 @@ const EditMotoBikeForm = () => {
     }
   };
 
-  if (loadingVehicle) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải thông tin xe...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/owner/vehicle-management')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            ← Quay lại
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Chỉnh sửa xe máy</h1>
-          <p className="text-gray-600 mt-2">Cập nhật thông tin xe của bạn</p>
-        </div>
+    <div className="w-full">
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+        <p className="text-green-700 font-medium">
+          Hãy vui lòng điền các thông tin chính xác của xe và giấy tờ xe hợp lệ.
+        </p>
+      </div>
+      
+      <h1 className="text-3xl font-bold text-blue-600 mb-6">
+        🏍️ Thêm xe máy mới
+      </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-6">Thông tin cơ bản</h2>
@@ -552,52 +489,33 @@ const EditMotoBikeForm = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-6">Hình ảnh</h2>
             
             <div className="space-y-6">
-              {/* Current Main Image */}
-              {currentMainImage && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh chính hiện tại</h3>
-                  <img 
-                    src={currentMainImage} 
-                    alt="Current main" 
-                    className="w-48 h-32 object-cover rounded-lg border"
-                  />
-                </div>
-              )}
-
-              {/* Main Image Upload */}
+              {/* Main Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ảnh chính mới (tùy chọn)
+                  Hình ảnh chính *
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleMainImageChange}
+                  required
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {mainImage && (
+                  <div className="mt-2">
+                    <img
+                      src={URL.createObjectURL(mainImage)}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Current Extra Images */}
-              {currentExtraImages.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-700 mb-3">Ảnh phụ hiện tại</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {currentExtraImages.map((img, index) => (
-                      <img 
-                        key={index}
-                        src={img} 
-                        alt={`Current extra ${index}`} 
-                        className="w-full h-24 object-cover rounded-lg border"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Extra Images Upload */}
+              {/* Extra Images */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ảnh phụ mới (tùy chọn)
+                  Hình ảnh bổ sung (tối đa 5 ảnh)
                 </label>
                 <input
                   type="file"
@@ -606,38 +524,42 @@ const EditMotoBikeForm = () => {
                   onChange={handleExtraImagesChange}
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                {extraImages.length > 0 && (
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {extraImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={URL.createObjectURL(image)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-4 justify-end">
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={() => navigate('/owner/vehicle-management')}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-50 transition-colors"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Đang cập nhật...
-                </>
-              ) : (
-                'Cập nhật xe'
-              )}
+              {loading ? 'Đang thêm...' : 'Thêm xe máy'}
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 };
 
-export default EditMotoBikeForm;
+export default AddMotoBikeForm;

@@ -7,12 +7,26 @@ const { Booking, Vehicle, User, Brand } = db;
 // API lấy tổng quan dashboard
 export const getOverviewStats = async (req, res) => {
   try {
-    // Tạm thời hardcode owner_id để test
-    const ownerId = req.user?.userId || 1;
+    console.log('=== getOverviewStats API called ===');
+    console.log('Request user:', req.user);
+    
+    const ownerId = req.user?.userId;
+    if (!ownerId) {
+      console.log('ERROR: No ownerId found in request');
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng"
+      });
+    }
+    
+    console.log('Processing overview stats for ownerId:', ownerId);
 
-    // Lấy danh sách xe của owner
+    // Lấy toàn bộ xe của owner (tất cả trạng thái: pending, approved, rejected, blocked)
     const ownerVehicles = await Vehicle.findAll({
-      where: { owner_id: ownerId },
+      where: { 
+        owner_id: ownerId,
+        
+      },
       attributes: ['vehicle_id']
     });
 
@@ -24,17 +38,16 @@ export const getOverviewStats = async (req, res) => {
         data: {
           totalRevenue: 0,
           totalBookings: 0,
-          totalVehicles: 0,
-          revenueChart: []
+          totalVehicles: 0
         }
       });
     }
 
-    // Tính tổng doanh thu từ các booking đã hoàn thành
+    // Tính tổng doanh thu từ các booking đã hoàn thành và confirmed
     const totalRevenueResult = await Booking.findOne({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
-        status: 'completed'
+        status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] } // Bao gồm cả confirmed và ongoing
       },
       attributes: [
         [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalRevenue']
@@ -42,14 +55,15 @@ export const getOverviewStats = async (req, res) => {
       raw: true
     });
 
-    // Đếm tổng số đơn thuê
+    // Đếm tổng số đơn thuê (các trạng thái hợp lệ)
     const totalBookings = await Booking.count({
       where: {
-        vehicle_id: { [Op.in]: vehicleIds }
+        vehicle_id: { [Op.in]: vehicleIds },
+        status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] }
       }
     });
 
-    // Đếm tổng số xe
+    // Đếm tổng số xe đã được phê duyệt
     const totalVehicles = vehicleIds.length;
 
     const totalRevenue = totalRevenueResult?.totalRevenue || 0;
@@ -76,19 +90,61 @@ export const getOverviewStats = async (req, res) => {
 // API lấy dữ liệu biểu đồ doanh thu
 export const getRevenueChart = async (req, res) => {
   try {
-    // Tạm thời hardcode owner_id để test
-    const ownerId = req.user?.userId || 1;
-    const { period = 'month', year = new Date().getFullYear() } = req.query;
+    console.log('=== getRevenueChart API called ===');
+    console.log('Request query:', req.query);
+    console.log('Request user:', req.user);
+    
+    const ownerId = req.user?.userId;
+    if (!ownerId) {
+      console.log('ERROR: No ownerId found');
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng"
+      });
+    }
 
-    // Lấy danh sách xe của owner
+    const { period = 'day', year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
+    console.log('Parsed params:', { period, year, month, ownerId });
+
+    // Lấy danh sách xe của owner với điều kiện chặt chẽ
     const ownerVehicles = await Vehicle.findAll({
-      where: { owner_id: ownerId },
+      where: { 
+        owner_id: ownerId,
+      },
       attributes: ['vehicle_id']
     });
 
     const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    console.log('Owner vehicles found:', ownerVehicles.length);
+    console.log('Vehicle IDs:', vehicleIds);
+
+    // Hàm tạo dữ liệu đầy đủ cho tháng hiện tại
+    const generateFullMonthData = (year, month) => {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const fullData = [];
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        fullData.push({
+          period: dateStr,
+          revenue: 0,
+          bookingCount: 0
+        });
+      }
+      
+      return fullData;
+    };
 
     if (vehicleIds.length === 0) {
+      // Nếu không có xe, vẫn trả về dữ liệu đầy đủ với giá trị 0
+      if (period === 'day') {
+        const fullData = generateFullMonthData(parseInt(year), parseInt(month));
+        return res.json({
+          success: true,
+          data: fullData
+        });
+      }
       return res.json({
         success: true,
         data: []
@@ -98,17 +154,18 @@ export const getRevenueChart = async (req, res) => {
     let dateFormat, groupBy;
     let whereCondition = {
       vehicle_id: { [Op.in]: vehicleIds },
-      status: 'completed'
+      status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] }
     };
 
     // Xác định format ngày và điều kiện group by theo period
     switch (period) {
       case 'day':
-        // Lấy dữ liệu 30 ngày gần nhất
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Lấy dữ liệu theo ngày trong tháng hiện tại
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+        
         whereCondition.created_at = {
-          [Op.gte]: thirtyDaysAgo
+          [Op.between]: [startOfMonth, endOfMonth]
         };
         dateFormat = '%Y-%m-%d';
         groupBy = sequelize.fn('DATE', sequelize.col('created_at'));
@@ -137,11 +194,8 @@ export const getRevenueChart = async (req, res) => {
         groupBy = sequelize.fn('YEAR', sequelize.col('created_at'));
         break;
       default:
-        dateFormat = '%Y-%m';
-        groupBy = [
-          sequelize.fn('YEAR', sequelize.col('created_at')),
-          sequelize.fn('MONTH', sequelize.col('created_at'))
-        ];
+        dateFormat = '%Y-%m-%d';
+        groupBy = sequelize.fn('DATE', sequelize.col('created_at'));
     }
 
     const revenueData = await Booking.findAll({
@@ -156,21 +210,39 @@ export const getRevenueChart = async (req, res) => {
       raw: true
     });
 
-    res.json({
+    // Xử lý dữ liệu theo period
+    let finalData = revenueData.map(item => ({
+      period: item.period,
+      revenue: parseFloat(item.revenue) || 0,
+      bookingCount: parseInt(item.bookingCount) || 0
+    }));
+
+    // Nếu là xem theo ngày, tạo dữ liệu đầy đủ cho tháng
+    if (period === 'day') {
+      const fullMonthData = generateFullMonthData(parseInt(year), parseInt(month));
+      const revenueMap = new Map(finalData.map(item => [item.period, item]));
+      
+      finalData = fullMonthData.map(dayData => {
+        const existingData = revenueMap.get(dayData.period);
+        return existingData || dayData;
+      });
+    }
+
+    console.log('Final chart data:', finalData);
+    console.log('=== getRevenueChart API completed successfully ===');
+    
+    return res.status(200).json({
       success: true,
-      data: revenueData.map(item => ({
-        period: item.period,
-        revenue: parseFloat(item.revenue),
-        bookingCount: parseInt(item.bookingCount)
-      }))
+      data: finalData
     });
 
   } catch (error) {
-    console.error("Error getting revenue chart:", error);
-    res.status(500).json({
+    console.error('=== ERROR in getRevenueChart ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({
       success: false,
-      message: "Lỗi khi lấy dữ liệu biểu đồ doanh thu",
-      error: error.message
+      message: "Lỗi server khi lấy dữ liệu biểu đồ doanh thu"
     });
   }
 };
@@ -178,13 +250,27 @@ export const getRevenueChart = async (req, res) => {
 // API lấy danh sách người thuê theo số lượt thuê
 export const getTopRenters = async (req, res) => {
   try {
-    // Tạm thời hardcode owner_id để test
-    const ownerId = req.user?.userId || 1;
+    console.log('=== getTopRenters API called ===');
+    console.log('Request user:', req.user);
+    
+    const ownerId = req.user?.userId;
+    if (!ownerId) {
+      console.log('ERROR: No ownerId found in request');
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng"
+      });
+    }
+    
+    console.log('Processing top renters for ownerId:', ownerId);
+
     const { limit = 10 } = req.query;
 
-    // Lấy danh sách xe của owner
+    // Lấy danh sách xe của owner (chỉ xe đã được phê duyệt)
     const ownerVehicles = await Vehicle.findAll({
-      where: { owner_id: ownerId },
+      where: { 
+        owner_id: ownerId,
+      },
       attributes: ['vehicle_id']
     });
 
@@ -199,13 +285,15 @@ export const getTopRenters = async (req, res) => {
 
     const topRenters = await Booking.findAll({
       where: {
-        vehicle_id: { [Op.in]: vehicleIds }
+        vehicle_id: { [Op.in]: vehicleIds },
+        status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] } 
       },
       include: [
         {
           model: User,
           as: "renter",
-          attributes: ["user_id", "full_name", "email", "avatar_url"]
+          attributes: ["user_id", "full_name", "email", "avatar_url"],
+          required: true
         }
       ],
       attributes: [
@@ -213,7 +301,13 @@ export const getTopRenters = async (req, res) => {
         [sequelize.fn('COUNT', sequelize.col('booking_id')), 'rentCount'],
         [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalSpent']
       ],
-      group: ['renter_id', 'renter.user_id'],
+      group: [
+        'renter_id', 
+        'renter.user_id', 
+        'renter.full_name', 
+        'renter.email', 
+        'renter.avatar_url'
+      ],
       order: [[sequelize.fn('COUNT', sequelize.col('booking_id')), 'DESC']],
       limit: parseInt(limit),
       raw: false
@@ -246,23 +340,41 @@ export const getTopRenters = async (req, res) => {
 // API lấy danh sách xe được thuê nhiều nhất
 export const getTopVehicles = async (req, res) => {
   try {
-    // Tạm thời hardcode owner_id để test
-    const ownerId = req.user?.userId || 1;
+    console.log('=== getTopVehicles API called ===');
+    console.log('Request user:', req.user);
+    
+    const ownerId = req.user?.userId;
+    if (!ownerId) {
+      console.log('ERROR: No ownerId found in request');
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng"
+      });
+    }
+    
+    console.log('Processing top vehicles for ownerId:', ownerId);
+
     const { limit = 10 } = req.query;
 
     const topVehicles = await Vehicle.findAll({
-      where: { owner_id: ownerId },
+      where: { 
+        owner_id: ownerId,
+      },
       include: [
         {
           model: Brand,
           as: "brand",
-          attributes: ["brand_id", "name", "logo_url"]
+          attributes: ["brand_id", "name", "logo_url"],
+          required: false
         },
         {
           model: Booking,
           as: "bookings",
           attributes: [],
-          required: false
+          required: false,
+          where: {
+            status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] }
+          }
         }
       ],
       attributes: [
@@ -271,12 +383,20 @@ export const getTopVehicles = async (req, res) => {
         'license_plate',
         'main_image_url',
         'price_per_day',
-        'rent_count',
-        [sequelize.fn('COUNT', sequelize.col('bookings.booking_id')), 'totalBookings'],
+        [sequelize.fn('COUNT', sequelize.col('bookings.booking_id')), 'rent_count'],
         [sequelize.fn('SUM', sequelize.col('bookings.total_amount')), 'totalRevenue']
       ],
-      group: ['vehicle_id', 'brand.brand_id'],
-      order: [['rent_count', 'DESC']],
+      group: [
+        'vehicle_id', 
+        'model', 
+        'license_plate', 
+        'main_image_url', 
+        'price_per_day',
+        'brand.brand_id',
+        'brand.name',
+        'brand.logo_url'
+      ],
+      order: [[sequelize.fn('COUNT', sequelize.col('bookings.booking_id')), 'DESC']],
       limit: parseInt(limit),
       raw: false
     });
@@ -287,9 +407,8 @@ export const getTopVehicles = async (req, res) => {
       license_plate: vehicle.license_plate,
       main_image_url: vehicle.main_image_url,
       price_per_day: parseFloat(vehicle.price_per_day),
-      rent_count: vehicle.rent_count,
+      rent_count: parseInt(vehicle.dataValues.rent_count || 0),
       brand: vehicle.brand,
-      totalBookings: parseInt(vehicle.dataValues.totalBookings || 0),
       totalRevenue: parseFloat(vehicle.dataValues.totalRevenue || 0)
     }));
 

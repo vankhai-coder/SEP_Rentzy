@@ -38,7 +38,7 @@ const VehicleDetail = () => {
   const fetchVehicleDetail = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/owner/vehicles/${id}`);
+      const response = await axiosInstance.get(`/api/owner/vehicles/${id}`);
       
       if (response.data.success) {
         setVehicle(response.data.data);
@@ -156,7 +156,7 @@ const VehicleDetail = () => {
           <div className="text-center py-12">
             <div className="text-red-600 text-xl font-semibold mb-4">{error || 'Không tìm thấy xe'}</div>
             <button
-              onClick={() => navigate('/owner/vehicles')}
+              onClick={() => navigate('/owner/vehicle-management')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Quay lại danh sách xe

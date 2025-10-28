@@ -33,7 +33,7 @@ export const verifyJWTToken = async (req, res, next) => {
     if (!existUser) {
       return res
         .status(403)
-        .json({ success: false, message: "User not found or is banned!" });
+        .json({ success: false, message: "Không tìm thấy người dùng hoặc tài khoản đã bị khóa!" });
     }
 
     // 4. Save decoded data to req.user (thêm points)

@@ -1,8 +1,8 @@
 import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { check2FaceMatch, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import { check2FaceMatch, sendOTPUsingTwilioForUpdatePhoneNumber, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
-import { getBasicUserInformation, sendOTPUsingTwilio, updateAvatarToCloudinary, verifyOTPUsingTwilio } from "../../controllers/renter/renterInfomationController.js";
+import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
 
 const router = express.Router();
 
@@ -25,9 +25,9 @@ router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformati
 router.post('/update-avatar', verifyJWTToken, upload.single("avatarImage"), updateAvatarToCloudinary);
 
 // sending opt using twilio :
-router.post('/send-otp', verifyJWTToken, sendOTPUsingTwilio);
+router.post('/send-otp', verifyJWTToken, sendOTPUsingTwilioForUpdatePhoneNumber);
 
 // verify otp code using twilio :
-router.post('/verify-otp', verifyJWTToken, verifyOTPUsingTwilio);
+router.post('/verify-otp', verifyJWTToken, verifyOTPUsingTwilioForUpdatePhoneNumber);
 
 export default router;

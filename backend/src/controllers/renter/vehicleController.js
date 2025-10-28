@@ -3,7 +3,7 @@ import User from "../../models/User.js";
 import Booking from "../../models/Booking.js";
 import BookingReview from "../../models/BookingReview.js";
 
-// Lấy tất cả vehicles (filter theo type: car/motorbike)
+// Lấy tất cả vehicles (filter theo type: car/motorbike, chỉ approved)
 export const getAllVehicles = async (req, res) => {
   try {
     const { type } = req.query; // Ví dụ: /api/renter/vehicles?type=car
@@ -12,7 +12,15 @@ export const getAllVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid vehicle type" });
     }
-    const where = type ? { vehicle_type: type } : {};
+    const where = {
+      vehicle_type: type || undefined, // Nếu không có type, lấy tất cả
+      approvalStatus: "approved", // Chỉ lấy xe đã duyệt
+    };
+    // Loại bỏ undefined fields
+    Object.keys(where).forEach(
+      (key) => where[key] === undefined && delete where[key]
+    );
+
     const vehicles = await Vehicle.findAll({ where });
     res.json({ success: true, data: vehicles });
   } catch (error) {
@@ -21,20 +29,34 @@ export const getAllVehicles = async (req, res) => {
   }
 };
 
-// Lấy chi tiết 1 vehicle theo id
+// Lấy chi tiết 1 vehicle theo id (chỉ nếu approved, hoặc nếu renter là owner của xe)
 export const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { user } = req; // Từ authMiddleware: { user_id, role }
+
     console.log(id);
-    const vehicle = await Vehicle.findByPk(id);
+    let vehicle = await Vehicle.findByPk(id);
     console.log(vehicle);
-    const owner = await User.findByPk(vehicle.owner_id);
 
     if (!vehicle) {
       return res
         .status(404)
         .json({ success: false, message: "Vehicle not found" });
     }
+
+    // Kiểm tra quyền: Nếu renter không phải owner, chỉ xem nếu approved
+    if (
+      user.role === "renter" &&
+      vehicle.owner_id !== user.user_id &&
+      vehicle.approvalStatus !== "approved"
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Vehicle not approved yet" });
+    }
+
+    const owner = await User.findByPk(vehicle.owner_id);
 
     // Parse JSON strings to arrays
     const vehicleData = vehicle.toJSON();

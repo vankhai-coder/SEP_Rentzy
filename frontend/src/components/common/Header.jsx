@@ -2,14 +2,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { logoutUser } from "@/redux/features/auth/authSlice";
 import {
   Dialog,
@@ -33,6 +25,8 @@ import {
   Avatar,
   AvatarImage,
 } from "@/components/ui/avatar"
+import RegisterWithPhoneNumber from "@/pages/renter/auth/RegisterWithPhoneNumber";
+import LoginWithPhoneNumber from "@/pages/renter/auth/LoginWithPhoneNumber";
 const Header = () => {
   const { userId, email, avatar } = useSelector((state) => state.userStore);
   const dispatch = useDispatch();
@@ -40,6 +34,9 @@ const Header = () => {
   // set open/close for Login,Register Dialog :
   const [loginOpen, setLoginOpen] = useState(false)
   const [registerOpen, setRegisterOpen] = useState(false)
+  // state for login and register with phone Dialog :
+  const [isLoginWithPhoneOpen, setIsLoginWithPhoneOpen] = useState(false)
+  const [isRegisterWithPhoneOpen, setIsRegisterWithPhoneOpen] = useState(false)
 
   return (
     <header className="mx-auto border-b-2">
@@ -139,11 +136,11 @@ const Header = () => {
                             Đăng Ký
                           </a>
                         </DialogTrigger>
-                        <DialogTitle></DialogTitle>
                         <DialogContent>
                           <DialogHeader>
+                            <DialogTitle></DialogTitle>
                             <DialogDescription>
-                              <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                              <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} />
                             </DialogDescription>
                           </DialogHeader>
                         </DialogContent>
@@ -160,11 +157,11 @@ const Header = () => {
                             Đăng Nhập
                           </a>
                         </DialogTrigger>
-                        <DialogTitle></DialogTitle>
                         <DialogContent>
                           <DialogHeader>
+                            <DialogTitle></DialogTitle>
                             <DialogDescription>
-                              <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                              <Login setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
                             </DialogDescription>
                           </DialogHeader>
                         </DialogContent>
@@ -249,33 +246,33 @@ const Header = () => {
               {/* User Profile */}
               <div className="flex cursor-pointer items-center space-x-2 rounded-full">
                 {/* User Icon or initials */}
-                  <Link to='/account'
-                   className='flex  items-center gap-2 hover:cursor-pointer hover:opacity-70'>
-                     {
-                        <Avatar>
-                          <AvatarImage
-                            src={avatar || '/default_avt.jpg'}
-                            alt="@shadcn"
-                          />
-                        </Avatar>
-                      }
-                    <span className="text-sm font-semibold">{email}</span>
-                    {/* Dropdown Arrow */}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
+                <Link to='/account'
+                  className='flex  items-center gap-2 hover:cursor-pointer hover:opacity-70'>
+                  {
+                    <Avatar>
+                      <AvatarImage
+                        src={avatar || '/default_avt.jpg'}
+                        alt="@shadcn"
                       />
-                    </svg>
-                  </Link>
+                    </Avatar>
+                  }
+                  <span className="text-sm font-semibold">{email}</span>
+                  {/* Dropdown Arrow */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </Link>
               </div>
             </div>
           )}
@@ -294,11 +291,11 @@ const Header = () => {
                     Đăng Ký
                   </a>
                 </DialogTrigger>
-                <DialogTitle></DialogTitle>
                 <DialogContent>
                   <DialogHeader>
+                    <DialogTitle></DialogTitle>
                     <DialogDescription>
-                      <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                      <Register setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
@@ -306,7 +303,7 @@ const Header = () => {
 
               {/* Login Button */}
               <Dialog open={loginOpen} onOpenChange={setLoginOpen} >
-                <DialogTrigger>
+                <DialogTrigger asChild>
                   <Button
                     className={"p-6 border border-black"}
                     variant={"outline"}
@@ -315,15 +312,59 @@ const Header = () => {
                     Đăng Nhập
                   </Button>
                 </DialogTrigger>
-                <DialogTitle></DialogTitle>
                 <DialogContent>
                   <DialogHeader>
+                    <DialogTitle></DialogTitle>
                     <DialogDescription>
-                      <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
+                      <Login setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
+
+              {/* Login,Register with Phone , this is dialog so can put here : */}
+              {/* Login with Phone */}
+              <Dialog open={isLoginWithPhoneOpen} onOpenChange={setIsLoginWithPhoneOpen} >
+                <DialogTrigger asChild>
+                  {/* <Button
+                    className={"p-6 border border-black"}
+                    variant={"outline"}
+
+                  >
+                    Đăng nhập với số điện thoại
+                  </Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle></DialogTitle>
+                    <DialogDescription>
+                      <LoginWithPhoneNumber setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} setLoginOpen={setLoginOpen} />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
+              {/* Register with Phone */}
+              <Dialog open={isRegisterWithPhoneOpen} onOpenChange={setIsRegisterWithPhoneOpen} >
+                <DialogTrigger asChild>
+                  {/* <Button
+                    className={"p-6 border border-black"}
+                    variant={"outline"}
+
+                  >
+                    Đăng ký với số điện thoại
+                  </Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle></DialogTitle>
+                    <DialogDescription>
+                      <RegisterWithPhoneNumber setRegisterOpen={setRegisterOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} />
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
             </div>
           )}
         </div>

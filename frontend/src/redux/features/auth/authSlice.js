@@ -32,8 +32,27 @@ const initialState = {
     // for reset password : 
     isLoadingResetPassword: false,
     isResetPasswordSuccess: false,
-    errorResetPassword: ''
+    errorResetPassword: '',
 
+    // register with phone number (send otp) : 
+    isLoadingRegisterPhone: false,
+    isRegisterPhoneSuccess: false,
+    errorRegisterPhone: '',
+
+    // verify phone number with OTP  :
+    isLoadingVerifyPhone: false,
+    isVerifyPhoneSuccess: false,
+    errorVerifyPhone: '',
+
+    // send request to get otp to login with phone number :
+    isLoadingRequestLoginPhone: false,
+    isRequestLoginPhoneSuccess: false,
+    errorRequestLoginPhone: '',
+
+    // login with phone number :
+    isLoadingLoginPhone: false,
+    isLoginPhoneSuccess: false,
+    errorLoginPhone: '',
 };
 
 //check if user is logged in
@@ -162,7 +181,69 @@ export const resetPassword = createAsyncThunk(
     }
 );
 
+// register with phone number  :
+export const registerWithPhoneNumber = createAsyncThunk(
+    "user/registerWithPhoneNumber",
+    async ({ phoneNumber }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post(
+                `/api/auth/register-with-phone-number`,
+                { phoneNumber }
+            );
+            return res.data; // e.g. { success: true, message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn." }
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Đăng ký bằng số điện thoại thất bại.");
+        }
+    }
+);
 
+// verify phone number with OTP for registration :
+export const verifyPhoneNumber = createAsyncThunk(
+    "user/verifyPhoneNumber",
+    async ({ phoneNumber, otp }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post(
+                `/api/auth/verify-phone-number-for-registration`,
+                { phoneNumber, otp }
+            );
+            return res.data; // e.g. { success: true, message: "Xác minh số điện thoại thành công." }
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Xác minh số điện thoại thất bại.");
+        }
+    }
+);
+
+// request send otp for login with phone number for login :
+export const requestLoginWithPhoneNumber = createAsyncThunk(
+    "user/requestLoginWithPhoneNumber",
+    async ({ phoneNumber }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post(
+                `/api/auth/request-login-with-phone-number`,
+                { phoneNumber }
+            );
+            return res.data; // e.g. { success: true, message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn." }
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Yêu cầu đăng nhập bằng số điện thoại thất bại.");
+        }
+    }
+);
+
+// login with phone number :
+export const loginWithPhoneNumber = createAsyncThunk(
+    "user/loginWithPhoneNumber",
+    async ({ phoneNumber, otp }, { rejectWithValue }) => {
+        try {
+            const res = await axiosInstance.post(
+                `/api/auth/login-with-phone-number`,
+                { phoneNumber, otp }
+            );
+            return res.data; // e.g. { success: true, message: "Đăng nhập thành công."}
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Đăng nhập bằng số điện thoại thất bại.");
+        }
+    }
+);
 
 const userSlice = createSlice({
     name: "user",
@@ -195,6 +276,15 @@ const userSlice = createSlice({
             state.isLoadingResetPassword = false;
             state.isResetPasswordSuccess = false;
             state.errorResetPassword = ''
+            state.isLoadingRegisterPhone = false;
+            state.isRegisterPhoneSuccess = false;
+            state.errorRegisterPhone = ''
+            state.isLoadingVerifyPhone = false;
+            state.isVerifyPhoneSuccess = false;
+            state.errorVerifyPhone = ''
+            state.isLoadingRequestLoginPhone = false;
+            state.isRequestLoginPhoneSuccess = false;
+            state.errorRequestLoginPhone = ''
         },
         setEmail: (state, action) => {
             state.email = action.payload
@@ -376,6 +466,72 @@ const userSlice = createSlice({
                 state.isResetPasswordSuccess = false;
                 state.errorResetPassword =
                     action.payload || "Failed to reset password.";
+            })
+            // register with phone number  :
+            .addCase(registerWithPhoneNumber.pending, (state) => {
+                state.isLoadingRegisterPhone = true;
+                state.isRegisterPhoneSuccess = false;
+                state.errorRegisterPhone = ''
+            })
+            .addCase(registerWithPhoneNumber.fulfilled, (state) => {
+                state.isLoadingRegisterPhone = false;
+                state.isRegisterPhoneSuccess = true;
+                state.errorRegisterPhone = ''
+            })
+            .addCase(registerWithPhoneNumber.rejected, (state, action) => {
+                state.isLoadingRegisterPhone = false;
+                state.isRegisterPhoneSuccess = false;
+                state.errorRegisterPhone = action.payload || "Đăng ký bằng số điện thoại thất bại.";
+            })
+
+            // verify phone number with OTP  :
+            .addCase(verifyPhoneNumber.pending, (state) => {
+                state.isLoadingVerifyPhone = true;
+                state.isVerifyPhoneSuccess = false;
+                state.errorVerifyPhone = '';
+            })
+            .addCase(verifyPhoneNumber.fulfilled, (state) => {
+                state.isLoadingVerifyPhone = false;
+                state.isVerifyPhoneSuccess = true;
+                state.errorVerifyPhone = '';
+            })
+            .addCase(verifyPhoneNumber.rejected, (state, action) => {
+                state.isLoadingVerifyPhone = false;
+                state.isVerifyPhoneSuccess = false;
+                state.errorVerifyPhone = action.payload || "Xác minh số điện thoại thất bại.";
+            })
+
+            // request send otp for login with phone number  :
+            .addCase(requestLoginWithPhoneNumber.pending, (state) => {
+                state.isLoadingRequestLoginPhone = true;
+                state.isRequestLoginPhoneSuccess = false;
+                state.errorRequestLoginPhone = ''
+            })
+            .addCase(requestLoginWithPhoneNumber.fulfilled, (state) => {
+                state.isLoadingRequestLoginPhone = false;
+                state.isRequestLoginPhoneSuccess = true;
+                state.errorRequestLoginPhone = ''
+            })
+            .addCase(requestLoginWithPhoneNumber.rejected, (state, action) => {
+                state.isLoadingRequestLoginPhone = false;
+                state.isRequestLoginPhoneSuccess = false;
+                state.errorRequestLoginPhone = action.payload || "Yêu cầu đăng nhập bằng số điện thoại thất bại.";
+            })
+            // login with phone number :
+            .addCase(loginWithPhoneNumber.pending, (state) => {
+                state.isLoadingLoginPhone = true;
+                state.isLoginPhoneSuccess = false;
+                state.errorLoginPhone = ''
+            })
+            .addCase(loginWithPhoneNumber.fulfilled, (state) => {
+                state.isLoadingLoginPhone = false;
+                state.isLoginPhoneSuccess = true;
+                state.errorLoginPhone = ''
+            })
+            .addCase(loginWithPhoneNumber.rejected, (state, action) => {
+                state.isLoadingLoginPhone = false;
+                state.isLoginPhoneSuccess = false;
+                state.errorLoginPhone = action.payload || "Đăng nhập bằng số điện thoại thất bại.";
             });
     },
 });

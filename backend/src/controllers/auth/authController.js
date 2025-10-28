@@ -5,7 +5,7 @@ import { sendEmail } from '../../utils/email/sendEmail.js';
 import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { decryptWithSecret } from '../../utils/cryptoUtil.js';
+import { decryptWithSecret, encryptWithSecret } from '../../utils/cryptoUtil.js';
 import { getTemporaryImageUrl } from '../../utils/aws/s3.js'
 import { v2 as cloudinary } from 'cloudinary';
 // redirect user to google login form and ask for permission : 
@@ -612,3 +612,326 @@ export const verifyUpdatedEmail = async (req, res) => {
     }
 };
 
+// register with phone number :
+export const registerWithPhoneNumber = async (req, res) => {
+    // 1. get phone number from req.body
+    const { phoneNumber } = req.body || {};
+
+    // 2. Validate phone number
+    if (!phoneNumber) {
+        return res.status(400).json({ message: "Bạn phải cung cấp số điện thoại!" });
+    }
+
+    // 3 fotmat phone number here if needed : 
+    let formattedPhoneNumber = phoneNumber;
+    if (!phoneNumber.startsWith('+')) {
+        // Assuming country code is +84 (Vietnam) for example
+        formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+    }
+
+    // 4. check if phone number already exist and decrypted value match , and phone_verified is true  :
+    // select all users that have phone number , phone_verified = true and decrypt phone number to compare :
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                phone_verified: true,
+                authMethod: 'phone'
+            }
+        }
+    );
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                return res.status(400).json({ message: "Số điện thoại này đã được sử dụng!" });
+            }
+        }
+    }
+
+    // 5. send otp using twilio :
+    // add try catch to import twilio error
+    try {
+        const twilio = await import('twilio');
+        const client = twilio.default(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+
+        await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verifications
+            .create({ to: formattedPhoneNumber, channel: 'sms' });
+    } catch (error) {
+        console.error("Twilio error:", error);
+        return res.status(500).json({
+            success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
+        });
+    }
+
+    // 6. create new user with phone number only (phone_verified is false by default) :
+    try {
+        const newUser = await db.User.create({
+            phone_number: encryptWithSecret(formattedPhoneNumber, process.env.ENCRYPT_KEY),
+            authMethod: "phone",
+            phone_verified: false
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
+        });
+    } catch (error) {
+        console.error("Register with phone number error:", error);
+        return res.status(500).json({
+            success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+        });
+    }
+
+
+}
+
+// verify phone number for registration :
+export const verifyPhoneNumberForRegistration = async (req, res) => {
+    // 1. get phone number and otp from req.body
+    const { phoneNumber, otp } = req.body;
+
+    // 2. Validate input
+    if (!phoneNumber || !otp) {
+        return res.status(400).json({ message: "Vui lòng cung cấp số điện thoại và mã OTP!" });
+    }
+
+    // 3. format phone number if needed : 
+    let formattedPhoneNumber = phoneNumber;
+    if (!phoneNumber.startsWith('+')) {
+        // Assuming country code is +84 (Vietnam) for example
+        formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+    }
+
+    // 4. find user by phone number (decrypt phone number to compare) :
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                authMethod: 'phone',
+                phone_verified: false
+            }
+        }
+    );
+    let foundUser = null;
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                foundUser = user;
+                break;
+            }
+        }
+    }
+    if (!foundUser) {
+        return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
+    }
+
+
+    // 5. verify otp using twilio :
+    let verificationCheck;
+    try {
+        const twilio = await import('twilio');
+        const client = twilio.default(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+
+        verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verificationChecks
+            .create({ to: formattedPhoneNumber, code: otp });
+    } catch (error) {
+        console.error("Twilio error while verifying OTP:", error.message);
+        return res.status(500).json({
+            success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
+        });
+    }
+
+    if (verificationCheck.status !== 'approved') {
+        return res.status(400).json({
+            success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
+        });
+    }
+    // 6. if otp is valid :
+    if (verificationCheck.status === 'approved') {
+        // 5. update user phone_verified to true
+        try {
+            foundUser.phone_verified = true;
+            await foundUser.save();
+
+            // create cookie
+            createCookie(res, foundUser.user_id, foundUser.role, foundUser.avatar_url, foundUser.email);
+
+            return res.status(200).json({
+                success: true,
+                message: "Xác minh số điện thoại thành công!"
+            });
+
+        } catch (error) {
+            console.error("Verify phone number error:", error);
+            return res.status(500).json({
+                success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+            });
+        }
+
+    }
+}
+
+// login with phone number :
+export const loginWithPhoneNumber = async (req, res) => {
+    //1 . get phone number and otp from req.body
+    const { phoneNumber, otp } = req.body || {};
+
+    // 2. Validate input
+    if (!phoneNumber || !otp) {
+        return res.status(400).json({ message: "Vui lòng cung cấp số điện thoại và mã OTP!" });
+    }
+
+    // 3. format phone number if needed : 
+    let formattedPhoneNumber = phoneNumber;
+    if (!phoneNumber.startsWith('+')) {
+        // Assuming country code is +84 (Vietnam) for example
+        formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+    }
+
+    // 4. find user by phone number and phone_verified = true
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                phone_verified: true,
+                authMethod: 'phone'
+            }
+        }
+    );
+    let foundUser = null;
+    // decrypt and compare phone number :
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                foundUser = user;
+                break;
+            }
+        }
+    }
+    if (!foundUser) {
+        return res.status(404).json({ message: "Không tìm thấy người dùng với số điện thoại này!" });
+    }
+
+    // 5. verify otp using twilio :
+    let verificationCheck;
+    try {
+        const twilio = await import('twilio');
+        const client = twilio.default(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+
+        verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verificationChecks
+            .create({ to: formattedPhoneNumber, code: otp });
+    } catch (error) {
+        console.error("Twilio error while verifying OTP:", error.message);
+        return res.status(500).json({
+            success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
+        });
+    }
+
+    if (verificationCheck.status !== 'approved') {
+        return res.status(400).json({
+            success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
+        });
+    }
+
+
+
+    // 6. create cookie 
+    createCookie(res, foundUser.user_id, foundUser.role, foundUser.avatar_url, foundUser.email)
+
+    // 7. respond success
+    return res.status(200).json({
+        success: true,
+        message: "Đăng nhập thành công!"
+    });
+}
+
+// request send otp for login with phone number :
+export const requestLoginWithPhoneNumber = async (req, res) => {
+    // 1. get phone number from req.body
+    const { phoneNumber } = req.body || {};
+
+    // 2. Validate phone number
+    if (!phoneNumber) {
+        return res.status(400).json({ message: "Bạn phải cung cấp số điện thoại!" });
+    }
+
+    // 3 fotmat phone number here if needed : 
+    let formattedPhoneNumber = phoneNumber;
+    if (!phoneNumber.startsWith('+')) {
+        // Assuming country code is +84 (Vietnam) for example
+        formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+    }
+
+    // 4. check if phone number exist and decrypted value match , and phone_verified is true  :
+    // select all users that have phone number , phone_verified = true and decrypt phone number to compare :
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                phone_verified: true,
+                authMethod: 'phone'
+            }
+        }
+    );
+    let userFound = false;
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                userFound = true;
+                break;
+            }
+        }
+    }
+    if (!userFound) {
+        return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
+    }
+
+    // 5. send otp using twilio :
+    // add try catch to import twilio error
+    try {
+        const twilio = await import('twilio');
+        const client = twilio.default(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+
+        await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verifications
+            .create({ to: formattedPhoneNumber, channel: 'sms' });
+    } catch (error) {
+        console.error("Twilio error:", error);
+        return res.status(500).json({
+            success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
+        });
+    }
+
+    // 6. response success 
+    return res.status(200).json({
+        success: true,
+        message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
+    });
+}
