@@ -9,7 +9,7 @@ import {
   getVehicleReviews,
   getOwnerNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllNotificationsAsRead,
 } from "../../controllers/owner/ownerDashboardController.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
@@ -34,7 +34,7 @@ router.use(verifyJWTToken);
 // 1. Quản lý đơn thuê
 router.get("/bookings", getOwnerBookings);
 // xem chi tiết xe
-router.get("/bookings/:id", getBookingDetail);
+router.get("/bookings/detail/:id", getBookingDetail);
 
 // 2. Duyệt đơn hủy
 router.get("/cancel-requests", getCancelRequests);

@@ -1,18 +1,26 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
 
-const { Booking, BookingReview, Notification, Vehicle, User, Brand } = db;
+const {
+  Booking,
+  BookingReview,
+  Notification,
+  Vehicle,
+  User,
+  Brand,
+  BookingHandover,
+} = db;
 
 // 1. GET /api/owner/bookings - Quản lý đơn thuê
 export const getOwnerBookings = async (req, res) => {
   try {
     const ownerId = req.user.userId;
-    const { 
-      status, 
-      page = 1, 
-      limit = 10, 
-      sortBy = "created_at", 
-      sortOrder = "DESC" 
+    const {
+      status,
+      page = 1,
+      limit = 10,
+      sortBy = "created_at",
+      sortOrder = "DESC",
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -20,10 +28,10 @@ export const getOwnerBookings = async (req, res) => {
     // Lấy danh sách xe của owner
     const ownerVehicles = await Vehicle.findAll({
       where: { owner_id: ownerId },
-      attributes: ['vehicle_id']
+      attributes: ["vehicle_id"],
     });
 
-    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
 
     if (vehicleIds.length === 0) {
       return res.json({
@@ -42,7 +50,7 @@ export const getOwnerBookings = async (req, res) => {
 
     // Tạo điều kiện where
     let whereCondition = {
-      vehicle_id: { [Op.in]: vehicleIds }
+      vehicle_id: { [Op.in]: vehicleIds },
     };
 
     if (status) {
@@ -59,16 +67,22 @@ export const getOwnerBookings = async (req, res) => {
             {
               model: Brand,
               as: "brand",
-              attributes: ["brand_id", "name", "logo_url"]
-            }
+              attributes: ["brand_id", "name", "logo_url"],
+            },
           ],
-          attributes: ["vehicle_id", "model", "license_plate", "main_image_url", "price_per_day"]
+          attributes: [
+            "vehicle_id",
+            "model",
+            "license_plate",
+            "main_image_url",
+            "price_per_day",
+          ],
         },
         {
           model: User,
           as: "renter",
-          attributes: ["user_id", "full_name", "email", "phone_number"]
-        }
+          attributes: ["user_id", "full_name", "email", "phone_number"],
+        },
       ],
       order: [[sortBy, sortOrder.toUpperCase()]],
       limit: parseInt(limit),
@@ -111,10 +125,10 @@ export const getCancelRequests = async (req, res) => {
     // Lấy danh sách xe của owner
     const ownerVehicles = await Vehicle.findAll({
       where: { owner_id: ownerId },
-      attributes: ['vehicle_id']
+      attributes: ["vehicle_id"],
     });
 
-    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
 
     if (vehicleIds.length === 0) {
       return res.json({
@@ -134,7 +148,7 @@ export const getCancelRequests = async (req, res) => {
     const { count, rows: cancelRequests } = await Booking.findAndCountAll({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
-        status: "cancel_requested"
+        status: "cancel_requested",
       },
       include: [
         {
@@ -144,16 +158,21 @@ export const getCancelRequests = async (req, res) => {
             {
               model: Brand,
               as: "brand",
-              attributes: ["brand_id", "name", "logo_url"]
-            }
+              attributes: ["brand_id", "name", "logo_url"],
+            },
           ],
-          attributes: ["vehicle_id", "model", "license_plate", "main_image_url"]
+          attributes: [
+            "vehicle_id",
+            "model",
+            "license_plate",
+            "main_image_url",
+          ],
         },
         {
           model: User,
           as: "renter",
-          attributes: ["user_id", "full_name", "email", "phone_number"]
-        }
+          attributes: ["user_id", "full_name", "email", "phone_number"],
+        },
       ],
       order: [["created_at", "DESC"]],
       limit: parseInt(limit),
@@ -193,17 +212,17 @@ export const approveCancelRequest = async (req, res) => {
 
     // Kiểm tra booking có thuộc xe của owner không
     const booking = await Booking.findOne({
-      where: { 
+      where: {
         booking_id: id,
-        status: "cancel_requested"
+        status: "cancel_requested",
       },
       include: [
         {
           model: Vehicle,
           as: "vehicle",
-          where: { owner_id: ownerId }
-        }
-      ]
+          where: { owner_id: ownerId },
+        },
+      ],
     });
 
     if (!booking) {
@@ -214,9 +233,9 @@ export const approveCancelRequest = async (req, res) => {
     }
 
     // Cập nhật trạng thái thành canceled
-    await booking.update({ 
+    await booking.update({
       status: "canceled",
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     // Tạo thông báo cho renter
@@ -225,7 +244,7 @@ export const approveCancelRequest = async (req, res) => {
       title: "Yêu cầu hủy đã được duyệt",
       content: `Yêu cầu hủy đơn thuê xe ${booking.vehicle.model} đã được chủ xe duyệt.`,
       type: "rental",
-      is_read: false
+      is_read: false,
     });
 
     res.json({
@@ -250,17 +269,17 @@ export const rejectCancelRequest = async (req, res) => {
 
     // Kiểm tra booking có thuộc xe của owner không
     const booking = await Booking.findOne({
-      where: { 
+      where: {
         booking_id: id,
-        status: "cancel_requested"
+        status: "cancel_requested",
       },
       include: [
         {
           model: Vehicle,
           as: "vehicle",
-          where: { owner_id: ownerId }
-        }
-      ]
+          where: { owner_id: ownerId },
+        },
+      ],
     });
 
     if (!booking) {
@@ -271,9 +290,9 @@ export const rejectCancelRequest = async (req, res) => {
     }
 
     // Cập nhật trạng thái về confirmed (giữ nguyên đơn)
-    await booking.update({ 
+    await booking.update({
       status: "confirmed",
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     // Tạo thông báo cho renter
@@ -282,7 +301,7 @@ export const rejectCancelRequest = async (req, res) => {
       title: "Yêu cầu hủy bị từ chối",
       content: `Yêu cầu hủy đơn thuê xe ${booking.vehicle.model} đã bị chủ xe từ chối.`,
       type: "rental",
-      is_read: false
+      is_read: false,
     });
 
     res.json({
@@ -303,15 +322,19 @@ export const rejectCancelRequest = async (req, res) => {
 export const getOwnerRevenue = async (req, res) => {
   try {
     const ownerId = req.user.userId;
-    const { period = "month", year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
+    const {
+      period = "month",
+      year = new Date().getFullYear(),
+      month = new Date().getMonth() + 1,
+    } = req.query;
 
     // Lấy danh sách xe của owner
     const ownerVehicles = await Vehicle.findAll({
       where: { owner_id: ownerId },
-      attributes: ['vehicle_id']
+      attributes: ["vehicle_id"],
     });
 
-    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
 
     if (vehicleIds.length === 0) {
       return res.json({
@@ -320,8 +343,8 @@ export const getOwnerRevenue = async (req, res) => {
           totalRevenue: 0,
           completedBookings: 0,
           monthlyRevenue: [],
-          vehicleStats: []
-        }
+          vehicleStats: [],
+        },
       });
     }
 
@@ -329,12 +352,15 @@ export const getOwnerRevenue = async (req, res) => {
     const totalRevenueResult = await Booking.findOne({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed"
+        status: "completed",
       },
       attributes: [
-        [db.sequelize.fn('SUM', db.sequelize.col('total_amount')), 'totalRevenue']
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("total_amount")),
+          "totalRevenue",
+        ],
       ],
-      raw: true
+      raw: true,
     });
 
     const totalRevenue = parseFloat(totalRevenueResult?.totalRevenue || 0);
@@ -343,30 +369,33 @@ export const getOwnerRevenue = async (req, res) => {
     const completedBookings = await Booking.count({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed"
-      }
+        status: "completed",
+      },
     });
 
     // Doanh thu theo tháng (12 tháng gần nhất)
-    const monthlyRevenue = await db.sequelize.query(`
+    const monthlyRevenue = await db.sequelize.query(
+      `
       SELECT 
         MONTH(created_at) as month,
         YEAR(created_at) as year,
         SUM(total_amount) as revenue,
         COUNT(*) as booking_count
       FROM bookings 
-      WHERE vehicle_id IN (${vehicleIds.join(',')})
+      WHERE vehicle_id IN (${vehicleIds.join(",")})
         AND status = 'completed'
         AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
       GROUP BY YEAR(created_at), MONTH(created_at)
       ORDER BY year DESC, month DESC
-    `, { type: db.sequelize.QueryTypes.SELECT });
+    `,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
 
     // Thống kê theo xe
     const vehicleStats = await Booking.findAll({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed"
+        status: "completed",
       },
       include: [
         {
@@ -376,19 +405,25 @@ export const getOwnerRevenue = async (req, res) => {
             {
               model: Brand,
               as: "brand",
-              attributes: ["brand_id", "name"]
-            }
+              attributes: ["brand_id", "name"],
+            },
           ],
-          attributes: ["vehicle_id", "model", "license_plate"]
-        }
+          attributes: ["vehicle_id", "model", "license_plate"],
+        },
       ],
       attributes: [
-        'vehicle_id',
-        [db.sequelize.fn('SUM', db.sequelize.col('total_amount')), 'totalRevenue'],
-        [db.sequelize.fn('COUNT', db.sequelize.col('booking_id')), 'bookingCount']
+        "vehicle_id",
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("total_amount")),
+          "totalRevenue",
+        ],
+        [
+          db.sequelize.fn("COUNT", db.sequelize.col("booking_id")),
+          "bookingCount",
+        ],
       ],
-      group: ['vehicle_id'],
-      raw: false
+      group: ["vehicle_id"],
+      raw: false,
     });
 
     res.json({
@@ -397,8 +432,8 @@ export const getOwnerRevenue = async (req, res) => {
         totalRevenue,
         completedBookings,
         monthlyRevenue,
-        vehicleStats
-      }
+        vehicleStats,
+      },
     });
   } catch (error) {
     console.error("Error getting owner revenue:", error);
@@ -421,10 +456,10 @@ export const getVehicleReviews = async (req, res) => {
     // Lấy danh sách xe của owner
     const ownerVehicles = await Vehicle.findAll({
       where: { owner_id: ownerId },
-      attributes: ['vehicle_id']
+      attributes: ["vehicle_id"],
     });
 
-    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
 
     if (vehicleIds.length === 0) {
       return res.json({
@@ -443,7 +478,7 @@ export const getVehicleReviews = async (req, res) => {
 
     // Tạo điều kiện where cho booking
     let bookingWhere = {
-      vehicle_id: { [Op.in]: vehicleIds }
+      vehicle_id: { [Op.in]: vehicleIds },
     };
 
     if (vehicle_id) {
@@ -464,18 +499,23 @@ export const getVehicleReviews = async (req, res) => {
                 {
                   model: Brand,
                   as: "brand",
-                  attributes: ["brand_id", "name", "logo_url"]
-                }
+                  attributes: ["brand_id", "name", "logo_url"],
+                },
               ],
-              attributes: ["vehicle_id", "model", "license_plate", "main_image_url"]
+              attributes: [
+                "vehicle_id",
+                "model",
+                "license_plate",
+                "main_image_url",
+              ],
             },
             {
               model: User,
               as: "renter",
-              attributes: ["user_id", "full_name", "avatar_url"]
-            }
-          ]
-        }
+              attributes: ["user_id", "full_name", "avatar_url"],
+            },
+          ],
+        },
       ],
       order: [["created_at", "DESC"]],
       limit: parseInt(limit),
@@ -491,14 +531,17 @@ export const getVehicleReviews = async (req, res) => {
         {
           model: Booking,
           as: "booking",
-          where: { vehicle_id: { [Op.in]: vehicleIds } }
-        }
+          where: { vehicle_id: { [Op.in]: vehicleIds } },
+        },
       ],
       attributes: [
-        [db.sequelize.fn('AVG', db.sequelize.col('rating')), 'avgRating'],
-        [db.sequelize.fn('COUNT', db.sequelize.col('review_id')), 'totalReviews']
+        [db.sequelize.fn("AVG", db.sequelize.col("rating")), "avgRating"],
+        [
+          db.sequelize.fn("COUNT", db.sequelize.col("review_id")),
+          "totalReviews",
+        ],
       ],
-      raw: true
+      raw: true,
     });
 
     res.json({
@@ -536,9 +579,9 @@ export const getOwnerNotifications = async (req, res) => {
     let whereCondition = { user_id: ownerId };
 
     // Only apply filter when query param is explicitly 'true' or 'false'
-    if (is_read === 'true') {
+    if (is_read === "true") {
       whereCondition.is_read = true;
-    } else if (is_read === 'false') {
+    } else if (is_read === "false") {
       whereCondition.is_read = false;
     }
 
@@ -553,10 +596,10 @@ export const getOwnerNotifications = async (req, res) => {
 
     // Đếm số thông báo chưa đọc
     const unreadCount = await Notification.count({
-      where: { 
+      where: {
         user_id: ownerId,
-        is_read: false 
-      }
+        is_read: false,
+      },
     });
 
     res.json({
@@ -589,10 +632,10 @@ export const markNotificationAsRead = async (req, res) => {
     const ownerId = req.user.userId;
 
     const notification = await Notification.findOne({
-      where: { 
+      where: {
         notification_id: id,
-        user_id: ownerId 
-      }
+        user_id: ownerId,
+      },
     });
 
     if (!notification) {
@@ -602,9 +645,9 @@ export const markNotificationAsRead = async (req, res) => {
       });
     }
 
-    await notification.update({ 
+    await notification.update({
       is_read: true,
-      updated_at: new Date()
+      updated_at: new Date(),
     });
 
     res.json({
@@ -630,10 +673,10 @@ export const getBookingDetail = async (req, res) => {
     // Lấy danh sách xe của owner để kiểm tra quyền truy cập
     const ownerVehicles = await Vehicle.findAll({
       where: { owner_id: ownerId },
-      attributes: ['vehicle_id']
+      attributes: ["vehicle_id"],
     });
 
-    const vehicleIds = ownerVehicles.map(v => v.vehicle_id);
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
 
     if (vehicleIds.length === 0) {
       return res.status(404).json({
@@ -646,32 +689,32 @@ export const getBookingDetail = async (req, res) => {
     const booking = await Booking.findOne({
       where: {
         booking_id: id,
-        vehicle_id: { [Op.in]: vehicleIds }
+        vehicle_id: { [Op.in]: vehicleIds },
       },
       include: [
         {
           model: Vehicle,
           as: "vehicle",
           attributes: [
-            "vehicle_id", 
-            "model", 
-            "license_plate", 
-            "main_image_url", 
+            "vehicle_id",
+            "model",
+            "license_plate",
+            "main_image_url",
             "price_per_day",
-            "location"
-          ]
+            "location",
+          ],
         },
         {
           model: User,
           as: "renter",
-          attributes: [
-            "user_id", 
-            "full_name", 
-            "email", 
-            "phone_number"
-          ]
-        }
-      ]
+          attributes: ["user_id", "full_name", "email", "phone_number"],
+        },
+        {
+          model: BookingHandover,
+          as: "handover",
+          attributes: { exclude: [] }, //  lấy tất cả cột
+        },
+      ],
     });
 
     if (!booking) {
@@ -683,9 +726,8 @@ export const getBookingDetail = async (req, res) => {
 
     res.json({
       success: true,
-      data: booking
+      data: booking,
     });
-
   } catch (error) {
     console.error("Error getting booking detail:", error);
     res.status(500).json({
@@ -702,15 +744,15 @@ export const markAllNotificationsAsRead = async (req, res) => {
     const ownerId = req.user.userId;
 
     await Notification.update(
-      { 
+      {
         is_read: true,
-        updated_at: new Date()
+        updated_at: new Date(),
       },
       {
-        where: { 
+        where: {
           user_id: ownerId,
-          is_read: false 
-        }
+          is_read: false,
+        },
       }
     );
 

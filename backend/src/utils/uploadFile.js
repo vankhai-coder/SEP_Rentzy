@@ -1,5 +1,5 @@
-const cloudinary = require("../config/cloudinary");
-const fs = require("fs");
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
 
 const uploadFile = async (filePath, folder = "rentzy") => {
   try {
@@ -29,4 +29,4 @@ const uploadFile = async (filePath, folder = "rentzy") => {
   }
 };
 
-module.exports = uploadFile;
+export default uploadFile;

@@ -3,21 +3,17 @@ import {
   uploadPreRentalImages,
   confirmHandoverByOwner,
   confirmPreRentalImagesByRenter,
-  getPreRentalImages,
   deletePreRentalImage,
   uploadPostRentalImages,
   confirmReturnByOwner,
   confirmPostRentalImagesByRenter,
-  getPostRentalImages,
   deletePostRentalImage,
   getHandoverStatus,
-  uploadMiddleware
+  uploadMiddleware,
 } from "../../controllers/booking/handoverController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
-
-// ==================== PRE-RENTAL WORKFLOW ====================
 
 // 1. Owner upload ảnh xe trước khi bàn giao
 router.post(
@@ -26,14 +22,12 @@ router.post(
   uploadMiddleware,
   uploadPreRentalImages
 );
-
 // 2. Owner xác nhận bàn giao xe
 router.post(
   "/:bookingId/confirm-handover-by-owner",
   verifyJWTToken,
   confirmHandoverByOwner
 );
-
 // 3. Renter xác nhận ảnh xe và nhận xe
 router.post(
   "/:bookingId/confirm-pre-rental-images-by-renter",
@@ -41,14 +35,14 @@ router.post(
   confirmPreRentalImagesByRenter
 );
 
-// 4. Lấy thông tin ảnh pre-rental
-router.get("/:bookingId/pre-rental-images", verifyJWTToken, getPreRentalImages);
-
 // Delete pre-rental image
-router.delete("/:bookingId/delete-image/:imageId", verifyJWTToken, deletePreRentalImage);
+router.delete(
+  "/:bookingId/delete-image/:imageIndex",
+  verifyJWTToken,
+  deletePreRentalImage
+);
 
-// ==================== POST-RENTAL WORKFLOW ====================
-
+//  ảnh sau trả xe
 // 5. Owner upload ảnh xe sau khi trả lại
 router.post(
   "/:bookingId/upload-post-rental-images",
@@ -71,15 +65,14 @@ router.post(
   confirmPostRentalImagesByRenter
 );
 
-// 8. Lấy thông tin ảnh post-rental
-router.get(
-  "/:bookingId/post-rental-images",
-  verifyJWTToken,
-  getPostRentalImages
-);
+// 8. Route này đã được thay thế bằng /:bookingId/handover-detail
 
 // Delete post-rental image
-router.delete("/:bookingId/delete-post-rental-image/:imageId", verifyJWTToken, deletePostRentalImage);
+router.delete(
+  "/:bookingId/delete-post-rental-image/:imageIndex",
+  verifyJWTToken,
+  deletePostRentalImage
+);
 
 // ==================== UTILITY ROUTES ====================
 

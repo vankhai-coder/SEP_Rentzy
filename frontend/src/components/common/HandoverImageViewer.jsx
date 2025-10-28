@@ -1,41 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../config/axiosInstance';
 
-const HandoverImageViewer = ({ bookingId, booking, userRole, onConfirmSuccess, imageType  }) => {
+const HandoverImageViewer = ({ bookingId, booking, userRole, onConfirmSuccess, imageType, handoverData }) => {
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [handoverData, setHandoverData] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchImages();
-  }, [bookingId]);
-
-  const fetchImages = async () => {
-    try {
-      setLoading(true);
-      
-      let endpoint;
+    if (handoverData) {
+      // Lấy ảnh từ handover data được truyền vào
       if (imageType === 'pre-rental') {
-        endpoint = `/api/handover/${bookingId}/pre-rental-images`;
+        setImages(handoverData.preRentalImages || []);
       } else {
-        endpoint = `/api/handover/${bookingId}/post-rental-images`;
+        setImages(handoverData.postRentalImages || []);
       }
-      
-      const response = await axiosInstance.get(endpoint);
-      if (response.data.success) {
-        setImages(response.data.data.images || []);
-        setHandoverData(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching images:', error);
-      setError('Không thể tải ảnh xe');
-    } finally {
       setLoading(false);
     }
-  };
+  }, [handoverData, imageType]);
 
   const handleConfirmImages = async () => {
     try {
@@ -53,7 +36,6 @@ const HandoverImageViewer = ({ bookingId, booking, userRole, onConfirmSuccess, i
       
       if (response.data.success) {
         alert('Xác nhận ảnh xe thành công!');
-        await fetchImages();
         if (onConfirmSuccess) {
           onConfirmSuccess();
         }
@@ -87,7 +69,6 @@ const HandoverImageViewer = ({ bookingId, booking, userRole, onConfirmSuccess, i
           ? 'Bàn giao xe thành công! Chuyến xe đã bắt đầu.'
           : 'Xác nhận trả xe thành công!';
         alert(message);
-        await fetchImages();
         if (onConfirmSuccess) {
           onConfirmSuccess();
         }
