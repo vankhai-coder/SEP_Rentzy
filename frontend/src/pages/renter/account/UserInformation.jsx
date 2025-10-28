@@ -406,6 +406,9 @@ const UserInformation = () => {
                     <Pen className="hover:cursor-pointer" size={16} />
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle></DialogTitle>
+                    </DialogHeader>
                     <UpdateEmail setOpen={setOpen} />
                   </DialogContent>
                 </Dialog>

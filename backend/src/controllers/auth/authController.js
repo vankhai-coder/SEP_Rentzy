@@ -645,7 +645,7 @@ export const registerWithPhoneNumber = async (req, res) => {
     for (const user of users) {
         if (user.phone_number) {
             const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
-            if (decryptedPhoneNumber === formattedPhoneNumber && user.phone_verified === true) {
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
                 return res.status(400).json({ message: "Số điện thoại này đã được sử dụng!" });
             }
         }
@@ -709,9 +709,35 @@ export const verifyPhoneNumberForRegistration = async (req, res) => {
         formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
     }
 
-    // 4. verify otp using twilio :
+    // 4. find user by phone number (decrypt phone number to compare) :
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                authMethod: 'phone',
+                phone_verified: false
+            }
+        }
+    );
+    let foundUser = null;
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                foundUser = user;
+                break;
+            }
+        }
+    }
+    if (!foundUser) {
+        return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
+    }
+
+
+    // 5. verify otp using twilio :
     let verificationCheck;
-    console.log('Formatted phone number:', formattedPhoneNumber);
     try {
         const twilio = await import('twilio');
         const client = twilio.default(
@@ -734,49 +760,29 @@ export const verifyPhoneNumberForRegistration = async (req, res) => {
             success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
         });
     }
+    // 6. if otp is valid :
+    if (verificationCheck.status === 'approved') {
+        // 5. update user phone_verified to true
+        try {
+            foundUser.phone_verified = true;
+            await foundUser.save();
 
-    // 5. update user phone_verified to true
-    try {
-        // find all user that have phone_verified = false and decrypt phone number to compare :
-        const user = await db.User.findAll(
-            {
-                where: {
-                    phone_verified: false
-                }
-            }
-        ).then(users => {
-            for (const user of users) {
-                if (user.phone_number) {
-                    const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
-                    if (decryptedPhoneNumber === formattedPhoneNumber) {
-                        return user;
-                    }
-                }
-            }
-            return null;
-        });
+            // create cookie
+            createCookie(res, foundUser.user_id, foundUser.role, foundUser.avatar_url, foundUser.email);
 
-        if (!user) {
-            return res.status(404).json({ message: "Không tìm thấy người dùng với số điện thoại này hoặc số điện thoại đã được xác minh!" });
+            return res.status(200).json({
+                success: true,
+                message: "Xác minh số điện thoại thành công!"
+            });
+
+        } catch (error) {
+            console.error("Verify phone number error:", error);
+            return res.status(500).json({
+                success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+            });
         }
 
-        user.phone_verified = true;
-        await user.save();
-
-        // 6. create cookie 
-        createCookie(res, user.user_id, user.role, user.avatar_url, user.email)
-
-        return res.status(200).json({
-            success: true,
-            message: "Xác minh số điện thoại thành công!"
-        });
-    } catch (error) {
-        console.error("Verify phone number error:", error);
-        return res.status(500).json({
-            success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
-        });
     }
-
 }
 
 // login with phone number :
@@ -796,7 +802,34 @@ export const loginWithPhoneNumber = async (req, res) => {
         formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
     }
 
-    // 4. verify otp using twilio :
+    // 4. find user by phone number and phone_verified = true
+    const users = await db.User.findAll(
+        {
+            where: {
+                phone_number: {
+                    [Op.ne]: null
+                },
+                phone_verified: true,
+                authMethod: 'phone'
+            }
+        }
+    );
+    let foundUser = null;
+    // decrypt and compare phone number :
+    for (const user of users) {
+        if (user.phone_number) {
+            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+            if (decryptedPhoneNumber === formattedPhoneNumber) {
+                foundUser = user;
+                break;
+            }
+        }
+    }
+    if (!foundUser) {
+        return res.status(404).json({ message: "Không tìm thấy người dùng với số điện thoại này!" });
+    }
+
+    // 5. verify otp using twilio :
     let verificationCheck;
     try {
         const twilio = await import('twilio');
@@ -821,31 +854,7 @@ export const loginWithPhoneNumber = async (req, res) => {
         });
     }
 
-    // 5. find user by phone number and phone_verified = true
-    const users = await db.User.findAll(
-        {
-            where: {
-                phone_number: {
-                    [Op.ne]: null
-                },
-                phone_verified: true,
-                authMethod: 'phone'
-            }
-        }
-    );
-    let foundUser = null;
-    for (const user of users) {
-        if (user.phone_number) {
-            const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
-            if (decryptedPhoneNumber === formattedPhoneNumber) {
-                foundUser = user;
-                break;
-            }
-        }
-    }
-    if (!foundUser) {
-        return res.status(404).json({ message: "Không tìm thấy người dùng với số điện thoại này!" });
-    }
+
 
     // 6. create cookie 
     createCookie(res, foundUser.user_id, foundUser.role, foundUser.avatar_url, foundUser.email)
@@ -857,8 +866,8 @@ export const loginWithPhoneNumber = async (req, res) => {
     });
 }
 
-// request send login_with_phone_number_token for login with phone number :
-export const requestLoginWithPhoneNumberToken = async (req, res) => {
+// request send otp for login with phone number :
+export const requestLoginWithPhoneNumber = async (req, res) => {
     // 1. get phone number from req.body
     const { phoneNumber } = req.body || {};
 

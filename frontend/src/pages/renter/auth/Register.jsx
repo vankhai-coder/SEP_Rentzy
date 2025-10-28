@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner'
 
-const Register = ({ setRegisterOpen, setLoginOpen }) => {
+const Register = ({ setRegisterOpen, setLoginOpen, setIsRegisterWithPhoneOpen }) => {
   // redux : 
   const dispatch = useDispatch()
   const { isLoadingRegister, errorRegister, isRegisterSuccess } = useSelector(state => state.userStore)
@@ -63,7 +63,7 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
 
   return (
     <div className="flex items-center justify-center bg-gay-100">
-      <div className="w-full max-w-sm p-8 bg-white">
+      <div className="w-full max-w-sm p-2 bg-white">
         <h2 className="mb-6 text-2xl font-bold text-center">Đăng Ký</h2>
 
         <form onSubmit={handleRegister}>
@@ -214,6 +214,20 @@ const Register = ({ setRegisterOpen, setLoginOpen }) => {
 
             Google
           </a>
+        </div>
+
+        {/* register with phone number */}
+        <div className="flex flex-col gap-4 space-x-4">
+          <button
+            className="mt-4 w-full py-2 mb-4 text-gray-700 transition duration-200 bg-white border border-gray-300 rounded-md hover:bg-gray-50 font-semibold focus:outline-none focus:ring-2 focus:ring-gray-500"
+            onClick={() => {
+              setRegisterOpen(false);
+              setLoginOpen(false);
+              setIsRegisterWithPhoneOpen(true);
+            }}
+          >
+            Đăng ký bằng số điện thoại
+          </button>
         </div>
       </div>
     </div>
