@@ -28,6 +28,7 @@ import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/Booki
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
+import AdminPage from "./pages/admin/adminManagement/AdminPage.jsx";
 
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
@@ -122,6 +123,14 @@ const App = () => {
           />
 
           {/* ADMIN ROUTES :  */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute allowRole={"admin"}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Catch-all route */}
           <Route path="*" element={<HomePage />} />

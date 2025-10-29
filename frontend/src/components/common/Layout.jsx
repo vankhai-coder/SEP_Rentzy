@@ -35,23 +35,23 @@ const Layout = ({ children }) => {
     }
   }, [role, location.pathname]);
 
-  // redirect owner to /owner when landing on home after auth
+  // redirect admin to /admin when landing on home after auth
   useEffect(() => {
-    if (role === 'owner' && location.pathname === '/') {
-      navigate('/owner', { replace: true });
+    if (role === 'admin' && location.pathname === '/') {
+      navigate('/admin', { replace: true });
     }
-
-  
   }, [role, location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
-      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Header />}
+      {/* Header - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) || 
+         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
-      {/* Footer - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
-      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Footer />}
+      {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) || 
+         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
       <ChatBox />
     </div>
   );
