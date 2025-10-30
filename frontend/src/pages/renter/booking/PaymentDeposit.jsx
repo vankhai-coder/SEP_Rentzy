@@ -1,27 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // UI Components
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
-import { Button } from '../../../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../../../components/ui/dialog";
+import { Button } from "../../../components/ui/button";
 
 // Custom Components
-import ProgressBar from './components/ProgressBar';
-import PaymentSummary from './components/PaymentSummary';
-import OrderSummary from './components/OrderSummary';
+import ProgressBar from "./components/ProgressBar";
+import PaymentSummary from "./components/PaymentSummary";
+import OrderSummary from "./components/OrderSummary";
 
 // Custom Hooks & Utils
-import { usePaymentLogic } from './hooks/usePaymentLogic';
-import { formatCurrency, formatDateTime } from './utils/formatters';
+import { usePaymentLogic } from "./hooks/usePaymentLogic";
+import { formatCurrency, formatDateTime } from "./utils/formatters";
+import axiosInstance from "../../../config/axiosInstance";
 
 // Styles
-import './PaymentDeposit.scss';
+import "./PaymentDeposit.scss";
 
 /**
  * PaymentDeposit Component
- * 
+ *
  * LUỒNG CHẠY CHÍNH:
  * 1. Component mount → fetchBooking() → load thông tin booking từ API
  * 2. usePaymentLogic hook xử lý logic:
@@ -35,7 +42,7 @@ import './PaymentDeposit.scss';
  * 4. User interaction:
  *    - Thanh toán: mở confirm modal → gọi handleDepositPaymentPayOS → redirect PayOS
  *    - Hủy đơn: mở cancel modal → gọi handleCancelBooking → về trang chủ
- * 
+ *
  * PAYMENT STEPS:
  * - Step 1: pending → Thanh toán cọc 30% (có countdown 10 phút)
  * - Step 2: deposit_paid → Ký hợp đồng
@@ -46,7 +53,7 @@ const PaymentDeposit = () => {
   // ==================== ROUTER HOOKS ====================
   const { bookingId } = useParams(); // Lấy bookingId từ URL params
   const navigate = useNavigate(); // Hook để điều hướng
-  
+
   // ==================== LOCAL STATE ====================
   // Modal states - quản lý việc hiển thị các modal
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Modal xác nhận thanh toán
@@ -56,7 +63,7 @@ const PaymentDeposit = () => {
   // ==================== CUSTOM HOOKS ====================
   /**
    * usePaymentLogic Hook - Xử lý toàn bộ logic payment
-   * 
+   *
    * INPUT: bookingId
    * OUTPUT:
    * - booking: thông tin đơn hàng từ API
@@ -80,17 +87,89 @@ const PaymentDeposit = () => {
     fetchBooking,
     getPaidAndRemaining,
     handleDepositPaymentPayOS,
-    handleCancelBooking
+    handleCancelBooking,
   } = usePaymentLogic(bookingId);
+
+  // ==================== PAYMENT CANCEL LOGIC ====================
+  /**
+   * Xử lý hủy thanh toán PayOS
+   * - Gọi API để cancel transaction PayOS
+   * - Cập nhật lại thông tin booking
+   */
+  const handlePaymentCancel = async () => {
+    try {
+      if (!booking?.booking_id) {
+        alert("Không tìm thấy thông tin đặt xe.");
+        return;
+      }
+
+      // Xác định loại thanh toán dựa trên trạng thái booking
+      let paymentType = "DEPOSIT";
+      
+      // Gọi API để cancel transaction
+      const response = await axiosInstance.post("/api/payment/payos/cancel", {
+        bookingId: booking.booking_id,
+        paymentType: paymentType,
+      });
+
+      if (response.data.success) {
+        alert("Đã hủy giao dịch thanh toán.");
+        // Refresh booking data để cập nhật trạng thái
+        fetchBooking();
+      } else {
+        throw new Error(response.data.error || "Không thể hủy giao dịch");
+      }
+    } catch (error) {
+      console.error("Cancel payment error:", error);
+      
+      let errorMessage = "Có lỗi xảy ra khi hủy giao dịch";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      alert(errorMessage);
+    }
+  };
 
   // ==================== EFFECTS ====================
   /**
    * Effect: Initialize data khi component mount
    * - Gọi fetchBooking() để load thông tin booking từ API
+   * - Xử lý kết quả thanh toán PayOS từ URL params
    * - Dependency: [fetchBooking] để tránh infinite loop
    */
   useEffect(() => {
     fetchBooking();
+
+    // Xử lý kết quả thanh toán PayOS
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get("payment");
+    const cancelParam = urlParams.get("cancel");
+    const statusParam = urlParams.get("status");
+
+    // Kiểm tra thanh toán thành công
+    if (paymentStatus === "success") {
+      // Hiển thị thông báo thành công và refresh data
+      setTimeout(() => {
+        alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+        fetchBooking();
+      }, 1000);
+
+      // Xóa parameter khỏi URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } 
+    // Kiểm tra thanh toán bị hủy - dựa trên tham số PayOS
+    else if (
+      paymentStatus === "cancel" || 
+      cancelParam === "true" || 
+      statusParam === "CANCELLED"
+    ) {
+      // Gọi API để cancel transaction
+      handlePaymentCancel();
+
+      // Xóa parameter khỏi URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, [fetchBooking]);
 
   // ==================== COMPUTED VALUES ====================
@@ -110,12 +189,12 @@ const PaymentDeposit = () => {
    */
   const handleConfirmPayment = async () => {
     try {
-      if (confirmType === 'deposit') {
+      if (confirmType === "deposit") {
         await handleDepositPaymentPayOS();
       }
       // Có thể thêm các loại thanh toán khác ở đây
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error("Payment error:", error);
     } finally {
       setShowConfirmModal(false);
     }
@@ -133,11 +212,11 @@ const PaymentDeposit = () => {
       if (success) {
         // Delay để user thấy toast message trước khi redirect
         setTimeout(() => {
-          navigate('/');
+          navigate("/");
         }, 1200);
       }
     } catch (error) {
-      console.error('Cancel booking error:', error);
+      console.error("Cancel booking error:", error);
     } finally {
       setShowCancelModal(false);
     }
@@ -151,9 +230,7 @@ const PaymentDeposit = () => {
   if (loading) {
     return (
       <div className="reservation-payment-container">
-        <div className="loading-message">
-          Đang tải thông tin đơn hàng...
-        </div>
+        <div className="loading-message">Đang tải thông tin đơn hàng...</div>
       </div>
     );
   }
@@ -167,7 +244,7 @@ const PaymentDeposit = () => {
       <div className="reservation-payment-container">
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={() => navigate('/')} className="confirm-button">
+          <button onClick={() => navigate("/")} className="confirm-button">
             Về Trang Chủ
           </button>
         </div>
@@ -184,7 +261,7 @@ const PaymentDeposit = () => {
       <div className="reservation-payment-container">
         <div className="error-message">
           <p>Không tìm thấy thông tin đơn hàng</p>
-          <button onClick={() => navigate('/')} className="confirm-button">
+          <button onClick={() => navigate("/")} className="confirm-button">
             Về Trang Chủ
           </button>
         </div>
@@ -197,9 +274,9 @@ const PaymentDeposit = () => {
     <>
       {/* Toast Container cho thông báo */}
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       {/* ==================== MODALS ==================== */}
-      
+
       {/* Modal xác nhận thanh toán */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent className="sm:max-w-[425px]">
@@ -207,14 +284,18 @@ const PaymentDeposit = () => {
             <DialogTitle>Xác nhận thanh toán</DialogTitle>
           </DialogHeader>
           <p className="py-4">
-            Bạn có chắc chắn muốn thanh toán {formatCurrency(deposit)} để giữ xe?
+            Bạn có chắc chắn muốn thanh toán {formatCurrency(deposit)} để giữ
+            xe?
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmModal(false)}
+            >
               Huỷ
             </Button>
             <Button onClick={handleConfirmPayment} disabled={isPaying}>
-              {isPaying ? 'Đang xử lý...' : 'Xác nhận'}
+              {isPaying ? "Đang xử lý..." : "Xác nhận"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -227,18 +308,19 @@ const PaymentDeposit = () => {
             <DialogTitle>Xác nhận huỷ đơn</DialogTitle>
           </DialogHeader>
           <p className="py-4">
-            Bạn có chắc chắn muốn huỷ đơn đặt xe này? Hành động này không thể hoàn tác.
+            Bạn có chắc chắn muốn huỷ đơn đặt xe này? Hành động này không thể
+            hoàn tác.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCancelModal(false)}>
               Huỷ
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleCancelBookingWithNavigation}
               disabled={isPaying}
             >
-              {isPaying ? 'Đang xử lý...' : 'Đồng ý'}
+              {isPaying ? "Đang xử lý..." : "Đồng ý"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -248,15 +330,12 @@ const PaymentDeposit = () => {
       <div className="reservation-payment-container">
         {/* Progress Bar - hiển thị bước hiện tại */}
         <ProgressBar step={step} />
-        
+
         {/* Content Wrapper */}
         <div className="content-wrapper">
           {/* Order Summary - thông tin tổng quan đơn hàng */}
-          <OrderSummary
-            booking={booking}
-            formatDateTime={formatDateTime}
-          />
-          
+          <OrderSummary booking={booking} formatDateTime={formatDateTime} />
+
           {/* Payment Details Section */}
           <div className="payment-details-section">
             {/* Payment Section - xử lý thanh toán theo từng step */}
@@ -271,15 +350,15 @@ const PaymentDeposit = () => {
               setConfirmType={setConfirmType}
               setShowConfirmModal={setShowConfirmModal}
             />
-            
+
             {/* Cancel Button - chỉ hiển thị ở step 1 và 2 */}
             {(step === 1 || step === 2) && (
-              <button 
-                className="cancel-booking-button" 
-                onClick={() => setShowCancelModal(true)} 
+              <button
+                className="cancel-booking-button"
+                onClick={() => setShowCancelModal(true)}
                 disabled={isPaying}
               >
-                {isPaying ? 'Đang xử lý...' : 'Huỷ đơn'}
+                {isPaying ? "Đang xử lý..." : "Huỷ đơn"}
               </button>
             )}
           </div>

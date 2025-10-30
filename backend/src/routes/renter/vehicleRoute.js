@@ -3,7 +3,6 @@ import {
   getAllVehicles,
   getVehicleById,
 } from "../../controllers/renter/vehicleController.js";
-import { optionalAuth } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -11,6 +10,6 @@ const router = express.Router();
 router.get("/", getAllVehicles);
 
 // Lấy chi tiết 1 phương tiện (có thể đăng nhập hoặc không)
-router.get("/:id", optionalAuth, getVehicleById);
+router.get("/:id", getVehicleById);
 
 export default router;

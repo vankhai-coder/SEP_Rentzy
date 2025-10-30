@@ -14,7 +14,7 @@ const autoCancelExpiredBookings = async () => {
   const TIMEOUT_MS = 30000; // 30 giây timeout
   
   try {
-    console.log("🔍 [CRON] Checking for expired pending bookings...");
+    console.log("[CRON] Checking for expired pending bookings...");
 
     // Tạo timeout promise
     const timeoutPromise = new Promise((_, reject) => {

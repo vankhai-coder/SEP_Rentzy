@@ -1,6 +1,8 @@
 import Booking from "../../models/Booking.js";
 import Vehicle from "../../models/Vehicle.js";
 import User from "../../models/User.js";
+import BookingHandover from "../../models/BookingHandover.js";
+
 import { Op } from "sequelize";
 import Voucher from "../../models/Voucher.js";
 import { sendEmail } from "../../utils/email/sendEmail.js";
@@ -138,7 +140,7 @@ export const getBookingById = async (req, res) => {
             "status",
             "rent_count",
             "created_at",
-            "updated_at"
+            "updated_at",
           ],
           include: [
             {
@@ -155,7 +157,7 @@ export const getBookingById = async (req, res) => {
                 "national_id_status",
                 "points",
                 "is_active",
-                "created_at"
+                "created_at",
               ],
             },
           ],
@@ -171,7 +173,7 @@ export const getBookingById = async (req, res) => {
             "avatar_url",
             "driver_license_status",
             "national_id_status",
-            "points"
+            "points",
           ],
         },
         {
@@ -188,6 +190,11 @@ export const getBookingById = async (req, res) => {
           ],
           required: false, // LEFT JOIN để lấy booking ngay cả khi chưa có transaction
         },
+        {
+          model: BookingHandover,
+          as: "handover",
+          attributes: { exclude: [] }, //  lấy tất cả cột
+        },
       ],
     });
 
@@ -197,17 +204,6 @@ export const getBookingById = async (req, res) => {
         message: "Không tìm thấy thông tin đơn hàng",
       });
     }
-
-    // Debug log để kiểm tra dữ liệu từ database
-    console.log("Backend booking data:", {
-      booking_id: booking.booking_id,
-      status: booking.status,
-      created_at: booking.created_at,
-      vehicle_id: booking.vehicle?.vehicle_id,
-      owner_id: booking.vehicle?.owner?.user_id,
-      statusType: typeof booking.status,
-      createdAtType: typeof booking.created_at,
-    });
 
     // Tạo response data đầy đủ từ database
     const responseData = {
@@ -235,67 +231,74 @@ export const getBookingById = async (req, res) => {
       pointsEarned: booking.points_earned || 0,
       orderCode: booking.order_code,
       orderCodeRemaining: booking.order_code_remaining,
-      
+
       // Thời gian tạo và cập nhật
       created_at: booking.created_at,
       updated_at: booking.updated_at,
 
       // Thông tin xe đầy đủ
-      vehicle: booking.vehicle ? {
-        vehicle_id: booking.vehicle.vehicle_id,
-        owner_id: booking.vehicle.owner_id,
-        brand_id: booking.vehicle.brand_id,
-        vehicle_type: booking.vehicle.vehicle_type,
-        license_plate: booking.vehicle.license_plate,
-        model: booking.vehicle.model,
-        year: booking.vehicle.year,
-        price_per_day: booking.vehicle.price_per_day,
-        description: booking.vehicle.description,
-        main_image_url: booking.vehicle.main_image_url,
-        extra_images: booking.vehicle.extra_images,
-        features: booking.vehicle.features,
-        location: booking.vehicle.location,
-        latitude: booking.vehicle.latitude,
-        longitude: booking.vehicle.longitude,
-        transmission: booking.vehicle.transmission,
-        body_type: booking.vehicle.body_type,
-        seats: booking.vehicle.seats,
-        fuel_type: booking.vehicle.fuel_type,
-        bike_type: booking.vehicle.bike_type,
-        engine_capacity: booking.vehicle.engine_capacity,
-        approvalStatus: booking.vehicle.approvalStatus,
-        status: booking.vehicle.status,
-        rent_count: booking.vehicle.rent_count,
-        created_at: booking.vehicle.created_at,
-        updated_at: booking.vehicle.updated_at,
-        
-        // Thông tin chủ xe
-         owner: booking.vehicle.owner ? {
-           user_id: booking.vehicle.owner.user_id,
-           full_name: booking.vehicle.owner.full_name,
-           email: booking.vehicle.owner.email,
-           phone_number: booking.vehicle.owner.phone_number,
-           avatar_url: booking.vehicle.owner.avatar_url,
-           role: booking.vehicle.owner.role,
-           driver_license_status: booking.vehicle.owner.driver_license_status,
-           national_id_status: booking.vehicle.owner.national_id_status,
-           points: booking.vehicle.owner.points,
-           is_active: booking.vehicle.owner.is_active,
-           created_at: booking.vehicle.owner.created_at,
-         } : null,
-      } : null,
+      vehicle: booking.vehicle
+        ? {
+            vehicle_id: booking.vehicle.vehicle_id,
+            owner_id: booking.vehicle.owner_id,
+            brand_id: booking.vehicle.brand_id,
+            vehicle_type: booking.vehicle.vehicle_type,
+            license_plate: booking.vehicle.license_plate,
+            model: booking.vehicle.model,
+            year: booking.vehicle.year,
+            price_per_day: booking.vehicle.price_per_day,
+            description: booking.vehicle.description,
+            main_image_url: booking.vehicle.main_image_url,
+            extra_images: booking.vehicle.extra_images,
+            features: booking.vehicle.features,
+            location: booking.vehicle.location,
+            latitude: booking.vehicle.latitude,
+            longitude: booking.vehicle.longitude,
+            transmission: booking.vehicle.transmission,
+            body_type: booking.vehicle.body_type,
+            seats: booking.vehicle.seats,
+            fuel_type: booking.vehicle.fuel_type,
+            bike_type: booking.vehicle.bike_type,
+            engine_capacity: booking.vehicle.engine_capacity,
+            approvalStatus: booking.vehicle.approvalStatus,
+            status: booking.vehicle.status,
+            rent_count: booking.vehicle.rent_count,
+            created_at: booking.vehicle.created_at,
+            updated_at: booking.vehicle.updated_at,
+
+            // Thông tin chủ xe
+            owner: booking.vehicle.owner
+              ? {
+                  user_id: booking.vehicle.owner.user_id,
+                  full_name: booking.vehicle.owner.full_name,
+                  email: booking.vehicle.owner.email,
+                  phone_number: booking.vehicle.owner.phone_number,
+                  avatar_url: booking.vehicle.owner.avatar_url,
+                  role: booking.vehicle.owner.role,
+                  driver_license_status:
+                    booking.vehicle.owner.driver_license_status,
+                  national_id_status: booking.vehicle.owner.national_id_status,
+                  points: booking.vehicle.owner.points,
+                  is_active: booking.vehicle.owner.is_active,
+                  created_at: booking.vehicle.owner.created_at,
+                }
+              : null,
+          }
+        : null,
 
       // Thông tin người thuê đầy đủ
-      renter: booking.renter ? {
-        user_id: booking.renter.user_id,
-        full_name: booking.renter.full_name,
-        phone_number: booking.renter.phone_number,
-        email: booking.renter.email,
-        avatar_url: booking.renter.avatar_url,
-        driver_license_status: booking.renter.driver_license_status,
-        national_id_status: booking.renter.national_id_status,
-        points: booking.renter.points,
-      } : null,
+      renter: booking.renter
+        ? {
+            user_id: booking.renter.user_id,
+            full_name: booking.renter.full_name,
+            phone_number: booking.renter.phone_number,
+            email: booking.renter.email,
+            avatar_url: booking.renter.avatar_url,
+            driver_license_status: booking.renter.driver_license_status,
+            national_id_status: booking.renter.national_id_status,
+            points: booking.renter.points,
+          }
+        : null,
 
       // Danh sách giao dịch
       transactions: booking.Transactions
@@ -310,6 +313,8 @@ export const getBookingById = async (req, res) => {
             processed_at: transaction.processed_at,
           }))
         : [],
+      // thông tin handover
+      handover: booking.handover ? booking.handover : null,
     };
 
     return res.status(200).json({

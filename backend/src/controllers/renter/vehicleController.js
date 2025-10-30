@@ -33,40 +33,13 @@ export const getAllVehicles = async (req, res) => {
 export const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { user } = req; // Từ authMiddleware: { user_id, role } - có thể undefined nếu không đăng nhập
 
-    console.log(id);
     let vehicle = await Vehicle.findByPk(id);
-    console.log(vehicle);
 
     if (!vehicle) {
       return res
         .status(404)
         .json({ success: false, message: "Vehicle not found" });
-    }
-
-    // Kiểm tra quyền truy cập:
-    // 1. Nếu không đăng nhập (user undefined) -> chỉ xem được xe approved
-    // 2. Nếu đăng nhập và là owner -> xem được tất cả
-    // 3. Nếu đăng nhập nhưng không phải owner -> chỉ xem được xe approved
-    if (!user) {
-      // Không đăng nhập - chỉ xem được xe approved
-      if (vehicle.approvalStatus !== "approved") {
-        return res
-          .status(403)
-          .json({ success: false, message: "Vehicle not approved yet" });
-      }
-    } else {
-      // Đã đăng nhập - kiểm tra quyền
-      if (
-        user.role === "renter" &&
-        vehicle.owner_id !== user.user_id &&
-        vehicle.approvalStatus !== "approved"
-      ) {
-        return res
-          .status(403)
-          .json({ success: false, message: "Vehicle not approved yet" });
-      }
     }
 
     const owner = await User.findByPk(vehicle.owner_id);

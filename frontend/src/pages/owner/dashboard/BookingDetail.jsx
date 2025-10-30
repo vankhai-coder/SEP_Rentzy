@@ -368,7 +368,6 @@ const BookingDetail = () => {
               <ImageUploadViewer
                 bookingId={booking.booking_id}
                 imageType="pre-rental"
-                title="Hình ảnh xe trước khi bàn giao"
                 description={{
                   title: "Hướng dẫn chụp ảnh trước khi bàn giao:",
                   items: [
@@ -403,7 +402,6 @@ const BookingDetail = () => {
                 </div>
                 <ImageUploadViewer
                   bookingId={booking.booking_id}
-                  imageType="post-rental"
                   title="Hình ảnh khi nhận xe trả lại"
                   description={{
                     title: "Kiểm tra khi nhận xe trả lại:",

@@ -29,14 +29,6 @@ const BookingDetailsPage = () => {
 
       // Xóa parameter khỏi URL
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (paymentStatus === "cancel") {
-      // Hiển thị thông báo hủy
-      setTimeout(() => {
-        alert("Thanh toán đã bị hủy.");
-      }, 1000);
-
-      // Xóa parameter khỏi URL
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [id]);
 
@@ -103,12 +95,10 @@ const BookingDetailsPage = () => {
       setPaymentLoading(true);
 
       const currentUrl = window.location.origin;
-      const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}?payment=success`;
-      const cancelUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}?payment=cancel`;
+      const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
+      const cancelUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
 
-      const endpoint = isRemaining
-        ? "/api/payment/payos/remaining-link"
-        : "/api/payment/payos/link";
+      const endpoint = "/api/payment/payos/remaining-link";
 
       const response = await axiosInstance.post(endpoint, {
         bookingId: booking.booking_id,
