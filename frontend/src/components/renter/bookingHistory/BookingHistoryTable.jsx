@@ -1,17 +1,17 @@
 // src/components/renter/bookingHistory/BookingHistoryTable.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { Star, Eye, FileText, Car } from "lucide-react";
+import { Star, Eye, Car } from "lucide-react";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
-const BookingHistoryTable = ({
-  bookings,
-  statusMap,
-  formatVND,
-  formatDate,
-}) => {
+const BookingHistoryTable = ({ bookings, statusMap, formatVND }) => {
+  const formatDateTime = (dateString) => {
+    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
+  };
   if (bookings.length === 0) {
     return (
-      <div className="text-center py-16 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-3xl shadow-2xl border border-teal-200/50">
+      <div className="text-center py-16 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-12 shadow-2xl border border-teal-200/50">
         <div className="text-teal-400 mb-6 p-4 bg-white/20 rounded-2xl inline-block">
           <Car className="mx-auto h-16 w-16 animate-bounce" />
         </div>
@@ -58,6 +58,7 @@ const BookingHistoryTable = ({
               {[
                 "Mã đơn",
                 "Xe",
+                "Ngày tạo đơn",
                 "Ngày nhận",
                 "Ngày trả",
                 "Tổng tiền",
@@ -76,92 +77,104 @@ const BookingHistoryTable = ({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-teal-100/50">
-            {bookings.map((booking, i) => {
-              const isCompleted = booking.status === "completed";
-              const hasReview = booking.hasReview;
-
-              return (
-                <tr
-                  key={booking.booking_id}
-                  className={`transition-all duration-300 hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 hover:shadow-inner ${
-                    i % 2 === 0 ? "bg-white/50" : "bg-teal-50/30"
-                  }`}
-                >
-                  <td className="px-6 py-4 font-bold text-teal-700">
+          <tbody className="bg-white divide-y divide-gray-200">
+            {bookings.map((booking) => (
+              <tr key={booking.booking_id} className="hover:bg-gray-50">
+                {/* Mã đơn */}
+                <td className="px-4 py-4">
+                  <div className="text-sm font-mono text-gray-900">
                     #{booking.booking_id}
-                  </td>
+                  </div>
+                </td>
 
-                  {/* Cột Xe - Thêm icon */}
-                  <td className="px-6 py-4 whitespace-nowrap max-w-[250px] truncate flex items-center">
-                    <Car className="h-4 w-4 text-cyan-500 mr-2" />
-                    {booking.vehicle}
-                  </td>
+                {/* Xe */}
+                <td className="px-4 py-4">
+                  <div className="flex items-center space-x-3">
+                    <h1 className="font-medium text-gray-900">
+                      {booking.vehicle?.model || "N/A"}
+                    </h1>
+                  </div>
+                </td>
 
-                  <td className="px-6 py-4 text-gray-700 font-medium">
-                    {formatDate(booking.start_date)}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700 font-medium">
-                    {formatDate(booking.end_date)}
-                  </td>
-                  <td className="px-6 py-4 font-bold text-indigo-600">
+                {/* Ngày tạo đơn */}
+                <td className="px-4 py-4">
+                  <div className="text-sm text-gray-900">
+                    {formatDateTime(booking.created_at)}
+                  </div>
+                </td>
+
+                {/* Ngày nhận */}
+                <td className="px-4 py-4">
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatDateTime(booking.start_date)}
+                  </div>
+                </td>
+
+                {/* Ngày trả */}
+                <td className="px-4 py-4">
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatDateTime(booking.end_date)}
+                  </div>
+                </td>
+
+                {/* Tổng tiền */}
+                <td className="px-4 py-4">
+                  <div className="font-medium text-gray-900">
                     {formatVND(booking.total_amount)}
-                  </td>
-                  <td className="px-6 py-4 text-teal-600">
-                    {formatVND(booking.total_paid)}
-                  </td>
-                  <td className="px-6 py-4 font-bold text-green-600">
-                    {formatVND(booking.remaining)}
-                  </td>
+                  </div>
+                </td>
 
-                  {/* Cột trạng thái - Gradient badges */}
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-2 items-start">
-                      {isCompleted ? (
-                        hasReview ? (
-                          <span className="inline-flex items-center px-3 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg">
-                            Hoàn thành & Đã đánh giá
-                          </span>
-                        ) : (
-                          <Link
-                            to={`/booking-review/${booking.booking_id}`}
-                            className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
-                          >
-                            <Star className="mr-1 h-3.5 w-3.5" />
-                            Đánh giá ngay
-                          </Link>
-                        )
-                      ) : (
-                        <span className={getStatusBadgeClass(booking.status)}>
-                          {statusMap[booking.status] || booking.status}
-                        </span>
+                {/* Đã thanh toán */}
+                <td className="px-4 py-4">
+                  <div className="text-sm font-medium text-green-600">
+                    {formatVND(booking.total_paid || 0)}
+                  </div>
+                </td>
+
+                {/* Còn lại */}
+                <td className="px-4 py-4">
+                  <div className="text-sm font-medium text-red-600">
+                    {formatVND(booking.remaining_amount || 0)}
+                  </div>
+                </td>
+
+                {/* Trạng thái */}
+                <td className="px-4 py-4">
+                  <span className={getStatusBadgeClass(booking.status)}>
+                    {statusMap[booking.status] || booking.status}
+                  </span>
+                </td>
+
+                {/* Hành động */}
+                <td className="px-4 py-4">
+                  <div className="flex items-center space-x-2">
+                    <Link
+                      to={`/booking-history/booking-detail/${booking.booking_id}`}
+                      className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Chi tiết
+                    </Link>
+                    {booking.status === "completed" &&
+                      booking.review == null && (
+                        <Link
+                          to={`/booking-review/${booking.booking_id}`}
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-600 hover:text-yellow-800"
+                        >
+                          <Star className="w-4 h-4 mr-1" />
+                          Đánh giá
+                        </Link>
                       )}
-                    </div>
-                  </td>
-
-                  {/* Cột hành động - Compact row layout, responsive stack on mobile */}
-                  <td className="px-6 py-3">
-                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                      <Link
-                        to={`/booking-history/booking-detail/${booking.booking_id}`}
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-lg text-white bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 min-w-[80px]"
-                      >
-                        <Eye className="mr-1 h-3 w-3 flex-shrink-0" />
-                        Chi tiết
-                      </Link>
-
-                      <Link
-                        to={`/contract/${booking.booking_id}`}
-                        className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-lg text-teal-700 bg-white/90 border border-teal-300 hover:bg-teal-50 hover:border-teal-500 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 min-w-[80px]"
-                      >
-                        <FileText className="mr-1 h-3 w-3 flex-shrink-0" />
-                        Hợp đồng
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    {booking.status === "completed" &&
+                      booking.review != null && (
+                        <h3 className="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-600 hover:text-yellow-800">
+                          Đánh giá đã gửi
+                        </h3>
+                      )}
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -35,7 +35,7 @@ export const useBookingAutoCancel = (booking) => {
 
         // Chuyển hướng về trang chủ hoặc trang booking history
         setTimeout(() => {
-          navigate('/renter/booking-history', { 
+          navigate('/booking-history', { 
             replace: true,
             state: { 
               message: 'Booking đã bị hủy tự động do quá thời gian thanh toán',
@@ -59,7 +59,7 @@ export const useBookingAutoCancel = (booking) => {
         toast.info('Booking đã được xử lý');
         
         setTimeout(() => {
-          navigate('/renter/booking-history', { replace: true });
+          navigate('/booking-history', { replace: true });
         }, 1000);
         
         return true;

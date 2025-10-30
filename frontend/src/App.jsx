@@ -24,6 +24,7 @@ import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
 import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
 import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/BookingDetailsPage.jsx";
+import TransactionHistory from "./pages/renter/transaction/TransactionHistory.jsx";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
@@ -32,7 +33,7 @@ import OwnerPage from "./pages/owner/ownerPage.jsx";
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
 import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
- import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
+import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
@@ -61,8 +62,8 @@ const App = () => {
             path="/"
             element={
               // <ProtectedRoute allowRole={["renter", "owner", "admin"]}>
-                <Account />
-              // </ProtectedRoute>  
+              <Account />
+              // </ProtectedRoute>
             }
           >
             <Route path="/account" element={<UserInformation />} />
@@ -70,8 +71,11 @@ const App = () => {
             <Route path="/booking-history" element={<BookingHistory />} />
             <Route path="/my-reviews" element={<MyReviewsPage />} />
             {/* booking detail renter */}
-            <Route path="/booking-history/booking-detail/:id" element={<BookingDetailsPage />} />
-
+            <Route
+              path="/booking-history/booking-detail/:id"
+              element={<BookingDetailsPage />}
+            />
+            <Route path="/transactions" element={<TransactionHistory />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/mytrips" element={<MyTrips />} />
             <Route path="/longtermrenting" element={<LongTermRenting />} />
@@ -79,16 +83,16 @@ const App = () => {
             <Route path="/myaddress" element={<MyAddress />} />
             <Route path="/resetpw" element={<ResetPassword />} />
             <Route path="/deleteaccount" element={<DeleteAccount />} />
+            <Route
+              path="/booking-review/:bookingId"
+              element={
+                <ProtectedRoute allowRole={"renter"}>
+                  <BookingReviewPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
-          <Route
-            path="/booking-review/:bookingId"
-            element={
-              <ProtectedRoute allowRole={"renter"}>
-                <BookingReviewPage />
-              </ProtectedRoute>
-            }
-          />
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
           <Route path="/cars/search" element={<SearchResults type="car" />} />
@@ -96,14 +100,17 @@ const App = () => {
           <Route path="/detail/:id" element={<VehicleDetail />} />
 
           {/* Order Confirmation */}
-          <Route path="/order-confirmation/:bookingId" element={<OrderConfirmation />} />
+          <Route
+            path="/order-confirmation/:bookingId"
+            element={<OrderConfirmation />}
+          />
           {/* Payment Deposit */}
-          <Route path="/payment-deposit/:bookingId" element={<PaymentDeposit />} />
+          <Route
+            path="/payment-deposit/:bookingId"
+            element={<PaymentDeposit />}
+          />
           {/* Contract Page */}
-           <Route path="/contract/:bookingId" element={<ContractPage />} /> 
-
-
-
+          <Route path="/contract/:bookingId" element={<ContractPage />} />
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />

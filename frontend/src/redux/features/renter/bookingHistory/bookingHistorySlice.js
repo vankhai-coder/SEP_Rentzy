@@ -24,15 +24,30 @@ export const fetchBookingStatuses = createAsyncThunk(
   }
 );
 
-// Async thunk để fetch bookings (với optional status filter)
+// Async thunk để fetch bookings với filters
 export const fetchBookings = createAsyncThunk(
   "bookingHistory/fetchBookings",
-  async (status = "all", { rejectWithValue }) => {
+  async (filters = {}, { rejectWithValue }) => {
     try {
-      let url = `${import.meta.env.VITE_API_URL}/api/renter/booking-history`;
-      if (status !== "all") {
-        url += `?status=${status}`;
-      }
+      const {
+        status = "all",
+        sortBy = "created_at",
+        sortOrder = "DESC",
+        dateFilter = "all",
+        page = 1,
+        limit = 10
+      } = filters;
+
+      const params = new URLSearchParams();
+      if (status !== "all") params.append("status", status);
+      if (sortBy) params.append("sortBy", sortBy);
+      if (sortOrder) params.append("sortOrder", sortOrder);
+      if (dateFilter !== "all") params.append("dateFilter", dateFilter);
+      if (page) params.append("page", page);
+      if (limit) params.append("limit", limit);
+
+      const url = `${import.meta.env.VITE_API_URL}/api/renter/booking-history?${params.toString()}`;
+      
       const response = await fetch(url, {
         method: "GET",
         credentials: "include", // Gửi cookie JWT
@@ -41,7 +56,7 @@ export const fetchBookings = createAsyncThunk(
         throw new Error("Failed to fetch bookings");
       }
       const data = await response.json();
-      return data.data; // Trả về array bookings
+      return data; // Trả về toàn bộ response (data, pagination, filters)
     } catch (error) {
       return rejectWithValue(error.message || "Error fetching bookings");
     }
@@ -53,12 +68,37 @@ const bookingHistorySlice = createSlice({
   initialState: {
     statuses: [],
     bookings: [],
+    statistics: {
+      total_bookings: 0,
+      completed_bookings: 0,
+      active_bookings: 0,
+      cancelled_bookings: 0,
+      pending_bookings: 0,
+    },
+    pagination: {
+      currentPage: 1,
+      totalPages: 0,
+      totalItems: 0,
+      itemsPerPage: 10,
+      hasNextPage: false,
+      hasPrevPage: false,
+    },
+    filters: {
+      status: "all",
+      sortBy: "created_at",
+      sortOrder: "DESC",
+      dateFilter: "all",
+      limit: 10,
+    },
     loading: false,
     error: null,
   },
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    updateFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
     },
   },
   extraReducers: (builder) => {
@@ -83,7 +123,10 @@ const bookingHistorySlice = createSlice({
       })
       .addCase(fetchBookings.fulfilled, (state, action) => {
         state.loading = false;
-        state.bookings = action.payload;
+        state.bookings = action.payload.data;
+        state.statistics = action.payload.statistics || state.statistics;
+        state.pagination = action.payload.pagination;
+        state.filters = action.payload.filters;
       })
       .addCase(fetchBookings.rejected, (state, action) => {
         state.loading = false;
@@ -92,5 +135,5 @@ const bookingHistorySlice = createSlice({
   },
 });
 
-export const { clearError } = bookingHistorySlice.actions;
+export const { clearError, updateFilters } = bookingHistorySlice.actions;
 export default bookingHistorySlice.reducer;
