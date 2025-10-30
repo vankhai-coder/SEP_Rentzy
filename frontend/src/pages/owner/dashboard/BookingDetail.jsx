@@ -368,16 +368,6 @@ const BookingDetail = () => {
               <ImageUploadViewer
                 bookingId={booking.booking_id}
                 imageType="pre-rental"
-                description={{
-                  title: "Hướng dẫn chụp ảnh trước khi bàn giao:",
-                  items: [
-                    "Chụp ảnh toàn cảnh xe từ 4 góc (trước, sau, trái, phải)",
-                    "Chụp chi tiết các vết xước, móp méo có sẵn",
-                    "Chụp nội thất và bảng điều khiển",
-                    "Chụp đồng hồ km và mức nhiên liệu",
-                    "Đảm bảo ảnh rõ nét và đủ ánh sáng",
-                  ],
-                }}
                 minImages={5}
                 onUploadSuccess={fetchBookingDetail}
                 userRole="owner"
@@ -390,7 +380,7 @@ const BookingDetail = () => {
           {(booking.status === "fully_paid" ||
             booking.status === "in_progress" ||
             booking.status === "completed") &&
-            booking.handover?.renter_return_confirmed === true && (
+            booking.handover?.renter_handover_confirmed === true && (
               <>
                 <div className="flex items-center mb-4">
                   <span className="bg-red-100 text-red-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
@@ -402,17 +392,7 @@ const BookingDetail = () => {
                 </div>
                 <ImageUploadViewer
                   bookingId={booking.booking_id}
-                  title="Hình ảnh khi nhận xe trả lại"
-                  description={{
-                    title: "Kiểm tra khi nhận xe trả lại:",
-                    items: [
-                      "So sánh với ảnh ban đầu để phát hiện hư hỏng mới",
-                      "Kiểm tra mức nhiên liệu và đồng hồ km",
-                      "Chụp ảnh bất kỳ vết xước hoặc hư hỏng mới",
-                      "Kiểm tra nội thất và phụ kiện",
-                      "Ghi nhận tình trạng tổng thể của xe",
-                    ],
-                  }}
+                  imageType="post-rental"
                   minImages={5}
                   onUploadSuccess={fetchBookingDetail}
                   userRole="owner"

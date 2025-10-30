@@ -282,18 +282,19 @@ const BookingDetailsPage = () => {
         {/* Post-Rental Images Section */}
         {(booking.status === "fully_paid" ||
           booking.status === "in_progress" ||
-          booking.status === "completed") && (
-          <div className="pre-rental-images-section">
-            <HandoverImageViewer
-              bookingId={booking.booking_id}
-              booking={booking}
-              userRole="renter"
-              imageType="post-rental"
-              onConfirmSuccess={fetchBookingDetails}
-              handoverData={booking.handover || {}}
-            />
-          </div>
-        )}
+          booking.status === "completed") &&
+          booking.handover?.owner_return_confirmed === true && (
+            <div className="pre-rental-images-section">
+              <HandoverImageViewer
+                bookingId={booking.booking_id}
+                booking={booking}
+                userRole="renter"
+                imageType="post-rental"
+                onConfirmSuccess={fetchBookingDetails}
+                handoverData={booking.handover || {}}
+              />
+            </div>
+          )}
 
         {/* Thời gian và địa điểm */}
         <div className="rental-details-section">

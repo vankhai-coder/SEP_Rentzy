@@ -3,6 +3,8 @@ import {
   uploadMiddleware,
   confirmOwnerHandover,
   confirmRenterHandover,
+  confirmOwnerReturn,
+  confirmRenterReturn,
 } from "../../controllers/booking/handoverController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
@@ -23,5 +25,17 @@ router.post(
 );
 
 // owner xác nhận ảnh trả xe và xác nhận nhận lại xe
+router.post(
+  "/:bookingId/confirm-owner-return",
+  verifyJWTToken,
+  uploadMiddleware,
+  confirmOwnerReturn
+);
+// renter xác nhận ảnh trả xe
+router.post(
+  "/:bookingId/confirm-renter-return",
+  verifyJWTToken,
+  confirmRenterReturn
+);
 
 export default router;

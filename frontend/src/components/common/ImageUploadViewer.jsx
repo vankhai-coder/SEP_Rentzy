@@ -132,11 +132,12 @@ const ImageUploadViewer = ({
         formData.append("images", image.file);
       });
 
-      // Sử dụng endpoint mới cho owner handover confirmation
+      // Sử dụng endpoint đúng cho từng loại handover
       const endpoint =
         imageType === "pre-rental"
           ? `/api/handover/${bookingId}/confirm-owner-handover`
-          : `/api/handover/${bookingId}/confirm-renter-handover`;
+          : `/api/handover/${bookingId}/confirm-owner-return`;
+      console.log("Endpoint:", endpoint);
 
       const response = await axiosInstance.post(endpoint, formData);
 

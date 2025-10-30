@@ -21,7 +21,7 @@ const HandoverImageViewer = ({
         // Xử lý URLs từ Cloudinary (loại bỏ khoảng trắng và backticks nếu có)
         const cleanImages = preRentalImages.map((url, index) => ({
           id: index,
-          url: url.trim().replace(/`/g, ''), // Loại bỏ backticks và khoảng trắng
+          url: url.trim().replace(/`/g, ""), // Loại bỏ backticks và khoảng trắng
           originalName: `Ảnh xe ${index + 1}`,
         }));
         setImages(cleanImages);
@@ -29,7 +29,7 @@ const HandoverImageViewer = ({
         const postRentalImages = handoverData.post_rental_images || [];
         const cleanImages = postRentalImages.map((url, index) => ({
           id: index,
-          url: url.trim().replace(/`/g, ''),
+          url: url.trim().replace(/`/g, ""),
           originalName: `Ảnh xe sau trả ${index + 1}`,
         }));
         setImages(cleanImages);
@@ -262,8 +262,8 @@ const HandoverImageViewer = ({
               alt={`Vehicle ${index + 1}`}
               className="w-full h-32 object-cover rounded-lg border"
               onError={(e) => {
-                e.target.src = '/default_avt.jpg'; // Fallback image
-                e.target.alt = 'Không thể tải ảnh';
+                e.target.src = "/default_avt.jpg"; // Fallback image
+                e.target.alt = "Không thể tải ảnh";
               }}
             />
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg">
@@ -416,8 +416,8 @@ const HandoverImageViewer = ({
               alt={`Vehicle ${selectedImage.index + 1}`}
               className="max-w-full max-h-full object-contain"
               onError={(e) => {
-                e.target.src = '/default_avt.jpg';
-                e.target.alt = 'Không thể tải ảnh';
+                e.target.src = "/default_avt.jpg";
+                e.target.alt = "Không thể tải ảnh";
               }}
             />
             <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded">
@@ -433,4 +433,4 @@ const HandoverImageViewer = ({
   );
 };
 
-export default  HandoverImageViewer;
+export default HandoverImageViewer;

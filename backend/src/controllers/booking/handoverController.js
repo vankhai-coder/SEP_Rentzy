@@ -2,10 +2,21 @@ import db from "../../models/index.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import uploadFile from "../../utils/uploadFile.js";
 import cloudinary from "../../config/cloudinary.js";
 
 const { Booking, BookingHandover, Vehicle, User } = db;
+
+// Helper function để xóa file tạm
+const deleteTempFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log("Deleted temp file:", filePath);
+    }
+  } catch (error) {
+    console.error("Error deleting temp file:", filePath, error);
+  }
+};
 
 // Cấu hình multer để lưu file tạm thời trước khi upload lên Cloudinary
 const storage = multer.diskStorage({
@@ -39,6 +50,7 @@ const upload = multer({
     }
   },
 });
+export const uploadMiddleware = upload.array("images", 10);
 
 export const confirmOwnerHandover = async (req, res) => {
   const tempFiles = [];
@@ -64,22 +76,22 @@ export const confirmOwnerHandover = async (req, res) => {
       ],
     });
 
+    console.log("booking found:", booking ? "yes" : "no");
+    if (booking) {
+      console.log("booking status:", booking.status);
+    }
+
     if (!booking) {
+      console.log("ERROR: Booking not found");
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy booking hoặc bạn không có quyền truy cập",
       });
     }
 
-    if (booking.status !== "fully_paid") {
-      return res.status(400).json({
-        success: false,
-        message: "Booking chưa được thanh toán đầy đủ",
-      });
-    }
-
     // Kiểm tra số lượng file
     if (!req.files || req.files.length < 5) {
+      console.log("ERROR: Not enough files:", req.files ? req.files.length : 0);
       return res.status(400).json({
         success: false,
         message: "Cần upload ít nhất 5 ảnh xe để xác nhận bàn giao",
@@ -224,10 +236,201 @@ export const confirmRenterHandover = async (req, res) => {
     },
   });
 };
+export const confirmOwnerReturn = async (req, res) => {
+  const tempFiles = [];
 
-export const uploadMiddleware = upload.array("images", 10);
+  try {
+    const { bookingId } = req.params;
+    const ownerId = req.user.userId;
+
+    // Lưu danh sách file tạm để cleanup sau
+    if (req.files) {
+      tempFiles.push(...req.files.map((file) => file.path));
+    }
+
+    // Kiểm tra booking
+    const booking = await Booking.findOne({
+      where: { booking_id: bookingId },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          where: { owner_id: ownerId },
+        },
+      ],
+    });
+
+    console.log("booking found:", booking ? "yes" : "no");
+    if (booking) {
+      console.log("booking status:", booking.status);
+    }
+
+    if (!booking) {
+      console.log("ERROR: Booking not found");
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy booking hoặc bạn không có quyền truy cập",
+      });
+    }
+
+    if (booking.status !== "in_progress") {
+      console.log("ERROR: Booking status not in_progress:", booking.status);
+      return res.status(400).json({
+        success: false,
+        message: "Booking chưa được thanh toán đầy đủ",
+      });
+    }
+
+    // Kiểm tra số lượng file
+    if (!req.files || req.files.length < 5) {
+      console.log("ERROR: Not enough files:", req.files ? req.files.length : 0);
+      return res.status(400).json({
+        success: false,
+        message: "Cần upload ít nhất 5 ảnh xe để xác nhận bàn giao",
+      });
+    }
+
+    if (req.files.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ được upload tối đa 10 ảnh",
+      });
+    }
+
+    // Upload ảnh lên Cloudinary
+    const uploadPromises = req.files.map(async (file) => {
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: `handover/post-rental/${bookingId}`,
+          resource_type: "image",
+        });
+        return result.secure_url;
+      } catch (error) {
+        console.error("Error uploading to Cloudinary:", error);
+        throw error;
+      }
+    });
+
+    const uploadedUrls = await Promise.all(uploadPromises);
+
+    // Tìm hoặc tạo handover record
+    let handover = await BookingHandover.findOne({
+      where: { booking_id: bookingId },
+    });
+
+    console.log("handover found:", handover ? "yes" : "no");
+
+    if (!handover) {
+      console.log("Creating new handover record");
+      handover = await BookingHandover.create({
+        booking_id: bookingId,
+        post_rental_images: uploadedUrls,
+        owner_return_confirmed: true,
+        return_time: new Date(),
+      });
+    } else {
+      console.log("Updating existing handover record");
+      // Cập nhật handover với ảnh mới và xác nhận
+      await handover.update({
+        post_rental_images: uploadedUrls,
+        owner_return_confirmed: true,
+        return_time: new Date(),
+      });
+    }
+
+    // Cleanup temp files
+    tempFiles.forEach(deleteTempFile);
+
+    res.status(200).json({
+      success: true,
+      message: "Xác nhận bàn giao xe thành công",
+      data: {
+        handover_id: handover.handover_id,
+        uploadedImages: uploadedUrls,
+        return_time: handover.return_time,
+      },
+    });
+  } catch (error) {
+    console.error("Error in  confirm owner returned :", error);
+
+    // Cleanup temp files in case of error
+    tempFiles.forEach(deleteTempFile);
+
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi xác nhận bàn giao xe",
+      error: error.message,
+    });
+  }
+};
+// renter xác nhận ảnh xe sau khi trả
+
+export const confirmRenterReturn = async (req, res) => {
+  const id = req.params.bookingId;
+  const renterId = req.user.userId;
+
+  const booking = await Booking.findOne({
+    where: { booking_id: id },
+    include: [
+      {
+        model: User,
+        as: "renter",
+        where: { user_id: renterId },
+      },
+    ],
+  });
+  if (!booking) {
+    return res.status(404).json({
+      success: false,
+      message: "Không tìm thấy booking hoặc bạn không có quyền truy cập",
+    });
+  }
+
+  const handover = await BookingHandover.findOne({
+    where: { booking_id: id },
+  });
+  if (!handover) {
+    return res.status(404).json({
+      success: false,
+      message: "Không tìm thấy handover record",
+    });
+  }
+
+  const update = await handover.update({
+    renter_return_confirmed: true,
+    return_time: new Date(),
+  });
+  if (!update) {
+    return res.status(400).json({
+      success: false,
+      message: "Cập nhật handover record thất bại",
+    });
+  }
+  const updateBooking = await booking.update({
+    status: "completed",
+  });
+  if (!updateBooking) {
+    return res.status(400).json({
+      success: false,
+      message: "Cập nhật booking thất bại",
+    });
+  }
+  res.status(200).json({
+    success: true,
+    message: "Xác nhận trả xe  thành công",
+    data: {
+      handover_id: handover.handover_id,
+      renter_return_confirmed: handover.renter_return_confirmed,
+      return_time: handover.return_time,
+    },
+  });
+};
 
 export default {
   confirmOwnerHandover,
+  confirmRenterHandover,
+
+  confirmOwnerReturn,
+  confirmRenterReturn,
   uploadMiddleware,
 };
