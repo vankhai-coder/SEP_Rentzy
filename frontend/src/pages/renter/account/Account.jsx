@@ -95,6 +95,12 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
+              value="/points"
+            >
+              <Gift /> Điểm thưởng
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
               value="/myreward"
             >
               <Gift /> Quà tặng
@@ -182,12 +188,21 @@ const Account = () => {
             </NavLink>
 
             <NavLink
-              to="/myreward"
+              to="/points"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
               }
             >
               <Gift /> Điểm thưởng
+            </NavLink>
+
+            <NavLink
+              to="/myreward"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <Gift /> Quà tặng
             </NavLink>
 
             <NavLink

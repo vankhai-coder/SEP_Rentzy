@@ -25,6 +25,7 @@ import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
 import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
 import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/BookingDetailsPage.jsx";
 import TransactionHistory from "./pages/renter/transaction/TransactionHistory.jsx";
+import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
@@ -76,6 +77,7 @@ const App = () => {
               element={<BookingDetailsPage />}
             />
             <Route path="/transactions" element={<TransactionHistory />} />
+            <Route path="/points" element={<PointsHistory />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/mytrips" element={<MyTrips />} />
             <Route path="/longtermrenting" element={<LongTermRenting />} />

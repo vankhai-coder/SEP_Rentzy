@@ -26,6 +26,7 @@ import HandoverRoute from "./routes/booking/handoverRoute.js";
 
 // voucher route
 import VoucherRoute from "./routes/renter/voucherRoute.js";
+import PointsRoute from "./routes/renter/pointsRoute.js";
 
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
 import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
@@ -93,6 +94,9 @@ app.use("/api/owner/overview", OwnerOverviewRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
+
+// points route
+app.use("/api/renter/points", PointsRoute);
 
 // payment route
 app.use("/api/payment", PaymentRoute);
