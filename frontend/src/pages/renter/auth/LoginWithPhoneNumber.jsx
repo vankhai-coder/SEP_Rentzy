@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
-import { loginWithPhoneNumber, requestLoginWithPhoneNumber, resetState } from '@/redux/features/auth/authSlice';
+import { checkAuth, loginWithPhoneNumber, requestLoginWithPhoneNumber, resetState } from '@/redux/features/auth/authSlice';
 import { Loader } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner'
 
-const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneOpen , setLoginOpen }) => {
+const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneOpen, setLoginOpen }) => {
     // redux : 
     const dispatch = useDispatch()
     const { errorRequestLoginPhone, isRequestLoginPhoneSuccess, isLoadingRequestLoginPhone,
@@ -80,9 +80,13 @@ const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneO
             toast.success('Đăng nhập thành công')
             // clear state if needed
             dispatch(resetState())
+            // close login with phone dialog :
+            setIsLoginWithPhoneOpen(false)
             navigate('/')
+            // dispatch checkAuth : 
+            dispatch(checkAuth())
         }
-    }, [isLoginPhoneSuccess, dispatch, navigate])
+    }, [isLoginPhoneSuccess, setIsLoginWithPhoneOpen, dispatch, navigate])
 
 
 

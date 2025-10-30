@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { registerWithPhoneNumber, resetState, verifyPhoneNumber } from '@/redux/features/auth/authSlice';
+import { checkAuth, registerWithPhoneNumber, resetState, verifyPhoneNumber } from '@/redux/features/auth/authSlice';
 import { Loader } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,10 +28,10 @@ const RegisterWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPho
     // function to handle register with phone number :
     const handleRegisterWithPhoneNumber = (e) => {
         e.preventDefault();
-
-        // validate phone number in Viet Nam format: 
-        if (!/^0\d{9}$/.test(phoneNumber)) {
-            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam bắt đầu bằng 0 và có 10 chữ số.');
+        
+        // validate phone number in Viet Nam format 0123 456 789 : 
+        if (!/^0\d{3}\s\d{3}\s\d{3}$/.test(phoneNumber)) {
+            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam theo định dạng 0xxx xxx xxx.');
             return;
         }
 
@@ -43,9 +43,9 @@ const RegisterWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPho
     const handleVerifyOtp = (e) => {
         e.preventDefault();
 
-        // validate phone number in Viet Nam format: 
-        if (!/^0\d{9}$/.test(phoneNumber)) {
-            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam bắt đầu bằng 0 và có 10 chữ số.');
+        // validate phone number in Viet Nam format 0123 456 789 : 
+        if (!/^0\d{3}\s\d{3}\s\d{3}$/.test(phoneNumber)) {
+            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam theo định dạng 0xxx xxx xxx.');
             return;
         }
 
@@ -95,10 +95,14 @@ const RegisterWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPho
             toast.success('Xác minh số điện thoại thành công!');
             // clear state
             dispatch(resetState());
+            // close login with phone dialog : 
+            setIsRegisterWithPhoneOpen(false)
+            // dispatch checkauth : 
+            dispatch(checkAuth())
             // navigate to login page
             navigate('/');
         }
-    }, [isVerifyPhoneSuccess, dispatch, navigate])
+    }, [isVerifyPhoneSuccess, dispatch, navigate, setIsRegisterWithPhoneOpen])
 
 
 
