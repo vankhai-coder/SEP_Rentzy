@@ -1,37 +1,13 @@
 import db from "../../models/index.js";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import cloudinary from "../../config/cloudinary.js";
 
 const { Booking, BookingHandover, Vehicle, User } = db;
 
-// Helper function để xóa file tạm
-const deleteTempFile = (filePath) => {
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log("Deleted temp file:", filePath);
-    }
-  } catch (error) {
-    console.error("Error deleting temp file:", filePath, error);
-  }
-};
+// Không cần hàm xóa file tạm vì sử dụng memory storage
 
-// Cấu hình multer để lưu file tạm thời trước khi upload lên Cloudinary
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(process.cwd(), "uploads", "temp");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
-  },
-});
+// Cấu hình multer để xử lý file trong memory (không lưu vào disk)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -53,16 +29,11 @@ const upload = multer({
 export const uploadMiddleware = upload.array("images", 10);
 
 export const confirmOwnerHandover = async (req, res) => {
-  const tempFiles = [];
-
   try {
     const { bookingId } = req.params;
     const ownerId = req.user.userId;
 
-    // Lưu danh sách file tạm để cleanup sau
-    if (req.files) {
-      tempFiles.push(...req.files.map((file) => file.path));
-    }
+    // Không cần lưu file tạm vì sử dụng memory storage
 
     // Kiểm tra booking
     const booking = await Booking.findOne({
@@ -105,16 +76,32 @@ export const confirmOwnerHandover = async (req, res) => {
       });
     }
 
-    // Upload ảnh lên Cloudinary
-    const uploadPromises = req.files.map(async (file) => {
+    // Upload ảnh lên Cloudinary từ memory buffer
+    console.log("Starting Cloudinary upload for", req.files.length, "files");
+    console.log("Files to upload:", req.files.map(f => ({ originalname: f.originalname, size: f.size, mimetype: f.mimetype })));
+    
+    const uploadPromises = req.files.map(async (file, index) => {
       try {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: `handover/pre-rental/${bookingId}`,
-          resource_type: "image",
+        console.log(`Uploading file ${index + 1}/${req.files.length}: ${file.originalname}`);
+        
+        // Upload từ buffer thay vì file path
+        const result = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              folder: `handover/pre-rental/${bookingId}`,
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          ).end(file.buffer);
         });
+        
+        console.log(`Successfully uploaded file ${index + 1}: ${result.secure_url}`);
         return result.secure_url;
       } catch (error) {
-        console.error("Error uploading to Cloudinary:", error);
+        console.error(`Error uploading file ${index + 1} to Cloudinary:`, error);
         throw error;
       }
     });
@@ -142,8 +129,7 @@ export const confirmOwnerHandover = async (req, res) => {
       });
     }
 
-    // Cleanup temp files
-    tempFiles.forEach(deleteTempFile);
+    // Không cần cleanup vì sử dụng memory storage
 
     res.status(200).json({
       success: true,
@@ -157,8 +143,7 @@ export const confirmOwnerHandover = async (req, res) => {
   } catch (error) {
     console.error("Error in confirmOwnerHandover:", error);
 
-    // Cleanup temp files in case of error
-    tempFiles.forEach(deleteTempFile);
+    // Không cần cleanup vì sử dụng memory storage
 
     res.status(500).json({
       success: false,
@@ -237,16 +222,11 @@ export const confirmRenterHandover = async (req, res) => {
   });
 };
 export const confirmOwnerReturn = async (req, res) => {
-  const tempFiles = [];
-
   try {
     const { bookingId } = req.params;
     const ownerId = req.user.userId;
 
-    // Lưu danh sách file tạm để cleanup sau
-    if (req.files) {
-      tempFiles.push(...req.files.map((file) => file.path));
-    }
+    // Không cần lưu file tạm vì sử dụng memory storage
 
     // Kiểm tra booking
     const booking = await Booking.findOne({
@@ -297,16 +277,32 @@ export const confirmOwnerReturn = async (req, res) => {
       });
     }
 
-    // Upload ảnh lên Cloudinary
-    const uploadPromises = req.files.map(async (file) => {
+    // Upload ảnh lên Cloudinary từ memory buffer
+    console.log("Starting Cloudinary upload for", req.files.length, "files");
+    console.log("Files to upload:", req.files.map(f => ({ originalname: f.originalname, size: f.size, mimetype: f.mimetype })));
+    
+    const uploadPromises = req.files.map(async (file, index) => {
       try {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: `handover/post-rental/${bookingId}`,
-          resource_type: "image",
+        console.log(`Uploading file ${index + 1}/${req.files.length}: ${file.originalname}`);
+        
+        // Upload từ buffer thay vì file path
+        const result = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              folder: `handover/post-rental/${bookingId}`,
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          ).end(file.buffer);
         });
+        
+        console.log(`Successfully uploaded file ${index + 1}: ${result.secure_url}`);
         return result.secure_url;
       } catch (error) {
-        console.error("Error uploading to Cloudinary:", error);
+        console.error(`Error uploading file ${index + 1} to Cloudinary:`, error);
         throw error;
       }
     });
@@ -338,8 +334,7 @@ export const confirmOwnerReturn = async (req, res) => {
       });
     }
 
-    // Cleanup temp files
-    tempFiles.forEach(deleteTempFile);
+    // Không cần cleanup vì sử dụng memory storage
 
     res.status(200).json({
       success: true,
@@ -351,10 +346,9 @@ export const confirmOwnerReturn = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in  confirm owner returned :", error);
+    console.error("Error in confirm owner returned:", error);
 
-    // Cleanup temp files in case of error
-    tempFiles.forEach(deleteTempFile);
+    // Không cần cleanup vì sử dụng memory storage
 
     res.status(500).json({
       success: false,
