@@ -33,6 +33,7 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
+import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -94,6 +95,7 @@ app.use("/api/owner/overview", OwnerOverviewRoute);
 
 // admin route
 app.use("/api/admin/approval-vehicles", AdminApprovalVehicleRoute);
+app.use("/api/admin/management-vehicles", AdminManagementVehicleRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import SidebarAdmin from '../../components/sdiebarAdmin/SidebarAdmin';
 import ApprovalVehicle from './adminManagement/ApprovalVehicle';
+import ManagementVehicles from './adminManagement/ManagementVehicles';
 
 const AdminPage = () => {
     return(
@@ -11,6 +12,7 @@ const AdminPage = () => {
                 <Routes>
                     <Route path="/" element={<div><h1>Welcome to admin</h1></div>} />
                     <Route path="/approvalvehicle" element={<ApprovalVehicle />} />
+                    <Route path="/managementvehicle" element={<ManagementVehicles />} />
                 </Routes>
             </div>
         </div>
