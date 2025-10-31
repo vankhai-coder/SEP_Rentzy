@@ -90,11 +90,6 @@ const ManagementVehicles = () => {
     fetchVehicles(1, true);
   };
 
-  // Handle filter change
-  const handleFilterChange = () => {
-    fetchVehicles(1, true);
-  };
-
   // Handle refresh
   const handleRefresh = () => {
     setSearchQuery('');
