@@ -55,6 +55,12 @@ const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneO
         dispatch(loginWithPhoneNumber({ phoneNumber, otp }))
     };
 
+     // function to format phone like : 0123 456 789 , number fifth is space
+    const formatPhoneNumber = (phone) => {
+        return phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
+    }
+
+
 
 
 
@@ -105,7 +111,7 @@ const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneO
                         <input
                             type="text"
                             id="phoneNumber"
-                            value={phoneNumber}
+                            value={formatPhoneNumber(phoneNumber)}
                             onChange={(e) => { setPhoneNumber(e.target.value) }}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             placeholder="Nhập số điện thoại theo định dạng 0xxxxxxxxx"

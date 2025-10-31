@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import UpdatePhone from "@/components/renter/PersonalInformation/UpdatePhone"
+import { setAvatar } from "@/redux/features/auth/authSlice"
 
 const UserInformation = () => {
 
@@ -116,7 +117,7 @@ const UserInformation = () => {
   // dispatch get basic user information: 
   useEffect(() => {
     dispatch(getBasicUserInformation())
-  }, [])
+  }, [dispatch])
 
 
   // toast if error : 
@@ -138,7 +139,7 @@ const UserInformation = () => {
       // close dialog :
       setUpdateNewNameOpen(false)
     }
-  }, [errorUpdateFullName])
+  }, [errorUpdateFullName, dispatch])
 
   // toast if update full name success :
   useEffect(() => {
@@ -151,7 +152,7 @@ const UserInformation = () => {
       // close dialog :
       setUpdateNewNameOpen(false)
     }
-  }, [isUpdateFullNameSuccess])
+  }, [isUpdateFullNameSuccess, dispatch])
 
   // toast if update avatar error  :
   useEffect(() => {
@@ -165,7 +166,7 @@ const UserInformation = () => {
       // close dialog :
       setUpdateAvatarDialogOpen(false)
     }
-  }, [errorUpdateAvatar])
+  }, [errorUpdateAvatar, dispatch])
 
   // toast if update avatar success :
   useEffect(() => {
@@ -178,8 +179,10 @@ const UserInformation = () => {
       dispatch(resetUserInformationSlice())
       // close dialog :
       setUpdateAvatarDialogOpen(false)
+      // set new avatar in header :
+      dispatch(setAvatar(avatar_url))
     }
-  }, [isUpdateAvatarSuccess])
+  }, [isUpdateAvatarSuccess, dispatch, avatar_url])
 
 
   if (isLoadingGetBasicUserInformation) {
@@ -392,10 +395,17 @@ const UserInformation = () => {
               {/* div ben trai  */}
               <div className="flex gap-2 items-center">
                 <span className="font-light text-sm">Email</span>
-                <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
-                  <CheckCheck className="text-green-500" size={12} />
-                  <span className="text-xs font-normal">Đã xác thực</span>
-                </div>
+                {email ?
+                  <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
+                    <CheckCheck className="text-green-500" size={12} />
+                    <span className="text-xs font-normal">Đã xác thực</span>
+                  </div>
+                  :
+                  <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
+                    <BiError />
+                    <span className="hidden sm:block">Chưa xác thực</span>
+                  </div>
+                }
               </div>
               {/* div ben phai  */}
               <div className="flex items-center gap-2 ">
