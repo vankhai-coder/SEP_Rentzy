@@ -31,6 +31,9 @@ import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 
+// admin routes
+import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
+
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
 
@@ -88,6 +91,9 @@ app.use("/api/owner", OwnerVehicleRoute);
 app.use("/api/owner/brands", OwnerBrandRoute);
 app.use("/api/owner/dashboard", OwnerDashboardRoute);
 app.use("/api/owner/overview", OwnerOverviewRoute);
+
+// admin route
+app.use("/api/admin/approval-vehicles", AdminApprovalVehicleRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

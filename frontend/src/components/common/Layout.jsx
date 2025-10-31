@@ -17,9 +17,10 @@ const Layout = ({ children }) => {
   const error = queryParams.get("error");
 
   useEffect(() => {
-    if (!window.location.href.includes("verify-email") && !error) {
-      dispatch(checkAuth());
-    }
+    // Temporarily disabled auth check for testing
+    // if (!window.location.href.includes("verify-email") && !error) {
+    //   dispatch(checkAuth());
+    // }
   }, [error]);
 
   useEffect(() => {
