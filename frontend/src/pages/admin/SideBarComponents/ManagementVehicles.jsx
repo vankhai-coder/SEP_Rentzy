@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../../config/axiosInstance';
 import { toast } from 'react-toastify';
-import { 
+import {
   MdRefresh,
   MdSearch,
   MdLock,
@@ -48,8 +48,8 @@ const ManagementVehicles = () => {
         params.approvalStatus = approvalStatusFilter;
       }
 
-      const endpoint = isSearch || searchQuery.trim() || statusFilter || vehicleTypeFilter || approvalStatusFilter 
-        ? '/api/admin/management-vehicles/search' 
+      const endpoint = isSearch || searchQuery.trim() || statusFilter || vehicleTypeFilter || approvalStatusFilter
+        ? '/api/admin/management-vehicles/search'
         : '/api/admin/management-vehicles';
 
       const response = await axiosInstance.get(endpoint, { params });
@@ -74,7 +74,7 @@ const ManagementVehicles = () => {
   // Initial load
   useEffect(() => {
     fetchVehicles(1);
-  }, []);
+  }, [fetchVehicles]);
 
   // Auto-trigger when filters change
   useEffect(() => {
@@ -82,7 +82,7 @@ const ManagementVehicles = () => {
     if (vehicles.length > 0) {
       fetchVehicles(1, true);
     }
-  }, [statusFilter, vehicleTypeFilter, approvalStatusFilter]);
+  }, [statusFilter, vehicleTypeFilter, approvalStatusFilter, searchQuery, fetchVehicles, vehicles.length]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -109,7 +109,7 @@ const ManagementVehicles = () => {
       const response = await axiosInstance.patch(`/api/admin/management-vehicles/${vehicleId}/status`, {
         status: 'blocked'
       });
-      
+
       if (response.data.success) {
         toast.success(`Đã khóa xe ${vehicleModel}`);
         fetchVehicles(pagination.currentPage);
@@ -130,7 +130,7 @@ const ManagementVehicles = () => {
       const response = await axiosInstance.patch(`/api/admin/management-vehicles/${vehicleId}/status`, {
         status: 'available'
       });
-      
+
       if (response.data.success) {
         toast.success(`Đã mở khóa xe ${vehicleModel}`);
         fetchVehicles(pagination.currentPage);
@@ -391,28 +391,27 @@ const ManagementVehicles = () => {
               >
                 Trước
               </button>
-              
+
               {/* Page numbers */}
               {(() => {
                 const pages = [];
                 const maxVisiblePages = 5;
                 let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
-                
+
                 if (endPage - startPage + 1 < maxVisiblePages) {
                   startPage = Math.max(1, endPage - maxVisiblePages + 1);
                 }
-                
+
                 for (let i = startPage; i <= endPage; i++) {
                   pages.push(
                     <button
                       key={i}
                       onClick={() => handlePageChange(i)}
-                      className={`px-3 py-1 text-sm border rounded ${
-                        i === pagination.currentPage
-                          ? 'bg-blue-500 text-white border-blue-500'
-                          : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-1 text-sm border rounded ${i === pagination.currentPage
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       {i}
                     </button>
@@ -420,7 +419,7 @@ const ManagementVehicles = () => {
                 }
                 return pages;
               })()}
-              
+
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}

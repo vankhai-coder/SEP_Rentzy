@@ -11,6 +11,10 @@ const Login = ({ setRegisterOpen, setLoginOpen, setIsLoginWithPhoneOpen }) => {
     isLoadingRequest, isRequestSuccess, errorRequest,
     isLoadingRequestReset, isRequestResetSuccess, errorRequestReset,
   } = useSelector(state => state.userStore)
+
+  // get role from redux :
+  const { role } = useSelector(state => state.userStore)
+
   const dispatch = useDispatch()
 
   const [email, setEmail] = useState('');
@@ -45,8 +49,11 @@ const Login = ({ setRegisterOpen, setLoginOpen, setIsLoginWithPhoneOpen }) => {
     if (isLoginSuccess) {
       toast.success('Đăng nhập thành công!')
       dispatch(resetState())
-      // Không tự động chuyển sang trang chủ xe (owner) để người dùng tự lựa chọn
-      // Nếu cần điều hướng, có thể dựa vào nơi mở modal hoặc để user tự chọn menu
+
+      if (role === 'admin') {
+        // redirect to /admin
+        window.location.href = '/admin'
+      }
     }
   }, [isLoginSuccess, dispatch])
 

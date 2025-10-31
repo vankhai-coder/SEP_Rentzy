@@ -30,7 +30,7 @@ import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
-import AdminPage from "./pages/admin/AdminPage.jsx";
+import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
 
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
@@ -39,6 +39,17 @@ import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
+import ManagementVehicles from "./pages/admin/SideBarComponents/ManagementVehicles.jsx";
+import ApprovalVehicle from "./pages/admin/SideBarComponents/ApprovalVehicle.jsx";
+import UserManagement from "./pages/admin/SideBarComponents/UserManagement.jsx";
+import ApproveOwner from "./pages/admin/SideBarComponents/ApproveOwner.jsx";
+import Messages from "./pages/admin/SideBarComponents/Messages.jsx";
+import Reports from "./pages/admin/SideBarComponents/Reports.jsx";
+import Revenue from "./pages/owner/dashboard/Revenue.jsx";
+import RevenueStats from "./pages/admin/SideBarComponents/RevenueStats.jsx";
+import RefundManagement from "./pages/admin/SideBarComponents/RefundManagement.jsx";
+import DisburseOwner from "./pages/admin/SideBarComponents/DisburseOwner.jsx";
+import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement.jsx";
 
 // Test pages
 
@@ -62,11 +73,7 @@ const App = () => {
           {/* RENTER ROUTES :  */}
           <Route
             path="/"
-            element={
-              // <ProtectedRoute allowRole={["renter", "owner", "admin"]}>
-              <Account />
-              // </ProtectedRoute>
-            }
+            element={<Account />}
           >
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
@@ -133,13 +140,59 @@ const App = () => {
 
           {/* ADMIN ROUTES :  */}
           <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute allowRole={"admin"}>
-                <AdminPage />
-              </ProtectedRoute>
-            }
-          />
+            path="/admin"
+            element={<AdminPage />}
+          >
+            {/* Admin Routes For Admin Here : */}
+            <Route
+              path="approvalvehicle"
+              element={<ApprovalVehicle />}
+            />
+            <Route
+              path="managementvehicle"
+              element={<ManagementVehicles />}
+            />
+            <Route
+              path="userManagement"
+              element={<UserManagement />}
+            />
+
+            <Route
+              path="approveOwner"
+              element={<ApproveOwner />}
+            />
+
+            <Route
+              path="messages"
+              element={<Messages />}
+            />
+            <Route
+              path="reports"
+              element={<Reports />}
+            />
+            <Route
+              path="revenue-stats"
+              element={<RevenueStats />}
+            />
+            <Route
+              path="refundManagement"
+              element={<RefundManagement />}
+            />
+
+            <Route
+              path="disburseOwner"
+              element={<DisburseOwner />}
+            />
+
+            <Route
+              path="voucherManagement"
+              element={<VoucherManagement />}
+            />
+
+            {/* catch all route start with /admin  */}
+            <Route path="*" element={<ApprovalVehicle />} />
+
+          </Route>
 
           {/* Catch-all route */}
           <Route path="*" element={<HomePage />} />

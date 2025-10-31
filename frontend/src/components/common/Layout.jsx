@@ -1,14 +1,12 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
-import { checkAuth } from "@/redux/features/auth/authSlice.js";
 import ChatBox from "../chat/ChatBox.jsx";
-import { useLocation , useNavigate} from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const Layout = ({ children }) => {
-  const dispatch = useDispatch();
   const { role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
 
@@ -34,25 +32,25 @@ const Layout = ({ children }) => {
     if (role === 'owner' && location.pathname === '/') {
       navigate('/owner', { replace: true });
     }
-  }, [role, location.pathname]);
+  }, [role, location.pathname, navigate]);
 
   // redirect admin to /admin when landing on home after auth
   useEffect(() => {
     if (role === 'admin' && location.pathname === '/') {
       navigate('/admin', { replace: true });
     }
-  }, [role, location.pathname]);
+  }, [role, location.pathname, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
-      {!((role === 'owner' && location.pathname.startsWith('/owner')) || 
-         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Header />}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
+        (role === 'admin')) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
       {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
-      {!((role === 'owner' && location.pathname.startsWith('/owner')) || 
-         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
+        (role === 'admin')) && <Footer />}
       <ChatBox />
     </div>
   );
