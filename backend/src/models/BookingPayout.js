@@ -67,7 +67,6 @@ const BookingPayout = sequelize.define("BookingPayout", {
       comment: "Thông tin tài khoản ngân hàng hoặc ví điện tử",
     },
 
-    // === THỜI GIAN XỬ LÝ ===
     // Thời gian yêu cầu thanh toán
     requested_at: {
       type: DataTypes.DATE,

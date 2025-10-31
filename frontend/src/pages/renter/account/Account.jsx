@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/select";
 import { SelectGroup } from "@radix-ui/react-select";
 import {
-  Car,
   CheckCircle2Icon,
   Gift,
   List,
@@ -19,14 +18,15 @@ import {
   Trash2,
   User,
   Star,
+  ArrowRightLeft,
+  TicketXIcon,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
 
 const Account = () => {
-
   // check if user if logged in
-  const { userId  } = useSelector((state) => state.userStore);
+  const { userId } = useSelector((state) => state.userStore);
 
   const navigate = useNavigate();
 
@@ -35,10 +35,14 @@ const Account = () => {
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
-  if(!userId){
+  if (!userId) {
     return (
       <div className="w-full py-20 text-center text-gray-500">
-        Vui lòng <Link to="/" className="text-blue-500 underline">đăng nhập</Link> để truy cập trang tài khoản của bạn.
+        Vui lòng{" "}
+        <Link to="/" className="text-blue-500 underline">
+          đăng nhập
+        </Link>{" "}
+        để truy cập trang tài khoản của bạn.
       </div>
     );
   }
@@ -60,19 +64,13 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
-              value="/myvehicles"
-            >
-              <Car /> Quản lí cho thuê
-            </SelectItem>
-            <SelectItem
-              className={"border-b-1 py-2 text-md font-medium"}
-              value="/account/booking-history"
+              value="/booking-history"
             >
               <List /> Danh sách thuê xe
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
-              value="/account/my-reviews"
+              value="/my-reviews"
             >
               <Star /> Đánh giá của tôi
             </SelectItem>
@@ -94,6 +92,12 @@ const Account = () => {
             >
               <CheckCircle2Icon />
               Đơn hàng Thuê xe dài hạn
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/points"
+            >
+              <Gift /> Điểm thưởng
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -149,16 +153,14 @@ const Account = () => {
             >
               <User /> Tài khoản của tôi
             </NavLink>
-
             <NavLink
-              to="/myvehicles"
+              to="/favorites"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
               }
             >
-              <Car /> Quản lí cho thuê
+              <Heart /> Xe yêu thích
             </NavLink>
-
             <NavLink
               to="/booking-history"
               className={({ isActive }) =>
@@ -175,31 +177,23 @@ const Account = () => {
             >
               <Star size={20} /> Đánh giá của tôi
             </NavLink>
+
             <NavLink
-              to="/favorites"
+              to="/transactions"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
               }
             >
-              <Heart /> Xe yêu thích
+              <ArrowRightLeft /> Lịch sử giao dịch
             </NavLink>
 
             <NavLink
-              to="/mytrips"
+              to="/points"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
               }
             >
-              <MapPinCheck /> Chuyến của tôi
-            </NavLink>
-
-            <NavLink
-              to="/longtermrenting"
-              className={({ isActive }) =>
-                isActive ? `${baseClass} ${activeClass}` : baseClass
-              }
-            >
-              <CheckCircle2Icon /> Đơn hàng Thuê xe dài hạn
+              <Gift /> Điểm thưởng
             </NavLink>
 
             <NavLink
@@ -209,15 +203,6 @@ const Account = () => {
               }
             >
               <Gift /> Quà tặng
-            </NavLink>
-
-            <NavLink
-              to="/myaddress"
-              className={({ isActive }) =>
-                isActive ? `${baseClass} ${activeClass}` : baseClass
-              }
-            >
-              <LocationEditIcon /> Địa chỉ của tôi
             </NavLink>
 
             <NavLink

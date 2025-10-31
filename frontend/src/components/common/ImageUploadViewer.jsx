@@ -1,347 +1,104 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import axiosInstance from "../../config/axiosInstance";
-
+// Component chỉ dành cho OWNER upload và xác nhận ảnh bàn giao/nhận xe
 const ImageUploadViewer = ({
   bookingId,
-  imageType, // 'pre-rental' or 'post-rental'
-  title,
-  description,
-  minImages = 5,
-  onUploadSuccess,
-  readOnly = false,
-  showConfirmButton = false,
-  userRole = "owner",
+  imageType,
   onConfirmSuccess,
-  handoverData, // Nhận handover data từ props
-  onHandoverUpdate, // Callback để cập nhật handover data
+  handoverData,
+  minImages = 5,
 }) => {
-  // State cho ảnh đã upload lên server
-  const [uploadedImages, setUploadedImages] = useState([]);
-
-  // State cho ảnh được chọn nhưng chưa upload (preview)
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [previewImages, setPreviewImages] = useState([]);
-
-  // State khác
-  const [uploading, setUploading] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [localImages, setLocalImages] = useState([]);
+  const [confirmedImages, setConfirmedImages] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [error, setError] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
+    // Kiểm tra xem đã có ảnh được xác nhận chưa
+    console.log("HandoverData:", handoverData);
+    console.log("ImageType:", imageType);
+
     if (handoverData) {
-      // Lấy ảnh theo loại (pre-rental hoặc post-rental) từ handover data
       if (imageType === "pre-rental") {
-        const images = handoverData.pre_rental_images || [];
-        // Loại bỏ khoảng trắng và backticks từ URLs
-        const cleanedImages = images.map((url) =>
-          typeof url === "string" ? url.trim().replace(/`/g, "") : url
-        );
-        setUploadedImages(cleanedImages);
+        const preRentalImages = handoverData.pre_rental_images || [];
+        console.log("Pre-rental images:", preRentalImages);
+        if (preRentalImages.length > 0) {
+          const mappedImages = preRentalImages.map((url) => {
+            console.log("Processing image URL:", url);
+            return { url, id: Date.now() + Math.random() };
+          });
+          setConfirmedImages(mappedImages);
+          setIsConfirmed(handoverData.owner_handover_confirmed || false);
+        }
       } else {
-        const images = handoverData.post_rental_images || [];
-        // Loại bỏ khoảng trắng và backticks từ URLs
-        const cleanedImages = images.map((url) =>
-          typeof url === "string" ? url.trim().replace(/`/g, "") : url
-        );
-        setUploadedImages(cleanedImages);
+        const postRentalImages = handoverData.post_rental_images || [];
+        console.log("Post-rental images:", postRentalImages);
+        if (postRentalImages.length > 0) {
+          const mappedImages = postRentalImages.map((url) => {
+            console.log("Processing image URL:", url);
+            return { url, id: Date.now() + Math.random() };
+          });
+          setConfirmedImages(mappedImages);
+          setIsConfirmed(handoverData.owner_return_confirmed || false);
+        }
       }
     }
   }, [handoverData, imageType]);
 
-  // Xử lý khi chọn file
   const handleFileSelect = (event) => {
+    if (isConfirmed) {
+      toast.error("Đã xác nhận bàn giao, không thể chỉnh sửa ảnh");
+      return;
+    }
+
     const files = Array.from(event.target.files);
-    processSelectedFiles(files);
-  };
-
-  // Xử lý drag & drop
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    processSelectedFiles(files);
-  };
-
-  // Xử lý files được chọn
-  const processSelectedFiles = (files) => {
-    if (files.length === 0) return;
-
-    // Validate file types
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    const invalidFiles = files.filter(
-      (file) => !validTypes.includes(file.type)
-    );
-
-    if (invalidFiles.length > 0) {
-      setError("Chỉ chấp nhận file ảnh định dạng JPG, JPEG, PNG, WEBP");
-      return;
-    }
-
-    // Validate file sizes (max 5MB each)
-    const oversizedFiles = files.filter((file) => file.size > 5 * 1024 * 1024);
-    if (oversizedFiles.length > 0) {
-      setError("Kích thước file không được vượt quá 5MB");
-      return;
-    }
-
-    // Kiểm tra tổng số ảnh (đã upload + sẽ upload)
-    const totalImages =
-      uploadedImages.length + selectedFiles.length + files.length;
-    if (totalImages > 10) {
-      setError(
-        `Chỉ được upload tối đa 10 ảnh. Hiện tại: ${uploadedImages.length} đã upload, ${selectedFiles.length} đang chọn`
-      );
-      return;
-    }
-
-    // Tạo preview cho các file mới
-    const newPreviewImages = [];
-
-    files.forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const preview = {
-          id: `preview-${Date.now()}-${index}`,
-          file: file,
-          url: e.target.result,
-          name: file.name,
-          size: file.size,
-          isPreview: true,
-        };
-        newPreviewImages.push(preview);
-
-        // Cập nhật state khi tất cả file đã được đọc
-        if (newPreviewImages.length === files.length) {
-          setPreviewImages((prev) => [...prev, ...newPreviewImages]);
-          setSelectedFiles((prev) => [...prev, ...files]);
-          setError("");
-        }
-      };
-      reader.readAsDataURL(file);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File ${file.name} không phải là ảnh`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File ${file.name} quá lớn (tối đa 5MB)`);
+        return false;
+      }
+      return true;
     });
-  };
 
-  // Xóa ảnh preview (chưa upload)
-  const removePreviewImage = (previewId) => {
-    setPreviewImages((prev) => prev.filter((img) => img.id !== previewId));
-    const previewIndex = previewImages.findIndex((img) => img.id === previewId);
-    if (previewIndex !== -1) {
-      setSelectedFiles((prev) =>
-        prev.filter((_, index) => index !== previewIndex)
-      );
-    }
-  };
-
-  // Upload tất cả ảnh đã chọn
-  const uploadAllImages = async () => {
-    if (selectedFiles.length === 0) {
-      setError("Vui lòng chọn ảnh để upload");
+    if (localImages.length + validFiles.length > 10) {
+      toast.error("Chỉ được upload tối đa 10 ảnh");
       return;
     }
 
-    // Kiểm tra số lượng ảnh tối thiểu
-    const totalAfterUpload = uploadedImages.length + selectedFiles.length;
-    if (totalAfterUpload < minImages) {
-      setError(
-        `Cần upload ít nhất ${minImages} ảnh xe. Hiện tại sẽ có ${totalAfterUpload} ảnh`
-      );
+    const newImages = validFiles.map((file) => {
+      const preview = URL.createObjectURL(file);
+      console.log("Created preview URL:", preview, "for file:", file.name);
+      return {
+        id: Date.now() + Math.random(),
+        file,
+        preview,
+        name: file.name,
+      };
+    });
+
+    console.log("Adding new images:", newImages);
+    setLocalImages((prev) => [...prev, ...newImages]);
+  };
+
+  const removeLocalImage = (imageId) => {
+    if (isConfirmed) {
+      toast.error("Đã xác nhận bàn giao, không thể chỉnh sửa ảnh");
       return;
     }
 
-    try {
-      setUploading(true);
-      setError("");
-
-      const formData = new FormData();
-      selectedFiles.forEach((file) => {
-        formData.append("images", file);
-      });
-
-      let endpoint;
-      if (imageType === "pre-rental") {
-        endpoint = `/api/handover/${bookingId}/upload-pre-rental-images`;
-      } else {
-        endpoint = `/api/handover/${bookingId}/upload-post-rental-images`;
+    setLocalImages((prev) => {
+      const imageToRemove = prev.find((img) => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
       }
-
-      const response = await axiosInstance.post(endpoint, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.data.success) {
-        // Clear preview images và selected files
-        setPreviewImages([]);
-        setSelectedFiles([]);
-
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
-      } else {
-        setError(response.data.message || "Có lỗi xảy ra khi upload ảnh");
-      }
-    } catch (error) {
-      console.error("Error uploading images:", error);
-      setError(error.response?.data?.message || "Có lỗi xảy ra khi upload ảnh");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Xóa ảnh đã upload
-  const handleDeleteUploadedImage = async (imageIndex) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa ảnh này?")) {
-      return;
-    }
-
-    try {
-      const endpoint =
-        imageType === "pre-rental"
-          ? `/api/handover/${bookingId}/delete-image/${imageIndex}`
-          : `/api/handover/${bookingId}/delete-post-rental-image/${imageIndex}`;
-
-      const response = await fetch(endpoint, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        // Cập nhật state cục bộ
-        const updatedImages = uploadedImages.filter(
-          (_, index) => index !== imageIndex
-        );
-        setUploadedImages(updatedImages);
-
-        // Cập nhật handoverData
-        const updatedHandoverData = {
-          ...handoverData,
-          [imageType === "pre-rental"
-            ? "pre_rental_images"
-            : "post_rental_images"]: updatedImages,
-        };
-
-        if (onHandoverUpdate) {
-          onHandoverUpdate(updatedHandoverData);
-        }
-
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Có lỗi xảy ra khi xóa ảnh");
-      }
-    } catch (error) {
-      console.error("Error deleting image:", error);
-      setError("Có lỗi xảy ra khi xóa ảnh");
-    }
-  };
-
-  const handleConfirmImages = async () => {
-    try {
-      setConfirming(true);
-      setError("");
-
-      let endpoint, successMessage;
-      if (imageType === "pre-rental") {
-        endpoint = `/api/handover/${bookingId}/confirm-pre-rental-images-by-renter`;
-        successMessage = "Xác nhận ảnh xe thành công!";
-      } else {
-        endpoint = `/api/handover/${bookingId}/confirm-post-rental-images-by-renter`;
-        successMessage = "Xác nhận trả xe thành công!";
-      }
-
-      const response = await axiosInstance.post(endpoint);
-
-      if (response.data.success) {
-        alert(successMessage);
-        if (onConfirmSuccess) {
-          onConfirmSuccess();
-        }
-      } else {
-        setError(response.data.message || "Có lỗi xảy ra khi xác nhận");
-      }
-    } catch (error) {
-      console.error("Error confirming images:", error);
-      setError(error.response?.data?.message || "Có lỗi xảy ra khi xác nhận");
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  const handleOwnerConfirmHandover = async () => {
-    try {
-      setConfirming(true);
-      setError("");
-
-      let endpoint, successMessage;
-      if (imageType === "pre-rental") {
-        endpoint = `/api/handover/${bookingId}/confirm-handover-by-owner`;
-        successMessage = "Xác nhận bàn giao xe thành công!";
-      } else {
-        endpoint = `/api/handover/${bookingId}/confirm-return-by-owner`;
-        successMessage = "Xác nhận nhận lại xe thành công!";
-      }
-
-      const response = await axiosInstance.post(endpoint);
-
-      if (response.data.success) {
-        alert(successMessage);
-        if (onConfirmSuccess) {
-          onConfirmSuccess();
-        }
-      } else {
-        setError(response.data.message || "Có lỗi xảy ra khi xác nhận");
-      }
-    } catch (error) {
-      console.error("Error confirming handover:", error);
-      setError(error.response?.data?.message || "Có lỗi xảy ra khi xác nhận");
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  const getImageUrl = (image) => {
-    // Nếu image là string (chỉ là URL), trả về trực tiếp
-    if (typeof image === "string") {
-      return image.trim().replace(/`/g, ""); // Loại bỏ khoảng trắng và backticks
-    }
-
-    // Kiểm tra nếu là Cloudinary URL (có url field) hoặc URL đầy đủ
-    if (image.url) {
-      return image.url.trim().replace(/`/g, ""); // Cloudinary URL, loại bỏ khoảng trắng và backticks
-    }
-
-    // Kiểm tra nếu path đã là URL đầy đủ (bắt đầu với http)
-    if (image.path && image.path.startsWith("http")) {
-      return image.path.trim().replace(/`/g, ""); // Cloudinary URL trong path, loại bỏ khoảng trắng và backticks
-    }
-
-    // Fallback cho local path cũ
-    return `${axiosInstance.defaults.baseURL}${image.path}`;
+      return prev.filter((img) => img.id !== imageId);
+    });
   };
 
   const openImageModal = (image, index) => {
@@ -351,495 +108,560 @@ const ImageUploadViewer = ({
   const closeImageModal = () => {
     setSelectedImage(null);
   };
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "Chưa có";
+    return new Date(dateString).toLocaleString("vi-VN");
+  };
 
-  const canUpload = () => {
-    if (readOnly) return false;
-    if (userRole !== "owner") return false;
+  const confirmHandover = async () => {
+    if (localImages.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 ảnh để xác nhận bàn giao");
+      return;
+    }
 
-    if (imageType === "pre-rental") {
-      return !handoverData?.owner_handover_confirmed;
-    } else {
-      return !handoverData?.owner_return_confirmed;
+    if (localImages.length < minImages) {
+      toast.error(`Cần ít nhất ${minImages} ảnh để xác nhận bàn giao xe`);
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      localImages.forEach((image) => {
+        formData.append("images", image.file);
+      });
+
+      // Sử dụng endpoint đúng cho từng loại handover
+      const endpoint =
+        imageType === "pre-rental"
+          ? `/api/handover/${bookingId}/confirm-owner-handover`
+          : `/api/handover/${bookingId}/confirm-owner-return`;
+      console.log("Endpoint:", endpoint);
+
+      const response = await axiosInstance.post(endpoint, formData);
+
+      const data = response.data;
+
+      if (data.success) {
+        // Cập nhật confirmed images với URLs từ server
+        setConfirmedImages(data.data.uploadedImages.map((url) => ({ url })));
+        setLocalImages([]); // Clear local images
+        setIsConfirmed(true);
+
+        const successMessage =
+          imageType === "pre-rental"
+            ? "Xác nhận bàn giao xe thành công!"
+            : "Xác nhận nhận lại xe thành công!";
+        toast.success(successMessage);
+
+        if (onConfirmSuccess) {
+          onConfirmSuccess();
+        }
+      } else {
+        toast.error(data.message || "Có lỗi xảy ra khi xác nhận bàn giao");
+      }
+    } catch (error) {
+      console.error("Error confirming handover:", error);
+      toast.error("Có lỗi xảy ra khi xác nhận bàn giao");
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const canConfirm = () => {
-    if (!showConfirmButton) return false;
-
-    if (imageType === "pre-rental") {
-      if (userRole === "renter") {
-        return (
-          handoverData?.owner_handover_confirmed &&
-          !handoverData?.renter_handover_confirmed &&
-          uploadedImages.length >= minImages
-        );
-      } else {
-        return (
-          !handoverData?.owner_handover_confirmed &&
-          uploadedImages.length >= minImages
-        );
-      }
-    } else {
-      if (userRole === "renter") {
-        return (
-          handoverData?.owner_return_confirmed &&
-          !handoverData?.renter_return_confirmed &&
-          uploadedImages.length >= minImages
-        );
-      } else {
-        return (
-          !handoverData?.owner_return_confirmed &&
-          uploadedImages.length >= minImages
-        );
-      }
-    }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const allImages = [...confirmedImages, ...localImages];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-        {description && (
-          <div className="text-gray-600 text-sm">
-            {typeof description === "string" ? (
-              <p>{description}</p>
-            ) : (
-              <div>
-                <p className="font-medium mb-2">{description.title}</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  {description.items?.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {imageType === "pre-rental"
+            ? "Upload ảnh xe trước khi bàn giao"
+            : "Upload ảnh xe sau khi nhận lại"}
+        </h3>
+        <div className="text-sm text-gray-600">
+          {allImages.length}/10 ảnh (tối thiểu {minImages})
+        </div>
+      </div>
+      <div className="bg-gray-10 rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg
+            className="w-5 h-5 mr-2 text-blue-600"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Trạng thái xác nhận{" "}
+          {imageType === "pre-rental" ? "bàn giao" : "nhận lại"}
+        </h3>
+
+        {imageType === "pre-rental" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Chủ xe</h4>
+                  <p className="text-sm text-gray-500">Xác nhận bàn giao xe</p>
+                </div>
               </div>
-            )}
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  handoverData.owner_handover_confirmed
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {handoverData.owner_handover_confirmed ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Đã xác nhận
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Chờ xác nhận
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                  <svg
+                    className="w-5 h-5 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Người thuê</h4>
+                  <p className="text-sm text-gray-500">Xác nhận nhận xe</p>
+                </div>
+              </div>
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  handoverData.renter_handover_confirmed
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {handoverData.renter_handover_confirmed ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Đã xác nhận
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Chờ xác nhận
+                  </>
+                )}
+              </div>
+            </div>
+            <h3>Thời gian bàn giao</h3>
+            <p className="text-sm text-gray-500">
+              {handoverData.handover_time
+                ? formatDateTime(handoverData.handover_time)
+                : "Chưa xác nhận"}
+            </p>
+          </div>
+        )}
+
+        {imageType === "post-rental" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Chủ xe</h4>
+                  <p className="text-sm text-gray-500">Xác nhận nhận lại xe</p>
+                </div>
+              </div>
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  handoverData.owner_return_confirmed
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {handoverData.owner_return_confirmed ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Đã xác nhận
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Chờ xác nhận
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                  <svg
+                    className="w-5 h-5 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">Người thuê</h4>
+                  <p className="text-sm text-gray-500">Xác nhận trả xe</p>
+                </div>
+              </div>
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  handoverData.renter_return_confirmed
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {handoverData.renter_return_confirmed ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Đã xác nhận
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Chờ xác nhận
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center">
-            <svg
-              className="w-5 h-5 text-red-600 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-red-800">{error}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Status Information for pre-rental */}
-      {imageType === "pre-rental" && handoverData && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-800 mb-3">
-            Trạng thái bàn giao xe
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">Upload ảnh:</span>
-              <div
-                className={`mt-1 ${
-                  uploadedImages.length >= minImages
-                    ? "text-green-600"
-                    : "text-yellow-600"
-                }`}
-              >
-                {uploadedImages.length >= minImages
-                  ? "✓ Đã đủ ảnh"
-                  : `${uploadedImages.length}/${minImages} ảnh`}
-              </div>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">
-                Chủ xe xác nhận:
-              </span>
-              <div
-                className={`mt-1 ${
-                  handoverData.owner_handover_confirmed
-                    ? "text-green-600"
-                    : "text-gray-500"
-                }`}
-              >
-                {handoverData.owner_handover_confirmed
-                  ? "✓ Đã xác nhận"
-                  : "Chưa xác nhận"}
-              </div>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">
-                Khách hàng xác nhận:
-              </span>
-              <div
-                className={`mt-1 ${
-                  handoverData.renter_handover_confirmed
-                    ? "text-green-600"
-                    : "text-gray-500"
-                }`}
-              >
-                {handoverData.renter_handover_confirmed
-                  ? "✓ Đã xác nhận"
-                  : handoverData.owner_handover_confirmed
-                  ? "Chờ xác nhận"
-                  : "Chờ chủ xe xác nhận trước"}
-              </div>
-            </div>
-          </div>
-          {handoverData.handover_time && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <span className="font-medium text-gray-700">
-                Thời gian bàn giao:
-              </span>
-              <div className="text-gray-600 text-sm mt-1">
-                {new Date(handoverData.handover_time).toLocaleString("vi-VN")}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Status Information for post-rental */}
-      {imageType === "post-rental" && handoverData && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-800 mb-3">Trạng thái trả xe</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">Upload ảnh:</span>
-              <div
-                className={`mt-1 ${
-                  uploadedImages.length >= minImages
-                    ? "text-green-600"
-                    : "text-yellow-600"
-                }`}
-              >
-                {uploadedImages.length >= minImages
-                  ? "✓ Đã đủ ảnh"
-                  : `${uploadedImages.length}/${minImages} ảnh`}
-              </div>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">
-                Chủ xe xác nhận:
-              </span>
-              <div
-                className={`mt-1 ${
-                  handoverData.owner_return_confirmed
-                    ? "text-green-600"
-                    : "text-gray-500"
-                }`}
-              >
-                {handoverData.owner_return_confirmed
-                  ? "✓ Đã xác nhận"
-                  : "Chưa xác nhận"}
-              </div>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">
-                Khách hàng xác nhận:
-              </span>
-              <div
-                className={`mt-1 ${
-                  handoverData.renter_return_confirmed
-                    ? "text-green-600"
-                    : "text-gray-500"
-                }`}
-              >
-                {handoverData.renter_return_confirmed
-                  ? "✓ Đã xác nhận"
-                  : handoverData.owner_return_confirmed
-                  ? "Chờ xác nhận"
-                  : "Chờ chủ xe xác nhận trước"}
-              </div>
-            </div>
-          </div>
-          {handoverData.return_time && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <span className="font-medium text-gray-700">
-                Thời gian trả xe:
-              </span>
-              <div className="text-gray-600 text-sm mt-1">
-                {new Date(handoverData.return_time).toLocaleString("vi-VN")}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Upload Section */}
-      {canUpload() && (
+      {/* File input */}
+      {!isConfirmed && (
         <div className="mb-6">
-          {/* Drag & Drop Area */}
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragOver
-                ? "border-blue-400 bg-blue-50"
-                : "border-gray-300 hover:border-gray-400"
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <div className="flex flex-col items-center">
+          <label className="block w-full">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer">
               <svg
-                className="w-12 h-12 text-gray-400 mb-4"
-                fill="none"
+                className="mx-auto h-12 w-12 text-gray-400"
                 stroke="currentColor"
-                viewBox="0 0 24 24"
+                fill="none"
+                viewBox="0 0 48 48"
               >
                 <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                  strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <p className="text-lg font-medium text-gray-700 mb-2">
-                Kéo thả ảnh vào đây hoặc
-              </p>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Chọn ảnh
-              </button>
-              <p className="text-sm text-gray-500 mt-2">
-                Hỗ trợ: JPG, JPEG, PNG, WEBP (tối đa 5MB mỗi file)
-              </p>
-              <p className="text-sm text-gray-500">
-                Tối thiểu {minImages} ảnh, tối đa 10 ảnh
-              </p>
+              <div className="mt-2">
+                <span className="text-sm text-gray-600">
+                  Nhấp để chọn ảnh hoặc kéo thả ảnh vào đây
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG, JPG, GIF tối đa 5MB mỗi file. Tối thiểu {minImages} ảnh,
+                  tối đa 10 ảnh.
+                </p>
+              </div>
             </div>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
         </div>
       )}
 
-      {/* Preview Images Section */}
-      {previewImages.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-gray-800">
-              Ảnh đã chọn ({previewImages.length})
-            </h4>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setPreviewImages([]);
-                  setSelectedFiles([]);
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
+      {/* Images grid */}
+      {allImages.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 16,
+            marginBottom: 12,
+          }}
+        >
+          {allImages.map((image, index) => (
+            <div key={image.id || index} style={{ position: "relative" }}>
+              <img
+                src={image.preview || image.url || image}
+                alt={`Ảnh xe ${index + 1}`}
+                style={{
+                  width: 240,
+                  height: 160,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                  boxShadow: "0 2px 8px #e3e8ef",
+                  backgroundColor: "#f3f4f6",
+                  display: "block",
+                  cursor: "pointer",
                 }}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Xóa tất cả
-              </button>
-              <button
-                onClick={uploadAllImages}
-                disabled={uploading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {uploading
-                  ? "Đang upload..."
-                  : `Upload ${previewImages.length} ảnh`}
-              </button>
-            </div>
-          </div>
+                onClick={() => openImageModal(image, index)}
+                onError={(e) => {
+                  console.error("Image load error:", e.target.src);
+                  e.target.style.backgroundColor = "#f3f4f6";
+                  e.target.style.border = "2px dashed #d1d5db";
+                }}
+                onLoad={(e) => {
+                  console.log("Image loaded successfully:", e.target.src);
+                }}
+              />
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {previewImages.map((image) => (
-              <div key={image.id} className="relative group">
-                <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                  <img
-                    src={image.url}
-                    alt={image.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Image Info */}
-                <div className="mt-2 text-xs text-gray-600">
-                  <p className="truncate" title={image.name}>
-                    {image.name}
-                  </p>
-                  <p>{formatFileSize(image.size)}</p>
-                </div>
-
-                {/* Remove Button */}
+              {/* Remove button - matching BookingDetailOwner style */}
+              {!isConfirmed && image.preview && (
                 <button
-                  onClick={() => removePreviewImage(image.id)}
-                  className="absolute top-2 right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeLocalImage(image.id)}
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    background: "#fff",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 22,
+                    height: 22,
+                    cursor: "pointer",
+                    boxShadow: "0 1px 4px #e3e8ef",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
                   <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    style={{ color: "#f76c6c", fontSize: 14 }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    width="14"
+                    height="14"
                   >
                     <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
                     />
                   </svg>
                 </button>
+              )}
+
+              {/* Image number */}
+              <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                {index + 1}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Uploaded Images Section */}
-      {uploadedImages.length > 0 && (
-        <div className="mb-6">
-          <h4 className="font-medium text-gray-800 mb-4">
-            Ảnh đã upload ({uploadedImages.length})
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {uploadedImages.map((image, index) => (
-              <div
-                key={typeof image === "string" ? image : image.id || index}
-                className="relative group"
-              >
-                <div
-                  className="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
-                  onClick={() => openImageModal(image, index)}
-                >
-                  <img
-                    src={getImageUrl(image)}
-                    alt={`${imageType} image ${index + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform"
-                  />
-                </div>
-
-                {/* Delete Button */}
-                {canUpload() && (
-                  <button
-                    onClick={() => handleDeleteUploadedImage(index)}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              {/* Confirmed indicator */}
+              {image.url && (
+                <div className="absolute bottom-2 left-2 bg-green-600 text-white rounded-full p-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* No Images Message */}
-      {uploadedImages.length === 0 && previewImages.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <svg
-            className="w-16 h-16 mx-auto mb-4 text-gray-300"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      {/* Action buttons */}
+      {!isConfirmed && localImages.length > 0 && (
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={() => setLocalImages([])}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <p>Chưa có ảnh nào được upload</p>
+            Xóa tất cả
+          </button>
+          <button
+            onClick={confirmHandover}
+            disabled={isUploading || localImages.length < minImages}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              isUploading || localImages.length < minImages
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            {isUploading
+              ? "Đang xử lý..."
+              : `Xác nhận ${
+                  imageType === "pre-rental" ? "bàn giao xe" : "nhận lại xe"
+                }`}
+          </button>
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-3 mt-6">
-        {canConfirm() && userRole === "renter" && (
-          <button
-            onClick={handleConfirmImages}
-            disabled={confirming}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {confirming ? "Đang xác nhận..." : "Xác nhận"}
-          </button>
-        )}
-
-        {canConfirm() && userRole === "owner" && (
-          <button
-            onClick={handleOwnerConfirmHandover}
-            disabled={confirming}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {confirming
-              ? "Đang xác nhận..."
-              : imageType === "pre-rental"
-              ? "Xác nhận bàn giao"
-              : "Xác nhận nhận lại xe"}
-          </button>
-        )}
-      </div>
+      {/* Help text */}
+      {!isConfirmed && localImages.length < minImages && (
+        <div className="mt-4 text-sm text-gray-600">
+          <p>
+            Cần ít nhất {minImages} ảnh để xác nhận{" "}
+            {imageType === "pre-rental" ? "bàn giao xe" : "nhận lại xe"}.
+          </p>
+          <p>
+            Hiện tại: {localImages.length}/{minImages} ảnh
+          </p>
+        </div>
+      )}
 
       {/* Image Modal */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-4xl max-h-full">
-            <img
-              src={getImageUrl(selectedImage)}
-              alt={`Image ${selectedImage.index + 1}`}
-              className="max-w-full max-h-full object-contain"
-            />
             <button
               onClick={closeImageModal}
-              className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center hover:bg-opacity-30"
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              ×
             </button>
+            <img
+              src={selectedImage.preview || selectedImage.url || selectedImage}
+              alt={`Ảnh xe ${selectedImage.index + 1}`}
+              className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                e.target.src = "/default_avt.jpg";
+                e.target.alt = "Không thể tải ảnh";
+              }}
+            />
+            <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded">
+              <div className="font-medium">
+                {selectedImage.name || `Ảnh xe ${selectedImage.index + 1}`}
+              </div>
+              <div className="text-sm opacity-75">
+                Ảnh {selectedImage.index + 1} / {allImages.length}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -54,11 +54,6 @@ const BookingCancellation = sequelize.define("BookingCancellation", {
     type: DataTypes.DATE,
     allowNull: true,
   },
-  // Chủ xe đã hủy hay chưa
-  owner_cancelled: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
   
   // === THÔNG TIN HOÀN TIỀN CHO NGƯỜI THUÊ ===
   // Tổng tiền hoàn cho người thuê

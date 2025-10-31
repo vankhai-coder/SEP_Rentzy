@@ -72,7 +72,7 @@ export const createBookingReview = async (req, res) => {
     const newBalance = user.points + POINTS_REWARD;
     await user.update({ points: newBalance }, { transaction });
 
-    // 7️⃣ Ghi lịch sử điểm
+    // 7️ Ghi lịch sử điểm
     await PointsTransaction.create(
       {
         user_id: renter_id,

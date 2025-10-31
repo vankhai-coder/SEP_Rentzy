@@ -81,13 +81,13 @@ export const usePaymentLogic = (bookingId) => {
   }, [bookingId]);
 
   /**
-   * Xử lý thanh toán cọc qua PayOS
+   * Xử lý thanh toán đặt cọc qua PayOS
    * 
    * LUỒNG XỬ LÝ:
    * 1. Set isPaying = true (hiển thị loading)
    * 2. Call API POST /api/payment/payos/link với booking data
    * 3. Redirect user đến PayOS payment page
-   * 4. Set returnUrl = contract page, cancelUrl = current page
+   * 4. Set returnUrl = contract page, cancelUrl = current page với tham số cancel
    * 5. Nếu có lỗi: hiển thị toast error
    */
   const handleDepositPaymentPayOS = async () => {
@@ -101,7 +101,7 @@ export const usePaymentLogic = (bookingId) => {
       const res = await axiosInstance.post("/api/payment/payos/link", {
         bookingId: booking.booking_id,
         returnUrl: window.location.origin + `/contract/${booking.booking_id}`,
-        cancelUrl: window.location.origin + `/payment-deposit/${booking.booking_id}`,
+        cancelUrl: window.location.origin + `/payment-deposit/${booking.booking_id}?payment=cancel`,
       });
 
       if (res.data.payUrl) {

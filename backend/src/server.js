@@ -18,12 +18,15 @@ import SearchVehicleRoute from "./routes/renter/searchVehicleRoute.js";
 import BookingReviewRoute from "./routes/renter/bookingReviewRoute.js";
 import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
+import TransactionRoute from "./routes/renter/transactionRoute.js";
 // booking route
+
 import BookingRoute from "./routes/booking/bookingRoute.js";
 import HandoverRoute from "./routes/booking/handoverRoute.js";
 
 // voucher route
 import VoucherRoute from "./routes/renter/voucherRoute.js";
+import PointsRoute from "./routes/renter/pointsRoute.js";
 
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
 import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
@@ -50,7 +53,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // static files for uploads
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN,
@@ -80,7 +83,7 @@ app.use("/api/renter/reviews", BookingReviewRoute);
 app.use("/api/renter/booking-history", BookingHistoryRoute);
 app.use("/api/renter/reports", VehicleReportRoute);
 app.use("/api/renter/info", RenterInfoRoute);
-
+app.use("/api/renter/transactions", TransactionRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
@@ -99,6 +102,9 @@ app.use("/api/admin/management-vehicles", AdminManagementVehicleRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
+
+// points route
+app.use("/api/renter/points", PointsRoute);
 
 // payment route
 app.use("/api/payment", PaymentRoute);

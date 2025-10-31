@@ -1,0 +1,53 @@
+@startuml View Booking List (by renter) - Class Diagram
+!theme plain
+title View Booking List (by renter) - Backend Class Diagram
+
+class BookingHistoryRoute {
+  + GET /
+  + GET /statuses
+  + GET /:bookingId
+}
+
+class BookingHistoryController {
+  + getBookingHistory(req, res)
+  + getAllStatuses(req, res)
+  + getBookingDetail(req, res)
+}
+
+class Booking {
+  + booking_id: Integer
+  + renter_id: Integer
+  + vehicle_id: Integer
+  + start_date: Date
+  + end_date: Date
+  + total_cost: Decimal
+  + status: String
+  + created_at: DateTime
+}
+
+class Vehicle {
+  + vehicle_id: Integer
+  + model: String
+  + license_plate: String
+  + price_per_day: Decimal
+  + brand_id: Integer
+}
+
+class User {
+  + user_id: Integer
+  + full_name: String
+  + email: String
+}
+
+class Brand {
+  + brand_id: Integer
+  + name: String
+}
+
+BookingHistoryRoute --> BookingHistoryController : routes to
+BookingHistoryController --> Booking : queries
+Booking --> Vehicle : belongs to
+Booking --> User : renter
+Vehicle --> Brand : belongs to
+
+@enduml
