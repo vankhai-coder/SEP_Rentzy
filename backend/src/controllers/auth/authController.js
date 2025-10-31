@@ -76,8 +76,13 @@ export const googleCallback = async (req, res) => {
         });
 
         // if user exist but email already in use : 
-        if (existUser && existUser.authMethod === 'email') {
+        if (existUser && (existUser.authMethod === 'email' || existUser.authMethod === 'phone')) {
             return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?error=emailInUser`)
+        }
+
+        // check is band : 
+        if (existUser && !existUser.is_active) {
+            return res.status(200).redirect(`${process.env.CLIENT_ORIGIN}?error=userBanned`)
         }
 
         if (existUser) {
@@ -273,6 +278,10 @@ export const login = async (req, res) => {
         // 1.1 check if this email is register by google oauth method : 
         if (existUser && existUser.authMethod === 'oauth') {
             return res.status(400).json({ message: 'Email này đã được dùng để đăng nhập với Google!' })
+        }
+        // 1.2 check if this email is register by phone method :
+        if (existUser && existUser.authMethod === 'phone') {
+            return res.status(400).json({ message: 'Email này đã được dùng để đăng nhập với Số điện thoại!' })
         }
 
         // 2. Check if email is verified
@@ -617,6 +626,9 @@ export const registerWithPhoneNumber = async (req, res) => {
     // 1. get phone number from req.body
     const { phoneNumber } = req.body || {};
 
+    // log  : 
+    console.log("Register with phone number request received for:", phoneNumber);
+
     // 2. Validate phone number
     if (!phoneNumber) {
         return res.status(400).json({ message: "Bạn phải cung cấp số điện thoại!" });
@@ -629,6 +641,9 @@ export const registerWithPhoneNumber = async (req, res) => {
         formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
     }
 
+    // log  : 
+    console.log("Formatted phone number:", formattedPhoneNumber);
+
     // 4. check if phone number already exist and decrypted value match , and phone_verified is true  :
     // select all users that have phone number , phone_verified = true and decrypt phone number to compare :
     const users = await db.User.findAll(
@@ -638,7 +653,6 @@ export const registerWithPhoneNumber = async (req, res) => {
                     [Op.ne]: null
                 },
                 phone_verified: true,
-                authMethod: 'phone'
             }
         }
     );
@@ -650,7 +664,8 @@ export const registerWithPhoneNumber = async (req, res) => {
             }
         }
     }
-
+    // log : 
+    console.log("Phone number is available for registration:", formattedPhoneNumber);
     // 5. send otp using twilio :
     // add try catch to import twilio error
     try {
@@ -669,6 +684,8 @@ export const registerWithPhoneNumber = async (req, res) => {
             success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
         });
     }
+    // log : 
+    console.log("OTP sent successfully to:", formattedPhoneNumber);
 
     // 6. create new user with phone number only (phone_verified is false by default) :
     try {
@@ -802,6 +819,9 @@ export const loginWithPhoneNumber = async (req, res) => {
         formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
     }
 
+    // log : 
+    console.log("Login with phone number request for:", formattedPhoneNumber);
+
     // 4. find user by phone number and phone_verified = true
     const users = await db.User.findAll(
         {
@@ -883,6 +903,9 @@ export const requestLoginWithPhoneNumber = async (req, res) => {
         formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
     }
 
+    // log  : 
+    console.log("Formatted phone number for login request:", formattedPhoneNumber);
+
     // 4. check if phone number exist and decrypted value match , and phone_verified is true  :
     // select all users that have phone number , phone_verified = true and decrypt phone number to compare :
     const users = await db.User.findAll(
@@ -907,6 +930,7 @@ export const requestLoginWithPhoneNumber = async (req, res) => {
         }
     }
     if (!userFound) {
+        console.log("User not found for phone number:", formattedPhoneNumber);
         return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
     }
 

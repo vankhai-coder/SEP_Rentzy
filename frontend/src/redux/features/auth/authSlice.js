@@ -288,6 +288,9 @@ const userSlice = createSlice({
         },
         setEmail: (state, action) => {
             state.email = action.payload
+        },
+        setAvatar: (state, action) => {
+            state.avatar = action.payload
         }
     },
     extraReducers: (builder) => {
@@ -537,6 +540,6 @@ const userSlice = createSlice({
 });
 
 // Actions
-export const { setUser, resetState, setEmail } = userSlice.actions;
+export const { setUser, resetState, setEmail ,setAvatar } = userSlice.actions;
 
 export default userSlice.reducer;

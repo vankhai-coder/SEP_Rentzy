@@ -1,31 +1,37 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
 import ChatBox from "../chat/ChatBox.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { checkAuth } from "@/redux/features/auth/authSlice.js";
 
 const Layout = ({ children }) => {
   const { role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const error = queryParams.get("error");
 
   useEffect(() => {
-    // Temporarily disabled auth check for testing
-    // if (!window.location.href.includes("verify-email") && !error) {
-    //   dispatch(checkAuth());
-    // }
-  }, [error]);
-
-  useEffect(() => {
     if (error === 'emailInUser') {
       toast.error('Email đã được sử dụng!')
     }
   }, [error])
+
+  useEffect(() => {
+    if (error === 'userBanned') {
+      toast.error('Tài khoản của bạn đã bị cấm!')
+    }
+  }, [error])
+
+  // check auth : 
+  useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
 
   // redirect owner to /owner when landing on home after auth
   useEffect(() => {
@@ -45,12 +51,12 @@ const Layout = ({ children }) => {
     <div className="flex flex-col min-h-screen">
       {/* Header - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
       {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
-        (role === 'admin')) && <Header />}
+        (role === 'admin' && location.pathname.startsWith('/admin'))) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
       {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
       {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
-        (role === 'admin')) && <Footer />}
+        (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
       <ChatBox />
     </div>
   );

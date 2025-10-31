@@ -28,10 +28,13 @@ const RegisterWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPho
     // function to handle register with phone number :
     const handleRegisterWithPhoneNumber = (e) => {
         e.preventDefault();
-        
-        // validate phone number in Viet Nam format 0123 456 789 : 
-        if (!/^0\d{3}\s\d{3}\s\d{3}$/.test(phoneNumber)) {
-            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam theo định dạng 0xxx xxx xxx.');
+
+        // log : 
+        console.log("Registering with phone number:", phoneNumber);
+
+        // check phone is start with 0 and has 10 or 11 digits :
+        if (!/^0\d{9,10}$/.test(phoneNumber)) {
+            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại bắt đầu bằng 0 và có 10 hoặc 11 chữ số.');
             return;
         }
 
@@ -43,9 +46,12 @@ const RegisterWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPho
     const handleVerifyOtp = (e) => {
         e.preventDefault();
 
-        // validate phone number in Viet Nam format 0123 456 789 : 
-        if (!/^0\d{3}\s\d{3}\s\d{3}$/.test(phoneNumber)) {
-            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam theo định dạng 0xxx xxx xxx.');
+        // log : 
+        console.log("Verifying OTP for phone number:", phoneNumber, "with OTP:", otp);
+
+        // check phone is start with 0 and has 10 or 11 digits :
+        if (!/^0\d{9,10}$/.test(phoneNumber)) {
+            toast.error('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại bắt đầu bằng 0 và có 10 hoặc 11 chữ số.');
             return;
         }
 
