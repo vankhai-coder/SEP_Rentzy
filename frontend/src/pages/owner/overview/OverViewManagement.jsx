@@ -184,28 +184,32 @@ const OverViewManagement = () => {
     }
     
     const formattedData = data.map(item => {
+      if (!item || typeof item.period !== 'string') {
+        console.warn('Invalid item:', item);
+        return { ...item, label: 'N/A', revenue: 0, bookingCount: 0 };
+      }
+
+      const parts = item.period.split('-');
       let label = item.period;
-      
-      if (selectedPeriod === 'day') {
-        // Format: DD/MM - Parse date string directly to avoid timezone issues
-        const [year, month, day] = item.period.split('-');
-        label = `${day.padStart(2, '0')}/${month.padStart(2, '0')}`;
-      } else if (selectedPeriod === 'month') {
-        // Format: Tháng MM - Hiển thị tháng trong năm
-        const [year, month] = item.period.split('-');
-        label = `Tháng ${parseInt(month)}`;
+
+      if (selectedPeriod === 'day' && parts.length === 2) {
+        const [month, day] = parts;
+        label = `${(day || '').padStart(2, '0')}/${(month || '').padStart(2, '0')}`;
+      } else if (selectedPeriod === 'month' && parts.length === 2) {
+        const [month, year] = parts;
+        label = `Tháng ${parseInt(month)} / ${year}`;
       } else if (selectedPeriod === 'year') {
-        // Format: YYYY
         label = item.period;
       }
-      
+
       return {
         ...item,
         label,
-        revenue: parseFloat(item.revenue) || 0,
+        revenue: parseFloat(String(item.revenue).replace(/,/g, '')) || 0,
         bookingCount: parseInt(item.bookingCount) || 0
       };
     });
+
     
     console.log('Formatted chart data:', formattedData);
     return formattedData;

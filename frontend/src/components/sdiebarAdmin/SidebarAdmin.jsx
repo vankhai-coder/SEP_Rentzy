@@ -16,6 +16,7 @@ const SidebarAdmin = () => {
             <div className="text-2xl font-bold text-center mb-[30px] text-[#3498db]">Bảng điều khiển admin</div>
             <nav>
                 <ul className="list-none p-0 m-0">
+                    {/* Tổng quan */}
                     <li className="mb-[10px]">
                         <NavLink
                             to="/admin/dashboard"
@@ -29,6 +30,22 @@ const SidebarAdmin = () => {
                         </NavLink>
                     </li>
                     <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                    {/* Quản lí người dùng */}
+                    <li className="mb-[10px]">
+                        <NavLink
+                            to="/admin/managementuser"
+                            className={({ isActive }) =>
+                                isActive
+                                    ? "block px-4 py-2 bg-[#3498db] text-[#fff] rounded-md"
+                                    : "block px-4 py-2 text-[#ecf0f1] rounded-md hover:bg-[#3498db] hover:text-[#fff]"
+                            }
+                        >
+                            Quản lí người dùng
+                        </NavLink>
+                    </li>
+                    
+                    <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                    {/* Duyệt xe */}
                     <li className="mb-[10px]">
                         <NavLink
                             to="/admin/approvalvehicle"
@@ -42,19 +59,7 @@ const SidebarAdmin = () => {
                         </NavLink>
                     </li>
                     <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-                    <li className="mb-[10px]">
-                        <NavLink
-                            to="/admin/managementuser"
-                            className={({ isActive }) =>
-                                isActive
-                                    ? "block px-4 py-2 bg-[#3498db] text-[#fff] rounded-md"
-                                    : "block px-4 py-2 text-[#ecf0f1] rounded-md hover:bg-[#3498db] hover:text-[#fff]"
-                            }
-                        >
-                            Quản lí người dùng
-                        </NavLink>
-                    </li>
-                    <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                    {/* Quản lí xe */}
                     <li className="mb-[10px]">
                         <NavLink
                             to="/admin/managementvehicle"
@@ -68,6 +73,7 @@ const SidebarAdmin = () => {
                         </NavLink>
                     </li>
                     <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                    {/* Đăng xuất */}
                     <li className="mb-[10px]">
                         <button
                             onClick={handleLogout}
