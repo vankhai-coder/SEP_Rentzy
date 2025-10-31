@@ -15,8 +15,6 @@ export const getPointsHistory = async (req, res) => {
       limit = 15, 
       transaction_type, 
       reference_type, 
-      sort_by = 'created_at',
-      sort_order = 'desc',
       search
     } = req.query;
 
@@ -42,15 +40,10 @@ export const getPointsHistory = async (req, res) => {
       };
     }
 
-    // Validate sort fields
-    const allowedSortFields = ['created_at', 'points_amount', 'balance_after'];
-    const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'created_at';
-    const sortDirection = ['asc', 'desc'].includes(sort_order.toLowerCase()) ? sort_order.toUpperCase() : 'DESC';
-
-    // Get transactions with pagination
+    // Get transactions with pagination - default sort by created_at DESC
     const { count, rows: transactions } = await PointsTransaction.findAndCountAll({
       where: whereConditions,
-      order: [[sortField, sortDirection]],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset),
       include: [
@@ -98,9 +91,7 @@ export const getPointsHistory = async (req, res) => {
         filters: {
           transaction_type: transaction_type || 'all',
           reference_type: reference_type || 'all',
-          search: search || '',
-          sort_by: sortField,
-          sort_order: sortDirection.toLowerCase()
+          search: search || ''
         }
       }
     });

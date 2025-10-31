@@ -1,13 +1,30 @@
 // src/components/renter/bookingHistory/BookingHistoryTable.jsx
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Star, Eye, Car } from "lucide-react";
+import { Star, Eye, Car, X } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import CancelBookingModal from "../bookingCancel/CancelBookingModal";
 
-const BookingHistoryTable = ({ bookings, statusMap, formatVND }) => {
+const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }) => {
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+
   const formatDateTime = (dateString) => {
     return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
+  };
+
+  const handleCancelClick = (bookingId) => {
+    setSelectedBookingId(bookingId);
+    setCancelModalOpen(true);
+  };
+
+  const handleCancelSuccess = () => {
+    setCancelModalOpen(false);
+    setSelectedBookingId(null);
+    if (onBookingUpdate) {
+      onBookingUpdate(); // Refresh danh sách booking
+    }
   };
   if (bookings.length === 0) {
     return (
@@ -155,6 +172,21 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND }) => {
                       <Eye className="w-4 h-4 mr-1" />
                       Chi tiết
                     </Link>
+                    
+                    {/* Nút hủy booking - chỉ hiện khi có thể hủy */}
+                    {(booking.status === "pending" || 
+                      booking.status === "confirmed" || 
+                      booking.status === "deposit_paid" || 
+                      booking.status === "fully_paid") && (
+                      <button
+                        onClick={() => handleCancelClick(booking.booking_id)}
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-red-600 hover:text-red-800"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Hủy
+                      </button>
+                    )}
+                    
                     {booking.status === "completed" &&
                       booking.review == null && (
                         <Link
@@ -178,6 +210,14 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND }) => {
           </tbody>
         </table>
       </div>
+      
+      {/* Modal hủy booking */}
+      <CancelBookingModal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        bookingId={selectedBookingId}
+        onCancelSuccess={handleCancelSuccess}
+      />
     </div>
   );
 };

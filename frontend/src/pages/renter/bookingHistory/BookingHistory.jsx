@@ -67,6 +67,11 @@ const BookingHistory = () => {
     dispatch(fetchBookings(fetchParams));
   };
 
+  // Handle booking update (refresh data)
+  const handleBookingUpdate = () => {
+    dispatch(fetchBookings(fetchParams));
+  };
+
   if (loading)
     return (
       <div className="flex justify-center py-12">
@@ -101,6 +106,7 @@ const BookingHistory = () => {
         bookings={bookings}
         statusMap={statusMap}
         formatVND={formatVND}
+        onBookingUpdate={handleBookingUpdate}
       />
 
       {/* Pagination */}

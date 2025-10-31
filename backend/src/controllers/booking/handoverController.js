@@ -78,30 +78,48 @@ export const confirmOwnerHandover = async (req, res) => {
 
     // Upload ảnh lên Cloudinary từ memory buffer
     console.log("Starting Cloudinary upload for", req.files.length, "files");
-    console.log("Files to upload:", req.files.map(f => ({ originalname: f.originalname, size: f.size, mimetype: f.mimetype })));
-    
+    console.log(
+      "Files to upload:",
+      req.files.map((f) => ({
+        originalname: f.originalname,
+        size: f.size,
+        mimetype: f.mimetype,
+      }))
+    );
+
     const uploadPromises = req.files.map(async (file, index) => {
       try {
-        console.log(`Uploading file ${index + 1}/${req.files.length}: ${file.originalname}`);
-        
+        console.log(
+          `Uploading file ${index + 1}/${req.files.length}: ${
+            file.originalname
+          }`
+        );
+
         // Upload từ buffer thay vì file path
         const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            {
-              folder: `handover/pre-rental/${bookingId}`,
-              resource_type: "image",
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(file.buffer);
+          cloudinary.uploader
+            .upload_stream(
+              {
+                folder: `handover/pre-rental/${bookingId}`,
+                resource_type: "image",
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+              }
+            )
+            .end(file.buffer);
         });
-        
-        console.log(`Successfully uploaded file ${index + 1}: ${result.secure_url}`);
+
+        console.log(
+          `Successfully uploaded file ${index + 1}: ${result.secure_url}`
+        );
         return result.secure_url;
       } catch (error) {
-        console.error(`Error uploading file ${index + 1} to Cloudinary:`, error);
+        console.error(
+          `Error uploading file ${index + 1} to Cloudinary:`,
+          error
+        );
         throw error;
       }
     });
@@ -279,30 +297,48 @@ export const confirmOwnerReturn = async (req, res) => {
 
     // Upload ảnh lên Cloudinary từ memory buffer
     console.log("Starting Cloudinary upload for", req.files.length, "files");
-    console.log("Files to upload:", req.files.map(f => ({ originalname: f.originalname, size: f.size, mimetype: f.mimetype })));
-    
+    console.log(
+      "Files to upload:",
+      req.files.map((f) => ({
+        originalname: f.originalname,
+        size: f.size,
+        mimetype: f.mimetype,
+      }))
+    );
+
     const uploadPromises = req.files.map(async (file, index) => {
       try {
-        console.log(`Uploading file ${index + 1}/${req.files.length}: ${file.originalname}`);
-        
+        console.log(
+          `Uploading file ${index + 1}/${req.files.length}: ${
+            file.originalname
+          }`
+        );
+
         // Upload từ buffer thay vì file path
         const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            {
-              folder: `handover/post-rental/${bookingId}`,
-              resource_type: "image",
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(file.buffer);
+          cloudinary.uploader
+            .upload_stream(
+              {
+                folder: `handover/post-rental/${bookingId}`,
+                resource_type: "image",
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+              }
+            )
+            .end(file.buffer);
         });
-        
-        console.log(`Successfully uploaded file ${index + 1}: ${result.secure_url}`);
+
+        console.log(
+          `Successfully uploaded file ${index + 1}: ${result.secure_url}`
+        );
         return result.secure_url;
       } catch (error) {
-        console.error(`Error uploading file ${index + 1} to Cloudinary:`, error);
+        console.error(
+          `Error uploading file ${index + 1} to Cloudinary:`,
+          error
+        );
         throw error;
       }
     });
@@ -409,6 +445,14 @@ export const confirmRenterReturn = async (req, res) => {
       message: "Cập nhật booking thất bại",
     });
   }
+  const vehicle = await Vehicle.findOne({
+    where: { vehicle_id: booking.vehicle_id },
+  });
+  // cộng rent_count lên 1
+  await vehicle.update({
+    rent_count: vehicle.rent_count + 1,
+  });
+
   res.status(200).json({
     success: true,
     message: "Xác nhận trả xe  thành công",

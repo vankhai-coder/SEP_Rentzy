@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import axiosInstance from "../../../config/axiosInstance.js";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -12,8 +18,7 @@ import {
   CheckCircle,
   Clock,
   RefreshCw,
-  Filter,
-  X
+  X,
 } from "lucide-react";
 import "./PointsHistory.scss";
 
@@ -25,31 +30,28 @@ const PointsHistory = React.memo(() => {
       current_balance: 0,
       total_earned: 0,
       total_spent: 0,
-      total_transactions: 0
+      total_transactions: 0,
     },
     pagination: {
       current_page: 1,
       total_pages: 1,
       total_items: 0,
-      items_per_page: 15
-    }
+      items_per_page: 15,
+    },
   });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Filter states
   const [filters, setFilters] = useState({
     transaction_type: "all",
     reference_type: "all",
     search: "",
-    sort_by: "created_at",
-    sort_order: "desc"
   });
-  
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
-  
+
   // Debounce search
   const searchTimeoutRef = useRef(null);
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
@@ -59,7 +61,7 @@ const PointsHistory = React.memo(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearch(filters.search);
     }, 500);
@@ -74,7 +76,12 @@ const PointsHistory = React.memo(() => {
   // Fetch data
   useEffect(() => {
     fetchPointsHistory();
-  }, [currentPage, filters.transaction_type, filters.reference_type, filters.sort_by, filters.sort_order, debouncedSearch]);
+  }, [
+    currentPage,
+    filters.transaction_type,
+    filters.reference_type,
+    debouncedSearch,
+  ]);
 
   const fetchPointsHistory = useCallback(async () => {
     try {
@@ -86,20 +93,20 @@ const PointsHistory = React.memo(() => {
         limit: 15,
         transaction_type: filters.transaction_type,
         reference_type: filters.reference_type,
-        sort_by: filters.sort_by,
-        sort_order: filters.sort_order,
-        search: debouncedSearch
+        search: debouncedSearch,
       };
 
       // Remove 'all' values and empty strings
-      Object.keys(params).forEach(key => {
-        if (params[key] === 'all' || params[key] === '') {
+      Object.keys(params).forEach((key) => {
+        if (params[key] === "all" || params[key] === "") {
           delete params[key];
         }
       });
 
-      const response = await axiosInstance.get("/api/renter/points/history", { params });
-      
+      const response = await axiosInstance.get("/api/renter/points/history", {
+        params,
+      });
+
       if (response.data.success) {
         setPointsData(response.data.data);
       } else {
@@ -111,20 +118,27 @@ const PointsHistory = React.memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters.transaction_type, filters.reference_type, filters.sort_by, filters.sort_order, debouncedSearch]);
+  }, [
+    currentPage,
+    filters.transaction_type,
+    filters.reference_type,
+    filters.sort_by,
+    filters.sort_order,
+    debouncedSearch,
+  ]);
 
   // Event handlers
   const handleFilterChange = useCallback((key, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     setCurrentPage(1);
   }, []);
 
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -132,8 +146,6 @@ const PointsHistory = React.memo(() => {
       transaction_type: "all",
       reference_type: "all",
       search: "",
-      sort_by: "created_at",
-      sort_order: "desc"
     });
     setCurrentPage(1);
   }, []);
@@ -157,7 +169,7 @@ const PointsHistory = React.memo(() => {
       earn: "Tích điểm",
       spend: "Tiêu điểm",
       expire: "Hết hạn",
-      refund: "Hoàn điểm"
+      refund: "Hoàn điểm",
     };
     return types[type] || type;
   }, []);
@@ -167,14 +179,16 @@ const PointsHistory = React.memo(() => {
       booking: "Đặt xe",
       voucher: "Voucher",
       bonus: "Thưởng",
-      penalty: "Phạt"
+      penalty: "Phạt",
     };
     return types[type] || type;
   }, []);
 
   const formatAmount = useCallback((amount) => {
     const absAmount = Math.abs(amount);
-    return amount >= 0 ? `+${absAmount.toLocaleString()}` : `-${absAmount.toLocaleString()}`;
+    return amount >= 0
+      ? `+${absAmount.toLocaleString()}`
+      : `-${absAmount.toLocaleString()}`;
   }, []);
 
   // Since we're using server-side filtering, we don't need client-side filtering
@@ -190,12 +204,16 @@ const PointsHistory = React.memo(() => {
     const range = [];
     const rangeWithDots = [];
 
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
       range.push(i);
     }
 
     if (currentPage - delta > 2) {
-      rangeWithDots.push(1, '...');
+      rangeWithDots.push(1, "...");
     } else {
       rangeWithDots.push(1);
     }
@@ -203,12 +221,14 @@ const PointsHistory = React.memo(() => {
     rangeWithDots.push(...range);
 
     if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push('...', totalPages);
+      rangeWithDots.push("...", totalPages);
     } else {
       rangeWithDots.push(totalPages);
     }
 
-    return rangeWithDots.filter((item, index, arr) => arr.indexOf(item) === index);
+    return rangeWithDots.filter(
+      (item, index, arr) => arr.indexOf(item) === index
+    );
   }, [currentPage, totalPages]);
 
   if (loading) {
@@ -278,84 +298,58 @@ const PointsHistory = React.memo(() => {
       {/* Filters Section */}
       <div className="filters-section">
         <div className="filters-header">
-          <button 
-            className="filters-toggle"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={16} />
-            Bộ lọc
-            {Object.values(filters).some(v => v !== 'all' && v !== '' && v !== 'created_at' && v !== 'desc') && (
-              <span className="filter-indicator"></span>
-            )}
-          </button>
-          
           <div className="search-box">
             <Search size={16} className="search-icon" />
             <input
               type="text"
               placeholder="Tìm kiếm giao dịch..."
               value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
               className="search-input"
             />
           </div>
         </div>
 
-        {showFilters && (
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>Loại giao dịch</label>
-              <select
-                value={filters.transaction_type}
-                onChange={(e) => handleFilterChange('transaction_type', e.target.value)}
-              >
-                <option value="all">Tất cả</option>
-                <option value="earn">Tích điểm</option>
-                <option value="spend">Tiêu điểm</option>
-                <option value="expire">Hết hạn</option>
-                <option value="refund">Hoàn điểm</option>
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label>Nguồn giao dịch</label>
-              <select
-                value={filters.reference_type}
-                onChange={(e) => handleFilterChange('reference_type', e.target.value)}
-              >
-                <option value="all">Tất cả</option>
-                <option value="booking">Đặt xe</option>
-                <option value="voucher">Voucher</option>
-                <option value="bonus">Thưởng</option>
-                <option value="penalty">Phạt</option>
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label>Sắp xếp theo</label>
-              <select
-                value={`${filters.sort_by}_${filters.sort_order}`}
-                onChange={(e) => {
-                  const [field, order] = e.target.value.split('_');
-                  handleFilterChange('sort_by', field);
-                  handleFilterChange('sort_order', order);
-                }}
-              >
-                <option value="created_at_desc">Ngày tạo (Mới nhất)</option>
-                <option value="created_at_asc">Ngày tạo (Cũ nhất)</option>
-                <option value="points_amount_desc">Số điểm (Cao nhất)</option>
-                <option value="points_amount_asc">Số điểm (Thấp nhất)</option>
-              </select>
-            </div>
-
-            <div className="filter-actions">
-              <button onClick={clearFilters} className="btn-clear">
-                <X size={16} />
-                Xóa bộ lọc
-              </button>
-            </div>
+        <div className="filters-grid">
+          <div className="filter-group">
+            <label>Loại giao dịch</label>
+            <select
+              value={filters.transaction_type}
+              onChange={(e) =>
+                handleFilterChange("transaction_type", e.target.value)
+              }
+            >
+              <option value="all">Tất cả</option>
+              <option value="earn">Tích điểm</option>
+              <option value="spend">Tiêu điểm</option>
+              <option value="expire">Hết hạn</option>
+              <option value="refund">Hoàn điểm</option>
+            </select>
           </div>
-        )}
+
+          <div className="filter-group">
+            <label>Nguồn giao dịch</label>
+            <select
+              value={filters.reference_type}
+              onChange={(e) =>
+                handleFilterChange("reference_type", e.target.value)
+              }
+            >
+              <option value="all">Tất cả</option>
+              <option value="booking">Đặt xe</option>
+              <option value="voucher">Voucher</option>
+              <option value="bonus">Thưởng</option>
+              <option value="penalty">Phạt</option>
+            </select>
+          </div>
+
+          <div className="filter-actions">
+            <button onClick={clearFilters} className="btn-clear">
+              <X size={16} />
+              Xóa bộ lọc
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Transactions Table */}
@@ -384,7 +378,9 @@ const PointsHistory = React.memo(() => {
                   <td>
                     <div className="transaction-type">
                       {getTransactionTypeIcon(transaction.transaction_type)}
-                      <span>{getTransactionTypeText(transaction.transaction_type)}</span>
+                      <span>
+                        {getTransactionTypeText(transaction.transaction_type)}
+                      </span>
                     </div>
                   </td>
                   <td>
@@ -393,7 +389,11 @@ const PointsHistory = React.memo(() => {
                     </div>
                   </td>
                   <td>
-                    <div className={`amount ${transaction.points_amount >= 0 ? 'positive' : 'negative'}`}>
+                    <div
+                      className={`amount ${
+                        transaction.points_amount >= 0 ? "positive" : "negative"
+                      }`}
+                    >
                       {formatAmount(transaction.points_amount)} điểm
                     </div>
                   </td>
@@ -410,10 +410,16 @@ const PointsHistory = React.memo(() => {
                   <td>
                     <div className="date-info">
                       <div className="date">
-                        {format(new Date(transaction.created_at), "dd/MM/yyyy", { locale: vi })}
+                        {format(
+                          new Date(transaction.created_at),
+                          "dd/MM/yyyy",
+                          { locale: vi }
+                        )}
                       </div>
                       <div className="time">
-                        {format(new Date(transaction.created_at), "HH:mm", { locale: vi })}
+                        {format(new Date(transaction.created_at), "HH:mm", {
+                          locale: vi,
+                        })}
                       </div>
                     </div>
                   </td>
@@ -440,9 +446,13 @@ const PointsHistory = React.memo(() => {
             {paginationRange.map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === 'number' && handlePageChange(page)}
-                className={`pagination-number ${currentPage === page ? 'active' : ''} ${typeof page !== 'number' ? 'dots' : ''}`}
-                disabled={typeof page !== 'number'}
+                onClick={() =>
+                  typeof page === "number" && handlePageChange(page)
+                }
+                className={`pagination-number ${
+                  currentPage === page ? "active" : ""
+                } ${typeof page !== "number" ? "dots" : ""}`}
+                disabled={typeof page !== "number"}
               >
                 {page}
               </button>
@@ -463,6 +473,6 @@ const PointsHistory = React.memo(() => {
   );
 });
 
-PointsHistory.displayName = 'PointsHistory';
+PointsHistory.displayName = "PointsHistory";
 
 export default PointsHistory;
