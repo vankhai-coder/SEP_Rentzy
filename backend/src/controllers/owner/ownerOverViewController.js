@@ -123,9 +123,11 @@ export const getRevenueChart = async (req, res) => {
       const daysInMonth = new Date(year, month, 0).getDate();
       const fullData = [];
       
+      console.log(`Generating full month data for ${year}-${month}, days: ${daysInMonth}`);
+      
       for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month - 1, day);
-        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        // Tạo date string trực tiếp để tránh vấn đề timezone
+        const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         fullData.push({
           period: dateStr,
           revenue: 0,
@@ -133,6 +135,7 @@ export const getRevenueChart = async (req, res) => {
         });
       }
       
+      console.log('Generated full month data:', fullData.slice(0, 5), '...', fullData.slice(-5));
       return fullData;
     };
 
@@ -163,6 +166,11 @@ export const getRevenueChart = async (req, res) => {
         // Lấy dữ liệu theo ngày trong tháng hiện tại
         const startOfMonth = new Date(year, month - 1, 1);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+        
+        console.log(`Date range for ${year}-${month}:`, {
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        });
         
         whereCondition.created_at = {
           [Op.between]: [startOfMonth, endOfMonth]
@@ -210,12 +218,16 @@ export const getRevenueChart = async (req, res) => {
       raw: true
     });
 
+    console.log('Raw revenue data from database:', revenueData);
+
     // Xử lý dữ liệu theo period
     let finalData = revenueData.map(item => ({
       period: item.period,
       revenue: parseFloat(item.revenue) || 0,
       bookingCount: parseInt(item.bookingCount) || 0
     }));
+
+    console.log('Processed revenue data:', finalData);
 
     // Nếu là xem theo ngày, tạo dữ liệu đầy đủ cho tháng
     if (period === 'day') {
@@ -226,6 +238,12 @@ export const getRevenueChart = async (req, res) => {
         const existingData = revenueMap.get(dayData.period);
         return existingData || dayData;
       });
+
+      // Đảm bảo chỉ hiển thị các ngày thuộc tháng được chọn
+      const monthPrefix = `${year}-${month.toString().padStart(2, '0')}`;
+      finalData = finalData.filter(item => item.period.startsWith(monthPrefix));
+      
+      console.log('Filtered final data for month:', monthPrefix, finalData.length, 'days');
     }
 
     console.log('Final chart data:', finalData);
@@ -356,6 +374,7 @@ export const getTopVehicles = async (req, res) => {
 
     const { limit = 10 } = req.query;
 
+    // Sử dụng subquery để đếm booking cho mỗi xe
     const topVehicles = await Vehicle.findAll({
       where: { 
         owner_id: ownerId,
@@ -366,15 +385,6 @@ export const getTopVehicles = async (req, res) => {
           as: "brand",
           attributes: ["brand_id", "name", "logo_url"],
           required: false
-        },
-        {
-          model: Booking,
-          as: "bookings",
-          attributes: [],
-          required: false,
-          where: {
-            status: { [Op.in]: ['completed', 'in_progress', 'ongoing', 'pending', 'fully_paid'] }
-          }
         }
       ],
       attributes: [
@@ -383,23 +393,38 @@ export const getTopVehicles = async (req, res) => {
         'license_plate',
         'main_image_url',
         'price_per_day',
-        [sequelize.fn('COUNT', sequelize.col('bookings.booking_id')), 'rent_count'],
-        [sequelize.fn('SUM', sequelize.col('bookings.total_amount')), 'totalRevenue']
+        [
+          sequelize.literal(`(
+            SELECT COUNT(*)
+            FROM bookings
+            WHERE bookings.vehicle_id = Vehicle.vehicle_id
+            AND bookings.status IN ('completed', 'in_progress', 'ongoing', 'pending', 'fully_paid')
+          )`),
+          'rent_count'
+        ],
+        [
+          sequelize.literal(`(
+            SELECT COALESCE(SUM(total_amount), 0)
+            FROM bookings
+            WHERE bookings.vehicle_id = Vehicle.vehicle_id
+            AND bookings.status IN ('completed', 'in_progress', 'ongoing', 'pending', 'fully_paid')
+          )`),
+          'totalRevenue'
+        ]
       ],
-      group: [
-        'vehicle_id', 
-        'model', 
-        'license_plate', 
-        'main_image_url', 
-        'price_per_day',
-        'brand.brand_id',
-        'brand.name',
-        'brand.logo_url'
+      order: [
+        [sequelize.literal('rent_count'), 'DESC'],
+        ['vehicle_id', 'ASC'] // Secondary sort for consistent ordering
       ],
-      order: [[sequelize.fn('COUNT', sequelize.col('bookings.booking_id')), 'DESC']],
       limit: parseInt(limit),
       raw: false
     });
+
+    console.log('Raw vehicles data:', topVehicles.map(v => ({
+      id: v.vehicle_id,
+      model: v.model,
+      rent_count: v.dataValues.rent_count
+    })));
 
     const formattedData = topVehicles.map(vehicle => ({
       vehicle_id: vehicle.vehicle_id,
@@ -409,8 +434,10 @@ export const getTopVehicles = async (req, res) => {
       price_per_day: parseFloat(vehicle.price_per_day),
       rent_count: parseInt(vehicle.dataValues.rent_count || 0),
       brand: vehicle.brand,
-      totalRevenue: parseFloat(vehicle.dataValues.totalRevenue || 0)
+      total_paid: parseFloat(vehicle.dataValues.totalRevenue || 0)
     }));
+
+    console.log('Formatted vehicles data:', formattedData);
 
     res.json({
       success: true,
