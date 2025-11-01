@@ -414,6 +414,13 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
                 success: false, message: "Vui lòng nhập số điện thoại."
             });
         }
+        // 1.2 format phone number to E.164 format if needed (assuming input is in local format)
+        let formattedPhoneNumber = phoneNumber;
+        if (!phoneNumber.trim().startsWith('+84')) {
+            // Assuming country code is +84 (Vietnam) for example
+            formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
+        }
+
         // 1.1 check if phone number is already in use by another user :
         // unHash phone number to compare :
         // get all users with phone number not null and phone_verified = true  : 
@@ -427,19 +434,16 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
         for (const user of usersWithPhoneNumber) {
             if (user.phone_number) {
                 const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
-                if (decryptedPhoneNumber === phoneNumber) {
+                if (decryptedPhoneNumber === formattedPhoneNumber) {
                     return res.status(400).json({
                         success: false, message: "Số điện thoại này đã được sử dụng!"
                     });
                 }
             }
         }
-        // 1.2 format phone number to E.164 format if needed (assuming input is in local format)
-        let formattedPhoneNumber = phoneNumber;
-        if (!phoneNumber.trim().startsWith('+84')) {
-            // Assuming country code is +84 (Vietnam) for example
-            formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
-        }
+
+        // log : 
+        console.log("Sending OTP to phone number:", formattedPhoneNumber);
 
         // 2. Send OTP using Twilio Verify Service
         // add try catch to import twilio error
@@ -503,6 +507,9 @@ export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
             formattedPhoneNumber = '+84' + phoneNumber.replace(/^0+/, '');
         }
 
+        // log : 
+        console.log("Verifying OTP for phone number:", formattedPhoneNumber, "with OTP:", otpCode);
+
         // 2. Verify OTP using Twilio Verify Service
         let verificationCheck;
         try {
@@ -540,7 +547,7 @@ export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Xác minh mã OTP thành công.",
-            phone_number: phoneNumber
+            phone_number: formattedPhoneNumber
         });
     } catch (error) {
         console.error("verifyOTPUsingTwilioForUpdatePhoneNumber error:", error);

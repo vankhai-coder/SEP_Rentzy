@@ -171,12 +171,20 @@ const Header = () => {
                   {userId &&
                     <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1 flex items-center justify-center gap-2">
                       {
-                        <Avatar>
+                        avatar ? <Avatar>
                           <AvatarImage
-                            src={avatar || '/default_avt.jpg'}
+                            src={avatar || ''}
                             alt="@shadcn"
+                            className="size-8"
                           />
-                        </Avatar>
+                        </Avatar> :
+                          <Avatar>
+                            <AvatarImage
+                              src={'/default_avt.jpg'}
+                              alt="@shadcn"
+                              className="size-8"
+                            />
+                          </Avatar>
                       }
                       {email}
                     </div>

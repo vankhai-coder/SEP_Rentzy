@@ -6,7 +6,8 @@ import {
   MdAssignment, 
   MdTrendingUp,
   MdPerson,
-  MdStar
+  MdStar,
+  MdCalendarToday
 } from 'react-icons/md';
 import {
   LineChart,
@@ -52,19 +53,28 @@ const OverViewManagement = () => {
         year: year
       };
       
-      // Thêm tham số month nếu period là 'day'
-      if (period === 'day') {
+      // Thêm tham số month nếu period là 'day' hoặc 'month'
+      if (period === 'day' || period === 'month') {
         params.month = month;
       }
+      
+      console.log('Fetching revenue chart with params:', params);
       
       const response = await axiosInstance.get('/api/owner/overview/revenue-chart', {
         params
       });
+      
+      console.log('Revenue chart response:', response.data);
+      
       if (response.data.success) {
-        setRevenueChart(response.data.data);
+        setRevenueChart(response.data.data || []);
+      } else {
+        console.error('Revenue chart API returned error:', response.data.message);
+        setRevenueChart([]);
       }
     } catch (error) {
       console.error('Error fetching revenue chart:', error);
+      setRevenueChart([]);
     }
   };
 
@@ -85,14 +95,23 @@ const OverViewManagement = () => {
   // Fetch top vehicles
   const fetchTopVehicles = async () => {
     try {
+      console.log('Fetching top vehicles...');
+      
       const response = await axiosInstance.get('/api/owner/overview/top-vehicles', {
         params: { limit: 5 }
       });
+      
+      console.log('Top vehicles response:', response.data);
+      
       if (response.data.success) {
-        setTopVehicles(response.data.data);
+        setTopVehicles(response.data.data || []);
+      } else {
+        console.error('Top vehicles API returned error:', response.data.message);
+        setTopVehicles([]);
       }
     } catch (error) {
       console.error('Error fetching top vehicles:', error);
+      setTopVehicles([]);
     }
   };
 
@@ -145,11 +164,11 @@ const OverViewManagement = () => {
     if (!amount || amount === 0) return '0';
     
     if (amount >= 1000000000) {
-      return `${(amount / 1000000000).toFixed(1)}B ₫`;
+      return `${(amount / 1000000000).toFixed(1)},000,000 ₫`;
     } else if (amount >= 1000000) {
-      return `${(amount / 1000000).toFixed(1)}M ₫`;
+      return `${(amount / 1000000).toFixed(1)}000,000 ₫`;
     } else if (amount >= 1000) {
-      return `${(amount / 1000).toFixed(0)}K ₫`;
+      return `${(amount / 1000).toFixed(0)},000 ₫`;
     }
     
     return `${amount.toLocaleString('vi-VN')} ₫`;
@@ -157,31 +176,63 @@ const OverViewManagement = () => {
 
   // Format chart data based on period
   const formatChartData = (data) => {
-    if (!data || data.length === 0) return [];
+    console.log('Formatting chart data:', data);
     
-    return data.map(item => {
+    if (!data || data.length === 0) {
+      console.log('No chart data to format');
+      return [];
+    }
+    
+    const formattedData = data.map(item => {
+      if (!item || typeof item.period !== 'string') {
+        console.warn('Invalid item:', item);
+        return { ...item, label: 'N/A', revenue: 0, bookingCount: 0 };
+      }
+
+      const parts = item.period.split('-');
       let label = item.period;
-      
-      if (selectedPeriod === 'day') {
-        // Format: DD/MM
-        const date = new Date(item.period);
-        label = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      } else if (selectedPeriod === 'month') {
-        // Format: MM/YYYY
-        const [year, month] = item.period.split('-');
-        label = `${month.padStart(2, '0')}/${year}`;
+
+      if (selectedPeriod === 'day' && parts.length === 2) {
+        const [month, day] = parts;
+        label = `${(day || '').padStart(2, '0')}/${(month || '').padStart(2, '0')}`;
+      } else if (selectedPeriod === 'month' && parts.length === 2) {
+        const [month, year] = parts;
+        label = `Tháng ${parseInt(month)} / ${year}`;
       } else if (selectedPeriod === 'year') {
-        // Format: YYYY
         label = item.period;
       }
-      
+
       return {
         ...item,
         label,
-        revenue: parseFloat(item.revenue) || 0,
+        revenue: parseFloat(String(item.revenue).replace(/,/g, '')) || 0,
         bookingCount: parseInt(item.bookingCount) || 0
       };
     });
+
+    
+    console.log('Formatted chart data:', formattedData);
+    return formattedData;
+  };
+
+  // Get month name in Vietnamese
+  const getMonthName = (monthNumber) => {
+    const months = [
+      'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+    ];
+    return months[monthNumber - 1];
+  };
+
+  // Get period display text
+  const getPeriodDisplayText = () => {
+    if (selectedPeriod === 'day') {
+      return `${getMonthName(selectedMonth)} ${selectedYear}`;
+    } else if (selectedPeriod === 'month') {
+      return `${getMonthName(selectedMonth)} ${selectedYear}`;
+    } else {
+      return '5 năm gần nhất';
+    }
   };
 
   if (loading) {
@@ -267,103 +318,152 @@ const OverViewManagement = () => {
 
         {/* Revenue Chart */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Biểu đồ doanh thu</h2>
-            <div className="flex space-x-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+            <div className="mb-4 lg:mb-0">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <MdTrendingUp className="mr-2" />
+                Biểu đồ doanh thu
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                <MdCalendarToday className="inline mr-1" />
+                {getPeriodDisplayText()}
+              </p>
+            </div>
+            
+            {/* Enhanced Filter Controls */}
+            <div className="flex flex-wrap gap-3">
               {/* Period Selector */}
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="day">Theo ngày</option>
-                <option value="month">Theo tháng</option>
-                <option value="year">Theo năm</option>
-              </select>
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Thời gian</label>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                >
+                  <option value="day">Theo ngày</option>
+                  <option value="month">Theo tháng</option>
+                  <option value="year">Theo năm</option>
+                </select>
+              </div>
 
               {/* Month Selector for day view */}
               {selectedPeriod === 'day' && (
                 <>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                      <option key={month} value={month}>
-                        Tháng {month}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Tháng</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>
+                          {getMonthName(month)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Năm</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
                 </>
               )}
 
-              {/* Year Selector for month view */}
+              {/* Month and Year Selector for month view */}
               {selectedPeriod === 'month' && (
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+                <>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Tháng</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>
+                          {getMonthName(month)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-gray-500 mb-1">Năm</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
               )}
             </div>
           </div>
 
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              {selectedPeriod === 'day' ? (
-                <BarChart data={formatChartData(revenueChart)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="label" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    fontSize={12}
-                  />
-                  <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
-                  <Tooltip 
-                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                    labelFormatter={(label) => `Ngày: ${label}`}
-                  />
-                  <Bar 
-                    dataKey="revenue" 
-                    fill="#3B82F6"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              ) : (
-                <LineChart data={formatChartData(revenueChart)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" />
-                  <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
-                  <Tooltip 
-                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                    labelFormatter={(label) => `Thời gian: ${label}`}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#3B82F6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#3B82F6' }}
-                  />
-                </LineChart>
-              )}
-            </ResponsiveContainer>
+            {formatChartData(revenueChart).length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                {selectedPeriod === 'day' ? (
+                  <BarChart data={formatChartData(revenueChart)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="label" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      fontSize={12}
+                    />
+                    <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                    <Tooltip 
+                      formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                      labelFormatter={(label) => `Ngày: ${label}`}
+                    />
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="#3B82F6"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                ) : (
+                  <LineChart data={formatChartData(revenueChart)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" />
+                    <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                    <Tooltip 
+                      formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                      labelFormatter={(label) => `Thời gian: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#3B82F6" 
+                      strokeWidth={2}
+                      dot={{ fill: '#3B82F6' }}
+                    />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-500">
+                  <MdTrendingUp className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                  <p className="text-lg font-medium">Chưa có dữ liệu doanh thu</p>
+                  <p className="text-sm">Dữ liệu sẽ hiển thị khi có đơn đặt xe</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -378,7 +478,7 @@ const OverViewManagement = () => {
             <div className="space-y-4">
               {topRenters.length > 0 ? (
                 topRenters.map((renter, index) => (
-                  <div key={renter.user_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={renter.user_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                         {index + 1}
@@ -400,7 +500,7 @@ const OverViewManagement = () => {
             </div>
           </div>
 
-          {/* Top Vehicles */}
+          {/* Top Vehicles - Enhanced with images */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
               <MdDirectionsCar className="mr-2" />
@@ -409,25 +509,62 @@ const OverViewManagement = () => {
             <div className="space-y-4">
               {topVehicles.length > 0 ? (
                 topVehicles.map((vehicle, index) => (
-                  <div key={vehicle.vehicle_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div key={vehicle.vehicle_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center space-x-4">
+                      {/* Ranking number */}
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                         {index + 1}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{vehicle.model}</p>
+                      
+                      {/* Vehicle image */}
+                      <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                        {vehicle.main_image_url ? (
+                          <img 
+                            src={vehicle.main_image_url} 
+                            alt={`${vehicle.brand?.name || ''} ${vehicle.model}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div 
+                          className={`w-full h-full ${vehicle.main_image_url ? 'hidden' : 'flex'} items-center justify-center bg-gray-300`}
+                        >
+                          <MdDirectionsCar className="text-gray-500 text-xl" />
+                        </div>
+                      </div>
+                      
+                      {/* Vehicle info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium text-gray-900 truncate">
+                            {vehicle.brand?.name || 'N/A'}
+                          </p>
+                          <span className="text-gray-400">•</span>
+                          <p className="font-medium text-gray-900 truncate">
+                            {vehicle.model}
+                          </p>
+                        </div>
                         <p className="text-sm text-gray-600">{vehicle.license_plate}</p>
-                        <p className="text-sm text-gray-500">{vehicle.brand?.name}</p>
+                        <p className="text-xs text-gray-500">{formatCurrency(vehicle.price_per_day)}/ngày</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-purple-600">{vehicle.rent_count} lượt</p>
-                      <p className="text-sm text-gray-600">{formatCurrency(vehicle.totalRevenue)}</p>
+                    
+                    {/* Stats */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-semibold text-purple-600 text-lg">{vehicle.rent_count} lượt</p>
+                      
+                      <p className="text-sm text-gray-600 font-medium">{formatCurrency(vehicle.total_paid)}</p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-8">Chưa có xe được thuê</p>
+                <div className="text-center py-8">
+                  <MdDirectionsCar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-500">Chưa có xe được thuê</p>
+                </div>
               )}
             </div>
           </div>

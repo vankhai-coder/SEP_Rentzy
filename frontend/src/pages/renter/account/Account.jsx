@@ -24,10 +24,11 @@ import {
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 
 const Account = () => {
   // check if user if logged in
-  const { userId } = useSelector((state) => state.userStore);
+  const { userId, role } = useSelector((state) => state.userStore);
 
   const navigate = useNavigate();
 
@@ -35,6 +36,12 @@ const Account = () => {
     "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
+
+  useEffect(() => {
+    if (role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [role, navigate]);
 
   if (!userId) {
     return (
@@ -46,6 +53,10 @@ const Account = () => {
         để truy cập trang tài khoản của bạn.
       </div>
     );
+  }
+
+  if (role === "admin") {
+    return null
   }
 
   return (

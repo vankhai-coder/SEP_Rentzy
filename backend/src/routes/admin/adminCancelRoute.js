@@ -3,7 +3,7 @@ import {
   getRefundRequests,
   approveRefund,
   rejectRefund,
-} from "../../controllers/admin/adminController.js";
+} from "../../controllers/admin/adminCancelController.js";
 import { checkUserBankAccount } from "../../middlewares/bankAccountMiddleware.js";
 
 const router = express.Router();

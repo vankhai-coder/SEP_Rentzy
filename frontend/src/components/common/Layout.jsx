@@ -2,25 +2,19 @@ import { useDispatch, useSelector } from "react-redux";
 import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
-import { checkAuth } from "@/redux/features/auth/authSlice.js";
 import ChatBox from "../chat/ChatBox.jsx";
-import { useLocation , useNavigate} from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { checkAuth } from "@/redux/features/auth/authSlice.js";
 
 const Layout = ({ children }) => {
-  const dispatch = useDispatch();
   const { role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const error = queryParams.get("error");
-
-  useEffect(() => {
-    if (!window.location.href.includes("verify-email") && !error) {
-      dispatch(checkAuth());
-    }
-  }, [error]);
 
   useEffect(() => {
     if (error === 'emailInUser') {
@@ -28,30 +22,41 @@ const Layout = ({ children }) => {
     }
   }, [error])
 
-  // redirect owner to /owner when landing on home after auth
   useEffect(() => {
-    if (role === 'owner' && location.pathname === '/') {
-      navigate('/owner', { replace: true });
+    if (error === 'userBanned') {
+      toast.error('Tài khoản của bạn đã bị cấm!')
     }
-  }, [role, location.pathname]);
+  }, [error])
+
+  // check auth : 
+  useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
 
   // redirect owner to /owner when landing on home after auth
   useEffect(() => {
     if (role === 'owner' && location.pathname === '/') {
       navigate('/owner', { replace: true });
     }
+  }, [role, location.pathname, navigate]);
 
-  
-  }, [role, location.pathname]);
+  // redirect admin to /admin when landing on home after auth
+  useEffect(() => {
+    if (role === 'admin' && location.pathname === '/') {
+      navigate('/admin', { replace: true });
+    }
+  }, [role, location.pathname, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
-      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Header />}
+      {/* Header - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
+        (role === 'admin' && location.pathname.startsWith('/admin'))) && <Header />}
       {/* Main Content */}
       <main className="flex-1 bg-[#f6f6f6]">{children}</main>
-      {/* Footer - Ẩn khi role là owner và đang ở trang owner hoặc các trang con */}
-      {!(role === 'owner' && location.pathname.startsWith('/owner')) && <Footer />}
+      {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
+      {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
+        (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
       <ChatBox />
     </div>
   );
