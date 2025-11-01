@@ -51,11 +51,19 @@ const ContractBooking = () => {
     }).format(amount);
   };
 
+  // Handle null values with dots
+  const formatFieldValue = (value, defaultText = '........') => {
+    if (value === null || value === undefined || value === '') {
+      return defaultText;
+    }
+    return value;
+  };
+
   // Calculate rental duration
   const calculateDuration = () => {
-    if (!booking?.start_date || !booking?.end_date) return 0;
-    const start = new Date(booking.start_date);
-    const end = new Date(booking.end_date);
+    if (!booking?.startDate || !booking?.endDate) return 0;
+    const start = new Date(booking.startDate);
+    const end = new Date(booking.endDate);
     const diffTime = Math.abs(end - start);
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
@@ -171,23 +179,23 @@ const ContractBooking = () => {
             <div className="party-info">
               <div className="info-item">
                 <span className="label">Họ và tên:</span>
-                <span className="value">{booking?.car?.owner?.full_name || 'Chủ xe'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.owner?.full_name, 'Chủ xe')}</span>
               </div>
               <div className="info-item">
                 <span className="label">Năm sinh:</span>
-                <span className="value">{booking?.car?.owner?.birth_year || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.owner?.birth_year)}</span>
               </div>
               <div className="info-item">
                 <span className="label">CMND/CCCD:</span>
-                <span className="value">{booking?.car?.owner?.id_number || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.owner?.id_number)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Địa chỉ:</span>
-                <span className="value">{booking?.car?.owner?.address || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.owner?.address)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Điện thoại:</span>
-                <span className="value">{booking?.car?.owner?.phone || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.owner?.phone_number)}</span>
               </div>
             </div>
           </div>
@@ -197,23 +205,23 @@ const ContractBooking = () => {
             <div className="party-info">
               <div className="info-item">
                 <span className="label">Họ và tên:</span>
-                <span className="value">{booking?.renter?.full_name || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.renter?.full_name, 'Người thuê')}</span>
               </div>
               <div className="info-item">
                 <span className="label">Năm sinh:</span>
-                <span className="value">{booking?.renter?.birth_year || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.renter?.birth_year)}</span>
               </div>
               <div className="info-item">
                 <span className="label">CMND/CCCD:</span>
-                <span className="value">{booking?.renter?.id_number || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.renter?.id_number)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Địa chỉ:</span>
-                <span className="value">{booking?.renter?.address || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.renter?.address)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Điện thoại:</span>
-                <span className="value">{booking?.renter?.phone || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.renter?.phone_number)}</span>
               </div>
             </div>
           </div>
@@ -224,19 +232,19 @@ const ContractBooking = () => {
             <div className="vehicle-info">
               <div className="info-item">
                 <span className="label">Loại xe:</span>
-                <span className="value">{booking?.car?.brand} {booking?.car?.model}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.model)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Biển số:</span>
-                <span className="value">{booking?.car?.license_plate || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.license_plate)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Màu sắc:</span>
-                <span className="value">{booking?.car?.color || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.color)}</span>
               </div>
               <div className="info-item">
                 <span className="label">Năm sản xuất:</span>
-                <span className="value">{booking?.car?.year || 'N/A'}</span>
+                <span className="value">{formatFieldValue(booking?.vehicle?.year)}</span>
               </div>
             </div>
           </div>
@@ -250,15 +258,15 @@ const ContractBooking = () => {
               <div className="article-content">
                 <div className="term-item">
                   <span className="term-label">- Thời gian thuê:</span>
-                  <span className="term-value">Từ {formatDate(booking?.start_date)} {formatTime(booking?.start_time)} đến {formatDate(booking?.end_date)} {formatTime(booking?.end_time)} ({duration} ngày)</span>
+                  <span className="term-value">Từ {formatDate(booking?.startDate)} {formatTime(booking?.startTime)} đến {formatDate(booking?.endDate)} {formatTime(booking?.endTime)} ({duration} ngày)</span>
                 </div>
                 <div className="term-item">
                   <span className="term-label">- Địa điểm nhận xe:</span>
-                  <span className="term-value">{booking?.pickup_location || 'N/A'}</span>
+                  <span className="term-value">{formatFieldValue(booking?.pickupLocation)}</span>
                 </div>
                 <div className="term-item">
                   <span className="term-label">- Địa điểm trả xe:</span>
-                  <span className="term-value">{booking?.return_location || 'N/A'}</span>
+                  <span className="term-value">{formatFieldValue(booking?.returnLocation)}</span>
                 </div>
               </div>
             </div>
@@ -268,7 +276,7 @@ const ContractBooking = () => {
               <div className="article-content">
                 <div className="term-item">
                   <span className="term-label">- Giá thuê:</span>
-                  <span className="term-value">{formatCurrency(booking?.total_price)}</span>
+                  <span className="term-value">{formatCurrency(booking?.totalAmount)}</span>
                 </div>
                 <div className="term-item">
                   <span className="term-label">- Phương thức thanh toán:</span>
@@ -317,12 +325,12 @@ const ContractBooking = () => {
               <div className="signature-party">
                 <div className="party-label">BÊN CHO THUÊ</div>
                 <div className="signature-space"></div>
-                <div className="party-name">{booking?.car?.owner?.full_name || 'Chủ xe'}</div>
+                <div className="party-name">{formatFieldValue(booking?.vehicle?.owner?.full_name, 'Chủ xe')}</div>
               </div>
               <div className="signature-party">
                 <div className="party-label">BÊN THUÊ</div>
                 <div className="signature-space"></div>
-                <div className="party-name">{booking?.renter?.full_name || 'Người thuê'}</div>
+                <div className="party-name">{formatFieldValue(booking?.renter?.full_name, 'Người thuê')}</div>
               </div>
             </div>
           </div>

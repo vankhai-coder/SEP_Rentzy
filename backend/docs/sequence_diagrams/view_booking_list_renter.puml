@@ -17,10 +17,10 @@ activate F
 
 F -> F: 2. Check authentication token
 
-F -> BR: 3. GET /api/renter/booking-history
+F -> BR: 3. GET /api/renter/booking-history + Cookies\n(withCredentials: true)
 activate BR
 
-BR -> BR: 4. Verify JWT token (middleware)
+BR -> BR: 4. Extract JWT token từ cookies\nVerify token validity (middleware)
 
 BR -> BC: 5. Call getBookingHistory(req, res)
 activate BC

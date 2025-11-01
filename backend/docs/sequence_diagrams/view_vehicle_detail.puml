@@ -1,0 +1,66 @@
+@startuml view_vehicle_detail
+
+title View Vehicle Detail Sequence Diagram
+
+actor User
+participant "VehicleDetail Page" as FE
+participant "Redux Store" as Redux
+participant "Axios Instance" as Axios
+participant "Vehicle Route" as Route
+participant "Vehicle Controller" as Controller
+participant "Vehicle Model" as VehicleModel
+participant "User Model" as UserModel
+participant "BookingReview Model" as ReviewModel
+participant "Booking Model" as BookingModel
+database "MySQL Database" as DB
+
+User -> FE: 1. Truy cập /detail/:id
+FE -> FE: 2. Component VehicleDetail được render
+FE -> Redux: 3. Dispatch fetchVehicleById(id)
+Redux -> Axios: 4. GET /api/renter/vehicles/:id
+Axios -> Route: 5. Gửi request đến vehicle route
+Route -> Controller: 6. Gọi getVehicleById function
+
+Controller -> Controller: 7. Extract vehicle ID từ req.params
+Controller -> VehicleModel: 8. Tìm xe theo ID
+VehicleModel -> DB: 9. SELECT * FROM vehicles WHERE vehicle_id = ?
+DB -> VehicleModel: 10. Trả về thông tin xe
+VehicleModel -> Controller: 11. Vehicle data hoặc null
+
+alt Xe không tồn tại
+    Controller -> Axios: 12a. Response 404 - Vehicle not found
+    Axios -> Redux: 13a. Reject với error message
+    Redux -> FE: 14a. Update detailError state
+    FE -> User: 15a. Hiển thị thông báo lỗi "Không tìm thấy xe"
+else Xe tồn tại
+    Controller -> UserModel: 16. Lấy thông tin chủ xe
+    UserModel -> DB: 17. SELECT * FROM users WHERE user_id = owner_id
+    DB -> UserModel: 18. Thông tin owner
+    UserModel -> Controller: 19. Owner data
+    
+    Controller -> Controller: 20. Parse JSON fields (extra_images, features)
+    Controller -> Controller: 21. Gắn owner data vào vehicle object
+    
+    Controller -> ReviewModel: 22. Lấy đánh giá về chủ xe
+    ReviewModel -> DB: 23. SELECT reviews với JOIN booking, vehicle, user
+    note right: Lấy reviews của tất cả xe thuộc owner này
+    DB -> ReviewModel: 24. Danh sách reviews
+    ReviewModel -> Controller: 25. Reviews data với thông tin renter
+    
+    Controller -> Controller: 26. Format reviews data
+    Controller -> Controller: 27. Tính toán rating summary (average, count)
+    Controller -> Controller: 28. Tạo response object với vehicle + owner + reviews
+    
+    Controller -> Axios: 29. Response 200 với vehicle detail data
+    Axios -> Redux: 30. Fulfill với vehicle data
+    Redux -> FE: 31. Update currentVehicle state
+    FE -> FE: 32. Re-render với dữ liệu mới
+    
+    FE -> User: 33. Hiển thị VehicleGallery (hình ảnh xe)
+    FE -> User: 34. Hiển thị VehicleInfo (thông tin chi tiết xe)
+    FE -> User: 35. Hiển thị BookingForm (form đặt xe)
+    FE -> User: 36. Hiển thị RentalPolicies (chính sách thuê)
+    FE -> User: 37. Hiển thị OwnerProfile (thông tin chủ xe + reviews)
+end
+
+@enduml

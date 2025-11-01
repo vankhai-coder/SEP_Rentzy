@@ -221,9 +221,31 @@ export const confirmCancellation = async (req, res) => {
       { transaction }
     );
 
-    // Tạo một bản ghi tạm để lưu thông tin yêu cầu hủy (không phải BookingCancellation chính thức)
-    // Chúng ta sẽ lưu thông tin này vào một bảng riêng hoặc sử dụng cách khác
-    // Hiện tại, chúng ta sẽ tính toán lại khi owner duyệt
+    // Tạo BookingCancellation ngay khi renter yêu cầu hủy với trạng thái hoàn tiền là "none"
+    const cancellationData = {
+      booking_id: booking.booking_id,
+      cancellation_reason: (req.body && req.body.reason) || "Người thuê yêu cầu hủy booking",
+      cancel_requested_at: now,
+      cancellation_fee: cancellationFee,
+      cancelled_by: "renter",
+      owner_approved_cancel_at: null,
+      cancelled_at: null,
+      total_refund_for_renter: refundAmount,
+      refund_status_renter: "none", // Trạng thái hoàn tiền ban đầu là none
+      refund_reason_renter: "Hoàn tiền do hủy booking",
+      refund_processed_at_renter: null,
+      total_refund_for_owner: ownerRefund,
+      refund_status_owner: ownerRefund > 0 ? "none" : "none", // Trạng thái hoàn tiền ban đầu là none
+      refund_processed_at_owner: null,
+      created_at: now,
+      updated_at: now,
+    };
+
+    console.log("Creating BookingCancellation with initial data:", cancellationData);
+    
+    const newBookingCancellation = await BookingCancellation.create(cancellationData, { transaction });
+    
+    console.log("BookingCancellation created successfully:", newBookingCancellation.cancellation_id);
 
     // Tạo thông báo cho owner để duyệt yêu cầu hủy
     if (booking.vehicle.owner_id) {

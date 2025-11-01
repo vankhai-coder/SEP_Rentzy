@@ -18,6 +18,7 @@ import MyTrips from "./pages/renter/account/MyTrips.jsx";
 import MyVehicles from "./pages/renter/account/MyVehicles.jsx";
 import Account from "./pages/renter/account/Account.jsx";
 import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
+import BankAccountPage from "./pages/renter/account/BankAccountPage.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
@@ -83,6 +84,7 @@ const App = () => {
             <Route path="/longtermrenting" element={<LongTermRenting />} />
             <Route path="/myreward" element={<MyReward />} />
             <Route path="/myaddress" element={<MyAddress />} />
+            <Route path="/bank-accounts" element={<BankAccountPage />} />
             <Route path="/resetpw" element={<ResetPassword />} />
             <Route path="/deleteaccount" element={<DeleteAccount />} />
             <Route

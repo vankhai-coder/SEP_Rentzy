@@ -20,6 +20,7 @@ import {
   Star,
   ArrowRightLeft,
   TicketXIcon,
+  CreditCard,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -113,6 +114,12 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
+              value="/bank-accounts"
+            >
+              <CreditCard /> Tài khoản ngân hàng
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
               value="/resetpw"
             >
               <LockIcon /> Đổi mật khẩu
@@ -203,6 +210,15 @@ const Account = () => {
               }
             >
               <Gift /> Quà tặng
+            </NavLink>
+
+            <NavLink
+              to="/bank-accounts"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <CreditCard /> Tài khoản ngân hàng
             </NavLink>
 
             <NavLink

@@ -38,8 +38,8 @@ Voucher.belongsTo(User, { as: "creator", foreignKey: "created_by" });
 // === BẢNG PHỤ THUỘC USER ===
 
 // User ↔ Bank
-User.hasMany(Bank, { foreignKey: "user_id" });
-Bank.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(Bank, { foreignKey: "user_id", as: "banks" });
+Bank.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 // User ↔ Notification
 User.hasMany(Notification, { foreignKey: "user_id" });

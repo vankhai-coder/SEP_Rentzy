@@ -1,0 +1,96 @@
+@startuml owner_return_confirmation
+title Owner Return Confirmation - Owner xác nhận nhận lại xe sau khi renter trả xe
+
+actor "Owner" as Owner
+participant "OwnerHandoverUpload" as Frontend
+participant "Axios Instance" as Axios
+participant "Handover Route\n(/api/handover)" as HandoverRoute
+participant "Auth Middleware\n(verifyJWTToken)" as AuthMiddleware
+participant "Upload Middleware\n(multer memory)" as UploadMiddleware
+participant "Handover Controller\n(confirmOwnerReturn)" as HandoverController
+participant "Booking Model" as BookingModel
+participant "Vehicle Model" as VehicleModel
+participant "BookingHandover Model" as HandoverModel
+participant "Cloudinary Service" as CloudinaryService
+database "MySQL Database" as DB
+
+Owner -> Frontend: Truy cập trang xác nhận trả xe
+Frontend -> Frontend: Hiển thị form upload ảnh xe\nsau khi renter trả
+
+Owner -> Frontend: Chọn ít nhất 5 ảnh xe (tối đa 10 ảnh)
+Frontend -> Frontend: Validate số lượng ảnh:\n- Minimum: 5 ảnh\n- Maximum: 10 ảnh
+
+Owner -> Frontend: Click "Xác nhận trả xe" button
+Frontend -> Frontend: Set uploading = true\nClear error state
+
+Frontend -> Axios: POST /api/handover/{bookingId}/confirm-owner-return
+note right: FormData với files + Cookies\n(withCredentials: true)
+Axios -> HandoverRoute: Multipart form request với ảnh
+
+HandoverRoute -> AuthMiddleware: verifyJWTToken(req, res, next)
+AuthMiddleware -> AuthMiddleware: Extract JWT token từ cookies\nVerify token validity
+AuthMiddleware -> HandoverRoute: Set req.user.userId = ownerId
+
+HandoverRoute -> UploadMiddleware: uploadMiddleware (multer memory storage)
+UploadMiddleware -> UploadMiddleware: Process uploaded files\nStore in memory buffer
+UploadMiddleware -> HandoverRoute: Set req.files array
+
+HandoverRoute -> HandoverController: confirmOwnerReturn(req, res)
+
+HandoverController -> BookingModel: findOne({where: {booking_id}, include: Vehicle})
+BookingModel -> DB: SELECT bookings.*, vehicles.*\nFROM bookings\nJOIN vehicles ON bookings.vehicle_id = vehicles.vehicle_id\nWHERE booking_id = ? AND vehicles.owner_id = ?
+DB -> BookingModel: Return booking với vehicle data
+BookingModel -> HandoverController: Return booking object với vehicle
+
+alt Booking không tồn tại hoặc owner không có quyền
+    HandoverController -> Frontend: 404 - "Không tìm thấy booking hoặc bạn không có quyền truy cập"
+else Booking tồn tại và owner có quyền
+    HandoverController -> HandoverController: Check booking.status === "in_progress"
+    
+    alt Booking status không phải "in_progress"
+        HandoverController -> Frontend: 400 - "Booking chưa được thanh toán đầy đủ"
+    else Booking đang trong quá trình thuê
+        HandoverController -> HandoverController: Validate uploaded files:\n- Check req.files exists\n- Check files.length >= 5\n- Check files.length <= 10
+        
+        alt Không đủ ảnh (< 5 ảnh)
+            HandoverController -> Frontend: 400 - "Cần upload ít nhất 5 ảnh xe để xác nhận bàn giao"
+        else Quá nhiều ảnh (> 10 ảnh)
+            HandoverController -> Frontend: 400 - "Chỉ được upload tối đa 10 ảnh"
+        else Số lượng ảnh hợp lệ (5-10 ảnh)
+            loop Cho mỗi file ảnh
+                HandoverController -> CloudinaryService: Upload image từ memory buffer
+                CloudinaryService -> CloudinaryService: Process và store ảnh
+                CloudinaryService -> HandoverController: Return uploaded URL
+            end
+            
+            HandoverController -> HandoverModel: findOne({where: {booking_id}})
+            HandoverModel -> DB: SELECT * FROM booking_handovers WHERE booking_id = ?
+            DB -> HandoverModel: Return handover data
+            HandoverModel -> HandoverController: Return handover object
+            
+            alt Handover record chưa tồn tại
+                HandoverController -> HandoverModel: create({\nbooking_id,\npost_rental_images: uploadedUrls,\nowner_return_confirmed: true,\nreturn_time: new Date()\n})
+                HandoverModel -> DB: INSERT INTO booking_handovers ...
+                DB -> HandoverModel: Return created record
+                HandoverModel -> HandoverController: Return new handover object
+            else Handover record đã tồn tại
+                HandoverController -> HandoverModel: update({\npost_rental_images: uploadedUrls,\nowner_return_confirmed: true,\nreturn_time: new Date()\n})
+                HandoverModel -> DB: UPDATE booking_handovers SET ...
+                DB -> HandoverModel: Return updated rows
+                HandoverModel -> HandoverController: Return update result
+            end
+            
+            HandoverController -> Frontend: 200 - {\nsuccess: true,\nmessage: "Xác nhận bàn giao xe thành công",\ndata: {handover_id, uploadedImages, return_time}\n}
+            Frontend -> Frontend: Update UI state:\n- setConfirmedImages(uploadedUrls)\n- setIsConfirmed(true)\n- Clear localImages
+            Frontend -> Owner: Display success message\n"Xác nhận bàn giao xe thành công!"
+        end
+    end
+end
+
+alt Có lỗi xảy ra (catch block)
+    HandoverController -> Frontend: 500 - {\nsuccess: false,\nmessage: "Có lỗi xảy ra khi xác nhận bàn giao xe",\nerror: error.message\n}
+    Frontend -> Frontend: Set uploading = false\nSet error message
+    Frontend -> Owner: Display error message
+end
+
+@enduml

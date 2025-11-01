@@ -492,31 +492,32 @@ export const approveCancelRequest = async (req, res) => {
       });
     }
 
-    // Tạo bản ghi BookingCancellation chính thức
-    const cancellationData = {
-      booking_id: booking.booking_id,
-      cancellation_reason: "Người thuê yêu cầu hủy booking",
-      cancel_requested_at: booking.updated_at, // Thời gian yêu cầu hủy
-      cancellation_fee: cancellationFee,
-      cancelled_by: "renter",
+    // Tìm và cập nhật BookingCancellation đã có (được tạo khi renter yêu cầu hủy)
+    const existingCancellation = await BookingCancellation.findOne({
+      where: { booking_id: booking.booking_id },
+      transaction,
+    });
+
+    if (!existingCancellation) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thông tin hủy booking",
+      });
+    }
+
+    console.log("Found existing BookingCancellation:", existingCancellation.cancellation_id);
+
+    // Cập nhật BookingCancellation với thông tin duyệt và chuyển trạng thái hoàn tiền thành pending
+    await existingCancellation.update({
       owner_approved_cancel_at: now,
       cancelled_at: now,
-      total_refund_for_renter: refundAmount,
-      refund_status_renter: "pending",
-      refund_reason_renter: "Hoàn tiền do hủy booking",
-      refund_processed_at_renter: null,
-      total_refund_for_owner: ownerRefund,
-      refund_status_owner: ownerRefund > 0 ? "pending" : "none",
-      refund_processed_at_owner: null,
-      created_at: now,
+      refund_status_renter: "pending", // Chuyển từ none thành pending
+      refund_status_owner: ownerRefund > 0 ? "pending" : "none", // Chuyển từ none thành pending nếu có tiền hoàn
       updated_at: now,
-    };
+    }, { transaction });
 
-    console.log("Creating BookingCancellation with data:", cancellationData);
-    
-    const newBookingCancellation = await BookingCancellation.create(cancellationData, { transaction });
-    
-    console.log("BookingCancellation created successfully:", newBookingCancellation.cancellation_id);
+    console.log("BookingCancellation updated successfully with pending refund status");
 
     // Tạo thông báo cho renter
     console.log("Creating notification for renter:", booking.renter_id);

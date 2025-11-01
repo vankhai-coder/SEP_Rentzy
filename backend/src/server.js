@@ -37,6 +37,12 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
 
+// bank account
+import BankAccountRoute from "./routes/bank/bankAccountRoute.js";
+
+// admin
+import AdminRoute from "./routes/admin/adminCancelRoute.js";
+
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
 
@@ -100,6 +106,12 @@ app.use("/api/renter/points", PointsRoute);
 
 // payment route
 app.use("/api/payment", PaymentRoute);
+
+// bank account route
+app.use("/api/bank-accounts", BankAccountRoute);
+
+// admin route
+app.use("/api/admin", AdminRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");

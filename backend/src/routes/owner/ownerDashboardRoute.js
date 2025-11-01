@@ -39,8 +39,8 @@ router.get("/bookings/detail/:id", getBookingDetail);
 
 // 2. Duyệt đơn hủy
 router.get("/cancel-requests", getCancelRequests);
-router.get("/cancel-requests/:id/approve", approveCancelRequest);
-router.get("/cancel-requests/:id/reject", rejectCancelRequest);
+router.patch("/cancel-requests/:id/approve", approveCancelRequest);
+router.patch("/cancel-requests/:id/reject", rejectCancelRequest);
 
 // 2.1. Xem danh sách booking đã hủy với thông tin tiền hoàn
 router.get("/cancelled-bookings", getCancelledBookings);

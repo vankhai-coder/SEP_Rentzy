@@ -1,7 +1,7 @@
 // src/components/renter/bookingHistory/BookingHistoryTable.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Star, Eye, Car, X } from "lucide-react";
+import { Star, Eye, Car, X, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import CancelBookingModal from "../bookingCancel/CancelBookingModal";
@@ -172,6 +172,17 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                       <Eye className="w-4 h-4 mr-1" />
                       Chi tiết
                     </Link>
+                    
+                    {/* Nút xem hợp đồng - chỉ hiện khi đã thanh toán đầy đủ hoặc hoàn thành */}
+                    {(booking.status === "fully_paid" || booking.status === "completed") && (
+                      <Link
+                        to={`/contract/${booking.booking_id}`}
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 hover:text-green-800"
+                      >
+                        <FileText className="w-4 h-4 mr-1" />
+                        Hợp đồng
+                      </Link>
+                    )}
                     
                     {/* Nút hủy booking - chỉ hiện khi có thể hủy */}
                     {(booking.status === "pending" || 

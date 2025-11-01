@@ -1,0 +1,127 @@
+@startuml view_transaction_history
+title View Transaction History - Sequence Diagram
+
+actor "Renter" as R
+participant "Frontend\n(TransactionHistory.jsx)" as F
+participant "Axios Instance" as AI
+participant "Auth Middleware" as AM
+participant "Transaction Route" as TR
+participant "Transaction Controller" as TC
+participant "Transaction Model" as TM
+participant "Database" as DB
+
+R -> F: 1. Navigate to /transaction-history
+activate F
+
+F -> F: 2. Component mounts, useEffect triggers
+F -> F: 3. Set loading state to true
+
+F -> AI: 4. GET /api/renter/transactions + Cookies\n(withCredentials: true)
+activate AI
+
+AI -> AM: 5. Extract JWT token từ cookies\nVerify token validity
+activate AM
+
+alt Token Valid
+    AM -> AM: 6. Extract user info from token
+    AM -> TR: 7. Forward request with user data
+    deactivate AM
+    activate TR
+
+    TR -> TC: 8. Call getTransactionHistory(req, res)
+    activate TC
+
+    TC -> TC: 9. Extract renterId from req.user.userId
+
+    TC -> TM: 10. Transaction.findAll() with conditions
+    activate TM
+    
+    TM -> DB: 11. SELECT * FROM transactions WHERE from_user_id = ? ORDER BY created_at DESC
+    activate DB
+    
+    DB -> TM: 12. Return transaction records
+    deactivate DB
+    
+    TM -> TC: 13. Return transactions array
+    deactivate TM
+
+    TC -> TC: 14. Initialize statistics object
+    TC -> TC: 15. Loop through transactions
+    TC -> TC: 16. Calculate totalTransactions, moneyIn, moneyOut, totalAmount
+
+    TC -> TC: 17. Map transactions to response format
+
+    TC -> TR: 18. Return success response with data
+    deactivate TC
+    
+    TR -> AI: 19. Return JSON response
+    deactivate TR
+    
+    AI -> F: 20. Return response data
+    deactivate AI
+
+    F -> F: 21. Process response data
+    F -> F: 22. Set transactions and statistics
+    F -> F: 23. Set loading to false
+
+    F -> R: 24. Display transaction history page
+    deactivate F
+
+else Token Invalid
+    AM -> AI: 6a. Return 401 Unauthorized
+    deactivate AM
+    AI -> F: 7a. Return error response
+    deactivate AI
+    F -> F: 8a. Set error state
+    F -> R: 9a. Display error message
+    deactivate F
+end
+
+opt User applies filter
+    R -> F: 25. Select status filter
+    activate F
+    F -> F: 26. Update filter state
+    F -> R: 27. Update displayed results
+    deactivate F
+end
+
+opt User searches
+    R -> F: 28. Enter search term
+    activate F
+    F -> F: 29. Update searchTerm state
+    F -> R: 30. Update displayed results
+    deactivate F
+end
+
+opt User sorts data
+    R -> F: 31. Click sort header
+    activate F
+    F -> F: 32. Update sortBy and sortOrder
+    F -> R: 33. Update displayed results
+    deactivate F
+end
+
+opt User navigates pages
+    R -> F: 34. Click pagination button
+    activate F
+    F -> F: 35. Update currentPage state
+    F -> R: 36. Update displayed results
+    deactivate F
+end
+
+opt Database Error
+    TM -> TC: Error in database query
+    TC -> TR: Return 500 Internal Server Error
+    TR -> AI: Return error response
+    AI -> F: Return error response
+    F -> F: Set error state
+    F -> R: Display error message
+end
+
+opt Network Error
+    AI -> F: Network request failed
+    F -> F: Set error state
+    F -> R: Display "Không thể tải lịch sử giao dịch"
+end
+
+@enduml

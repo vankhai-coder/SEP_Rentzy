@@ -1,0 +1,172 @@
+@startuml Advance Payment 30% - Sequence Diagram
+!theme plain
+title Advance Payment 30% Flow - Sequence Diagram
+
+actor Renter as R
+participant "Deposit page" as F
+participant "Payment\nRoute" as PR
+participant "Payment\nController" as PC
+participant "Booking\nModel" as BM
+participant "Transaction\nModel" as TM
+participant "Notification\nModel" as NM
+participant "PayOS\nSDK" as POS
+participant "PayOS\nAPI" as PAPI
+database "MySQL\nDatabase" as DB
+
+
+R -> F: 1. Click "Thanh toán giữ chỗ" button
+activate F
+
+F -> F: 2. Show confirmation dialog
+F -> R: 3. Display payment confirmation
+R -> F: 4. Confirm payment (30% of total_amount)
+
+
+F -> PR: 5. POST /api/payment/payos/link + Cookies\n(withCredentials: true)
+
+activate PR
+
+PR -> PR: 6. Extract JWT token từ cookies\nVerify token validity (middleware)
+
+PR -> PC: 7. Call createPayOSLink(req, res)
+activate PC
+
+PC -> BM: 8. Find booking by bookingId
+activate BM
+BM -> DB: 9. SELECT booking WHERE booking_id
+activate DB
+DB -> BM: 10. Return booking data
+deactivate DB
+BM -> PC: 11. Return booking (status: "pending")
+deactivate BM
+
+PC -> PC: 12. Validate booking status === "pending"
+PC -> PC: 13. Calculate amount = Math.floor(total_amount * 0.3)
+PC -> PC: 14. Generate orderCode = Date.now().slice(-10)
+
+PC -> BM: 15. Update booking with order_code
+activate BM
+BM -> DB: 16. UPDATE booking SET order_code
+activate DB
+DB -> BM: 17. Confirm update
+deactivate DB
+deactivate BM
+
+PC -> POS: 18. Create PayOS payment request
+activate POS
+
+
+POS -> PAPI: 19. POST /v2/payment-requests
+activate PAPI
+PAPI -> POS: 20. Return {checkoutUrl, ...}
+deactivate PAPI
+POS -> PC: 21. Return paymentLinkResponse
+deactivate POS
+
+PC -> PR: 22. Return {payUrl: checkoutUrl}
+deactivate PC
+PR -> F: 23. Return payment response
+deactivate PR
+
+F -> R: 24. Redirect to PayOS payment page
+deactivate F
+
+
+R -> PAPI: 25. Scan QR code and complete payment
+activate PAPI
+
+
+PAPI -> PAPI: 26. Process payment transaction
+
+PAPI -> POS: 27. Send webhook notification
+activate POS
+
+
+POS -> PR: 28. POST /api/payment/payos/webhook
+activate PR
+
+PR -> PC: 29. Call handlePayOSWebhook(req, res)
+activate PC
+
+PC -> PC: 30. Check webhook data (code === "00" && desc === "success")
+
+alt Payment Successful
+    PC -> BM: 31a. Find booking by order_code
+    activate BM
+    BM -> DB: 32a. SELECT booking WHERE order_code
+    activate DB
+    DB -> BM: 33a. Return booking data
+    deactivate DB
+    BM -> PC: 34a. Return booking
+    deactivate BM
+
+    PC -> PC: 35a. Validate booking.status === "pending"
+
+    PC -> BM: 36a. Update booking status to "deposit_paid"
+    activate BM
+    BM -> DB: 37a. UPDATE booking SET status="deposit_paid", total_paid=amount
+    activate DB
+    DB -> BM: 38a. Confirm update
+    deactivate DB
+    deactivate BM
+
+    PC -> TM: 39a. Create new transaction
+    activate TM
+    TM -> DB: 40a. INSERT transaction (type="DEPOSIT", status="COMPLETED")
+    activate DB
+    DB -> TM: 41a. Return transaction_id
+    deactivate DB
+    TM -> PC: 42a. Return transaction data
+    deactivate TM
+
+    PC -> NM: 43a. Create notification for renter
+    activate NM
+    NM -> DB: 44a. INSERT notification (title="Thanh toán thành công")
+    activate DB
+    DB -> NM: 45a. Confirm notification created
+    deactivate DB
+    deactivate NM
+
+    PC -> NM: 46a. Create notification for owner
+    activate NM
+    NM -> DB: 47a. INSERT notification (title="Nhận được thanh toán")
+    activate DB
+    DB -> NM: 48a. Confirm notification created
+    deactivate DB
+    deactivate NM
+
+    PC -> PC: 49a. Send email to renter and owner
+
+
+    PC -> PR: 50a. Return {success: true}
+
+else Payment Failed
+    PC -> PR: 31b. Return {success: true, message: "Invalid webhook"}
+
+end
+
+deactivate PC
+PR -> POS: 51. Return webhook response
+deactivate PR
+deactivate POS
+
+PAPI -> R: 52. Redirect to return URL with payment result
+deactivate PAPI
+
+R -> F: 53. Access return URL with payment status
+activate F
+
+F -> F: 54. Check URL parameters (payment=success/cancel)
+
+alt Payment Success
+    F -> F: 55a. Show success message
+    F -> F: 56a. Refresh booking data
+    F -> R: 57a. Display updated booking status
+else Payment Cancelled/Failed
+    F -> F: 55b. Show error message
+    F -> R: 57b. Allow retry payment
+end
+
+deactivate F
+
+@enduml

@@ -14,6 +14,7 @@ import {
 } from "../../controllers/booking/bookingCancelController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 import { checkVerificationForBooking } from "../../middlewares/verificationMiddleware.js";
+import { requireBankAccount } from "../../middlewares/bankAccountMiddleware.js";
 
 BookingRoute.get("/getDate/:vehicleId", getVehicleBookedDates);
 BookingRoute.get("/:bookingId", verifyJWTToken, getBookingById);
@@ -25,11 +26,23 @@ BookingRoute.post(
 );
 BookingRoute.delete("/:bookingId", verifyJWTToken, deleteBooking);
 
-// Manual trigger for auto-cancel 
-BookingRoute.post("/admin/auto-cancel-expired", triggerAutoCancelExpiredBookings);
+// Manual trigger for auto-cancel
+BookingRoute.post(
+  "/admin/auto-cancel-expired",
+  triggerAutoCancelExpiredBookings
+);
 
 // Cancellation routes
-BookingRoute.get("/:bookingId/cancellation-fee", verifyJWTToken, calculateCancellationFee);
-BookingRoute.post("/:bookingId/cancel", verifyJWTToken, confirmCancellation);
+BookingRoute.get(
+  "/:bookingId/cancellation-fee",
+  verifyJWTToken,
+  calculateCancellationFee
+);
+BookingRoute.post(
+  "/:bookingId/cancel",
+  verifyJWTToken,
+  requireBankAccount,
+  confirmCancellation
+);
 
 export default BookingRoute;

@@ -67,10 +67,15 @@ const CancelRequests = () => {
 
   const handleApproveCancel = async (bookingId) => {
     try {
+      console.log("=== FRONTEND APPROVE CANCEL DEBUG ===");
+      console.log("Approving cancel request for booking ID:", bookingId);
+      
       setProcessingId(bookingId);
-      const response = await axiosInstance.get(
-        `/owner/dashboard/cancel-requests/${bookingId}/approve`
+      const response = await axiosInstance.patch(
+        `/api/owner/dashboard/cancel-requests/${bookingId}/approve`
       );
+
+      console.log("Response from approve API:", response.data);
 
       if (response.data.success) {
         // Remove the approved request from the list
@@ -79,9 +84,13 @@ const CancelRequests = () => {
         );
         // Show success message
         alert("Đã duyệt yêu cầu hủy thành công");
+        console.log("Cancel request approved successfully");
       }
     } catch (error) {
+      console.error("=== FRONTEND APPROVE ERROR ===");
       console.error("Error approving cancel request:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
       alert("Có lỗi xảy ra khi duyệt yêu cầu hủy");
     } finally {
       setProcessingId(null);
@@ -92,7 +101,7 @@ const CancelRequests = () => {
     try {
       setProcessingId(bookingId);
       const response = await axiosInstance.patch(
-        `/owner/dashboard/cancel-requests/${bookingId}/reject`
+        `/api/owner/dashboard/cancel-requests/${bookingId}/reject`
       );
 
       if (response.data.success) {
