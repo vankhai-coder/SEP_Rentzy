@@ -49,6 +49,7 @@ import Reports from "./pages/admin/SideBarComponents/Reports.jsx";
 import Revenue from "./pages/owner/dashboard/Revenue.jsx";
 import RevenueStats from "./pages/admin/SideBarComponents/RevenueStats.jsx";
 import RefundManagement from "./pages/admin/SideBarComponents/RefundManagement.jsx";
+import PayoutManagement from "./pages/admin/SideBarComponents/PayoutManagement.jsx";
 import DisburseOwner from "./pages/admin/SideBarComponents/DisburseOwner.jsx";
 import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement.jsx";
 
@@ -72,10 +73,7 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
 
           {/* RENTER ROUTES :  */}
-          <Route
-            path="/"
-            element={<Account />}
-          >
+          <Route path="/" element={<Account />}>
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
             <Route path="/booking-history" element={<BookingHistory />} />
@@ -141,59 +139,26 @@ const App = () => {
           />
 
           {/* ADMIN ROUTES :  */}
-          <Route
-            path="/admin"
-            element={<AdminPage />}
-          >
+          <Route path="/admin" element={<AdminPage />}>
             {/* Admin Routes For Admin Here : */}
-            <Route
-              path="approvalvehicle"
-              element={<ApprovalVehicle />}
-            />
-            <Route
-              path="managementvehicle"
-              element={<ManagementVehicles />}
-            />
-            <Route
-              path="userManagement"
-              element={<UserManagement />}
-            />
+            <Route path="approvalvehicle" element={<ApprovalVehicle />} />
+            <Route path="managementvehicle" element={<ManagementVehicles />} />
+            <Route path="userManagement" element={<UserManagement />} />
 
-            <Route
-              path="approveOwner"
-              element={<ApproveOwner />}
-            />
+            <Route path="approveOwner" element={<ApproveOwner />} />
 
-            <Route
-              path="messages"
-              element={<Messages />}
-            />
-            <Route
-              path="reports"
-              element={<Reports />}
-            />
-            <Route
-              path="revenue-stats"
-              element={<RevenueStats />}
-            />
-            <Route
-              path="refundManagement"
-              element={<RefundManagement />}
-            />
+            <Route path="messages" element={<Messages />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="revenue-stats" element={<RevenueStats />} />
+            <Route path="refundManagement" element={<RefundManagement />} />
+            <Route path="payoutManagement" element={<PayoutManagement />} />
 
-            <Route
-              path="disburseOwner"
-              element={<DisburseOwner />}
-            />
+            <Route path="disburseOwner" element={<DisburseOwner />} />
 
-            <Route
-              path="voucherManagement"
-              element={<VoucherManagement />}
-            />
+            <Route path="voucherManagement" element={<VoucherManagement />} />
 
             {/* catch all route start with /admin  */}
             <Route path="*" element={<ApprovalVehicle />} />
-
           </Route>
 
           {/* Catch-all route */}

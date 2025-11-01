@@ -38,8 +38,8 @@ const Account = () => {
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
   useEffect(() => {
-    if (role === 'admin') {
-      navigate('/admin', { replace: true });
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
     }
   }, [role, navigate]);
 
@@ -56,7 +56,7 @@ const Account = () => {
   }
 
   if (role === "admin") {
-    return null
+    return null;
   }
 
   return (
@@ -212,15 +212,6 @@ const Account = () => {
               }
             >
               <Gift /> Điểm thưởng
-            </NavLink>
-
-            <NavLink
-              to="/myreward"
-              className={({ isActive }) =>
-                isActive ? `${baseClass} ${activeClass}` : baseClass
-              }
-            >
-              <Gift /> Quà tặng
             </NavLink>
 
             <NavLink

@@ -15,6 +15,7 @@ import CancelRequests from "./dashboard/CancelRequests.jsx";
 import Revenue from "./dashboard/Revenue.jsx";
 import VehicleReviews from "./dashboard/VehicleReviews.jsx";
 import Notifications from "./dashboard/Notifications.jsx";
+import TransactionManagement from "./dashboard/TransactionManagement.jsx";
 import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
 const OwnerPage = () => {
@@ -60,6 +61,14 @@ const OwnerPage = () => {
             element={
               <AuthRequired>
                 <CancelRequests />
+              </AuthRequired>
+            }
+          />
+          <Route
+            path="/transaction-management"
+            element={
+              <AuthRequired>
+                <TransactionManagement />
               </AuthRequired>
             }
           />

@@ -7,6 +7,7 @@ import {
   approveCancelRequest,
   rejectCancelRequest,
   getOwnerRevenue,
+  getOwnerTransactions,
   getVehicleReviews,
   getOwnerNotifications,
   markNotificationAsRead,
@@ -47,6 +48,9 @@ router.get("/cancelled-bookings", getCancelledBookings);
 
 // 3. Doanh thu
 router.get("/revenue", getOwnerRevenue);
+
+// Transactions endpoint
+router.get("/transactions", getOwnerTransactions);
 
 // 4. Đánh giá về xe
 router.get("/vehicle-reviews", getVehicleReviews);

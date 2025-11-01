@@ -11,6 +11,7 @@ const {
   Brand,
   BookingHandover,
   BookingCancellation,
+  Transaction,
 } = db;
 
 // 1. GET /api/owner/bookings - Quản lý đơn thuê
@@ -166,6 +167,181 @@ export const getOwnerBookings = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy danh sách đơn thuê",
+      error: error.message,
+    });
+  }
+};
+
+// Get owner transactions
+export const getOwnerTransactions = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      type = "",
+      status = "",
+      sortBy = "created_at",
+      sortOrder = "desc",
+    } = req.query;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Map sortBy from frontend camelCase to database snake_case
+    const sortByMap = {
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+      amount: "amount",
+    };
+    const dbSortBy = sortByMap[sortBy] || sortBy;
+
+    // Build where conditions cho Transaction
+    const whereConditions = {
+      to_user_id: ownerId, // Lấy các giao dịch mà owner nhận tiền
+      type: { [Op.in]: ['COMPENSATION', 'PAYOUT'] }, // Chỉ lấy COMPENSATION và PAYOUT
+    };
+
+    // Add search condition
+    if (search) {
+      whereConditions[Op.or] = [
+        { transaction_id: { [Op.like]: `%${search}%` } },
+        { note: { [Op.like]: `%${search}%` } },
+        { "$fromUser.full_name$": { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // Add status filter
+    if (status && status !== "all") {
+      whereConditions.status = status.toUpperCase();
+    }
+
+    // Add type filter
+    if (type && type !== "all") {
+      if (type === "compensation") {
+        whereConditions.type = "COMPENSATION";
+      } else if (type === "payout") {
+        whereConditions.type = "PAYOUT";
+      }
+    }
+
+    // Get transactions from Transaction table
+    const { count, rows: transactions } = await Transaction.findAndCountAll({
+      where: whereConditions,
+      include: [
+        {
+          model: User,
+          as: "fromUser",
+          attributes: ["user_id", "full_name", "email", "phone_number"],
+          required: false,
+        },
+        {
+          model: User,
+          as: "toUser",
+          attributes: ["user_id", "full_name", "email"],
+          required: false,
+        },
+        {
+          model: Booking,
+          attributes: ["booking_id", "start_date", "end_date"],
+          include: [
+            {
+              model: Vehicle,
+              as: "vehicle",
+              attributes: ["vehicle_id", "license_plate", "model", "brand_id"],
+              include: [
+                {
+                  model: Brand,
+                  as: "brand",
+                  attributes: ["name"],
+                },
+              ],
+            },
+            {
+              model: User,
+              as: "renter",
+              attributes: ["user_id", "full_name", "email", "phone_number"],
+            },
+          ],
+          required: false,
+        },
+      ],
+      order: [[dbSortBy, sortOrder.toUpperCase()]],
+      limit: parseInt(limit),
+      offset,
+      distinct: true,
+    });
+
+    // Format transactions data
+    const formattedTransactions = transactions.map((transaction) => {
+      // Xác định loại giao dịch
+      let transactionType = "income";
+      let description = "";
+      
+      if (transaction.type === "COMPENSATION") {
+        transactionType = "compensation";
+        description = `Bồi thường từ khách hàng hủy chuyến`;
+      } else if (transaction.type === "PAYOUT") {
+        transactionType = "payout";
+        description = `Thanh toán từ hệ thống`;
+      }
+
+      // Thêm thông tin xe nếu có
+      if (transaction.Booking?.vehicle) {
+        description += ` - Xe ${transaction.Booking.vehicle.license_plate}`;
+      }
+
+      return {
+        id: transaction.transaction_id,
+        bookingCode: transaction.Booking ? `BK${transaction.Booking.booking_id}` : "N/A",
+        type: transactionType,
+        amount: parseFloat(transaction.amount || 0),
+        description: transaction.note || description,
+        paymentStatus: transaction.status.toLowerCase(),
+        createdAt: transaction.created_at,
+        updatedAt: transaction.updated_at,
+        startDate: transaction.Booking?.start_date || null,
+        endDate: transaction.Booking?.end_date || null,
+        renter: transaction.Booking?.renter ? {
+          id: transaction.Booking.renter.user_id,
+          name: transaction.Booking.renter.full_name,
+          email: transaction.Booking.renter.email,
+          phone: transaction.Booking.renter.phone_number,
+        } : (transaction.fromUser ? {
+          id: transaction.fromUser.user_id,
+          name: transaction.fromUser.full_name,
+          email: transaction.fromUser.email,
+          phone: transaction.fromUser.phone_number,
+        } : null),
+        vehicle: transaction.Booking?.vehicle ? {
+          id: transaction.Booking.vehicle.vehicle_id,
+          licensePlate: transaction.Booking.vehicle.license_plate,
+          model: transaction.Booking.vehicle.model,
+          brand: transaction.Booking.vehicle.brand?.name || "N/A",
+        } : null,
+      };
+    });
+
+    const totalPages = Math.ceil(count / parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      message: "Lấy danh sách giao dịch thành công",
+      data: {
+        transactions: formattedTransactions,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalItems: count,
+          itemsPerPage: parseInt(limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error getting owner transactions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách giao dịch",
       error: error.message,
     });
   }

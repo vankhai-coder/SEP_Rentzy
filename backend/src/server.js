@@ -46,6 +46,7 @@ import BankAccountRoute from "./routes/bank/bankAccountRoute.js";
 
 // admin
 import AdminRoute from "./routes/admin/adminCancelRoute.js";
+import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
@@ -120,6 +121,7 @@ app.use("/api/bank-accounts", BankAccountRoute);
 
 // admin route
 app.use("/api/admin", AdminRoute);
+app.use("/api/admin", AdminPayoutRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");

@@ -1,24 +1,19 @@
 import express from "express";
 import {
-  getRefundRequests,
   approveRefund,
   rejectRefund,
+  getRefundManagement,
 } from "../../controllers/admin/adminCancelController.js";
-import { checkUserBankAccount } from "../../middlewares/bankAccountMiddleware.js";
 
 const router = express.Router();
 
-// GET /api/admin/refund-requests - Lấy danh sách yêu cầu hoàn tiền
-router.get("/refund-requests", getRefundRequests);
+// GET /api/admin/refund-management - Lấy danh sách quản lý hoàn tiền với thông tin bank
+router.get("/refund-management", getRefundManagement);
 
-// PATCH /api/admin/refund-requests/:id/approve - Duyệt hoàn tiền
-router.patch(
-  "/refund-requests/:id/approve",
-  checkUserBankAccount,
-  approveRefund
-);
+// POST /api/admin/refund-management/:id/approve - Duyệt hoàn tiền
+router.post("/refund-management/:id/approve", approveRefund);
 
-// PATCH /api/admin/refund-requests/:id/reject - Từ chối hoàn tiền
-router.patch("/refund-requests/:id/reject", rejectRefund);
+// POST /api/admin/refund-management/:id/reject - Từ chối hoàn tiền
+router.post("/refund-management/:id/reject", rejectRefund);
 
 export default router;

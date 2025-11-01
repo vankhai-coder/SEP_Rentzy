@@ -28,16 +28,7 @@ const BookingPayout = sequelize.define("BookingPayout", {
       allowNull: false,
       comment: "Tỷ lệ hoa hồng (ví dụ: 0.1000 cho 10%)",
     },
-    // Số tiền hoa hồng nền tảng
-    platform_commission_amount: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
-    },
-    // Số tiền chủ xe nhận được
-    owner_earnings: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
-    },
+
 
     // === THÔNG TIN GIẢI NGÂN ===
     // Trạng thái thanh toán
@@ -83,23 +74,12 @@ const BookingPayout = sequelize.define("BookingPayout", {
       allowNull: true,
     },
 
-    // === THÔNG TIN GIAO DỊCH ===
-    // Mã tham chiếu giao dịch
-    transaction_reference: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-      comment: "ID giao dịch từ nhà cung cấp thanh toán",
-    },
     // Lý do thất bại (nếu có)
     failure_reason: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    // Ghi chú của admin
-    admin_notes: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
+
 
     // Thời gian tạo bản ghi
     created_at: {
