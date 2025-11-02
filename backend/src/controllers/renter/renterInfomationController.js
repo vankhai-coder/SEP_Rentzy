@@ -184,8 +184,18 @@ export const check2FaceMatch = async (req, res) => {
         );
 
         // check if match : 
-        const isMatch = response.data.result && response.data.result.similarity_score >= 80; // threshold 80%
+        // sample response :
+        // {
+        //     "code" : "200",
+        //     "data" : {
+        //         "isMatch": false,
+        //         "similarity": 21.25160789489746,
+        //         "isBothImgIDCard": false
+        //     },
+        //     "message": "request successful."
+        // }    
 
+        const isMatch = response?.data?.data?.isMatch
         if (!isMatch) {
             return res.status(400).json({ message: 'Ảnh chân dung không khớp với ảnh trên bằng lái xe. Vui lòng thử lại!' })
         }

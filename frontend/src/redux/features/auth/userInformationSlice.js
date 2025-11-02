@@ -315,6 +315,34 @@ const userInformationSlice = createSlice({
       state.verifyOtpForPhoneNumberSuccess = false;
       state.isLoadingVerifyOtpForPhoneNumber = false;
       state.errorWhenVerifyOtpForPhoneNumber = '';
+      // check 2 face match :
+      state.is2FaceMatch = '';
+      state.is2FaceMatchError = '';
+      state.is2FaceMatchLoading = '';
+      // driver license :
+      state.isVerifyDriverLicenseOfRenterUploadSuccess = false;
+      state.driverLicenseNumber = '';
+      state.driverLicenseName = '';
+      state.driverLicenseDob = '';
+      state.driverLicenseClass = '';
+      state.driverLicenseError = '';
+      state.driverLicenseLoading = false;
+      state.isVerifyDriverLicenseMatchWithwebcam = '';
+      // get basic user information :
+      state.isLoadingGetBasicUserInformation = false;
+      state.errorGetBasicUserInformation = '';
+      // points and other user info
+      state.points = 0;
+      state.driver_class = '';
+      state.driver_license_image_url = '';
+      state.driver_license_dob = '';
+      state.driver_license_name = '';
+      state.driver_license_number = '';
+      state.avatar_url = '';
+      state.phone_number = '';
+      state.email = '';
+      state.full_name = '';
+      state.date_join = '';
     },
   },
   extraReducers: (builder) => {
