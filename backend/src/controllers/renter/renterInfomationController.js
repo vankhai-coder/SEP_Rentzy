@@ -183,6 +183,13 @@ export const check2FaceMatch = async (req, res) => {
             }
         );
 
+        // check if match : 
+        const isMatch = response.data.result && response.data.result.similarity_score >= 80; // threshold 80%
+
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Ảnh chân dung không khớp với ảnh trên bằng lái xe. Vui lòng thử lại!' })
+        }
+
         // save image to aws s3 server : 
         // Generate unique file name
         const fileName = `driver-licenses/${Date.now()}-${image_1.originalname}`;
