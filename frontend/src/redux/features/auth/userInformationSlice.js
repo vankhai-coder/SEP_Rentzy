@@ -327,7 +327,6 @@ const userInformationSlice = createSlice({
       // get basic user information :
       state.isLoadingGetBasicUserInformation = false;
       state.errorGetBasicUserInformation = '';
-
     },
   },
   extraReducers: (builder) => {
