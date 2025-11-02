@@ -97,7 +97,7 @@ const SidebarOwner = ({ handleLogout }) => {
                     <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
                  
                     <li className="mb-[10px]">
-                        <a href="#" className="flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1]" onClick={(e) => { e.preventDefault(); handleLogout(e); }}>
+                        <a href="#" className="flex items-center px-5 py-[10px] text-[#ffffff] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#e02b2b]" onClick={(e) => { e.preventDefault(); handleLogout(e); }}>
                             <MdLogout className="mr-[10px] text-xl" />
                             Đăng xuất
                         </a>

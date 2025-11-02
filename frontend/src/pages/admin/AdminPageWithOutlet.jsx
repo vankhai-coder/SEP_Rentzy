@@ -59,69 +59,69 @@ const AdminPage = () => {
                 <SelectContent>
                     <SelectGroup>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/userManagement"
                         >
                             <User /> Quản lí người dùng
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/approvalvehicle"
                         >
                             <List /> Chấp nhận xe
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/managementvehicle"
                         >
                             <Star /> Quản lí phương tiện
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/approveOwner"
                         >
                             <Heart /> Chấp nhận chủ xe
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/messages"
                         >
                             <MessageCircle /> Nhắn tin
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/reports"
                         >
                             <CheckCircle2Icon />
                             Xử lý báo cáo
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/revenue-stats"
                         >
                             <Gift /> Thống kê doanh thu
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/refundManagement"
                         >
                             <Gift /> Quản lý hoàn tiền
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/disburseOwner"
                         >
                             <LocationEditIcon /> Giải ngân chủ xe
                         </SelectItem>
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium"}
+                            className={"border-b-1 py-10 text-md font-medium"}
                             value="/admin/voucherManagement"
                         >
                             <LockIcon /> Quản lý giảm giá
                         </SelectItem>
 
                         <SelectItem
-                            className={"border-b-1 py-2 text-md font-medium text-red-500"}
+                            className={"border-b-1 py-10 text-md font-medium text-red-500"}
                             value="/logout"
                         >
                             {" "}
