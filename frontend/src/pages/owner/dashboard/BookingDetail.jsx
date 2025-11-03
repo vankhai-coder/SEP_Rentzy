@@ -134,7 +134,7 @@ const BookingDetail = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate("/owner/booking-management")}
-            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            className="flex border border-gray-600 px-4 py-2 rounded items-center text-black-600 hover:text-gray-800 mb-4"
           >
             <MdArrowBack className="mr-2" />
             Quay lại danh sách đơn thuê
