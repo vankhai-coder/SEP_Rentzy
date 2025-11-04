@@ -12,6 +12,7 @@ const MotorbikeList = ({ bikes = [] }) => {
         <VehicleCard
           key={bike.vehicle_id}
           vehicle={bike}
+          type="motorbike"
           iconSpecs={[
             { icon: <Bike size={16} />, value: bike.bike_type },
             { icon: <Gauge size={16} />, value: `${bike.engine_capacity}cc` },

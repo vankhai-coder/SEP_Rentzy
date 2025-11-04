@@ -6,6 +6,11 @@ import SearchForm from "../../../components/renter/search/SearchForm";
 import FilterBar from "../../../components/renter/search/FilterSidebar"; // FIX: Đổi tên import nếu cần (trước là FilterSidebar?)
 import VehicleCard from "../../../components/renter/vehicles/VehicleCard";
 import { Calendar, MapPin, AlertCircle } from "lucide-react";
+import CompareModal from "../../../components/renter/vehicles/compare/CompareModal"; // Mới: Import modal
+import { compareVehicles } from "../../../redux/features/renter/compare/compareSlice"; // Mới: Import action
+import { Scale } from "lucide-react"; // Mới: Icon cho nút so sánh
+import { toast } from "react-toastify"; // Mới: Toast cho warn
+import { useState } from "react"; // Mới: Dùng cho modal
 
 const SearchResults = ({ type }) => {
   const dispatch = useDispatch();
@@ -16,6 +21,9 @@ const SearchResults = ({ type }) => {
     error,
   } = useSelector((state) => state.vehicleStore);
   const { brands } = useSelector((state) => state.brandStore);
+  const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy danh sách so sánh
+
+  const [showModal, setShowModal] = useState(false); // Mới: State điều khiển modal
 
   const params = Object.fromEntries(searchParams.entries());
   const paramsKey = searchParams.toString();
@@ -56,6 +64,16 @@ const SearchResults = ({ type }) => {
     [params, setSearchParams, cleanParams]
   );
 
+  // Mới: Function xử lý mở so sánh (tương tự HomeCar)
+  const handleOpenCompare = () => {
+    if (compareList.length < 2) {
+      toast.warn("Chọn ít nhất 2 xe để so sánh!");
+      return;
+    }
+    dispatch(compareVehicles());
+    setShowModal(true);
+  };
+
   const renderVehicleList = () => {
     if (searchLoading)
       return <p className="text-center py-8">Đang tải xe...</p>;
@@ -79,6 +97,7 @@ const SearchResults = ({ type }) => {
           <VehicleCard
             key={vehicle.vehicle_id}
             vehicle={vehicle}
+            type={type} // Mới: Truyền type để handleCompare hoạt động
             iconSpecs={[
               { icon: <Calendar size={16} />, value: vehicle.year },
               {
@@ -108,6 +127,20 @@ const SearchResults = ({ type }) => {
         />
       </section>
 
+      {/* Mới: Nút So Sánh - Đặt ở top right sau SearchForm */}
+      <div className="flex justify-end mb-4">
+        {compareList.length > 0 && (
+          <button
+            onClick={handleOpenCompare}
+            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={compareList.length < 2}
+          >
+            <Scale size={20} />
+            So Sánh ({compareList.length} xe)
+          </button>
+        )}
+      </div>
+
       {/* 🔹 Filter ngang */}
       <section className="mt-6">
         <FilterBar
@@ -120,6 +153,15 @@ const SearchResults = ({ type }) => {
 
       {/* 🔹 Kết quả */}
       <section className="mt-8">{renderVehicleList()}</section>
+
+      {/* Mới: Modal so sánh - hiển thị khi showModal = true */}
+      {showModal && (
+        <CompareModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          compareList={compareList}
+        />
+      )}
     </div>
   );
 };

@@ -1,23 +1,28 @@
-import { MapPin, Heart, Star } from "lucide-react";
+import { MapPin, Heart, Star, Scale } from "lucide-react"; // Thêm Scale
 import { useDispatch, useSelector } from "react-redux";
 import {
   addFavorite,
   removeFavorite,
 } from "../../../redux/features/renter/favorite/favoriteSlice";
+import {
+  addToCompare,
+  removeFromCompare,
+} from "../../../redux/features/renter/compare/compareSlice"; // Thêm removeFromCompare
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState } from "react";
-
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("vi-VN").format(value) + " VND";
 };
 
-const VehicleCard = ({ vehicle, iconSpecs }) => {
+const VehicleCard = ({ vehicle, iconSpecs, type }) => {
+  // Thêm prop 'type'
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userId } = useSelector((state) => state.userStore);
   const { favorites } = useSelector((state) => state.favoriteStore);
+  const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy compare list
 
   const [isFavoriteLocal, setIsFavoriteLocal] = useState(
     favorites.some((fav) => fav.vehicle_id === vehicle.vehicle_id)
@@ -26,7 +31,7 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
   const handleFavorite = async (e) => {
     // Prevent event bubbling to stop navigation when clicking heart
     e.stopPropagation();
-    
+
     if (!userId) {
       toast.info("Vui lòng đăng nhập để thêm yêu thích!");
       navigate("/renter/auth/login");
@@ -68,15 +73,43 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
       toast.error(error || "Có lỗi xảy ra khi cập nhật yêu thích!");
     }
   };
-    // ✨ Thêm function để navigate đến trang detail
+
+  // Mới: Function handle so sánh - Toggle add/remove
+  const handleCompare = async (e) => {
+    e.stopPropagation(); // Ngăn bubble đến onClick card
+    if (!type) {
+      toast.error("Không xác định loại xe!");
+      return;
+    }
+
+    const isCurrentlyInCompare = compareList.some(
+      (item) => item.id === vehicle.vehicle_id
+    );
+
+    try {
+      if (isCurrentlyInCompare) {
+        // Xóa khỏi so sánh
+        await dispatch(removeFromCompare(vehicle.vehicle_id)).unwrap();
+        toast.success("Đã xóa khỏi so sánh!");
+      } else {
+        // Thêm vào so sánh
+        await dispatch(addToCompare({ id: vehicle.vehicle_id, type })).unwrap();
+        toast.success("Đã thêm vào so sánh!");
+      }
+    } catch (error) {
+      toast.error(error || "Lỗi cập nhật so sánh!");
+    }
+  };
+
+  // ✨ Thêm function để navigate đến trang detail
   const handleCardClick = () => {
     navigate(`/detail/${vehicle.vehicle_id}`);
-  }
+  };
 
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100"
-    // thêm onclick vào
-    onClick={handleCardClick}
+    <div
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100"
+      onClick={handleCardClick}
     >
       <div className="relative">
         <img
@@ -89,6 +122,26 @@ const VehicleCard = ({ vehicle, iconSpecs }) => {
             -{vehicle.discount}%
           </span>
         )}
+        {/* Nút So Sánh - Toggle add/remove */}
+        <button
+          className="absolute top-3 right-12 p-2 rounded-full bg-white shadow hover:bg-blue-50 cursor-pointer"
+          onClick={handleCompare}
+          title={
+            compareList.some((item) => item.id === vehicle.vehicle_id)
+              ? "Xóa khỏi so sánh"
+              : "Thêm vào so sánh"
+          }
+        >
+          <Scale
+            size={20}
+            className={
+              compareList.some((item) => item.id === vehicle.vehicle_id)
+                ? "text-blue-500 fill-blue-500"
+                : "text-gray-500 hover:text-blue-500 transition"
+            }
+          />
+        </button>
+        {/* Nút Heart Cũ: Giữ nguyên */}
         <button
           className="absolute top-3 right-3 p-2 rounded-full bg-white shadow hover:bg-red-50 cursor-pointer"
           onClick={handleFavorite}
