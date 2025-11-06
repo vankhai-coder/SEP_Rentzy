@@ -18,6 +18,7 @@ import Notifications from "./dashboard/Notifications.jsx";
 import TransactionManagement from "./dashboard/TransactionManagement.jsx";
 import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
+import TrafficFineSearch from "./dashboard/TrafficFineSearch.jsx";
 const OwnerPage = () => {
   const dispatch = useDispatch();
 
@@ -93,6 +94,14 @@ const OwnerPage = () => {
             element={
               <AuthRequired>
                 <Notifications />
+              </AuthRequired>
+            }
+          />
+          <Route
+            path="/traffic-fine-search"
+            element={
+              <AuthRequired>
+                <TrafficFineSearch />
               </AuthRequired>
             }
           />

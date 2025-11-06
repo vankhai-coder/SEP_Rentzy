@@ -12,6 +12,8 @@ import {
   getOwnerNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  searchTrafficFine,
+  getTrafficFineCaptcha,
 } from "../../controllers/owner/ownerDashboardController.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
@@ -59,5 +61,9 @@ router.get("/vehicle-reviews", getVehicleReviews);
 router.get("/notifications", getOwnerNotifications);
 router.patch("/notifications/:id/read", markNotificationAsRead);
 router.patch("/notifications/mark-all-read", markAllNotificationsAsRead);
+
+// 6. Tra cứu phạt nguội
+router.get("/traffic-fine-search/captcha", getTrafficFineCaptcha);
+router.post("/traffic-fine-search", searchTrafficFine);
 
 export default router;

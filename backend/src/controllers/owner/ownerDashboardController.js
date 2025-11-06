@@ -1489,3 +1489,157 @@ export const getCancelledBookings = async (req, res) => {
     });
   }
 };
+
+// GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
+export const getTrafficFineCaptcha = async (req, res) => {
+  try {
+    const { createAxiosInstance, getCaptchaImage } = await import("../../utils/trafficFine/apiCaller.js");
+    const { createSession, createEmptyJar } = await import("../../utils/trafficFine/captchaSessionStore.js");
+
+    // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
+    const jar = createEmptyJar();
+    const instance = createAxiosInstance(jar);
+    const captchaImage = await getCaptchaImage(instance);
+
+    const sessionId = createSession(jar);
+    const base64Image = captchaImage.toString("base64");
+
+    return res.json({
+      success: true,
+      image: `data:image/png;base64,${base64Image}`,
+      captchaSessionId: sessionId,
+    });
+  } catch (error) {
+    console.error("[TrafficFineCaptcha] Error getting captcha:", error);
+    res.status(500).json({
+      success: false,
+      message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// POST /api/owner/dashboard/traffic-fine-search - Tra cứu phạt nguội
+export const searchTrafficFine = async (req, res) => {
+  try {
+    const { licensePlate, captcha, vehicleType, captchaSessionId } = req.body;
+
+    if (!licensePlate) {
+      return res.status(400).json({
+        success: false,
+        message: "Biển số xe là bắt buộc",
+      });
+    }
+
+    if (!captcha) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã bảo mật là bắt buộc",
+      });
+    }
+
+    // Lấy CookieJar theo sessionId để đảm bảo captcha hợp lệ
+    let existingJar = null;
+    try {
+      const { getSessionJar, deleteSession } = await import("../../utils/trafficFine/captchaSessionStore.js");
+      existingJar = getSessionJar(captchaSessionId);
+      if (!existingJar) {
+        return res.status(400).json({
+          success: false,
+          message: "Phiên mã bảo mật đã hết hạn hoặc không hợp lệ. Vui lòng tải lại mã.",
+        });
+      }
+    } catch (sessionErr) {
+      // Không block nếu module lỗi, nhưng khả năng captcha fail sẽ cao
+      console.error("[TrafficFineSearch] Error loading captcha session:", sessionErr);
+    }
+
+    // Import trực tiếp từ utils
+    let callTrafficFineAPI;
+    try {
+      const apiCallerModule = await import("../../utils/trafficFine/apiCaller.js");
+      callTrafficFineAPI = apiCallerModule.callTrafficFineAPI;
+    } catch (importError) {
+      console.error("[TrafficFineSearch] Error importing apiCaller:", importError);
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi khi khởi tạo module tra cứu phạt nguội",
+        error: process.env.NODE_ENV === "development" ? importError.message : undefined,
+      });
+    }
+    
+    console.log(`[TrafficFineSearch] Searching for license plate: ${licensePlate}, vehicleType: ${vehicleType || "1"}`);
+    
+    try {
+      // Gọi trực tiếp API từ csgt.vn với captcha từ user
+      const violations = await callTrafficFineAPI(
+        licensePlate.trim(), 
+        captcha.trim(),
+        vehicleType || "1",
+        existingJar
+      );
+
+      if (!violations || violations.length === 0) {
+        console.log(`[TrafficFineSearch] No violations found`);
+        return res.json({
+          success: true,
+          data: {
+            licensePlate: licensePlate.trim().toUpperCase(),
+            violations: [],
+            totalFines: 0,
+            totalAmount: 0,
+          },
+        });
+      }
+
+      console.log(`[TrafficFineSearch] Found ${violations.length} violations`);
+
+      // Map dữ liệu từ API csgt.vn sang format mong muốn
+      const mappedViolations = violations.map((violation) => ({
+        licensePlate: violation.licensePlate || licensePlate.trim().toUpperCase(),
+        plateColor: violation.plateColor || "N/A",
+        vehicleType: violation.vehicleType || "N/A",
+        violationTime: violation.violationTime || "N/A",
+        violationLocation: violation.violationLocation || "N/A",
+        violationBehavior: violation.violationBehavior || "N/A",
+        status: violation.status || "Chưa xác định",
+        detectionUnit: violation.detectionUnit || "N/A",
+        resolutionPlaces: violation.resolutionPlaces || [],
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          licensePlate: licensePlate.trim().toUpperCase(),
+          violations: mappedViolations,
+          totalFines: mappedViolations.length,
+          totalAmount: 0, // API không trả về số tiền phạt
+        },
+      });
+    } catch (apiError) {
+      console.error("[TrafficFineSearch] Error calling csgt.vn API:", apiError);
+      console.error("[TrafficFineSearch] Error stack:", apiError.stack);
+      
+      // Kiểm tra nếu lỗi là do captcha sai
+      if (apiError.message.includes("Mã bảo mật không đúng")) {
+        return res.status(400).json({
+          success: false,
+          message: apiError.message || "Mã bảo mật không đúng. Vui lòng thử lại.",
+        });
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: "Không thể tra cứu phạt nguội từ csgt.vn. Vui lòng thử lại sau.",
+        error: process.env.NODE_ENV === "development" ? apiError.message : undefined,
+      });
+    }
+  } catch (error) {
+    console.error("[TrafficFineSearch] Error searching traffic fine:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tra cứu phạt nguội",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};

@@ -1,7 +1,7 @@
 // fe/src/components/SidebarOwner/SidebarOwner.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { MdOutlineDashboard, MdDirectionsCar, MdCalendarMonth, MdNotifications, MdShowChart, MdLogout, MdAccountCircle, MdTransform } from 'react-icons/md';
+import { MdOutlineDashboard, MdDirectionsCar, MdCalendarMonth, MdNotifications, MdShowChart, MdLogout, MdAccountCircle, MdTransform, MdReceipt } from 'react-icons/md';
 import { FaCar, FaClipboardList, FaBell, FaMoneyCheckAlt, FaTimesCircle } from 'react-icons/fa';
 
 // SidebarOwner nhận prop handleLogout
@@ -70,6 +70,16 @@ const SidebarOwner = ({ handleLogout }) => {
                         >
                             <MdShowChart className="mr-[10px] text-xl" />
                             Doanh thu
+                        </NavLink>
+                    </li>
+                    <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                    <li className="mb-[10px]">
+                        <NavLink
+                            to="/owner/traffic-fine-search"
+                            className={({ isActive }) => `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive ? 'bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]' : ''}`}
+                        >
+                            <MdReceipt className="mr-[10px] text-xl" />
+                            Tra Cứu Phạt Nguội
                         </NavLink>
                     </li>
                     <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
