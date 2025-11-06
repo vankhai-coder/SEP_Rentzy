@@ -1,0 +1,136 @@
+import axios from "axios";
+import Tesseract from "tesseract.js";
+import qs from "qs";
+import tough from "tough-cookie";
+import { wrapper } from "axios-cookiejar-support";
+import { extractTrafficViolations } from "./extractTrafficViolations.js";
+
+const { CookieJar } = tough;
+
+/**
+ * Configuration constants
+ */
+const CONFIG = {
+  BASE_URL: "https://www.csgt.vn",
+  CAPTCHA_PATH: "/lib/captcha/captcha.class.php",
+  FORM_ENDPOINT: "/?mod=contact&task=tracuu_post&ajax",
+  RESULTS_URL: "https://www.csgt.vn/tra-cuu-phuong-tien-vi-pham.html",
+  MAX_RETRIES: 5,
+  HEADERS: {
+    USER_AGENT:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    ACCEPT:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    CONTENT_TYPE: "application/x-www-form-urlencoded",
+  },
+};
+
+/**
+ * Creates and configures an axios instance with cookie support
+ * @param {Object} existingJar - Optional existing cookie jar to reuse
+ * @returns {Object} Configured axios instance
+ */
+export function createAxiosInstance(existingJar = null) {
+  const jar = existingJar || new CookieJar();
+  const instance = axios.create({
+    jar,
+    withCredentials: true,
+    baseURL: CONFIG.BASE_URL,
+    headers: {
+      "User-Agent": CONFIG.HEADERS.USER_AGENT,
+      Accept: CONFIG.HEADERS.ACCEPT,
+    },
+  });
+  return wrapper(instance);
+}
+
+/**
+ * Fetches captcha image (returns image buffer, not text)
+ * @param {Object} instance - Axios instance
+ * @returns {Promise<Buffer>} Captcha image buffer
+ */
+export async function getCaptchaImage(instance) {
+  try {
+    const image = await instance.get(CONFIG.CAPTCHA_PATH, {
+      responseType: "arraybuffer",
+    });
+    return Buffer.from(image.data);
+  } catch (error) {
+    throw new Error(`Failed to get captcha image: ${error.message}`);
+  }
+}
+
+/**
+ * Submits form data with plate number and captcha
+ * @param {Object} instance - Axios instance
+ * @param {string} plate - License plate number
+ * @param {string} captcha - Captcha text entered by user
+ * @param {string} vehicleType - Vehicle type (1 = car, 2 = motorbike)
+ * @returns {Promise<Object>} API response
+ */
+async function postFormData(instance, plate, captcha, vehicleType = "1") {
+  const formData = qs.stringify({
+    BienKS: plate,
+    Xe: vehicleType,
+    captcha,
+    ipClient: "9.9.9.91",
+    cUrl: "1",
+  });
+
+  return instance.post(CONFIG.FORM_ENDPOINT, formData, {
+    headers: {
+      "Content-Type": CONFIG.HEADERS.CONTENT_TYPE,
+    },
+  });
+}
+
+/**
+ * Fetches traffic violation results
+ * @param {Object} instance - Axios instance
+ * @param {string} plate - License plate number
+ * @param {string} vehicleType - Vehicle type (1 = car, 2 = motorbike)
+ * @returns {Promise<Object>} Results page response
+ */
+async function getViolationResults(instance, plate, vehicleType = "1") {
+  return instance.get(`${CONFIG.RESULTS_URL}?&LoaiXe=${vehicleType}&BienKiemSoat=${plate}`);
+}
+
+/**
+ * Main function to call the traffic violation API from csgt.vn
+ * @param {string} plate - License plate number
+ * @param {string} captcha - Captcha text entered by user
+ * @param {string} vehicleType - Vehicle type (1 = car, 2 = motorbike)
+ * @returns {Promise<Array|null>} Extracted traffic violations or null on failure
+ */
+export async function callTrafficFineAPI(plate, captcha, vehicleType = "1", existingJar = null) {
+  try {
+    console.log(`[TrafficFineAPI] Fetching traffic violations for plate: ${plate}, vehicleType: ${vehicleType}`);
+    
+    const instance = createAxiosInstance(existingJar);
+
+    console.log(`[TrafficFineAPI] Submitting form with plate: ${plate} and captcha: ${captcha}`);
+    const response = await postFormData(instance, plate, captcha, vehicleType);
+
+    // Handle failed captcha case
+    if (response.data === 404) {
+      throw new Error("Mã bảo mật không đúng. Vui lòng nhập lại.");
+    }
+
+    console.log(`[TrafficFineAPI] Getting violation results...`);
+    const resultsResponse = await getViolationResults(instance, plate, vehicleType);
+    
+    console.log(`[TrafficFineAPI] Extracting violations from HTML...`);
+    const violations = extractTrafficViolations(resultsResponse.data);
+
+    console.log(`[TrafficFineAPI] Found ${violations.length} violations`);
+    return violations;
+  } catch (error) {
+    console.error(
+      `[TrafficFineAPI] Error fetching traffic violations for plate ${plate}:`,
+      error.message
+    );
+    console.error(`[TrafficFineAPI] Error stack:`, error.stack);
+    throw error; // Throw error để controller có thể xử lý
+  }
+}
+
