@@ -1,0 +1,245 @@
+@startuml admin_view_list_payout_request_sequence_diagram
+
+title Admin View List Payout Request - Sequence Diagram
+
+actor Admin as admin
+participant PayoutManagement as frontend
+participant AdminPayoutRoute as route
+participant verifyJWTToken as auth
+participant requireAdmin as adminAuth
+participant AdminPayoutController as controller
+participant BookingPayout as payoutModel
+participant Booking as bookingModel
+participant Vehicle as vehicleModel
+participant User as userModel
+participant Bank as bankModel
+database Database as db
+
+== Initial Load Payout List ==
+
+Admin -> Frontend: Access payout management page
+activate Frontend
+
+Frontend -> Frontend: Initialize state\n(payouts=[], loading=true)
+Frontend -> Route: GET /api/admin/payouts\n?page=1&limit=15&filter=all
+activate Route
+
+Route -> JWT: Verify JWT token
+activate JWT
+JWT -> JWT: Validate token
+JWT -> Route: Token valid, userId extracted
+deactivate JWT
+
+Route -> AdminAuth: Check admin role
+activate AdminAuth
+AdminAuth -> AdminAuth: Verify admin permissions
+AdminAuth -> Route: Admin access granted
+deactivate AdminAuth
+
+Route -> Controller: getPayoutManagement(req, res)
+activate Controller
+
+Controller -> QueryService: buildPayoutQuery(filters)
+activate QueryService
+QueryService -> QueryService: Build where conditions\nfor status filter
+QueryService -> QueryService: Build include options\nfor related models
+QueryService -> Controller: Return query configuration
+deactivate QueryService
+
+Controller -> QueryBuilder: buildPaginationOptions(page, limit)
+activate QueryBuilder
+QueryBuilder -> QueryBuilder: Calculate offset\nValidate pagination params
+QueryBuilder -> Controller: Return pagination config
+deactivate QueryBuilder
+
+Controller -> DB: BookingPayout.findAndCountAll({\nwhere: conditions,\ninclude: [Booking, Vehicle, User, Bank, Brand],\norder, limit, offset\n})
+activate DB
+DB -> DB: Execute complex query\nwith joins and pagination
+DB -> Controller: Return {count, rows: payoutData}
+deactivate DB
+
+Controller -> StatsService: calculatePayoutStatistics(allPayouts)
+activate StatsService
+StatsService -> DB: BookingPayout.findAll({attributes: ['payout_status']})
+activate DB
+DB -> StatsService: Return all payout statuses
+deactivate DB
+StatsService -> StatsService: Calculate statistics:\n- total, pending, completed\n- cancelled, failed counts
+StatsService -> Controller: Return statistics object
+deactivate StatsService
+
+Controller -> FormatterService: formatPayoutData(payoutData)
+activate FormatterService
+FormatterService -> FormatterService: Format each payout:\n- Map payout_status to status\n- Format currency amounts\n- Extract bank information\n- Structure nested data
+FormatterService -> Controller: Return formatted data
+deactivate FormatterService
+
+Controller -> Route: JSON response:\n{success: true, data: {\npayouts, totalPages, statistics,\npagination}}
+deactivate Controller
+
+Route -> Frontend: Payout data response
+deactivate Route
+
+Frontend -> Frontend: Update state:\n- setPayouts(data.payouts)\n- setTotalPages(data.totalPages)\n- setStatistics(data.statistics)\n- setLoading(false)
+Frontend -> Admin: Display payout list with\nstatistics and pagination
+deactivate Frontend
+
+== Filter by Status ==
+
+Admin -> Frontend: Select status filter (e.g., "pending")
+activate Frontend
+
+Frontend -> Frontend: setFilter("pending")\nsetCurrentPage(1)
+Frontend -> Route: GET /api/admin/payouts\n?page=1&limit=15&filter=pending
+activate Route
+
+Route -> JWT: Verify JWT token
+activate JWT
+JWT -> Route: Token valid
+deactivate JWT
+
+Route -> AdminAuth: Check admin role
+activate AdminAuth
+AdminAuth -> Route: Admin access granted
+deactivate AdminAuth
+
+Route -> Controller: getPayoutManagement(req, res)
+activate Controller
+
+Controller -> QueryService: buildPayoutQuery({filter: "pending"})
+activate QueryService
+QueryService -> QueryService: Add status filter:\nwhere.payout_status = "pending"
+QueryService -> Controller: Return filtered query config
+deactivate QueryService
+
+Controller -> DB: BookingPayout.findAndCountAll(\nwith status filter)
+activate DB
+DB -> Controller: Return filtered payout data
+deactivate DB
+
+Controller -> StatsService: calculatePayoutStatistics()
+activate StatsService
+StatsService -> Controller: Return updated statistics
+deactivate StatsService
+
+Controller -> FormatterService: formatPayoutData()
+activate FormatterService
+FormatterService -> Controller: Return formatted filtered data
+deactivate FormatterService
+
+Controller -> Route: Filtered payout response
+deactivate Controller
+
+Route -> Frontend: Filtered data
+deactivate Route
+
+Frontend -> Frontend: Update payouts with\nfiltered results
+Frontend -> Admin: Display filtered payout list
+deactivate Frontend
+
+== Search Payouts ==
+
+Admin -> Frontend: Enter search term\n(owner name, vehicle info, etc.)
+activate Frontend
+
+Frontend -> Frontend: setSearchTerm(term)\nFilter payouts locally using\nfilteredAndSortedPayouts
+Frontend -> Frontend: Apply search filter:\n- payout_id contains term\n- booking_id contains term\n- owner full_name contains term\n- vehicle brand/model contains term
+Frontend -> Admin: Display search results\n(client-side filtering)
+deactivate Frontend
+
+== Sort Payouts ==
+
+Admin -> Frontend: Click column header to sort\n(e.g., by amount)
+activate Frontend
+
+Frontend -> Frontend: handleSort("total_rental_amount")\nToggle sort order (ASC/DESC)
+Frontend -> Frontend: Sort filteredAndSortedPayouts\nby selected field and order
+Frontend -> Admin: Display sorted payout list
+deactivate Frontend
+
+== Pagination ==
+
+Admin -> Frontend: Click page number (e.g., page 2)
+activate Frontend
+
+Frontend -> Frontend: setCurrentPage(2)
+Frontend -> Route: GET /api/admin/payouts\n?page=2&limit=15&filter=current
+activate Route
+
+Route -> JWT: Verify JWT token
+activate JWT
+JWT -> Route: Token valid
+deactivate JWT
+
+Route -> AdminAuth: Check admin role
+activate AdminAuth
+AdminAuth -> Route: Admin access granted
+deactivate AdminAuth
+
+Route -> Controller: getPayoutManagement(req, res)
+activate Controller
+
+Controller -> QueryBuilder: buildPaginationOptions(2, 15)
+activate QueryBuilder
+QueryBuilder -> QueryBuilder: Calculate offset = 15\nfor page 2
+QueryBuilder -> Controller: Return pagination config
+deactivate QueryBuilder
+
+Controller -> DB: BookingPayout.findAndCountAll(\nwith offset for page 2)
+activate DB
+DB -> Controller: Return page 2 data
+deactivate DB
+
+Controller -> FormatterService: formatPayoutData()
+activate FormatterService
+FormatterService -> Controller: Return formatted page 2 data
+deactivate FormatterService
+
+Controller -> Route: Page 2 payout response
+deactivate Controller
+
+Route -> Frontend: Page 2 data
+deactivate Route
+
+Frontend -> Frontend: Update payouts with page 2 data
+Frontend -> Admin: Display page 2 of payout list
+deactivate Frontend
+
+== View Bank QR Code ==
+
+Admin -> Frontend: Click QR code icon for\nowner's bank account
+activate Frontend
+
+Frontend -> Frontend: openQrModal(qrCodeUrl)\nsetSelectedQrCode(url)\nsetIsQrModalOpen(true)
+Frontend -> Admin: Display QR code modal\nwith bank QR code image
+deactivate Frontend
+
+== Error Handling ==
+
+note over Frontend, DB
+Error scenarios handled:
+1. Network errors - Show error message
+2. Authentication failures - Redirect to login
+3. Authorization errors - Show access denied
+4. Database errors - Show system error
+5. Invalid pagination - Reset to page 1
+6. Missing data - Show empty state
+end note
+
+== Key Features Highlighted ==
+
+note over Admin, DB
+Key Features:
+1. **Comprehensive Payout View**: Display all payout requests with complete information
+2. **Advanced Filtering**: Filter by status (pending, completed, cancelled, failed)
+3. **Real-time Statistics**: Show counts for each status category
+4. **Search Functionality**: Search across multiple fields (owner, vehicle, booking)
+5. **Sorting Capabilities**: Sort by date, amount, status, etc.
+6. **Pagination Support**: Handle large datasets efficiently
+7. **Bank Information Display**: Show owner's bank account details
+8. **QR Code Viewing**: Display bank QR codes for easy reference
+9. **Responsive Design**: Optimized for different screen sizes
+10. **Error Handling**: Comprehensive error management
+end note
+
+@enduml

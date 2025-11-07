@@ -1,0 +1,301 @@
+@startuml admin_approve_payout_request_sequence_diagram
+
+title Admin Approve Payout Request - Sequence Diagram
+
+actor Admin
+participant Frontend
+participant AdminPayoutRoute
+participant verifyJWTToken
+participant requireAdmin
+participant AdminPayoutController
+participant BookingPayout
+participant Transaction
+participant Notification
+
+== Admin Approve Payout Request ==
+
+admin -> frontend : Click "Approve" button on payout
+activate frontend
+
+frontend -> modal : showConfirmModal("approve", payout)
+activate modal
+
+modal -> modal : Display approval confirmation dialog
+modal -> admin : Show confirmation modal with payout details
+admin -> modal : Click "Confirm Approval"
+
+modal -> frontend : handleConfirmAction()
+deactivate modal
+
+frontend -> frontend : Set loading state
+frontend -> route : PUT /api/admin/payouts/:id/approve
+note right : Request includes:\n- payout_id in URL\n- admin_id from token\n- confirmation flag
+
+activate route
+
+route -> authMiddleware : verifyJWTToken(req, res, next)
+activate authMiddleware
+authMiddleware -> authMiddleware : Extract and validate JWT token
+authMiddleware -> authMiddleware : Decode user_id from token
+authMiddleware -> route : next() - Token valid
+deactivate authMiddleware
+
+route -> adminMiddleware : requireAdmin(req, res, next)
+activate adminMiddleware
+adminMiddleware -> userModel : findByPk(user_id)
+activate userModel
+userModel -> adminMiddleware : Return user data
+deactivate userModel
+adminMiddleware -> adminMiddleware : Check if user.role === 'admin'
+adminMiddleware -> route : next() - Admin role confirmed
+deactivate adminMiddleware
+
+route -> validationMiddleware : validatePayoutAction(req, res, next)
+activate validationMiddleware
+validationMiddleware -> validationMiddleware : Validate payout_id format
+validationMiddleware -> validationMiddleware : Check action type is "approve"
+validationMiddleware -> route : next() - Validation passed
+deactivate validationMiddleware
+
+route -> controller : approvePayout(req, res)
+activate controller
+
+controller -> validationService : validatePayoutEligibility(payout_id)
+activate validationService
+validationService -> payoutModel : findByPk(payout_id)
+activate payoutModel
+payoutModel -> validationService : Return payout data
+deactivate payoutModel
+validationService -> validationService : Check payout.status === "pending"
+validationService -> controller : Return validation result
+deactivate validationService
+
+alt Payout is eligible for approval
+
+    controller -> dbTransaction : beginTransaction()
+    activate dbTransaction
+    dbTransaction -> controller : Return transaction object
+    deactivate dbTransaction
+
+    controller -> payoutModel : findOne({where: {payout_id}, include: [Booking, Vehicle, User], transaction})
+    activate payoutModel
+    payoutModel -> bookingModel : Include booking data
+    activate bookingModel
+    bookingModel -> payoutModel : Return booking details
+    deactivate bookingModel
+    payoutModel -> vehicleModel : Include vehicle data
+    activate vehicleModel
+    vehicleModel -> payoutModel : Return vehicle details
+    deactivate vehicleModel
+    payoutModel -> userModel : Include owner and renter data
+    activate userModel
+    userModel -> payoutModel : Return user details
+    deactivate userModel
+    payoutModel -> controller : Return complete payout data
+    deactivate payoutModel
+
+    controller -> approvalService : processPayoutApproval(payout, transaction)
+    activate approvalService
+
+    approvalService -> payoutModel : update({payout_status: "completed", processed_at: now(), completed_at: now()}, {where: {payout_id}, transaction})
+    activate payoutModel
+    payoutModel -> approvalService : Payout status updated
+    deactivate payoutModel
+
+    approvalService -> transactionModel : create({type: "PAYOUT", from_user_id: null, to_user_id: owner_id, amount: payout_amount, booking_id, status: "completed", note: "Payout approved by admin"}, {transaction})
+    activate transactionModel
+    transactionModel -> approvalService : PAYOUT transaction created
+    deactivate transactionModel
+
+    approvalService -> controller : Approval processing completed
+    deactivate approvalService
+
+    controller -> notificationService : createPayoutApprovalNotification(owner_id, payout, transaction)
+    activate notificationService
+    notificationService -> notificationModel : create({user_id: owner_id, title: "Payout Approved", content: "Your payout request has been approved", type: "PAYOUT_APPROVED"}, {transaction})
+    activate notificationModel
+    notificationModel -> notificationService : Notification created
+    deactivate notificationModel
+    notificationService -> controller : Notification sent
+    deactivate notificationService
+
+    controller -> dbTransaction : commitTransaction(transaction)
+    activate dbTransaction
+    dbTransaction -> controller : Transaction committed
+    deactivate dbTransaction
+
+    controller -> responseFormatter : formatApprovalResponse(payout)
+    activate responseFormatter
+    responseFormatter -> controller : Return formatted success response
+    deactivate responseFormatter
+
+    controller -> route : res.status(200).json(response)
+
+else Payout is not eligible
+
+    controller -> responseFormatter : formatErrorResponse("Payout not eligible for approval")
+    activate responseFormatter
+    responseFormatter -> controller : Return formatted error response
+    deactivate responseFormatter
+
+    controller -> route : res.status(400).json(error)
+
+end
+
+deactivate controller
+
+route -> frontend : Return API response
+deactivate route
+
+frontend -> frontend : Update payout status in local state
+frontend -> frontend : Clear loading state
+frontend -> frontend : Show success/error message
+frontend -> admin : Display approval result
+deactivate frontend
+
+== Admin Reject Payout Request ==
+
+admin -> frontend : Click "Reject" button on payout
+activate frontend
+
+frontend -> modal : showConfirmModal("reject", payout)
+activate modal
+
+modal -> modal : Display rejection confirmation dialog with reason input
+modal -> admin : Show confirmation modal with reason field
+admin -> modal : Enter rejection reason and click "Confirm Rejection"
+
+modal -> frontend : handleConfirmAction(reason)
+deactivate modal
+
+frontend -> frontend : Set loading state
+frontend -> route : PUT /api/admin/payouts/:id/reject
+note right : Request includes:\n- payout_id in URL\n- rejection_reason in body\n- admin_id from token
+
+activate route
+
+route -> authMiddleware : verifyJWTToken(req, res, next)
+activate authMiddleware
+authMiddleware -> route : next() - Token valid
+deactivate authMiddleware
+
+route -> adminMiddleware : requireAdmin(req, res, next)
+activate adminMiddleware
+adminMiddleware -> route : next() - Admin role confirmed
+deactivate adminMiddleware
+
+route -> validationMiddleware : validatePayoutAction(req, res, next)
+activate validationMiddleware
+validationMiddleware -> validationMiddleware : Validate payout_id format
+validationMiddleware -> validationMiddleware : Validate rejection_reason length
+validationMiddleware -> route : next() - Validation passed
+deactivate validationMiddleware
+
+route -> controller : rejectPayout(req, res)
+activate controller
+
+controller -> validationService : validatePayoutEligibility(payout_id)
+activate validationService
+validationService -> controller : Return validation result
+deactivate validationService
+
+alt Payout is eligible for rejection
+
+    controller -> dbTransaction : beginTransaction()
+    activate dbTransaction
+    dbTransaction -> controller : Return transaction object
+    deactivate dbTransaction
+
+    controller -> payoutModel : findOne({where: {payout_id}, include: [Booking, Vehicle, User], transaction})
+    activate payoutModel
+    payoutModel -> controller : Return complete payout data
+    deactivate payoutModel
+
+    controller -> rejectionService : processPayoutRejection(payout, reason, transaction)
+    activate rejectionService
+
+    rejectionService -> payoutModel : update({payout_status: "cancelled", processed_at: now(), failure_reason: reason}, {where: {payout_id}, transaction})
+    activate payoutModel
+    payoutModel -> rejectionService : Payout status updated
+    deactivate payoutModel
+
+    rejectionService -> transactionModel : create({type: "REFUND", from_user_id: null, to_user_id: renter_id, amount: total_paid, booking_id, status: "completed", note: "Refund due to payout rejection"}, {transaction})
+    activate transactionModel
+    transactionModel -> rejectionService : REFUND transaction created
+    deactivate transactionModel
+
+    rejectionService -> transactionModel : create({type: "DEBIT", from_user_id: owner_id, to_user_id: null, amount: payout_amount, booking_id, status: "completed", note: "Debit due to payout rejection"}, {transaction})
+    activate transactionModel
+    transactionModel -> rejectionService : DEBIT transaction created
+    deactivate transactionModel
+
+    rejectionService -> controller : Rejection processing completed
+    deactivate rejectionService
+
+    controller -> notificationService : createPayoutRejectionNotification(owner_id, payout, reason, transaction)
+    activate notificationService
+    notificationService -> notificationModel : create({user_id: owner_id, title: "Payout Rejected", content: "Your payout request has been rejected", type: "PAYOUT_REJECTED"}, {transaction})
+    activate notificationModel
+    notificationModel -> notificationService : Owner notification created
+    deactivate notificationModel
+    notificationService -> controller : Owner notification sent
+    deactivate notificationService
+
+    controller -> notificationService : createRefundNotification(renter_id, payout, transaction)
+    activate notificationService
+    notificationService -> notificationModel : create({user_id: renter_id, title: "Refund Processed", content: "Your refund has been processed", type: "REFUND_PROCESSED"}, {transaction})
+    activate notificationModel
+    notificationModel -> notificationService : Renter notification created
+    deactivate notificationModel
+    notificationService -> controller : Renter notification sent
+    deactivate notificationService
+
+    controller -> dbTransaction : commitTransaction(transaction)
+    activate dbTransaction
+    dbTransaction -> controller : Transaction committed
+    deactivate dbTransaction
+
+    controller -> responseFormatter : formatRejectionResponse(payout, reason)
+    activate responseFormatter
+    responseFormatter -> controller : Return formatted success response
+    deactivate responseFormatter
+
+    controller -> route : res.status(200).json(response)
+
+else Payout is not eligible
+
+    controller -> responseFormatter : formatErrorResponse("Payout not eligible for rejection")
+    activate responseFormatter
+    responseFormatter -> controller : Return formatted error response
+    deactivate responseFormatter
+
+    controller -> route : res.status(400).json(error)
+
+end
+
+deactivate controller
+
+route -> frontend : Return API response
+deactivate route
+
+frontend -> frontend : Update payout status in local state
+frontend -> frontend : Clear loading state
+frontend -> frontend : Show success/error message
+frontend -> admin : Display rejection result
+deactivate frontend
+
+note over admin, responseFormatter
+Key Features:
+1. **Secure Authorization**: JWT token verification and admin role validation
+2. **Input Validation**: Comprehensive validation of payout ID and rejection reasons
+3. **Database Transactions**: Ensures data consistency across multiple operations
+4. **Financial Integrity**: Creates appropriate transactions (PAYOUT, REFUND, DEBIT)
+5. **Dual Notifications**: Notifies both owners and renters of payout decisions
+6. **Status Management**: Updates payout status with timestamps and reasons
+7. **Error Handling**: Comprehensive error handling with proper HTTP status codes
+8. **Audit Trail**: Complete transaction history for financial tracking
+9. **User Experience**: Loading states and confirmation modals for better UX
+10. **Data Integrity**: Validates payout eligibility before processing
+end note
+
+@enduml

@@ -1,0 +1,250 @@
+@startuml View List Cancel Booking - Sequence Diagram
+
+!define ACTOR_COLOR #FFE0B2
+!define FRONTEND_COLOR #E1F5FE
+!define BACKEND_COLOR #FFF3E0
+!define DATABASE_COLOR #E8F5E8
+!define MIDDLEWARE_COLOR #F3E5F5
+
+actor "Owner" as owner ACTOR_COLOR
+participant "CancelRequests\nComponent" as frontend FRONTEND_COLOR
+participant "OwnerDashboard\nRoute" as route BACKEND_COLOR
+participant "verifyJWTToken\nMiddleware" as authMiddleware MIDDLEWARE_COLOR
+participant "requireOwner\nMiddleware" as ownerMiddleware MIDDLEWARE_COLOR
+participant "OwnerDashboard\nController" as controller BACKEND_COLOR
+participant "Database\n(Models)" as db DATABASE_COLOR
+participant "CancellationUtils" as utils BACKEND_COLOR
+participant "Notification\nService" as notification BACKEND_COLOR
+
+title View List Cancel Booking - Sequence Flow
+
+== View Cancel Requests List ==
+
+owner -> frontend : Navigate to Cancel Requests page
+activate frontend
+
+frontend -> frontend : useEffect() - Component mount
+frontend -> route : GET /api/owner/cancel-requests
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware -> authMiddleware : validate token & extract user_id
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> ownerMiddleware : check owner role
+activate ownerMiddleware
+ownerMiddleware -> ownerMiddleware : validate owner permissions
+ownerMiddleware --> route : next() - owner verified
+deactivate ownerMiddleware
+
+route -> controller : getCancelRequests(req, res)
+activate controller
+
+controller -> db : BookingCancellation.findAll({\n  include: [Booking, Vehicle, User],\n  where: { owner_id: req.user.user_id }\n})
+activate db
+db --> controller : cancel requests data
+deactivate db
+
+controller -> utils : calculateRefundAmounts(booking, cancellationFee)
+activate utils
+utils -> utils : calculate renter refund\ncalculate owner compensation
+utils --> controller : { renterRefund, ownerRefund }
+deactivate utils
+
+controller --> route : JSON response with cancel requests
+deactivate controller
+
+route --> frontend : 200 OK - cancel requests list
+deactivate route
+
+frontend -> frontend : setState(cancelRequests)
+frontend -> frontend : render cancel requests table
+frontend --> owner : Display cancel requests list
+deactivate frontend
+
+== Approve Cancel Request ==
+
+owner -> frontend : Click "Approve" button
+activate frontend
+
+frontend -> frontend : handleApproveCancel(requestId)
+frontend -> frontend : setState({ showModal: true, actionType: 'approve' })
+frontend --> owner : Show confirmation modal
+
+owner -> frontend : Confirm approval
+frontend -> route : POST /api/owner/cancel-requests/:id/approve
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> ownerMiddleware : check owner role
+activate ownerMiddleware
+ownerMiddleware --> route : next() - owner verified
+deactivate ownerMiddleware
+
+route -> controller : approveCancelRequest(req, res)
+activate controller
+
+controller -> db : Begin transaction
+activate db
+
+controller -> db : BookingCancellation.findByPk(id, {\n  include: [Booking, Vehicle, User]\n})
+db --> controller : cancellation data
+
+controller -> controller : validate ownership & status
+alt cancellation not found or not owned
+    controller --> route : 404 - Not found
+    route --> frontend : Error response
+    frontend --> owner : Show error message
+else valid cancellation
+    controller -> db : Booking.update({\n  status: 'cancelled'\n}, { where: { booking_id } })
+    
+    controller -> db : BookingCancellation.update({\n  refund_status_renter: 'pending',\n  refund_status_owner: 'pending'\n})
+    
+    controller -> notification : Create notification for renter
+    activate notification
+    notification -> db : Notification.create({\n  user_id: renter_id,\n  title: 'Yêu cầu hủy được duyệt',\n  content: 'Booking đã được hủy...',\n  type: 'booking_cancellation'\n})
+    deactivate notification
+    
+    controller -> notification : Create notification for admin
+    activate notification
+    notification -> db : Notification.create({\n  title: 'Cần duyệt hoàn tiền',\n  content: 'Có yêu cầu hoàn tiền...',\n  type: 'refund_approval'\n})
+    deactivate notification
+    
+    controller -> db : Commit transaction
+    deactivate db
+    
+    controller --> route : 200 OK - approval success
+    deactivate controller
+    
+    route --> frontend : Success response
+    deactivate route
+    
+    frontend -> frontend : handleConfirmAction() success
+    frontend -> frontend : fetchCancelRequests() - refresh list
+    frontend --> owner : Show success message & updated list
+end
+
+deactivate frontend
+
+== Reject Cancel Request ==
+
+owner -> frontend : Click "Reject" button
+activate frontend
+
+frontend -> frontend : handleRejectCancel(requestId)
+frontend -> frontend : setState({ showModal: true, actionType: 'reject' })
+frontend --> owner : Show rejection modal with reason input
+
+owner -> frontend : Enter rejection reason & confirm
+frontend -> route : POST /api/owner/cancel-requests/:id/reject\n{ reason: "rejection reason" }
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> ownerMiddleware : check owner role
+activate ownerMiddleware
+ownerMiddleware --> route : next() - owner verified
+deactivate ownerMiddleware
+
+route -> controller : rejectCancelRequest(req, res)
+activate controller
+
+controller -> db : Begin transaction
+activate db
+
+controller -> db : BookingCancellation.findByPk(id)
+db --> controller : cancellation data
+
+controller -> controller : validate ownership & status
+alt cancellation not found or not owned
+    controller --> route : 404 - Not found
+    route --> frontend : Error response
+    frontend --> owner : Show error message
+else valid cancellation
+    controller -> db : Booking.update({\n  status: 'fully_paid'\n}, { where: { booking_id } })
+    
+    controller -> db : BookingCancellation.update({\n  refund_status_renter: 'rejected',\n  refund_reason_renter: reason\n})
+    
+    controller -> notification : Create notification for renter
+    activate notification
+    notification -> db : Notification.create({\n  user_id: renter_id,\n  title: 'Yêu cầu hủy bị từ chối',\n  content: 'Lý do: ' + reason,\n  type: 'booking_cancellation'\n})
+    deactivate notification
+    
+    controller -> db : Commit transaction
+    deactivate db
+    
+    controller --> route : 200 OK - rejection success
+    deactivate controller
+    
+    route --> frontend : Success response
+    deactivate route
+    
+    frontend -> frontend : handleConfirmAction() success
+    frontend -> frontend : fetchCancelRequests() - refresh list
+    frontend --> owner : Show success message & updated list
+end
+
+deactivate frontend
+
+== View Cancelled Bookings History ==
+
+owner -> frontend : Navigate to Cancelled Bookings tab
+activate frontend
+
+frontend -> route : GET /api/owner/cancelled-bookings
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> ownerMiddleware : check owner role
+activate ownerMiddleware
+ownerMiddleware --> route : next() - owner verified
+deactivate ownerMiddleware
+
+route -> controller : getCancelledBookings(req, res)
+activate controller
+
+controller -> db : BookingCancellation.findAll({\n  include: [Booking, Vehicle, User],\n  where: { \n    '$booking.vehicle.owner_id$': req.user.user_id,\n    '$booking.status$': 'cancelled'\n  }\n})
+activate db
+db --> controller : cancelled bookings data
+deactivate db
+
+controller -> utils : Format refund information
+activate utils
+utils --> controller : formatted data with refund details
+deactivate utils
+
+controller --> route : JSON response with cancelled bookings
+deactivate controller
+
+route --> frontend : 200 OK - cancelled bookings list
+deactivate route
+
+frontend -> frontend : setState(cancelledBookings)
+frontend -> frontend : render cancelled bookings table
+frontend --> owner : Display cancelled bookings history
+deactivate frontend
+
+note over owner, notification
+Key Features:
+1. Owner can view all cancel requests for their vehicles
+2. Approve/reject requests with reasons
+3. Automatic refund status updates
+4. Notifications sent to renter and admin
+5. Transaction-based operations for data consistency
+6. View history of cancelled bookings with refund details
+end note
+
+@enduml

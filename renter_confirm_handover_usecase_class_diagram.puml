@@ -1,0 +1,84 @@
+@startuml Renter Confirm Handover Use Case Class Diagram
+
+title Renter Confirm Handover Use Case Class Diagram
+
+' Route Layer
+class HandoverRoute {
+  +PUT /api/booking/:bookingId/confirm-renter-handover
+  +middleware: verifyJWTToken
+  +handler: confirmRenterHandover()
+}
+
+' Middleware
+class verifyJWTToken {
+  +verify(token)
+  +extractUserId()
+}
+
+' Controller Layer
+class HandoverController {
+  +confirmRenterHandover(req, res)
+  -validateBooking()
+  -validateBookingStatus()
+  -updateHandoverRecord()
+  -updateBookingStatus()
+}
+
+' Model Layer
+class Booking {
+  +booking_id: string
+  +renter_id: string
+  +status: string
+  +total_amount: number
+  +findOne()
+  +update()
+  +include: User as renter
+}
+
+class BookingHandover {
+  +handover_id: string
+  +booking_id: string
+  +renter_handover_confirmed: boolean
+  +handover_time: datetime
+  +findOne()
+  +update()
+}
+
+class User {
+  +user_id: string
+  +username: string
+  +email: string
+}
+
+' Relationships
+HandoverRoute --> verifyJWTToken : uses
+HandoverRoute --> HandoverController : calls
+
+verifyJWTToken --> HandoverController : provides renterId
+
+HandoverController --> Booking : validates and updates
+HandoverController --> BookingHandover : updates
+
+Booking --> User : includes as renter
+BookingHandover --> Booking : belongs to
+
+' Notes
+note right of HandoverController
+  Validation Rules:
+  - Booking must belong to renter
+  - Booking status must be "fully_paid"
+  - Sets renter_handover_confirmed = true
+  - Updates booking status to "in_progress"
+  - No image upload required
+end note
+
+note right of Booking
+  Status Flow:
+  "fully_paid" → "in_progress"
+  
+  This confirms renter has 
+  received the vehicle and 
+  rental period begins
+end note
+
+@enduml

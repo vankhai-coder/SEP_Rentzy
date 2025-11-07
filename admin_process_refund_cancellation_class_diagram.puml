@@ -1,0 +1,364 @@
+@startuml Admin Process Refund Cancellation - Class Diagram
+
+!define ENTITY_COLOR #E1F5FE
+!define CONTROLLER_COLOR #FFF3E0
+!define MIDDLEWARE_COLOR #F3E5F5
+!define UTIL_COLOR #E8F5E8
+
+' Frontend Components
+package "Frontend Components" {
+    class RefundManagement <<React Component>> ENTITY_COLOR {
+        +state: refunds[]
+        +state: loading
+        +state: selectedRefund
+        +state: showModal
+        +state: actionType
+        +state: reason
+        +state: currentTab
+        +state: statusFilter
+        +state: pagination
+        --
+        +useEffect(): void
+        +fetchRefunds(page, status, tab): Promise<void>
+        +handleApproveRefund(refundId, type): void
+        +handleRejectRefund(refundId, type): void
+        +showConfirmAction(action, refund, type): void
+        +handleConfirmAction(): Promise<void>
+        +handleTabChange(tab): void
+        +handleStatusFilter(status): void
+        +handlePageChange(page): void
+        +formatCurrency(amount): string
+        +formatDate(date): string
+        +render(): JSX.Element
+    }
+    
+    class RefundConfirmModal <<React Component>> ENTITY_COLOR {
+        +props: isOpen, actionType, refundType, onConfirm, onCancel
+        +state: reason
+        --
+        +handleReasonChange(value): void
+        +handleSubmit(): void
+        +validateRejectionReason(): boolean
+        +render(): JSX.Element
+    }
+    
+    class RefundTable <<React Component>> ENTITY_COLOR {
+        +props: refunds[], onApprove, onReject
+        --
+        +renderRenterRefunds(): JSX.Element
+        +renderOwnerRefunds(): JSX.Element
+        +renderBankInfo(bankInfo): JSX.Element
+        +renderActionButtons(refund): JSX.Element
+        +render(): JSX.Element
+    }
+}
+
+' Backend Routes
+package "Backend Routes" {
+    class AdminCancelRoute <<Express Router>> CONTROLLER_COLOR {
+        +GET /refund-management
+        +POST /:id/approve
+        +POST /:id/reject
+        --
+        +setupRefundManagementRoutes(): void
+        +validateRefundParams(): middleware
+        +parseQueryParams(): middleware
+    }
+}
+
+' Middleware
+package "Middleware" {
+    class verifyJWTToken <<Middleware>> MIDDLEWARE_COLOR {
+        +verify(req, res, next): void
+        +extractUserId(token): number
+        +validateToken(token): boolean
+        +handleTokenExpiry(): void
+    }
+    
+    class requireAdmin <<Middleware>> MIDDLEWARE_COLOR {
+        +checkAdminRole(req, res, next): void
+        +validateAdminPermissions(userId): boolean
+        +verifyAdminAccess(): boolean
+    }
+    
+    class validateRefundRequest <<Middleware>> MIDDLEWARE_COLOR {
+        +validateRefundId(req, res, next): void
+        +validateRefundType(req, res, next): void
+        +checkRefundExists(refundId): boolean
+        +validateRefundStatus(refund): boolean
+    }
+}
+
+' Controllers
+package "Controllers" {
+    class AdminCancelController <<Controller>> CONTROLLER_COLOR {
+        +getRefundManagement(req, res): Promise<void>
+        +approveRefund(req, res): Promise<void>
+        +rejectRefund(req, res): Promise<void>
+        --
+        -buildWhereConditions(query): object
+        -formatRefundData(refunds): object[]
+        -validateRefundEligibility(cancellation, refundType): boolean
+        -processApproval(cancellation, refundType, transaction): Promise<void>
+        -processRejection(cancellation, refundType, reason, transaction): Promise<void>
+        -updateRefundStatus(cancellation, refundType, status, transaction): Promise<void>
+        -createRefundNotifications(cancellation, action, refundType, reason, transaction): Promise<void>
+        -createCompensationTransaction(cancellation, transaction): Promise<void>
+    }
+}
+
+' Models
+package "Database Models" {
+    class BookingCancellation <<Model>> ENTITY_COLOR {
+        +cancellation_id: number
+        +booking_id: number
+        +cancelled_by: enum
+        +cancellation_reason: string
+        +cancelled_at: Date
+        +cancellation_fee: decimal
+        +total_refund_for_renter: decimal
+        +total_refund_for_owner: decimal
+        +refund_status_renter: enum
+        +refund_status_owner: enum
+        +refund_reason_renter: string
+        +refund_processed_at_renter: Date
+        +refund_processed_at_owner: Date
+        +created_at: Date
+        +updated_at: Date
+        --
+        +findAndCountAll(options): Promise<{count, rows}>
+        +findByPk(id, options): Promise<BookingCancellation>
+        +update(data, options): Promise<void>
+        +belongsTo(Booking): Association
+    }
+    
+    class Booking <<Model>> ENTITY_COLOR {
+        +booking_id: number
+        +renter_id: number
+        +vehicle_id: number
+        +start_date: Date
+        +end_date: Date
+        +total_amount: decimal
+        +total_paid: decimal
+        +status: enum
+        +created_at: Date
+        --
+        +findByPk(id, options): Promise<Booking>
+        +belongsTo(User): Association
+        +belongsTo(Vehicle): Association
+        +hasOne(BookingCancellation): Association
+    }
+    
+    class Vehicle <<Model>> ENTITY_COLOR {
+        +vehicle_id: number
+        +owner_id: number
+        +model: string
+        +license_plate: string
+        +main_image_url: string
+        +status: enum
+        --
+        +findByPk(id): Promise<Vehicle>
+        +belongsTo(User): Association
+        +hasMany(Booking): Association
+    }
+    
+    class User <<Model>> ENTITY_COLOR {
+        +user_id: number
+        +full_name: string
+        +email: string
+        +phone_number: string
+        +role: enum
+        +reward_points: number
+        +created_at: Date
+        --
+        +findByPk(id): Promise<User>
+        +hasMany(Booking): Association
+        +hasMany(Vehicle): Association
+        +hasMany(Notification): Association
+        +hasMany(Bank): Association
+    }
+    
+    class Bank <<Model>> ENTITY_COLOR {
+        +bank_id: number
+        +user_id: number
+        +bank_name: string
+        +account_number: string
+        +account_holder_name: string
+        +is_primary: boolean
+        +qr_code_url: string
+        +created_at: Date
+        --
+        +findAll(options): Promise<Bank[]>
+        +belongsTo(User): Association
+    }
+    
+    class Notification <<Model>> ENTITY_COLOR {
+        +notification_id: number
+        +user_id: number
+        +title: string
+        +content: string
+        +type: enum
+        +is_read: boolean
+        +created_at: Date
+        --
+        +create(data, options): Promise<Notification>
+        +belongsTo(User): Association
+    }
+    
+    class Transaction <<Model>> ENTITY_COLOR {
+        +transaction_id: number
+        +user_id: number
+        +booking_id: number
+        +amount: decimal
+        +transaction_type: enum
+        +status: enum
+        +description: string
+        +created_at: Date
+        --
+        +create(data, options): Promise<Transaction>
+        +belongsTo(User): Association
+        +belongsTo(Booking): Association
+    }
+}
+
+' Services
+package "Services" {
+    class RefundProcessingService <<Service>> UTIL_COLOR {
+        +processRenterRefund(cancellation, transaction): Promise<void>
+        +processOwnerRefund(cancellation, transaction): Promise<void>
+        +validateRefundAmount(amount): boolean
+        +createRefundTransaction(userId, amount, bookingId, transaction): Promise<void>
+        --
+        -REFUND_TRANSACTION_TYPE: string
+        -validateBankAccount(userId): Promise<boolean>
+    }
+    
+    class NotificationService <<Service>> UTIL_COLOR {
+        +createRefundApprovalNotification(userId, cancellation, refundType, transaction): Promise<void>
+        +createRefundRejectionNotification(userId, cancellation, refundType, reason, transaction): Promise<void>
+        +createAdminRefundNotification(cancellation, action, transaction): Promise<void>
+        --
+        -formatRefundNotificationContent(cancellation, action, refundType, reason): string
+        -getRefundNotificationTitle(action, refundType): string
+    }
+    
+    class ValidationService <<Service>> UTIL_COLOR {
+        +validateRefundEligibility(cancellation, refundType): boolean
+        +validateRefundStatus(cancellation, refundType): boolean
+        +validateRejectionReason(reason): boolean
+        +validateRefundAmount(amount): boolean
+        --
+        -VALID_REFUND_STATUSES: string[]
+        -MIN_REASON_LENGTH: number
+        -MAX_REASON_LENGTH: number
+        -MIN_REFUND_AMOUNT: decimal
+    }
+}
+
+' Utilities
+package "Utilities" {
+    class DatabaseTransaction <<Utility>> UTIL_COLOR {
+        +beginTransaction(): Promise<Transaction>
+        +commitTransaction(transaction): Promise<void>
+        +rollbackTransaction(transaction): Promise<void>
+        +executeInTransaction(callback): Promise<any>
+        --
+        -handleTransactionError(error, transaction): Promise<void>
+        -logTransactionActivity(action, transaction): void
+    }
+    
+    class QueryBuilder <<Utility>> UTIL_COLOR {
+        +buildRefundWhereConditions(query): object
+        +buildRefundIncludeOptions(): object[]
+        +buildPaginationOptions(page, limit): object
+        +buildSortingOptions(sortBy, sortOrder): object[]
+        --
+        -DEFAULT_PAGE_SIZE: number
+        -MAX_PAGE_SIZE: number
+        -VALID_SORT_FIELDS: string[]
+    }
+    
+    class ErrorHandler <<Utility>> UTIL_COLOR {
+        +handleValidationError(error, res): void
+        +handleDatabaseError(error, res): void
+        +handleAuthorizationError(res): void
+        +handleNotFoundError(res): void
+        --
+        -formatErrorResponse(error): object
+        -logError(error, context): void
+    }
+}
+
+' Relationships
+RefundManagement --> RefundConfirmModal : "renders"
+RefundManagement --> RefundTable : "renders"
+RefundManagement --> AdminCancelRoute : "API calls"
+
+AdminCancelRoute --> verifyJWTToken : "uses"
+AdminCancelRoute --> requireAdmin : "uses"
+AdminCancelRoute --> validateRefundRequest : "uses"
+AdminCancelRoute --> AdminCancelController : "delegates to"
+
+AdminCancelController --> BookingCancellation : "queries & updates"
+AdminCancelController --> Booking : "queries"
+AdminCancelController --> Vehicle : "queries"
+AdminCancelController --> User : "queries"
+AdminCancelController --> Bank : "queries"
+AdminCancelController --> Notification : "creates"
+AdminCancelController --> Transaction : "creates"
+AdminCancelController --> RefundProcessingService : "uses"
+AdminCancelController --> NotificationService : "uses"
+AdminCancelController --> ValidationService : "uses"
+AdminCancelController --> DatabaseTransaction : "uses"
+AdminCancelController --> QueryBuilder : "uses"
+AdminCancelController --> ErrorHandler : "uses"
+
+BookingCancellation --> Booking : "belongsTo"
+Booking --> User : "belongsTo (renter)"
+Booking --> Vehicle : "belongsTo"
+Vehicle --> User : "belongsTo (owner)"
+User --> Bank : "hasMany"
+User --> Notification : "hasMany"
+User --> Transaction : "hasMany"
+Notification --> User : "belongsTo"
+Transaction --> User : "belongsTo"
+Transaction --> Booking : "belongsTo"
+
+note top of RefundManagement
+Admin interface for managing refunds:
+- View all pending refund requests
+- Filter by renter/owner and status
+- Approve/reject refunds with reasons
+- Display bank account information
+- Pagination and search functionality
+end note
+
+note top of AdminCancelController
+Main controller for admin refund processing:
+- Get refund management list with bank info
+- Approve refunds (both renter and owner)
+- Reject refunds with reasons
+- Create compensation transactions
+- Send notifications to affected parties
+- Handle both individual and batch processing
+end note
+
+note bottom of RefundProcessingService
+Handles actual refund processing:
+- Validates refund eligibility and amounts
+- Creates refund transactions in system
+- Validates bank account information
+- Processes separate refunds for renter/owner
+- Ensures transaction integrity
+end note
+
+note bottom of BookingCancellation
+Central model for cancellation data:
+- Tracks refund status for both parties
+- Stores calculated refund amounts
+- Separate processing timestamps
+- Links to booking and user information
+- Supports admin approval workflow
+end note
+
+@enduml

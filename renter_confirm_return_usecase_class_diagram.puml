@@ -1,0 +1,169 @@
+@startuml Renter Confirm Return Use Case Class Diagram
+
+title Renter Confirm Return Use Case Class Diagram
+
+' Route Layer
+class HandoverRoute {
+  +PUT /api/booking/:bookingId/confirm-renter-return
+  +middleware: verifyJWTToken
+  +handler: confirmRenterReturn()
+}
+
+' Middleware
+class verifyJWTToken {
+  +verify(token)
+  +extractUserId()
+}
+
+' Controller Layer
+class HandoverController {
+  +confirmRenterReturn(req, res)
+  -validateBooking()
+  -updateHandoverRecord()
+  -updateBookingStatus()
+  -updateVehicleRentCount()
+  -calculatePointsReward()
+  -createPointsTransaction()
+  -createBookingPayout()
+  -createNotifications()
+  -handleDatabaseTransaction()
+}
+
+' Model Layer
+class Booking {
+  +booking_id: string
+  +renter_id: string
+  +vehicle_id: string
+  +status: string
+  +total_amount: number
+  +findOne()
+  +update()
+  +include: User as renter
+}
+
+class BookingHandover {
+  +handover_id: string
+  +booking_id: string
+  +renter_return_confirmed: boolean
+  +return_time: datetime
+  +findOne()
+  +update()
+}
+
+class Vehicle {
+  +vehicle_id: string
+  +owner_id: string
+  +rent_count: number
+  +findOne()
+  +update()
+}
+
+class User {
+  +user_id: string
+  +username: string
+  +email: string
+  +points: number
+  +findByPk()
+  +update()
+}
+
+class PointsTransaction {
+  +user_id: string
+  +transaction_type: string
+  +points_amount: number
+  +balance_after: number
+  +reference_type: string
+  +reference_id: string
+  +description: string
+  +create()
+}
+
+class BookingPayout {
+  +booking_id: string
+  +total_rental_amount: number
+  +platform_commission_rate: number
+  +payout_status: string
+  +payout_method: string
+  +requested_at: datetime
+  +create()
+}
+
+class Notification {
+  +user_id: string
+  +title: string
+  +content: string
+  +type: string
+  +is_read: boolean
+  +create()
+}
+
+class DatabaseTransaction {
+  +sequelize.transaction()
+  +commit()
+  +rollback()
+}
+
+' Relationships
+HandoverRoute --> verifyJWTToken : uses
+HandoverRoute --> HandoverController : calls
+
+verifyJWTToken --> HandoverController : provides renterId
+
+HandoverController --> DatabaseTransaction : uses
+HandoverController --> Booking : validates and updates
+HandoverController --> BookingHandover : updates
+HandoverController --> Vehicle : updates rent_count
+HandoverController --> User : updates points
+HandoverController --> PointsTransaction : creates
+HandoverController --> BookingPayout : creates
+HandoverController --> Notification : creates (2x)
+
+Booking --> User : includes as renter
+BookingHandover --> Booking : belongs to
+Vehicle --> User : belongs to owner
+PointsTransaction --> User : belongs to
+BookingPayout --> Booking : belongs to
+Notification --> User : belongs to
+
+' Notes
+note right of HandoverController
+  Complex Business Logic:
+  1. Validate booking belongs to renter
+  2. Update handover: renter_return_confirmed = true
+  3. Update booking status: "completed"
+  4. Increment vehicle rent_count
+  5. Calculate 1% points reward
+  6. Update user points balance
+  7. Create points transaction record
+  8. Create payout request for owner
+  9. Send notifications to both parties
+  
+  All operations in database transaction
+end note
+
+note right of PointsTransaction
+  Points Reward System:
+  - 1% of total booking amount
+  - Type: "earn"
+  - Reference: booking_id
+  - Updates user balance
+end note
+
+note right of BookingPayout
+  Owner Payment:
+  - Total rental amount
+  - 10% platform commission
+  - Status: "pending"
+  - Method: "bank_transfer"
+end note
+
+note right of Notification
+  Two notifications created:
+  1. Renter: Points reward earned
+  2. Owner: Payout request created
+  
+  Both notifications include
+  booking details and amounts
+end note
+
+@enduml
