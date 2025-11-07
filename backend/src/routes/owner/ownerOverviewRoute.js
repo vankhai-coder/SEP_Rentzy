@@ -3,7 +3,8 @@ import {
   getOverviewStats,
   getRevenueChart,
   getTopRenters,
-  getTopVehicles
+  getTopVehicles,
+  getTopVehiclesRentalHistory
 } from "../../controllers/owner/ownerOverViewController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
@@ -28,5 +29,7 @@ router.get("/top-renters", getTopRenters);
 
 // API lấy danh sách xe được thuê nhiều nhất
 router.get("/top-vehicles", getTopVehicles);
+//API lấy lịch sử thuê xe của các xe được thuê nhiều nhất
+router.get("/top-vehicles/rental-history", getTopVehiclesRentalHistory);
 
 export default router;

@@ -453,3 +453,112 @@ export const getTopVehicles = async (req, res) => {
     });
   }
 };
+
+//API lấy lịch sử thuê xe của các xe được thuê nhiều nhất
+export const getTopVehiclesRentalHistory = async (req, res) => {
+  try {
+    const ownerId = req.user?.userId;
+    if (!ownerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng",
+      });
+    }
+
+    const { vehicle_id, limit = 10 } = req.query;
+
+    if (!vehicle_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu tham số vehicle_id",
+      });
+    }
+
+    // Đảm bảo xe thuộc về owner hiện tại
+    const vehicle = await Vehicle.findOne({
+      where: { vehicle_id, owner_id: ownerId },
+      attributes: ["vehicle_id", "model", "license_plate", "main_image_url"],
+    });
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe hoặc bạn không có quyền truy cập",
+      });
+    }
+
+    // Lấy lịch sử booking của xe
+    const bookings = await Booking.findAll({
+      where: {
+        vehicle_id,
+        // Lấy mọi lượt thuê để hiển thị lịch sử đầy đủ
+        status: {
+          [Op.in]: [
+            
+            "completed"
+            
+          ],
+        },
+      },
+      include: [
+        {
+          model: User,
+          as: "renter",
+          attributes: ["user_id", "full_name", "email", "avatar_url"],
+          required: false,
+        },
+      ],
+      attributes: [
+        "booking_id",
+        "start_date",
+        "start_time",
+        "end_date",
+        "end_time",
+        "status",
+        "total_amount",
+        "created_at",
+      ],
+      order: [["created_at", "DESC"]],
+      limit: parseInt(limit),
+    });
+
+    const formatted = bookings.map((b) => ({
+      booking_id: b.booking_id,
+      start_date: b.start_date,
+      start_time: b.start_time,
+      end_date: b.end_date,
+      end_time: b.end_time,
+      status: b.status,
+      total_amount: parseFloat(b.total_amount || 0),
+      renter: b.renter
+        ? {
+            user_id: b.renter.user_id,
+            full_name: b.renter.full_name,
+            email: b.renter.email,
+            avatar_url: b.renter.avatar_url,
+          }
+        : null,
+    }));
+
+    return res.json({
+      success: true,
+      data: {
+        vehicle: {
+          vehicle_id: vehicle.vehicle_id,
+          model: vehicle.model,
+          license_plate: vehicle.license_plate,
+          main_image_url: vehicle.main_image_url,
+        },
+        bookings: formatted,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error getting top vehicles rental history:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy lịch sử thuê xe của các xe được thuê nhiều nhất",
+      error: error.message
+    });
+  }
+};
