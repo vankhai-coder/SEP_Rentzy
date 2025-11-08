@@ -677,7 +677,7 @@ const OverViewManagement = () => {
           {/* Rental History Modal */}
           {historyModalOpen && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70 backdrop-blur-md"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50"
               onClick={(e) => {
                 if (e.target === e.currentTarget) closeHistoryModal();
               }}
