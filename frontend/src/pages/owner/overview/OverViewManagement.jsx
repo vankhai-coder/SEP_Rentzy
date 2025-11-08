@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../config/axiosInstance.js';
+import { useNavigate } from 'react-router-dom';
 import { 
   MdAttachMoney, 
   MdDirectionsCar, 
@@ -24,6 +25,7 @@ import {
 } from 'recharts';
 
 const OverViewManagement = () => {
+  const navigate = useNavigate();
   const [overviewData, setOverviewData] = useState(null);
   const [revenueChart, setRevenueChart] = useState([]);
   const [topRenters, setTopRenters] = useState([]);
@@ -120,6 +122,11 @@ const OverViewManagement = () => {
       console.error('Error fetching top vehicles:', error);
       setTopVehicles([]);
     }
+  };
+
+  // Open booking detail in a new browser tab
+  const handleRowClick = (bookingId) => {
+    navigate(`/owner/booking-management/detail/${bookingId}`);
   };
 
   // Fetch rental history for a specific vehicle
@@ -322,19 +329,19 @@ const OverViewManagement = () => {
     };
   }, [historyModalOpen]);
 
-  const statusLabel = (s) => {
-    const map = {
-      completed: 'Hoàn thành',
-    };
-    return map[s] || s;
-  };
+  // const statusLabel = (s) => {
+  //   const map = {
+  //     completed: 'Hoàn thành',
+  //   };
+  //   return map[s] || s;
+  // };
 
-  const statusStyle = (s) => {
-    const styles = {
-      completed: 'bg-green-100 text-green-700 border-green-200',
-    };
-    return styles[s] || 'bg-gray-100 text-gray-700 border-gray-200';
-  };
+  // const statusStyle = (s) => {
+  //   const styles = {
+  //     completed: 'bg-green-100 text-green-700 border-green-200',
+  //   };
+  //   return styles[s] || 'bg-gray-100 text-gray-700 border-gray-200';
+  // };
 
   if (loading) {
     return (
@@ -677,12 +684,12 @@ const OverViewManagement = () => {
           {/* Rental History Modal */}
           {historyModalOpen && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-50"
+              class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center"
               onClick={(e) => {
                 if (e.target === e.currentTarget) closeHistoryModal();
               }}
             >
-              <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 border border-gray-100">
+              <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-xl font-semibold text-gray-900 flex items-center">
                     <MdDirectionsCar className="mr-2 text-purple-600" />
@@ -758,12 +765,23 @@ const OverViewManagement = () => {
                             <p className="text-sm text-gray-700 flex items-center justify-end">
                               <MdCalendarToday className="mr-1" /> {formatDateTime(bk.start_date, bk.start_time)} - {formatDateTime(bk.end_date, bk.end_time)}
                             </p>
-                            <div className={`inline-flex text-xs mt-2 px-2 py-1 rounded border ${statusStyle(bk.status)}`}>
+                            {/* <div className={`inline-flex text-xs mt-2 px-2 py-1 rounded border ${statusStyle(bk.status)}`}>
                               {statusLabel(bk.status)}
-                            </div>
+                            </div> */}
                           </div>
                         </div>
-                        <div className="mt-2 text-xs text-gray-500">Mã đơn: BK{bk.booking_id}</div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(bk.booking_id);
+                          }}
+                          className="mt-2 text-xs text-black hover:text-blue-600 hover:underline"
+                          title="Xem chi tiết đơn thuê"
+                        >
+                          Mã đơn: #{bk.booking_id}
+                        </button>
+
                       </div>
                     ))}
                   </div>
@@ -780,3 +798,4 @@ const OverViewManagement = () => {
 };
 
 export default OverViewManagement;
+ 
