@@ -1,0 +1,82 @@
+@startuml create_booking_usecase
+
+title Class Diagram - Create Booking Use Case (Rentzy)
+
+class BookingRoute {
+  + POST /api/renter/bookings
+  + createBooking()
+}
+
+class verifyJWTToken {
+  + verify(request, response, next)
+}
+
+class checkVerificationForBooking {
+  + checkVerification(request, response, next)
+}
+
+class BookingController {
+  + createBooking(request, response)
+  - validateBookingData()
+  - checkVehicleAvailability()
+  - calculateTotalAmount()
+  - applyVoucherDiscount()
+  - applyPointsDiscount()
+}
+
+class Booking {
+  + booking_id: BIGINT <<PK>>
+  + renter_id: BIGINT <<FK>>
+  + vehicle_id: BIGINT <<FK>>
+  + start_date: DATE
+  + end_date: DATE
+  + total_days: INTEGER
+  + total_cost: DECIMAL
+  + discount_amount: DECIMAL
+  + total_amount: DECIMAL
+  + voucher_code: STRING
+  + points_used: INTEGER
+  + status: ENUM
+  + pickup_location: STRING
+  + return_location: STRING
+  + order_code: BIGINT
+  + create(bookingData): Booking
+}
+
+class Vehicle {
+  + vehicle_id: BIGINT <<PK>>
+  + owner_id: BIGINT <<FK>>
+  + price_per_day: DECIMAL
+  + status: ENUM
+  + findByPk(vehicleId: BIGINT): Vehicle
+}
+
+class User {
+  + user_id: BIGINT <<PK>>
+  + full_name: STRING
+  + email: STRING
+  + points: INTEGER
+  + findByPk(userId: BIGINT): User
+}
+
+class Voucher {
+  + voucher_id: BIGINT <<PK>>
+  + voucher_code: STRING
+  + discount_percentage: DECIMAL
+  + findOne(options): Voucher
+}
+
+BookingRoute --> verifyJWTToken : uses
+BookingRoute --> checkVerificationForBooking : uses
+BookingRoute --> BookingController : calls
+BookingController --> Booking : creates
+BookingController --> Vehicle : queries
+BookingController --> User : queries
+BookingController --> Voucher : queries
+
+Vehicle }o--|| User : "owned by"
+Booking }o--|| Vehicle : "books"
+Booking }o--|| User : "made by"
+Booking }o--o| Voucher : "uses"
+
+@enduml

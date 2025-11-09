@@ -1,0 +1,367 @@
+@startuml Admin Process Refund Cancellation - Sequence Diagram
+
+!define ACTOR_COLOR #FFE0B2
+!define FRONTEND_COLOR #E1F5FE
+!define BACKEND_COLOR #FFF3E0
+!define DATABASE_COLOR #E8F5E8
+!define MIDDLEWARE_COLOR #F3E5F5
+!define SERVICE_COLOR #F0F4C3
+
+actor "Admin" as admin ACTOR_COLOR
+participant "RefundManagement\nComponent" as frontend FRONTEND_COLOR
+participant "RefundConfirm\nModal" as modal FRONTEND_COLOR
+participant "AdminCancel\nRoute" as route BACKEND_COLOR
+participant "verifyJWTToken\nMiddleware" as authMiddleware MIDDLEWARE_COLOR
+participant "requireAdmin\nMiddleware" as adminMiddleware MIDDLEWARE_COLOR
+participant "AdminCancel\nController" as controller BACKEND_COLOR
+participant "ValidationService" as validation SERVICE_COLOR
+participant "RefundProcessing\nService" as refundService SERVICE_COLOR
+participant "NotificationService" as notificationService SERVICE_COLOR
+participant "Database\nTransaction" as transaction DATABASE_COLOR
+participant "Database\n(Models)" as db DATABASE_COLOR
+
+title Admin Process Refund Cancellation - Sequence Flow
+
+== View Refund Management List ==
+
+admin -> frontend : Navigate to Refund Management page
+activate frontend
+
+frontend -> frontend : useEffect() - Component mount
+frontend -> route : GET /api/admin/refund-management?page=1&limit=10
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware -> authMiddleware : validate token & extract user_id
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> adminMiddleware : check admin role
+activate adminMiddleware
+adminMiddleware -> adminMiddleware : validate admin permissions
+alt not admin
+    adminMiddleware --> route : 403 Forbidden
+    route --> frontend : Error response
+    frontend --> admin : Show authorization error
+else admin verified
+    adminMiddleware --> route : next() - admin authorized
+    deactivate adminMiddleware
+    
+    route -> controller : getRefundManagement(req, res)
+    activate controller
+    
+    controller -> controller : buildWhereConditions(query)
+    controller -> db : BookingCancellation.findAndCountAll({\n  where: refundConditions,\n  include: [\n    Booking (with User, Vehicle),\n    Bank (primary accounts)\n  ],\n  order, limit, offset\n})
+    activate db
+    db --> controller : { count, rows: refundData }
+    deactivate db
+    
+    controller -> controller : formatRefundData(refundData)
+    controller --> route : JSON response with formatted refunds
+    deactivate controller
+    
+    route --> frontend : 200 OK - refunds list with bank info
+    deactivate route
+    
+    frontend -> frontend : setState(refunds)
+    frontend -> frontend : render refunds table with tabs
+    frontend --> admin : Display refunds list (renter/owner tabs)
+end
+
+deactivate frontend
+
+== Approve Refund (Renter) ==
+
+admin -> frontend : Click "Approve" for renter refund
+activate frontend
+
+frontend -> frontend : handleApproveRefund(refundId, 'renter')
+frontend -> modal : Show approval confirmation modal
+activate modal
+
+modal --> admin : Display approval confirmation
+admin -> modal : Confirm approval
+modal -> frontend : onConfirm() callback
+deactivate modal
+
+frontend -> route : POST /api/admin/refund-management/:id/approve\n{ refund_type: 'renter' }
+activate route
+
+route -> authMiddleware : verify JWT token
+activate authMiddleware
+authMiddleware --> route : next() - token valid
+deactivate authMiddleware
+
+route -> adminMiddleware : check admin role
+activate adminMiddleware
+adminMiddleware --> route : next() - admin verified
+deactivate adminMiddleware
+
+route -> controller : approveRefund(req, res)
+activate controller
+
+controller -> transaction : Begin transaction
+activate transaction
+
+controller -> db : BookingCancellation.findByPk(id, {\n  include: [\n    Booking (with renter, vehicle, owner)\n  ]\n})
+activate db
+db --> controller : cancellation with full booking data
+deactivate db
+
+controller -> validation : validateRefundEligibility(cancellation, 'renter')
+activate validation
+validation -> validation : check refund_status_renter === 'pending'
+validation -> validation : check total_refund_for_renter > 0
+alt refund not eligible
+    validation --> controller : false - not eligible
+    controller --> route : 400 Bad Request - Not eligible
+    route --> frontend : Error response
+    frontend --> admin : Show eligibility error
+else refund eligible
+    validation --> controller : true - eligible
+    deactivate validation
+    
+    controller -> refundService : processRenterRefund(cancellation, transaction)
+    activate refundService
+    refundService -> refundService : validateRefundAmount(total_refund_for_renter)
+    refundService -> db : Transaction.create({\n  user_id: renter_id,\n  booking_id: booking_id,\n  amount: total_refund_for_renter,\n  transaction_type: 'REFUND',\n  status: 'completed',\n  description: 'Hoàn tiền hủy booking'\n}, { transaction })
+    activate db
+    db --> refundService : refund transaction created
+    deactivate db
+    deactivate refundService
+    
+    controller -> db : BookingCancellation.update({\n  refund_status_renter: 'approved',\n  refund_processed_at_renter: new Date()\n}, {\n  where: { cancellation_id },\n  transaction\n})
+    activate db
+    db --> controller : cancellation updated
+    deactivate db
+    
+    controller -> notificationService : createRefundApprovalNotification(renter_id, cancellation, 'renter', transaction)
+    activate notificationService
+    notificationService -> db : Notification.create({\n  user_id: renter_id,\n  title: 'Hoàn tiền được duyệt',\n  content: 'Yêu cầu hoàn tiền đã được admin duyệt...',\n  type: 'refund'\n}, { transaction })
+    activate db
+    db --> notificationService : notification created
+    deactivate db
+    deactivate notificationService
+    
+    controller -> transaction : Commit transaction
+    transaction --> controller : transaction committed
+    deactivate transaction
+    
+    controller --> route : 200 OK - {\n  success: true,\n  message: 'Đã duyệt hoàn tiền cho người thuê',\n  data: { cancellation_id, refund_amount }\n}
+    deactivate controller
+    
+    route --> frontend : Success response
+    deactivate route
+    
+    frontend -> frontend : handleConfirmAction() success
+    frontend -> frontend : fetchRefunds() - refresh list
+    frontend --> admin : Show success message & updated list
+end
+
+deactivate frontend
+
+== Approve Refund (Owner) ==
+
+admin -> frontend : Click "Approve" for owner refund
+activate frontend
+
+frontend -> frontend : handleApproveRefund(refundId, 'owner')
+frontend -> route : POST /api/admin/refund-management/:id/approve\n{ refund_type: 'owner' }
+activate route
+
+route -> controller : approveRefund(req, res)
+activate controller
+
+controller -> transaction : Begin transaction
+activate transaction
+
+controller -> db : BookingCancellation.findByPk(id)
+activate db
+db --> controller : cancellation data
+deactivate db
+
+controller -> validation : validateRefundEligibility(cancellation, 'owner')
+activate validation
+validation --> controller : true - eligible
+deactivate validation
+
+controller -> refundService : processOwnerRefund(cancellation, transaction)
+activate refundService
+refundService -> db : Transaction.create({\n  user_id: owner_id,\n  booking_id: booking_id,\n  amount: total_refund_for_owner,\n  transaction_type: 'COMPENSATION',\n  status: 'completed',\n  description: 'Bồi thường hủy booking'\n}, { transaction })
+activate db
+db --> refundService : compensation transaction created
+deactivate db
+deactivate refundService
+
+controller -> db : BookingCancellation.update({\n  refund_status_owner: 'approved',\n  refund_processed_at_owner: new Date()\n}, { transaction })
+activate db
+db --> controller : cancellation updated
+deactivate db
+
+controller -> notificationService : createRefundApprovalNotification(owner_id, cancellation, 'owner', transaction)
+activate notificationService
+notificationService -> db : Notification.create({\n  user_id: owner_id,\n  title: 'Bồi thường được duyệt',\n  content: 'Yêu cầu bồi thường đã được admin duyệt...',\n  type: 'refund'\n}, { transaction })
+activate db
+db --> notificationService : notification created
+deactivate db
+deactivate notificationService
+
+controller -> transaction : Commit transaction
+transaction --> controller : transaction committed
+deactivate transaction
+
+controller --> route : 200 OK - approval success
+deactivate controller
+
+route --> frontend : Success response
+deactivate route
+
+frontend -> frontend : fetchRefunds() - refresh list
+frontend --> admin : Show success message & updated list
+
+deactivate frontend
+
+== Reject Refund ==
+
+admin -> frontend : Click "Reject" for refund
+activate frontend
+
+frontend -> frontend : handleRejectRefund(refundId, 'renter')
+frontend -> modal : Show rejection modal with reason input
+activate modal
+
+modal --> admin : Display rejection form
+admin -> modal : Enter rejection reason & confirm
+modal -> modal : validateRejectionReason()
+alt reason too short
+    modal --> admin : Show validation error
+else reason valid
+    modal -> frontend : onConfirm(reason) callback
+    deactivate modal
+    
+    frontend -> route : POST /api/admin/refund-management/:id/reject\n{ refund_type: 'renter', reason: 'rejection reason' }
+    activate route
+    
+    route -> authMiddleware : verify JWT token
+    activate authMiddleware
+    authMiddleware --> route : next() - token valid
+    deactivate authMiddleware
+    
+    route -> adminMiddleware : check admin role
+    activate adminMiddleware
+    adminMiddleware --> route : next() - admin verified
+    deactivate adminMiddleware
+    
+    route -> controller : rejectRefund(req, res)
+    activate controller
+    
+    controller -> transaction : Begin transaction
+    activate transaction
+    
+    controller -> db : BookingCancellation.findByPk(id)
+    activate db
+    db --> controller : cancellation data
+    deactivate db
+    
+    controller -> validation : validateRefundStatus(cancellation, 'renter')
+    activate validation
+    validation -> validation : check refund_status_renter === 'pending'
+    alt status invalid
+        validation --> controller : false - invalid status
+        controller --> route : 400 Bad Request - Invalid status
+        route --> frontend : Error response
+        frontend --> admin : Show status error
+    else status valid
+        validation --> controller : true - status valid
+        deactivate validation
+        
+        controller -> validation : validateRejectionReason(reason)
+        activate validation
+        validation --> controller : true - reason valid
+        deactivate validation
+        
+        controller -> db : BookingCancellation.update({\n  refund_status_renter: 'rejected',\n  refund_reason_renter: reason\n}, {\n  where: { cancellation_id },\n  transaction\n})
+        activate db
+        db --> controller : cancellation updated
+        deactivate db
+        
+        controller -> notificationService : createRefundRejectionNotification(renter_id, cancellation, 'renter', reason, transaction)
+        activate notificationService
+        notificationService -> db : Notification.create({\n  user_id: renter_id,\n  title: 'Hoàn tiền bị từ chối',\n  content: 'Yêu cầu hoàn tiền bị admin từ chối. Lý do: ' + reason,\n  type: 'refund'\n}, { transaction })
+        activate db
+        db --> notificationService : notification created
+        deactivate db
+        deactivate notificationService
+        
+        controller -> transaction : Commit transaction
+        transaction --> controller : transaction committed
+        deactivate transaction
+        
+        controller --> route : 200 OK - {\n  success: true,\n  message: 'Đã từ chối hoàn tiền',\n  data: { cancellation_id, reason }\n}
+        deactivate controller
+        
+        route --> frontend : Success response
+        deactivate route
+        
+        frontend -> frontend : fetchRefunds() - refresh list
+        frontend --> admin : Show success message & updated list
+    end
+end
+
+deactivate frontend
+
+== Filter and Search ==
+
+admin -> frontend : Change tab to "Owner" or filter by status
+activate frontend
+
+frontend -> frontend : handleTabChange('owner') or handleStatusFilter('pending')
+frontend -> route : GET /api/admin/refund-management?tab=owner&status=pending
+activate route
+
+route -> controller : getRefundManagement(req, res)
+activate controller
+
+controller -> controller : buildWhereConditions({ tab: 'owner', status: 'pending' })
+controller -> db : BookingCancellation.findAndCountAll(filtered conditions)
+activate db
+db --> controller : filtered refund data
+deactivate db
+
+controller --> route : JSON response with filtered refunds
+deactivate controller
+
+route --> frontend : 200 OK - filtered refunds
+deactivate route
+
+frontend -> frontend : setState(filteredRefunds)
+frontend --> admin : Display filtered refunds list
+
+deactivate frontend
+
+note over admin, db
+Key Features:
+1. Admin can view all pending refund requests
+2. Separate processing for renter and owner refunds
+3. Approve creates refund/compensation transactions
+4. Reject with mandatory reason
+5. Bank account information displayed
+6. Filter by renter/owner and status
+7. Notifications sent to affected users
+8. Transaction-based operations for consistency
+end note
+
+note over controller, notificationService
+Business Rules:
+1. Only pending refunds can be processed
+2. Approval creates actual financial transactions
+3. Renter gets REFUND transaction
+4. Owner gets COMPENSATION transaction
+5. All actions require admin authentication
+6. Rejection requires reason explanation
+7. Database transactions ensure data integrity
+8. Notifications keep users informed
+end note
+
+@enduml

@@ -14,53 +14,52 @@ participant "BookingReview Model" as ReviewModel
 participant "Booking Model" as BookingModel
 database "MySQL Database" as DB
 
-User -> FE: 1. Truy cập /detail/:id
-FE -> FE: 2. Component VehicleDetail được render
+User -> FE: 1. Access /detail/:id
+FE -> FE: 2. VehicleDetail component is rendered
 FE -> Redux: 3. Dispatch fetchVehicleById(id)
 Redux -> Axios: 4. GET /api/renter/vehicles/:id
-Axios -> Route: 5. Gửi request đến vehicle route
-Route -> Controller: 6. Gọi getVehicleById function
+Axios -> Route: 5. Send request to vehicle route
+Route -> Controller: 6. Call getVehicleById function
 
-Controller -> Controller: 7. Extract vehicle ID từ req.params
-Controller -> VehicleModel: 8. Tìm xe theo ID
+Controller -> Controller: 7. Extract vehicle ID from req.params
+Controller -> VehicleModel: 8. Find vehicle by ID
 VehicleModel -> DB: 9. SELECT * FROM vehicles WHERE vehicle_id = ?
-DB -> VehicleModel: 10. Trả về thông tin xe
-VehicleModel -> Controller: 11. Vehicle data hoặc null
+DB -> VehicleModel: 10. Return vehicle data
+VehicleModel -> Controller: 11. Vehicle data or null
 
-alt Xe không tồn tại
+alt Vehicle not found
     Controller -> Axios: 12a. Response 404 - Vehicle not found
-    Axios -> Redux: 13a. Reject với error message
+    Axios -> Redux: 13a. Reject with error message
     Redux -> FE: 14a. Update detailError state
-    FE -> User: 15a. Hiển thị thông báo lỗi "Không tìm thấy xe"
-else Xe tồn tại
-    Controller -> UserModel: 16. Lấy thông tin chủ xe
+    FE -> User: 15a. Display message "Không tìm thấy xe"
+else Vehicle found
+    Controller -> UserModel: 16. Get vehicle owner information
     UserModel -> DB: 17. SELECT * FROM users WHERE user_id = owner_id
-    DB -> UserModel: 18. Thông tin owner
+    DB -> UserModel: 18. Return owner data
     UserModel -> Controller: 19. Owner data
-    
+
     Controller -> Controller: 20. Parse JSON fields (extra_images, features)
-    Controller -> Controller: 21. Gắn owner data vào vehicle object
-    
-    Controller -> ReviewModel: 22. Lấy đánh giá về chủ xe
-    ReviewModel -> DB: 23. SELECT reviews với JOIN booking, vehicle, user
-    note right: Lấy reviews của tất cả xe thuộc owner này
-    DB -> ReviewModel: 24. Danh sách reviews
-    ReviewModel -> Controller: 25. Reviews data với thông tin renter
-    
-    Controller -> Controller: 26. Format reviews data
-    Controller -> Controller: 27. Tính toán rating summary (average, count)
-    Controller -> Controller: 28. Tạo response object với vehicle + owner + reviews
-    
-    Controller -> Axios: 29. Response 200 với vehicle detail data
-    Axios -> Redux: 30. Fulfill với vehicle data
+    Controller -> Controller: 21. Attach owner data to vehicle object
+
+    Controller -> ReviewModel: 22. Fetch owner’s reviews
+    ReviewModel -> DB: 23. SELECT reviews with JOIN booking, vehicle, user
+    DB -> ReviewModel: 24. Return review list
+    ReviewModel -> Controller: 25. Review data with renter info
+
+    Controller -> Controller: 26. Format review data
+    Controller -> Controller: 27. Calculate rating summary (average, count)
+    Controller -> Controller: 28. Build response object with vehicle + owner + reviews
+
+    Controller -> Axios: 29. Response 200 with vehicle detail data
+    Axios -> Redux: 30. Fulfill with vehicle data
     Redux -> FE: 31. Update currentVehicle state
-    FE -> FE: 32. Re-render với dữ liệu mới
-    
-    FE -> User: 33. Hiển thị VehicleGallery (hình ảnh xe)
-    FE -> User: 34. Hiển thị VehicleInfo (thông tin chi tiết xe)
-    FE -> User: 35. Hiển thị BookingForm (form đặt xe)
-    FE -> User: 36. Hiển thị RentalPolicies (chính sách thuê)
-    FE -> User: 37. Hiển thị OwnerProfile (thông tin chủ xe + reviews)
+    FE -> FE: 32. Re-render with new data
+
+    FE -> User: 33. Display VehicleGallery (vehicle images)
+    FE -> User: 34. Display VehicleInfo (vehicle details)
+    FE -> User: 35. Display BookingForm (rental form)
+    FE -> User: 36. Display RentalPolicies (rental policies)
+    FE -> User: 37. Display OwnerProfile (owner info + reviews)
 end
 
 @enduml

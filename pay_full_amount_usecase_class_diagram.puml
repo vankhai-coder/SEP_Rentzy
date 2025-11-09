@@ -1,0 +1,82 @@
+@startuml pay_full_amount_usecase
+
+title Class Diagram - Pay Full Amount (70%) Use Case (Rentzy)
+
+class PaymentRoute {
+  + POST /api/payment/create-payos-link-remaining
+  + POST /api/payment/payos-webhook
+  + createPayOSLinkForRemaining()
+  + handlePayOSWebhook()
+}
+
+class PaymentController {
+  + createPayOSLinkForRemaining(request, response)
+  + handlePayOSWebhook(request, response)
+  - calculateRemainingAmount()
+  - updateBookingStatus()
+  - createTransaction()
+}
+
+class Booking {
+  + booking_id: BIGINT <<PK>>
+  + renter_id: BIGINT <<FK>>
+  + vehicle_id: BIGINT <<FK>>
+  + total_amount: DECIMAL
+  + total_paid: DECIMAL
+  + order_code_remaining: BIGINT
+  + status: ENUM
+  + findByPk(bookingId: BIGINT): Booking
+  + update(data): Boolean
+}
+
+class Transaction {
+  + transaction_id: BIGINT <<PK>>
+  + booking_id: BIGINT <<FK>>
+  + from_user_id: BIGINT <<FK>>
+  + to_user_id: BIGINT <<FK>>
+  + amount: DECIMAL
+  + type: ENUM
+  + status: ENUM
+  + payment_method: ENUM
+  + note: STRING
+  + create(transactionData): Transaction
+}
+
+class User {
+  + user_id: BIGINT <<PK>>
+  + full_name: STRING
+  + email: STRING
+  + findByPk(userId: BIGINT): User
+}
+
+class Vehicle {
+  + vehicle_id: BIGINT <<PK>>
+  + owner_id: BIGINT <<FK>>
+  + license_plate: STRING
+  + findByPk(vehicleId: BIGINT): Vehicle
+}
+
+class Notification {
+  + notification_id: BIGINT <<PK>>
+  + user_id: BIGINT <<FK>>
+  + title: STRING
+  + message: STRING
+  + type: ENUM
+  + create(notificationData): Notification
+}
+
+PaymentRoute --> PaymentController : calls
+PaymentController --> Booking : queries/updates
+PaymentController --> Transaction : creates
+PaymentController --> User : queries
+PaymentController --> Vehicle : queries
+PaymentController --> Notification : creates
+
+Booking ||--o{ Transaction : "has many"
+Booking }o--|| Vehicle : "books"
+Booking }o--|| User : "made by"
+User ||--o{ Notification : "receives"
+Transaction }o--|| User : "from user"
+Transaction }o--|| User : "to user"
+
+@enduml

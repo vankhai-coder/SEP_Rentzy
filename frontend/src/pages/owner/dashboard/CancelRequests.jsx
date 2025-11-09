@@ -69,7 +69,7 @@ const CancelRequests = () => {
     try {
       console.log("=== FRONTEND APPROVE CANCEL DEBUG ===");
       console.log("Approving cancel request for booking ID:", bookingId);
-      
+
       setProcessingId(bookingId);
       const response = await axiosInstance.patch(
         `/api/owner/dashboard/cancel-requests/${bookingId}/approve`
@@ -278,7 +278,7 @@ const CancelRequests = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Đơn hàng
+                    Mã đơn
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Khách hàng
@@ -306,22 +306,9 @@ const CancelRequests = () => {
                     {/* Đơn hàng */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {request.vehicle?.main_image_url && (
-                          <img
-                            className="h-12 w-16 rounded-lg object-cover mr-3"
-                            src={request.vehicle.main_image_url}
-                            alt={request.vehicle.model}
-                          />
-                        )}
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            Đơn #{request.booking_id}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatCurrency(request.total_amount)}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            Yêu cầu: {formatDate(request.updated_at)}
+                            #{request.booking_id}
                           </div>
                         </div>
                       </div>

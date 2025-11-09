@@ -1,0 +1,109 @@
+@startuml create_booking_class_diagram
+
+title Create Booking - Class Diagram
+
+
+
+class BookingRoute {
+  +POST /createBooking
+}
+
+class verifyJWTToken {
+  +verify(req, res, next)
+}
+
+class checkVerificationForBooking {
+  +checkVerification(req, res, next)
+}
+
+class BookingController {
+  +createBooking(req, res)
+  +buildBookedIntervals(vehicleId)
+}
+
+class Booking {
+  +booking_id: BIGINT
+  +renter_id: BIGINT
+  +vehicle_id: BIGINT
+  +start_date: DATE
+  +end_date: DATE
+  +start_time: TIME
+  +end_time: TIME
+  +total_days: INTEGER
+  +total_cost: DECIMAL
+  +discount_amount: DECIMAL
+  +delivery_fee: DECIMAL
+  +total_amount: DECIMAL
+  +total_paid: DECIMAL
+  +voucher_code: STRING
+  +points_used: INTEGER
+  +status: ENUM
+  +pickup_location: STRING
+  +return_location: STRING
+  +create(data)
+  +findAll(options)
+}
+
+class Vehicle {
+  +vehicle_id: BIGINT
+  +owner_id: BIGINT
+  +vehicle_name: STRING
+  +price_per_day: DECIMAL
+  +location: STRING
+  +status: ENUM
+  +findByPk(id)
+}
+
+class User {
+  +user_id: BIGINT
+  +full_name: STRING
+  +email: STRING
+  +phone_number: STRING
+  +points: INTEGER
+  +findByPk(id)
+  +decrement(field, options)
+}
+
+class Voucher {
+  +voucher_id: BIGINT
+  +code: STRING
+  +title: STRING
+  +discount_type: ENUM
+  +discount_value: DECIMAL
+  +min_order_amount: DECIMAL
+  +max_discount: DECIMAL
+  +valid_from: DATE
+  +valid_to: DATE
+  +is_active: BOOLEAN
+  +usage_limit: INTEGER
+  +used_count: INTEGER
+  +findOne(options)
+}
+ 
+ class Notification {
+   +notification_id: BIGINT
+   +user_id: BIGINT
+   +title: STRING
+   +content: STRING
+   +type: STRING
+   +is_read: BOOLEAN
+   +created_at: DATETIME
+   +create(data)
+ }
+ 
+ 
+ BookingRoute --> verifyJWTToken : uses 
+ BookingRoute --> checkVerificationForBooking : uses 
+ BookingRoute --> BookingController : delegates to 
+ BookingController --> Booking : creates and queries 
+ BookingController --> Vehicle : queries 
+ BookingController --> User : queries and updates 
+ BookingController --> Voucher : queries 
+ BookingController --> Notification : creates 
+ 
+ Booking }o--|| User : renter 
+ Booking }o--|| Vehicle : books 
+ Booking }o--|| Voucher : uses 
+ Notification }o--|| User : recipient 
+ 
+ @enduml

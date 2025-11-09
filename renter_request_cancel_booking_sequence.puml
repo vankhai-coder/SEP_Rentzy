@@ -1,0 +1,110 @@
+@startuml renter_request_cancel_booking_sequence_diagram
+
+title Renter Request Cancel Booking - Sequence Diagram
+
+actor Renter as renter
+participant BookingDetails as frontend
+participant BookingRoute as route
+participant verifyJWTToken as jwt
+participant checkVerificationForBooking as verification
+participant BookingController as controller
+participant Booking as booking
+participant Vehicle as vehicle
+participant User as user
+participant BookingCancellation as cancellation
+database Database as db
+
+Renter -> FE: 1. Click "Hủy booking" button
+FE -> FE: 2. Show cancellation confirmation modal
+Renter -> FE: 3. Confirm cancellation request
+FE -> Redux: 4. Dispatch requestCancelBooking(bookingId)
+Redux -> Axios: 5. POST /api/booking/:bookingId/cancel
+
+Axios -> Route: 6. Send request to booking route
+Route -> Route: 7. Apply verifyJWTToken middleware
+Route -> BankMiddleware: 8. Apply requireBankAccount middleware
+
+BankMiddleware -> DB: 9. SELECT * FROM banks WHERE user_id = ? AND is_primary = true
+DB -> BankMiddleware: 10. Return primary bank account
+alt No primary bank account
+    BankMiddleware -> Axios: 11a. Response 400 - Bank account required
+    Axios -> Redux: 12a. Reject with error
+    Redux -> FE: 13a. Update error state
+    FE -> Renter: 14a. Show "Cần thêm tài khoản ngân hàng" message
+else Bank account exists
+    BankMiddleware -> Route: 15. Continue to controller
+    Route -> Controller: 16. Call confirmCancellation function
+
+    Controller -> Controller: 17. Extract bookingId from req.params
+    Controller -> Controller: 18. Extract renterId from req.user
+    Controller -> Controller: 19. Start database transaction
+
+    Controller -> BookingModel: 20. Find booking by ID and renter
+    BookingModel -> DB: 21. SELECT * FROM bookings WHERE booking_id = ? AND renter_id = ?
+    DB -> BookingModel: 22. Return booking data with vehicle info
+    BookingModel -> Controller: 23. Booking data or null
+
+    alt Booking not found
+        Controller -> Controller: 24a. Rollback transaction
+        Controller -> Axios: 25a. Response 404 - Booking not found
+        Axios -> Redux: 26a. Reject with error
+        Redux -> FE: 27a. Update error state
+        FE -> Renter: 28a. Show "Không tìm thấy đơn thuê" message
+    else Booking found
+        Controller -> Controller: 29. Check booking status (pending/deposit_paid/fully_paid)
+        
+        alt Booking status not cancellable
+            Controller -> Controller: 30a. Rollback transaction
+            Controller -> Axios: 31a. Response 400 - Cannot cancel
+            Axios -> Redux: 32a. Reject with error
+            Redux -> FE: 33a. Update error state
+            FE -> Renter: 34a. Show "Không thể hủy đơn thuê" message
+        else Booking can be cancelled
+            Controller -> Utils: 35. Calculate cancellation fee
+            Utils -> Utils: 36. Calculate days to start, hours from creation
+            Utils -> Utils: 37. Determine cancellation fee percentage
+            Utils -> Utils: 38. Calculate refund amounts for renter and owner
+            Utils -> Controller: 39. Return calculation results
+
+            alt Trip already started
+                Controller -> Controller: 40a. Rollback transaction
+                Controller -> Axios: 41a. Response 400 - Trip started
+                Axios -> Redux: 42a. Reject with error
+                Redux -> FE: 43a. Update error state
+                FE -> Renter: 44a. Show "Không thể hủy chuyến đã bắt đầu" message
+            else Can proceed with cancellation
+                Controller -> BookingModel: 45. Update booking status to "cancel_requested"
+                BookingModel -> DB: 46. UPDATE bookings SET status = 'cancel_requested'
+                DB -> BookingModel: 47. Confirm update
+                BookingModel -> Controller: 48. Update successful
+
+                Controller -> CancellationModel: 49. Create BookingCancellation record
+                CancellationModel -> DB: 50. INSERT INTO booking_cancellations
+                DB -> CancellationModel: 51. Return new cancellation record
+                CancellationModel -> Controller: 52. Cancellation record created
+
+                Controller -> NotificationModel: 53. Create notification for owner
+                NotificationModel -> DB: 54. INSERT INTO notifications (owner notification)
+                DB -> NotificationModel: 55. Confirm notification created
+                NotificationModel -> Controller: 56. Owner notification created
+
+                Controller -> NotificationModel: 57. Create notification for renter
+                NotificationModel -> DB: 58. INSERT INTO notifications (renter notification)
+                DB -> NotificationModel: 59. Confirm notification created
+                NotificationModel -> Controller: 60. Renter notification created
+
+                Controller -> Controller: 61. Commit transaction
+                Controller -> Axios: 62. Response 200 with cancellation details
+                Axios -> Redux: 63. Fulfill with success data
+                Redux -> FE: 64. Update booking state
+                FE -> FE: 65. Close cancellation modal
+                FE -> FE: 66. Update booking status display
+                FE -> Renter: 67. Show "Yêu cầu hủy đã được gửi" success message
+                FE -> Renter: 68. Display estimated refund amount
+                FE -> Renter: 69. Show "Chờ chủ xe duyệt" status
+            end
+        end
+    end
+end
+
+@enduml

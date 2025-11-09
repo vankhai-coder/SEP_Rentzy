@@ -8,10 +8,6 @@ export const approvePayout = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
     const { id } = req.params;
-
-    console.log("=== APPROVE PAYOUT DEBUG ===");
-    console.log("Request params:", { id });
-
     // Tìm BookingPayout
     const payout = await BookingPayout.findOne({
       where: { payout_id: id },

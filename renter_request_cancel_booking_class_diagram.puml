@@ -1,0 +1,133 @@
+@startuml renter_request_cancel_booking_class_diagram
+
+title Renter Request Cancel Booking - Class Diagram
+
+class BookingDetails {
+  +fetchBookingDetails(bookingId)
+  +handleCancelRequest()
+  +openCancelModal()
+  +closeCancelModal()
+  +submitCancelRequest()
+  +canCancelBooking()
+  +calculateCancellationFee()
+}
+
+class CancelBookingModal {
+  +handleReasonChange(reason)
+  +handleSubmit()
+  +validateReason()
+  +calculateRefundAmount()
+  +renderCancellationPolicy()
+}
+
+class BookingList {
+  +fetchBookings()
+  +handleFilterChange(filter)
+  +handleBookingClick(bookingId)
+  +renderBookingCard(booking)
+}
+
+class BookingRoute {
+  +GET /:id
+  +PUT /:id/cancel-request
+  +GET /user/:userId
+}
+
+class verifyJWTToken {
+  +verify(req, res, next)
+}
+
+class checkVerificationForBooking {
+  +checkVerification(req, res, next)
+}
+
+class BookingController {
+  +getBookingById(req, res)
+  +requestCancelBooking(req, res)
+  +getUserBookings(req, res)
+}
+
+class Booking {
+  +booking_id: BIGINT
+  +renter_id: BIGINT
+  +vehicle_id: BIGINT
+  +start_date: DATE
+  +end_date: DATE
+  +total_cost: DECIMAL
+  +total_amount: DECIMAL
+  +status: ENUM
+  +pickup_location: STRING
+  +return_location: STRING
+  +findByPk(id)
+  +update(data, options)
+  +findAll(options)
+}
+
+class Vehicle {
+  +vehicle_id: BIGINT
+  +owner_id: BIGINT
+  +brand_id: BIGINT
+  +model: STRING
+  +year: INTEGER
+  +license_plate: STRING
+  +main_image_url: STRING
+  +rental_price: DECIMAL
+  +status: ENUM
+  +findByPk(id)
+}
+
+class User {
+  +user_id: BIGINT
+  +full_name: STRING
+  +email: STRING
+  +phone_number: STRING
+  +avatar_url: STRING
+  +role: ENUM
+  +verification_status: ENUM
+  +findByPk(id)
+}
+
+class BookingCancellation {
+  +cancellation_id: BIGINT
+  +booking_id: BIGINT
+  +requested_by: BIGINT
+  +reason: TEXT
+  +cancellation_fee: DECIMAL
+  +refund_amount: DECIMAL
+  +status: ENUM
+  +requested_at: DATE
+  +processed_at: DATE
+  +create(data)
+  +findOne(options)
+}
+
+class Brand {
+  +brand_id: BIGINT
+  +brand_name: STRING
+  +logo_url: STRING
+  +findByPk(id)
+}
+
+BookingDetails --> CancelBookingModal : renders
+BookingDetails --> BookingRoute : calls
+BookingList --> BookingDetails : navigates to
+BookingList --> BookingRoute : calls
+
+BookingRoute --> verifyJWTToken : uses
+BookingRoute --> checkVerificationForBooking : uses
+BookingRoute --> BookingController : delegates to
+
+BookingController --> Booking : queries
+BookingController --> Vehicle : queries
+BookingController --> User : queries
+BookingController --> BookingCancellation : creates
+BookingController --> Brand : queries
+
+Booking }o--|| User : renter
+Booking }o--|| Vehicle : books
+Vehicle }o--|| User : owner
+Vehicle }o--|| Brand : belongs to
+BookingCancellation }o--|| Booking : belongs to
+BookingCancellation }o--|| User : requested by
+
+@enduml

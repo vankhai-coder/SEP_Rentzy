@@ -209,7 +209,7 @@ const BookingDetail = () => {
 
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tổng chi phí:</span>
+                  <span className="text-gray-600">Chi phí thuê xe:</span>
                   <span className="font-medium">
                     {formatCurrency(booking.total_cost)}
                   </span>
@@ -253,6 +253,29 @@ const BookingDetail = () => {
                     <span className="font-medium">{booking.voucher_code}</span>
                   </div>
                 )}
+              </div>
+            </div>
+            {/* Booking Timeline */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Thời gian tạo đơn
+              </h2>
+
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm text-gray-600">Ngày tạo</p>
+                  <p className="font-medium">
+                    {new Date(booking.created_at).toLocaleDateString("vi-VN")}{" "}
+                    {new Date(booking.created_at).toLocaleTimeString("vi-VN")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Cập nhật lần cuối</p>
+                  <p className="font-medium">
+                    {new Date(booking.updated_at).toLocaleDateString("vi-VN")}{" "}
+                    {new Date(booking.updated_at).toLocaleTimeString("vi-VN")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -321,30 +344,6 @@ const BookingDetail = () => {
                 <div>
                   <p className="text-sm text-gray-600">Số điện thoại</p>
                   <p className="font-medium">{booking.renter.phone_number}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Booking Timeline */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Thời gian tạo đơn
-              </h2>
-
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Ngày tạo</p>
-                  <p className="font-medium">
-                    {new Date(booking.created_at).toLocaleDateString("vi-VN")}{" "}
-                    {new Date(booking.created_at).toLocaleTimeString("vi-VN")}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Cập nhật lần cuối</p>
-                  <p className="font-medium">
-                    {new Date(booking.updated_at).toLocaleDateString("vi-VN")}{" "}
-                    {new Date(booking.updated_at).toLocaleTimeString("vi-VN")}
-                  </p>
                 </div>
               </div>
             </div>

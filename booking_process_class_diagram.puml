@@ -1,0 +1,203 @@
+@startuml Booking Process Class Diagram
+
+' Route Layer
+class BookingRoute {
+  +createBooking()
+  +getBookingById()
+  +deleteBooking()
+}
+
+class PaymentRoute {
+  +createPayOSLink()
+  +handlePayOSWebhook()
+  +createPayOSLinkForRemaining()
+  +cancelPayOSTransaction()
+}
+
+class HandoverRoute {
+  +confirmOwnerHandover()
+  +confirmRenterHandover()
+  +confirmOwnerReturn()
+  +confirmRenterReturn()
+}
+
+' Middleware
+class VerifyJWTToken {
+  +verifyToken()
+}
+
+class CheckVerificationForBooking {
+  +checkVerification()
+}
+
+' Controller Layer
+class BookingController {
+  +createBooking()
+  +getBookingById()
+  +deleteBooking()
+  -validateBookingData()
+  -checkVehicleAvailability()
+  -calculateTotalAmount()
+  -applyVoucherDiscount()
+  -applyPointsDiscount()
+}
+
+class PaymentController {
+  +createPayOSLink()
+  +handlePayOSWebhook()
+  +createPayOSLinkForRemaining()
+  +cancelPayOSTransaction()
+  -calculateDepositAmount()
+  -calculateRemainingAmount()
+  -updateBookingStatus()
+  -createTransaction()
+}
+
+class HandoverController {
+  +confirmOwnerHandover()
+  +confirmRenterHandover()
+  +confirmOwnerReturn()
+  +confirmRenterReturn()
+  -uploadHandoverImages()
+  -updateHandoverStatus()
+  -calculatePointsReward()
+  -createBookingPayout()
+  -sendNotifications()
+}
+
+' Model Layer
+class Booking {
+  +booking_id: BIGINT
+  +renter_id: BIGINT
+  +vehicle_id: BIGINT
+  +start_date: DATE
+  +start_time: TIME
+  +end_date: DATE
+  +end_time: TIME
+  +total_days: INTEGER
+  +total_cost: DECIMAL
+  +discount_amount: DECIMAL
+  +delivery_fee: DECIMAL
+  +total_amount: DECIMAL
+  +total_paid: DECIMAL
+  +voucher_code: STRING
+  +points_used: INTEGER
+  +points_earned: INTEGER
+  +order_code: BIGINT
+  +order_code_remaining: BIGINT
+  +status: ENUM
+  +pickup_location: STRING
+  +return_location: STRING
+}
+
+class Transaction {
+  +transaction_id: BIGINT
+  +booking_id: BIGINT
+  +from_user_id: BIGINT
+  +to_user_id: BIGINT
+  +amount: DECIMAL
+  +type: ENUM
+  +status: ENUM
+  +payment_method: ENUM
+  +note: STRING
+  +created_at: DATE
+  +processed_at: DATE
+}
+
+class BookingHandover {
+  +handover_id: BIGINT
+  +booking_id: BIGINT
+  +owner_handover_confirmed: BOOLEAN
+  +renter_handover_confirmed: BOOLEAN
+  +handover_time: DATE
+  +pre_rental_images: JSON
+  +owner_return_confirmed: BOOLEAN
+  +renter_return_confirmed: BOOLEAN
+  +return_time: DATE
+  +post_rental_images: JSON
+}
+
+class BookingPayout {
+  +payout_id: BIGINT
+  +booking_id: BIGINT
+  +total_rental_amount: DECIMAL
+  +platform_commission_rate: DECIMAL
+  +payout_status: ENUM
+  +payout_method: ENUM
+  +payout_account_info: JSON
+  +payout_amount: DECIMAL
+  +commission_amount: DECIMAL
+}
+
+class PointsTransaction {
+  +transaction_id: BIGINT
+  +user_id: BIGINT
+  +transaction_type: ENUM
+  +points_amount: INTEGER
+  +balance_after: INTEGER
+  +reference_type: ENUM
+  +reference_id: BIGINT
+  +description: STRING
+}
+
+class Vehicle {
+  +vehicle_id: BIGINT
+  +license_plate: STRING
+  +price_per_day: DECIMAL
+  +status: ENUM
+  +rent_count: INTEGER
+}
+
+class User {
+  +user_id: BIGINT
+  +full_name: STRING
+  +email: STRING
+  +phone_number: STRING
+  +points: INTEGER
+  +role: ENUM
+}
+
+class Notification {
+  +notification_id: BIGINT
+  +user_id: BIGINT
+  +title: STRING
+  +message: STRING
+  +type: ENUM
+  +is_read: BOOLEAN
+}
+
+' Relationships
+BookingRoute --> VerifyJWTToken
+BookingRoute --> CheckVerificationForBooking
+BookingRoute --> BookingController
+
+PaymentRoute --> PaymentController
+HandoverRoute --> HandoverController
+
+BookingController --> Booking
+BookingController --> Vehicle
+BookingController --> User
+
+PaymentController --> Booking
+PaymentController --> Transaction
+PaymentController --> User
+
+HandoverController --> Booking
+HandoverController --> BookingHandover
+HandoverController --> Vehicle
+HandoverController --> User
+HandoverController --> PointsTransaction
+HandoverController --> BookingPayout
+HandoverController --> Notification
+
+Booking ||--|| BookingHandover
+Booking ||--o{ Transaction
+Booking ||--|| BookingPayout
+Booking }o--|| Vehicle
+Booking }o--|| User
+
+User ||--o{ PointsTransaction
+User ||--o{ Notification
+User ||--o{ Transaction
+
+@enduml
