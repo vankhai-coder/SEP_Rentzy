@@ -52,6 +52,7 @@ import RefundManagement from "./pages/admin/SideBarComponents/RefundManagement.j
 import PayoutManagement from "./pages/admin/SideBarComponents/PayoutManagement.jsx";
 import DisburseOwner from "./pages/admin/SideBarComponents/DisburseOwner.jsx";
 import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement.jsx";
+import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
 
 // Test pages
 
@@ -141,6 +142,8 @@ const App = () => {
           {/* ADMIN ROUTES :  */}
           <Route path="/admin" element={<AdminPage />}>
             {/* Admin Routes For Admin Here : */}
+            {/* index */}
+            <Route index element={<OverViewAdminDashboard />} />
             <Route path="approvalvehicle" element={<ApprovalVehicle />} />
             <Route path="managementvehicle" element={<ManagementVehicles />} />
             <Route path="userManagement" element={<UserManagement />} />
