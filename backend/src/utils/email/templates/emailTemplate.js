@@ -229,10 +229,7 @@ export const paymentSuccessTemplateForRenter = (
             <span class="detail-label">Mã booking:</span>
             <span class="detail-value">#${bookingId}</span>
           </div>
-          // <div class="detail-row">
-          //   <span class="detail-label">Xe thuê:</span>
-          //   <span class="detail-value">${vehicleName}</span>
-          // </div>
+
           <div class="detail-row">
             <span class="detail-label">Loại thanh toán:</span>
             <span class="detail-value">${paymentType}</span>
@@ -356,10 +353,6 @@ export const paymentSuccessTemplateForOwner = (
             <span class="detail-label">Mã booking: </span>
             <span class="detail-value">#${bookingId}</span>
           </div>
-          // <div class="detail-row">
-          //   <span class="detail-label">Xe cho thuê: </span>
-          //   <span class="detail-value">${vehicleName}</span>
-          // </div>
           <div class="detail-row">
             <span class="detail-label">Người thuê: </span>
             <span class="detail-value">${renterName}</span>
