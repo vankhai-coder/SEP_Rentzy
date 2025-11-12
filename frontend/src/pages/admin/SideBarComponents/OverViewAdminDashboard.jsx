@@ -1,4 +1,4 @@
-import { ArrowRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCart, User } from 'lucide-react'
+import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCart, User } from 'lucide-react'
 import React from 'react'
 
 const OverViewAdminDashboard = () => {
@@ -11,7 +11,7 @@ const OverViewAdminDashboard = () => {
             <Home />
           </a>
           <div className="flex items-center gap-2">
-            <ArrowRight />
+            <ChevronRight />
             <span className="text-secondary-900 dark:text-white font-medium">Tổng Quan</span>
           </div>
         </nav>
@@ -74,9 +74,9 @@ const OverViewAdminDashboard = () => {
                   <span className='text-xs text-secondary-500 dark:text-secondary-400'>Since last month</span>
                 </div>
               </div>
-              <div className='p-3 rounded-xl bg-danger-100 dark:bg-danger-900/20'>
+              <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
                 <ShoppingCart
-                  className='lucide lucide-shopping-cart w-6 h-6 text-danger-600 dark:text-danger-400' />
+                  className='lucide lucide-shopping-cart w-6 h-6 text-green-600 dark:text-green-400' />
               </div>
             </div>
           </div>
