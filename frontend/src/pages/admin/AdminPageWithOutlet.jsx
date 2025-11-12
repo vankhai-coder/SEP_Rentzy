@@ -255,7 +255,7 @@ const AdminPage = () => {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/admin/disburseOwner"
+              <NavLink to="/admin/payoutManagement"
                 onClick={() => {
                   setIsOpenMenuSideBar(false)
                 }}
