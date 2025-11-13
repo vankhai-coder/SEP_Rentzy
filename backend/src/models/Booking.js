@@ -50,7 +50,11 @@ const Booking = sequelize.define(
     total_amount: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     // Tổng số tiền đã thanh toán
     total_paid: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
-
+    // trạng thái thanh toán bằng tiền mặt bởi renter thanh toán 70% còn lại
+    remaining_paid_by_cash_status: {
+      type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
+      defaultValue: "none",
+    },
     // Mã voucher sử dụng
     voucher_code: { type: DataTypes.STRING(50) },
     // Số điểm đã sử dụng

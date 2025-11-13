@@ -5,6 +5,8 @@ import {
   handlePayOSWebhook,
   createPayOSLinkForRemaining,
   cancelPayOSTransaction,
+  paymentByCash,
+  approveRemainingByOwner,
 } from "../../controllers/payment/paymentController.js";
 
 const router = express.Router();
@@ -21,5 +23,14 @@ router.post(
 router.post("/payos/cancel", verifyJWTToken, cancelPayOSTransaction);
 // PayOS Webhook Route
 router.post("/payos/webhook", handlePayOSWebhook);
+// thanh toán phần tiền còn lại ngoài hệ thống
+router.patch("/byCash/:bookingId", verifyJWTToken, paymentByCash);
+
+// owner xác nhận  thanh toán phần tiền còn lại ngoài hệ thống
+router.patch(
+  "/approveRemainingByOwner/:bookingId",
+  verifyJWTToken,
+  approveRemainingByOwner
+);
 
 export default router;

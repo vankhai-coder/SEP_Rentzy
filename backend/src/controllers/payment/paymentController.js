@@ -452,9 +452,125 @@ const cancelPayOSTransaction = async (req, res) => {
   }
 };
 
+// renter trả tiền thuê còn lại bằng  tiền mặt
+
+const paymentByCash = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    console.log("booking id", bookingId);
+    if (!bookingId) {
+      return res.status(400).json({ error: "Thiếu booking ID" });
+    }
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
+    }
+    if (booking.remaining_paid_by_cash_status === "pending") {
+      return res.status(400).json({
+        error:
+          "Yêu cầu thanh toán đã đang ở trạng thái 'pending'. Vui lòng chờ xác nhận.",
+      });
+    }
+
+    // Cập nhật trạng thái thanh toán
+    const [updatedRows] = await Booking.update(
+      { remaining_paid_by_cash_status: "pending" },
+      { where: { booking_id: bookingId } }
+    );
+
+    if (updatedRows === 0) {
+      return res.status(500).json({ error: "Cập nhật thất bại" });
+    }
+
+    return res.status(200).json({
+      message:
+        "Thanh toán tiền còn lại thành công. Vui lòng chờ chủ xe xác nhận.",
+    });
+  } catch (error) {
+    console.error("Error in paymentByCash:", error);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+};
+const approveRemainingByOwner = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const ownerId = req.user.userId;
+    console.log("booking id", bookingId);
+    if (!bookingId) {
+      return res.status(400).json({ error: "Thiếu booking ID" });
+    }
+
+    const booking = await Booking.findByPk(bookingId);
+    if (!booking) {
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
+    }
+    if (booking.remaining_paid_by_cash_status === "approved") {
+      return res.status(400).json({
+        error:
+          "Yêu cầu thanh toán đã đang ở trạng thái 'pending'. Vui lòng chờ xác nhận.",
+      });
+    }
+    const [updatedRows] = await Booking.update(
+      {
+        remaining_paid_by_cash_status: "approved",
+        status: "fully_paid",
+        total_paid: booking.total_amount,
+      },
+      { where: { booking_id: bookingId } }
+    );
+    if (updatedRows === 0) {
+      return res.status(500).json({ error: "Cập nhật thất bại" });
+    }
+    // tạo transaction cho renter thanh toán tiền thành công
+    const newTransaction = await Transaction.create({
+      booking_id: bookingId,
+      from_user_id: booking.renter_id,
+      to_user_id: ownerId,
+      amount: booking.total_amount * 0.7,
+      type: "RENTAL",
+      status: "COMPLETED",
+      payment_method: "CASH",
+      processed_at: new Date(),
+    });
+    if (!newTransaction) {
+      return res.status(500).json("có lỗi khi taọ transaction");
+    }
+    // tạo thông báo đến renter
+    const newNotiToRenter = await Notification.create({
+      user_id: booking.renter_id,
+      title: "Thanh toán thành công tiền còn lại",
+      content: `Chủ xe đã xác nhận thanh toán thành công tiền còn lại cho booking #${booking.booking_id}`,
+      type: "rental",
+    });
+
+    if (!newNotiToRenter) {
+      return res.status(409).json("lỗi tạo thông báo ");
+    }
+    // tạo thông báo đến owner
+    const newNotiToOwner = await Notification.create({
+      user_id: ownerId,
+      title: "Thanh toán thành công tiền còn lại",
+      content: `Chủ xe đã xác nhận thanh toán thành công tiền còn lại cho booking #${booking.booking_id}`,
+      type: "rental",
+    });
+
+    if (!newNotiToOwner) {
+      return res.status(409).json("lỗi tạo thông báo ");
+    }
+
+    return res.status(200).json({
+      message: "Chủ xe đã xác nhận thanh toán tiền còn lại. Cảm ơn bạn!",
+    });
+  } catch (err) {
+    return res.status(500).json("lỗi sever");
+  }
+};
 export {
   createPayOSLink,
   handlePayOSWebhook,
   createPayOSLinkForRemaining,
   cancelPayOSTransaction,
+  paymentByCash,
+  approveRemainingByOwner,
 };

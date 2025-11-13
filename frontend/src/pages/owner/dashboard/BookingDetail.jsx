@@ -41,7 +41,32 @@ const BookingDetail = () => {
       setLoading(false);
     }
   };
+  // owner xác nhận tiền mà renter đã trả
+  const approveRemainingByOwner = async () => {
+    const isConfirmed = window.confirm(
+      "Bạn có chắc chắn muốn xác nhận rằng người thuê đã chuyển khoản phần còn lại (70%) không?"
+    );
 
+    if (!isConfirmed) return; // dừng lại nếu người dùng bấm “Hủy”
+    try {
+      setLoading(true);
+      const response = await axiosInstance.patch(
+        `/api/payment/approveRemainingByOwner/${id}`
+      );
+
+      if (response.status === 200) {
+        alert(" Xác nhận thanh toán thành công!");
+        await fetchBookingDetail();
+      } else {
+        alert("Không thể xác nhận thanh toán. Vui lòng thử lại!");
+      }
+    } catch (err) {
+      console.error("Error approving remaining payment:", err);
+      alert(" Có lỗi xảy ra khi xác nhận thanh toán!");
+    } finally {
+      setLoading(false);
+    }
+  };
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -347,6 +372,34 @@ const BookingDetail = () => {
                 </div>
               </div>
             </div>
+            {/* Status remaining paid by cash  */}
+            {booking.remaining_paid_by_cash_status == "pending" && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  Thông tin chuyển tiền trả sau ( 70%)
+                </h2>
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600">Số tiền đã chuyển </p>
+                    <p className="text-sm text-gray-600">Vui lòng xác nhận </p>
+
+                    <p className="font-medium">
+                      {formatCurrency(
+                        booking.total_amount - booking.total_paid
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    approveRemainingByOwner();
+                  }}
+                >
+                  Xác nhận
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

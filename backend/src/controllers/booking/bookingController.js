@@ -225,6 +225,8 @@ export const getBookingById = async (req, res) => {
       pointsUsed: booking.points_used || 0,
       totalAmount: booking.total_amount,
       totalPaid: booking.total_paid || 0,
+      remaining_paid_by_cash_status:
+        booking.remaining_paid_by_cash_status || "none",
 
       // Thông tin khác
       voucherCode: booking.voucher_code,
