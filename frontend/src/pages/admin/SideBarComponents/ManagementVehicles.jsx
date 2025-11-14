@@ -332,7 +332,7 @@ const ManagementVehicles = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm text-black bg-gray-100 px-2 py-1 rounded">
                         {vehicle.license_plate}
                       </span>
                     </td>
@@ -387,7 +387,7 @@ const ManagementVehicles = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 rounded text-sm text-black hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Trước
               </button>
@@ -410,7 +410,7 @@ const ManagementVehicles = () => {
                       onClick={() => handlePageChange(i)}
                       className={`px-3 py-1 text-sm border rounded ${i === pagination.currentPage
                         ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-300 hover:bg-gray-50'
+                        : 'border-gray-300 text-black hover:bg-gray-50'
                         }`}
                     >
                       {i}
@@ -423,7 +423,7 @@ const ManagementVehicles = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 rounded text-sm text-black hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Sau
               </button>
