@@ -1,6 +1,9 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
-import { calculateCancellationFeeLogic, createCancellationInfo } from "../../utils/cancellationUtils.js";
+import {
+  calculateCancellationFeeLogic,
+  createCancellationInfo,
+} from "../../utils/cancellationUtils.js";
 
 const {
   Booking,
@@ -97,8 +100,6 @@ export const getOwnerBookings = async (req, res) => {
             "total_refund_for_renter",
             "cancellation_reason",
             "cancelled_by",
-            "owner_approved_cancel_at",
-            "cancelled_at",
             "refund_status_renter",
             "refund_status_owner",
           ],
@@ -113,18 +114,28 @@ export const getOwnerBookings = async (req, res) => {
     // Xử lý thông tin hủy cho từng booking
     const processedBookings = bookings.map((booking) => {
       const bookingData = booking.toJSON();
-      
+
       // Nếu booking có trạng thái cancel_requested hoặc canceled nhưng chưa có BookingCancellation
-      if ((bookingData.status === 'cancel_requested' || bookingData.status === 'canceled') && !bookingData.cancellation) {
+      if (
+        (bookingData.status === "cancel_requested" ||
+          bookingData.status === "canceled") &&
+        !bookingData.cancellation
+      ) {
         // Tính toán thông tin hủy dựa trên logic chung
         const calculation = calculateCancellationFeeLogic(bookingData);
-        const cancellationInfo = createCancellationInfo(bookingData, calculation);
-        
+        const cancellationInfo = createCancellationInfo(
+          bookingData,
+          calculation
+        );
+
         // Thêm thông tin hủy tính toán vào response
         bookingData.cancellation_info = {
           ...cancellationInfo,
           calculated: true, // Đánh dấu là thông tin được tính toán
-          status: bookingData.status === 'cancel_requested' ? 'pending_approval' : 'approved',
+          status:
+            bookingData.status === "cancel_requested"
+              ? "pending_approval"
+              : "approved",
         };
       } else if (bookingData.cancellation) {
         // Nếu đã có BookingCancellation, sử dụng dữ liệu từ database
@@ -136,15 +147,15 @@ export const getOwnerBookings = async (req, res) => {
           cancelled_by: bookingData.cancellation.cancelled_by,
           can_approve: false, // Đã được xử lý
           calculated: false, // Dữ liệu từ database
-          status: 'approved',
+          status: "approved",
           refund_status_renter: bookingData.cancellation.refund_status_renter,
           refund_status_owner: bookingData.cancellation.refund_status_owner,
         };
       }
-      
+
       // Xóa thông tin cancellation gốc để tránh trùng lặp
       delete bookingData.cancellation;
-      
+
       return bookingData;
     });
 
@@ -199,7 +210,7 @@ export const getOwnerTransactions = async (req, res) => {
     // Build where conditions cho Transaction
     const whereConditions = {
       to_user_id: ownerId, // Lấy các giao dịch mà owner nhận tiền
-      type: { [Op.in]: ['COMPENSATION', 'PAYOUT'] }, // Chỉ lấy COMPENSATION và PAYOUT
+      type: { [Op.in]: ["COMPENSATION", "PAYOUT"] }, // Chỉ lấy COMPENSATION và PAYOUT
     };
 
     // Add search condition
@@ -277,7 +288,7 @@ export const getOwnerTransactions = async (req, res) => {
       // Xác định loại giao dịch
       let transactionType = "income";
       let description = "";
-      
+
       if (transaction.type === "COMPENSATION") {
         transactionType = "compensation";
         description = `Bồi thường từ khách hàng hủy chuyến`;
@@ -293,7 +304,9 @@ export const getOwnerTransactions = async (req, res) => {
 
       return {
         id: transaction.transaction_id,
-        bookingCode: transaction.Booking ? `BK${transaction.Booking.booking_id}` : "N/A",
+        bookingCode: transaction.Booking
+          ? `BK${transaction.Booking.booking_id}`
+          : "N/A",
         type: transactionType,
         amount: parseFloat(transaction.amount || 0),
         description: transaction.note || description,
@@ -302,23 +315,29 @@ export const getOwnerTransactions = async (req, res) => {
         updatedAt: transaction.updated_at,
         startDate: transaction.Booking?.start_date || null,
         endDate: transaction.Booking?.end_date || null,
-        renter: transaction.Booking?.renter ? {
-          id: transaction.Booking.renter.user_id,
-          name: transaction.Booking.renter.full_name,
-          email: transaction.Booking.renter.email,
-          phone: transaction.Booking.renter.phone_number,
-        } : (transaction.fromUser ? {
-          id: transaction.fromUser.user_id,
-          name: transaction.fromUser.full_name,
-          email: transaction.fromUser.email,
-          phone: transaction.fromUser.phone_number,
-        } : null),
-        vehicle: transaction.Booking?.vehicle ? {
-          id: transaction.Booking.vehicle.vehicle_id,
-          licensePlate: transaction.Booking.vehicle.license_plate,
-          model: transaction.Booking.vehicle.model,
-          brand: transaction.Booking.vehicle.brand?.name || "N/A",
-        } : null,
+        renter: transaction.Booking?.renter
+          ? {
+              id: transaction.Booking.renter.user_id,
+              name: transaction.Booking.renter.full_name,
+              email: transaction.Booking.renter.email,
+              phone: transaction.Booking.renter.phone_number,
+            }
+          : transaction.fromUser
+          ? {
+              id: transaction.fromUser.user_id,
+              name: transaction.fromUser.full_name,
+              email: transaction.fromUser.email,
+              phone: transaction.fromUser.phone_number,
+            }
+          : null,
+        vehicle: transaction.Booking?.vehicle
+          ? {
+              id: transaction.Booking.vehicle.vehicle_id,
+              licensePlate: transaction.Booking.vehicle.license_plate,
+              model: transaction.Booking.vehicle.model,
+              brand: transaction.Booking.vehicle.brand?.name || "N/A",
+            }
+          : null,
       };
     });
 
@@ -342,464 +361,6 @@ export const getOwnerTransactions = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi khi lấy danh sách giao dịch",
-      error: error.message,
-    });
-  }
-};
-
-// 2. GET /api/owner/cancel-requests - Duyệt đơn hủy (với thông tin tiền hoàn từ BookingCancellation)
-export const getCancelRequests = async (req, res) => {
-  try {
-    const ownerId = req.user.userId;
-    const { page = 1, limit = 10, status } = req.query;
-
-    const offset = (page - 1) * limit;
-
-    // Lấy danh sách xe của owner
-    const ownerVehicles = await Vehicle.findAll({
-      where: { owner_id: ownerId },
-      attributes: ["vehicle_id"],
-    });
-
-    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
-
-    if (vehicleIds.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          cancelRequests: [],
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: 0,
-            totalItems: 0,
-            itemsPerPage: parseInt(limit),
-          },
-        },
-      });
-    }
-
-    // Điều kiện where cho Booking
-    let bookingWhere = {
-      vehicle_id: { [Op.in]: vehicleIds },
-      status: { [Op.in]: ["cancel_requested"] },
-    };
-
-    // Nếu chỉ muốn lấy những đơn đang chờ duyệt
-    if (status === "pending_approval") {
-      bookingWhere.status = "cancel_requested";
-    }
-
-    // Tìm các booking có yêu cầu hủy hoặc đã hủy, kèm thông tin BookingCancellation
-    const { count, rows: cancelRequests } = await Booking.findAndCountAll({
-      where: bookingWhere,
-      include: [
-        {
-          model: Vehicle,
-          as: "vehicle",
-          include: [
-            {
-              model: Brand,
-              as: "brand",
-              attributes: ["brand_id", "name", "logo_url"],
-            },
-          ],
-          attributes: [
-            "vehicle_id",
-            "model",
-            "license_plate",
-            "main_image_url",
-            "price_per_day",
-          ],
-        },
-        {
-          model: User,
-          as: "renter",
-          attributes: [
-            "user_id",
-            "full_name",
-            "email",
-            "phone_number",
-            "avatar_url",
-          ],
-        },
-        {
-          model: BookingCancellation,
-          as: "cancellation",
-          required: false, // LEFT JOIN để lấy cả booking chưa có cancellation record
-          attributes: [
-            "cancellation_id",
-            "cancellation_reason",
-            "cancellation_fee",
-            "cancelled_by",
-            "cancel_requested_at",
-            "cancelled_at",
-            "owner_approved_cancel_at",
-            "total_refund_for_renter",
-            "refund_status_renter",
-            "refund_processed_at_renter",
-            "total_refund_for_owner",
-            "refund_status_owner",
-            "refund_processed_at_owner",
-          ],
-        },
-      ],
-      order: [["created_at", "DESC"]],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      distinct: true,
-    });
-
-    // Format dữ liệu để hiển thị với thông tin tiền hoàn chi tiết
-    const formattedCancelRequests = cancelRequests.map((booking) => {
-      const cancellation = booking.cancellation;
-      const bookingData = booking.toJSON();
-
-      // Tính toán thông tin tiền hoàn sử dụng hàm chung
-      let cancellationFee = 0;
-      let platformFee = 0;
-      let ownerRefund = 0;
-      let renterRefund = 0;
-      let cancellationFeePercent = 0;
-
-      if (cancellation) {
-        // Nếu đã có BookingCancellation, sử dụng dữ liệu từ database
-        cancellationFee = parseFloat(cancellation.cancellation_fee) || 0;
-        platformFee = cancellationFee * 0.1; // 10% cho platform
-        ownerRefund = parseFloat(cancellation.total_refund_for_owner) || 0;
-        renterRefund = parseFloat(cancellation.total_refund_for_renter) || 0;
-        cancellationFeePercent = cancellationFee > 0 
-          ? Math.round((cancellationFee / parseFloat(booking.total_paid)) * 100)
-          : 0;
-      } else if (booking.status === "cancel_requested") {
-        // Tính toán dự kiến cho những booking chưa có cancellation record sử dụng hàm chung
-        const calculation = calculateCancellationFeeLogic(bookingData);
-        cancellationFee = calculation.cancellationFee;
-        platformFee = calculation.platformFee;
-        ownerRefund = calculation.ownerRefund;
-        renterRefund = calculation.refundAmount;
-        cancellationFeePercent = calculation.cancellationFeePercent;
-      }
-
-      return {
-        // Thông tin booking cơ bản
-        booking_id: booking.booking_id,
-        start_date: booking.start_date,
-        end_date: booking.end_date,
-        total_amount: parseFloat(booking.total_amount),
-        total_paid: parseFloat(booking.total_paid),
-        status: booking.status,
-        created_at: booking.created_at,
-
-        // Thông tin xe
-        vehicle: {
-          vehicle_id: booking.vehicle.vehicle_id,
-          model: booking.vehicle.model,
-          license_plate: booking.vehicle.license_plate,
-          main_image_url: booking.vehicle.main_image_url,
-          price_per_day: parseFloat(booking.vehicle.price_per_day),
-          brand: booking.vehicle.brand,
-        },
-
-        // Thông tin người thuê
-        renter: booking.renter,
-
-        // Thông tin hủy đơn
-        cancellation_info: cancellation
-          ? {
-              cancellation_id: cancellation.cancellation_id,
-              reason: cancellation.cancellation_reason,
-              cancelled_by: cancellation.cancelled_by,
-              cancel_requested_at: cancellation.cancel_requested_at,
-              cancelled_at: cancellation.cancelled_at,
-              owner_approved_at: cancellation.owner_approved_cancel_at,
-              refund_status_renter: cancellation.refund_status_renter,
-              refund_status_owner: cancellation.refund_status_owner,
-              refund_processed_at_renter:
-                cancellation.refund_processed_at_renter,
-              refund_processed_at_owner: cancellation.refund_processed_at_owner,
-            }
-          : null,
-
-        // Thông tin tiền hoàn chi tiết
-        financial_breakdown: {
-          cancellation_fee: cancellationFee,
-          platform_fee: platformFee, // 10% phí hủy cho admin
-          owner_refund: ownerRefund, // 90% phí hủy cho owner
-          renter_refund: renterRefund, // Tiền hoàn cho renter
-          cancellation_fee_percent: cancellationFeePercent,
-        },
-
-        // Trạng thái tổng quan
-        can_approve: booking.status === "cancel_requested",
-        is_cancelled: booking.status === "canceled",
-      };
-    });
-
-    const totalPages = Math.ceil(count / limit);
-
-    // Tính tổng hợp thống kê
-    const summary = formattedCancelRequests.reduce(
-      (acc, item) => {
-        acc.total_cancellation_fees +=
-          item.financial_breakdown.cancellation_fee;
-        acc.total_platform_fees += item.financial_breakdown.platform_fee;
-        acc.total_owner_refunds += item.financial_breakdown.owner_refund;
-        acc.total_renter_refunds += item.financial_breakdown.renter_refund;
-
-        if (item.status === "cancel_requested") {
-          acc.pending_approvals++;
-        } else if (item.status === "canceled") {
-          acc.completed_cancellations++;
-        }
-
-        return acc;
-      },
-      {
-        total_cancellation_fees: 0,
-        total_platform_fees: 0,
-        total_owner_refunds: 0,
-        total_renter_refunds: 0,
-        pending_approvals: 0,
-        completed_cancellations: 0,
-      }
-    );
-
-    res.json({
-      success: true,
-      data: {
-        cancelRequests: formattedCancelRequests,
-        summary,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          totalItems: count,
-          itemsPerPage: parseInt(limit),
-        },
-      },
-    });
-  } catch (error) {
-    console.error("Error getting cancel requests:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy danh sách yêu cầu hủy",
-      error: error.message,
-    });
-  }
-};
-
-// PATCH /api/owner/cancel-requests/:id/approve - Duyệt yêu cầu hủy
-export const approveCancelRequest = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const { id } = req.params;
-    const ownerId = req.user.userId;
-
-    console.log("=== APPROVE CANCEL REQUEST DEBUG ===");
-    console.log("Request params:", { id, ownerId });
-
-    // Kiểm tra booking có thuộc xe của owner không
-    const booking = await Booking.findOne({
-      where: {
-        booking_id: id,
-        status: "cancel_requested",
-      },
-      include: [
-        {
-          model: Vehicle,
-          as: "vehicle",
-          where: { owner_id: ownerId },
-        },
-      ],
-      transaction,
-    });
-
-    console.log("Found booking:", booking ? "YES" : "NO");
-    if (booking) {
-      console.log("Booking data:", {
-        booking_id: booking.booking_id,
-        status: booking.status,
-        total_amount: booking.total_amount,
-        total_paid: booking.total_paid,
-        created_at: booking.created_at,
-        start_date: booking.start_date
-      });
-    }
-
-    if (!booking) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy yêu cầu hủy",
-      });
-    }
-
-    // Tính toán phí hủy sử dụng hàm chung
-    const now = new Date();
-    const bookingData = booking.toJSON();
-    console.log("Booking data for calculation:", bookingData);
-    
-    const calculation = calculateCancellationFeeLogic(bookingData, now);
-    console.log("Calculation result:", calculation);
-    
-    const cancellationFee = calculation.cancellationFee;
-    const refundAmount = calculation.refundAmount;
-    const platformFee = calculation.platformFee;
-    const ownerRefund = calculation.ownerRefund;
-
-    console.log("Extracted values:", {
-      cancellationFee,
-      refundAmount,
-      platformFee,
-      ownerRefund
-    });
-
-    // Cập nhật trạng thái thành canceled
-    await booking.update({
-      status: "canceled",
-      updated_at: now,
-    }, { transaction });
-
-    // Hoàn lại điểm thưởng nếu có sử dụng
-    if (booking.points_used > 0) {
-      await User.increment("points", {
-        by: booking.points_used,
-        where: { user_id: booking.renter_id },
-        transaction,
-      });
-    }
-
-    // Tìm và cập nhật BookingCancellation đã có (được tạo khi renter yêu cầu hủy)
-    const existingCancellation = await BookingCancellation.findOne({
-      where: { booking_id: booking.booking_id },
-      transaction,
-    });
-
-    if (!existingCancellation) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy thông tin hủy booking",
-      });
-    }
-
-    console.log("Found existing BookingCancellation:", existingCancellation.cancellation_id);
-
-    // Cập nhật BookingCancellation với thông tin duyệt và chuyển trạng thái hoàn tiền thành pending
-    await existingCancellation.update({
-      owner_approved_cancel_at: now,
-      cancelled_at: now,
-      refund_status_renter: "pending", // Chuyển từ none thành pending
-      refund_status_owner: ownerRefund > 0 ? "pending" : "none", // Chuyển từ none thành pending nếu có tiền hoàn
-      updated_at: now,
-    }, { transaction });
-
-    console.log("BookingCancellation updated successfully with pending refund status");
-
-    // Tạo thông báo cho renter
-    console.log("Creating notification for renter:", booking.renter_id);
-    await Notification.create({
-      user_id: booking.renter_id,
-      title: "Yêu cầu hủy đã được duyệt",
-      content: `Yêu cầu hủy đơn thuê xe ${booking.vehicle.model} đã được chủ xe duyệt. Số tiền hoàn lại: ${refundAmount.toLocaleString("vi-VN")} VND (đang chờ admin duyệt).`,
-      type: "rental",
-      is_read: false,
-    }, { transaction });
-
-    // Tạo thông báo cho admin về việc cần duyệt hoàn tiền
-    console.log("Creating notification for admin");
-    await Notification.create({
-      user_id: 1, // Giả sử admin có user_id = 1
-      title: "Yêu cầu duyệt hoàn tiền",
-      content: `Có yêu cầu duyệt hoàn tiền cho booking #${booking.booking_id}: Renter ${refundAmount.toLocaleString("vi-VN")} VND, Owner ${ownerRefund.toLocaleString("vi-VN")} VND, Platform ${platformFee.toLocaleString("vi-VN")} VND`,
-      type: "refund_request",
-      is_read: false,
-    }, { transaction });
-
-    console.log("Committing transaction...");
-    await transaction.commit();
-    console.log("Transaction committed successfully");
-
-    res.json({
-      success: true,
-      message: "Đã duyệt yêu cầu hủy thành công",
-    });
-  } catch (error) {
-    console.log("=== ERROR IN APPROVE CANCEL REQUEST ===");
-    console.error("Error details:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
-    await transaction.rollback();
-    console.log("Transaction rolled back");
-    
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi duyệt yêu cầu hủy",
-      error: error.message,
-    });
-  }
-};
-
-// PATCH /api/owner/cancel-requests/:id/reject - Từ chối yêu cầu hủy
-export const rejectCancelRequest = async (req, res) => {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const { id } = req.params;
-    const ownerId = req.user.userId;
-
-    // Kiểm tra booking có thuộc xe của owner không
-    const booking = await Booking.findOne({
-      where: {
-        booking_id: id,
-        status: "cancel_requested",
-      },
-      include: [
-        {
-          model: Vehicle,
-          as: "vehicle",
-          where: { owner_id: ownerId },
-        },
-      ],
-      transaction,
-    });
-
-    if (!booking) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy yêu cầu hủy",
-      });
-    }
-
-    // Cập nhật trạng thái về fully_paid (trở lại trạng thái trước khi yêu cầu hủy)
-    await booking.update({
-      status: "fully_paid",
-      updated_at: new Date(),
-    }, { transaction });
-
-    // Tạo thông báo cho renter
-    await Notification.create({
-      user_id: booking.renter_id,
-      title: "Yêu cầu hủy bị từ chối",
-      content: `Yêu cầu hủy đơn thuê xe ${booking.vehicle.model} đã bị chủ xe từ chối.`,
-      type: "rental",
-      is_read: false,
-    }, { transaction });
-
-    await transaction.commit();
-
-    res.json({
-      success: true,
-      message: "Đã từ chối yêu cầu hủy",
-    });
-  } catch (error) {
-    await transaction.rollback();
-    console.error("Error rejecting cancel request:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi từ chối yêu cầu hủy",
       error: error.message,
     });
   }
@@ -1415,9 +976,6 @@ export const getCancelledBookings = async (req, res) => {
         cancellation_info: {
           reason: cancellation.cancellation_reason,
           cancelled_by: cancellation.cancelled_by,
-          cancel_requested_at: cancellation.cancel_requested_at,
-          cancelled_at: cancellation.cancelled_at,
-          owner_approved_at: cancellation.owner_approved_cancel_at,
         },
 
         // Trạng thái hoàn tiền
@@ -1493,8 +1051,12 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
-    const { createAxiosInstance, getCaptchaImage } = await import("../../utils/trafficFine/apiCaller.js");
-    const { createSession, createEmptyJar } = await import("../../utils/trafficFine/captchaSessionStore.js");
+    const { createAxiosInstance, getCaptchaImage } = await import(
+      "../../utils/trafficFine/apiCaller.js"
+    );
+    const { createSession, createEmptyJar } = await import(
+      "../../utils/trafficFine/captchaSessionStore.js"
+    );
 
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
@@ -1541,39 +1103,57 @@ export const searchTrafficFine = async (req, res) => {
     // Lấy CookieJar theo sessionId để đảm bảo captcha hợp lệ
     let existingJar = null;
     try {
-      const { getSessionJar, deleteSession } = await import("../../utils/trafficFine/captchaSessionStore.js");
+      const { getSessionJar, deleteSession } = await import(
+        "../../utils/trafficFine/captchaSessionStore.js"
+      );
       existingJar = getSessionJar(captchaSessionId);
       if (!existingJar) {
         return res.status(400).json({
           success: false,
-          message: "Phiên mã bảo mật đã hết hạn hoặc không hợp lệ. Vui lòng tải lại mã.",
+          message:
+            "Phiên mã bảo mật đã hết hạn hoặc không hợp lệ. Vui lòng tải lại mã.",
         });
       }
     } catch (sessionErr) {
       // Không block nếu module lỗi, nhưng khả năng captcha fail sẽ cao
-      console.error("[TrafficFineSearch] Error loading captcha session:", sessionErr);
+      console.error(
+        "[TrafficFineSearch] Error loading captcha session:",
+        sessionErr
+      );
     }
 
     // Import trực tiếp từ utils
     let callTrafficFineAPI;
     try {
-      const apiCallerModule = await import("../../utils/trafficFine/apiCaller.js");
+      const apiCallerModule = await import(
+        "../../utils/trafficFine/apiCaller.js"
+      );
       callTrafficFineAPI = apiCallerModule.callTrafficFineAPI;
     } catch (importError) {
-      console.error("[TrafficFineSearch] Error importing apiCaller:", importError);
+      console.error(
+        "[TrafficFineSearch] Error importing apiCaller:",
+        importError
+      );
       return res.status(500).json({
         success: false,
         message: "Lỗi khi khởi tạo module tra cứu phạt nguội",
-        error: process.env.NODE_ENV === "development" ? importError.message : undefined,
+        error:
+          process.env.NODE_ENV === "development"
+            ? importError.message
+            : undefined,
       });
     }
-    
-    console.log(`[TrafficFineSearch] Searching for license plate: ${licensePlate}, vehicleType: ${vehicleType || "1"}`);
-    
+
+    console.log(
+      `[TrafficFineSearch] Searching for license plate: ${licensePlate}, vehicleType: ${
+        vehicleType || "1"
+      }`
+    );
+
     try {
       // Gọi trực tiếp API từ csgt.vn với captcha từ user
       const violations = await callTrafficFineAPI(
-        licensePlate.trim(), 
+        licensePlate.trim(),
         captcha.trim(),
         vehicleType || "1",
         existingJar
@@ -1596,7 +1176,8 @@ export const searchTrafficFine = async (req, res) => {
 
       // Map dữ liệu từ API csgt.vn sang format mong muốn
       const mappedViolations = violations.map((violation) => ({
-        licensePlate: violation.licensePlate || licensePlate.trim().toUpperCase(),
+        licensePlate:
+          violation.licensePlate || licensePlate.trim().toUpperCase(),
         plateColor: violation.plateColor || "N/A",
         vehicleType: violation.vehicleType || "N/A",
         violationTime: violation.violationTime || "N/A",
@@ -1619,19 +1200,22 @@ export const searchTrafficFine = async (req, res) => {
     } catch (apiError) {
       console.error("[TrafficFineSearch] Error calling csgt.vn API:", apiError);
       console.error("[TrafficFineSearch] Error stack:", apiError.stack);
-      
+
       // Kiểm tra nếu lỗi là do captcha sai
       if (apiError.message.includes("Mã bảo mật không đúng")) {
         return res.status(400).json({
           success: false,
-          message: apiError.message || "Mã bảo mật không đúng. Vui lòng thử lại.",
+          message:
+            apiError.message || "Mã bảo mật không đúng. Vui lòng thử lại.",
         });
       }
-      
+
       return res.status(500).json({
         success: false,
-        message: "Không thể tra cứu phạt nguội từ csgt.vn. Vui lòng thử lại sau.",
-        error: process.env.NODE_ENV === "development" ? apiError.message : undefined,
+        message:
+          "Không thể tra cứu phạt nguội từ csgt.vn. Vui lòng thử lại sau.",
+        error:
+          process.env.NODE_ENV === "development" ? apiError.message : undefined,
       });
     }
   } catch (error) {

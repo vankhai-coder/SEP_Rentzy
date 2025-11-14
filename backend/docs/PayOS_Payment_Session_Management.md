@@ -113,10 +113,10 @@ Body:
 
 ### Log format:
 ```
-🚀 [timestamp] Creating PayOS payment request: {orderCode, amount, bookingId, ...}
-✅ [timestamp] PayOS payment link created successfully: {orderCode, checkoutUrl, ...}
-❌ [timestamp] PayOS session cancel failed: {orderCode, error, ...}
-🔄 Force refreshed payment sessions for booking {bookingId}
+ [timestamp] Creating PayOS payment request: {orderCode, amount, bookingId, ...}
+ [timestamp] PayOS payment link created successfully: {orderCode, checkoutUrl, ...}
+ [timestamp] PayOS session cancel failed: {orderCode, error, ...}
+  Force refreshed payment sessions for booking {bookingId}
 ```
 
 ### Các log quan trọng cần theo dõi:

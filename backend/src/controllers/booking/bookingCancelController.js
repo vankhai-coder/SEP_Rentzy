@@ -103,7 +103,8 @@ export const calculateCancellationFee = async (req, res) => {
     const ownerRefund = calculation.ownerRefund;
     const cancellationFeePercent = calculation.cancellationFeePercent;
     const totalPaid = calculation.totalPaid;
-    const actualRefundPercent = totalPaid > 0 ? Math.round((refundAmount / totalPaid) * 100) : 100;
+    const actualRefundPercent =
+      totalPaid > 0 ? Math.round((refundAmount / totalPaid) * 100) : 100;
 
     // Tạo breakdown chi tiết
     const feeBreakdown = {
@@ -133,7 +134,8 @@ export const calculateCancellationFee = async (req, res) => {
         cancellation_fee_percent: cancellationFeePercent,
         fee_description: calculation.feeDescription,
         timing_info: {
-          hours_from_creation: Math.round(calculation.hoursFromCreation * 10) / 10,
+          hours_from_creation:
+            Math.round(calculation.hoursFromCreation * 10) / 10,
           days_to_start: Math.round(calculation.daysToStart * 10) / 10,
         },
         start_date: booking.start_date,
@@ -151,7 +153,7 @@ export const calculateCancellationFee = async (req, res) => {
   }
 };
 
-// API xác nhận hủy booking
+// API xác nhận hủy booking của renter
 export const confirmCancellation = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
@@ -196,7 +198,7 @@ export const confirmCancellation = async (req, res) => {
     const now = new Date();
     const bookingData = booking.toJSON();
     const calculation = calculateCancellationFeeLogic(bookingData, now);
-    
+
     // Kiểm tra nếu đã bắt đầu chuyến đi
     if (calculation.daysToStart < 0) {
       await transaction.rollback();
@@ -215,45 +217,43 @@ export const confirmCancellation = async (req, res) => {
     // Cập nhật trạng thái booking thành "cancel_requested" - chờ owner duyệt
     await booking.update(
       {
-        status: "cancel_requested",
+        status: "canceled",
         updated_at: now,
       },
       { transaction }
     );
 
-    // Tạo BookingCancellation ngay khi renter yêu cầu hủy với trạng thái hoàn tiền là "none"
+    // Tạo BookingCancellation ngay khi renter yêu cầu hủy với trạng thái hoàn tiền là "pending" cho huỷ luôn ko cần owner duyệt
     const cancellationData = {
       booking_id: booking.booking_id,
-      cancellation_reason: (req.body && req.body.reason) || "Người thuê yêu cầu hủy booking",
+      cancellation_reason:
+        (req.body && req.body.reason) || "Người thuê yêu cầu hủy booking",
       cancel_requested_at: now,
       cancellation_fee: cancellationFee,
       cancelled_by: "renter",
-      owner_approved_cancel_at: null,
-      cancelled_at: null,
       total_refund_for_renter: refundAmount,
-      refund_status_renter: "none", // Trạng thái hoàn tiền ban đầu là none
+      refund_status_renter: "pending",
       refund_reason_renter: "Hoàn tiền do hủy booking",
       refund_processed_at_renter: null,
       total_refund_for_owner: ownerRefund,
-      refund_status_owner: ownerRefund > 0 ? "none" : "none", // Trạng thái hoàn tiền ban đầu là none
+      refund_status_owner: ownerRefund > 0 ? "pending" : "pending",
       refund_processed_at_owner: null,
       created_at: now,
       updated_at: now,
     };
 
-    console.log("Creating BookingCancellation with initial data:", cancellationData);
-    
-    const newBookingCancellation = await BookingCancellation.create(cancellationData, { transaction });
-    
-    console.log("BookingCancellation created successfully:", newBookingCancellation.cancellation_id);
+    const newBookingCancellation = await BookingCancellation.create(
+      cancellationData,
+      { transaction }
+    );
 
-    // Tạo thông báo cho owner để duyệt yêu cầu hủy
+    // Tạo thông báo cho owner có booking huỷ
     if (booking.vehicle.owner_id) {
       await Notification.create(
         {
           user_id: booking.vehicle.owner_id,
           title: "Yêu cầu hủy booking mới",
-          content: `Người thuê đã yêu cầu hủy booking #${booking.booking_id} cho xe ${booking.vehicle.model}. Phí hủy dự kiến: ${cancellationFeePercent}%. Vui lòng vào dashboard để duyệt hoặc từ chối.`,
+          content: `Người thuê đã  hủy booking #${booking.booking_id} cho xe ${booking.vehicle.model}. Phí hủy dự kiến: ${cancellationFeePercent}% `,
           type: "rental",
           is_read: false,
         },
@@ -265,8 +265,8 @@ export const confirmCancellation = async (req, res) => {
     await Notification.create(
       {
         user_id: renterId,
-        title: "Yêu cầu hủy booking đã được gửi",
-        content: `Yêu cầu hủy booking #${booking.booking_id} đã được gửi đến chủ xe. Vui lòng chờ chủ xe duyệt.`,
+        title: "Yêu cầu hủy booking thành công",
+        content: `Yêu cầu hủy booking #${booking.booking_id} thành công `,
         type: "rental",
         is_read: false,
       },
@@ -277,16 +277,17 @@ export const confirmCancellation = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Yêu cầu hủy booking đã được gửi đến chủ xe. Vui lòng chờ chủ xe duyệt.",
+      message: "Yêu cầu hủy booking đã thành công ",
       data: {
         booking_id: booking.booking_id,
-        status: "cancel_requested",
+        status: "canceled",
         total_paid: calculation.totalPaid,
         estimated_cancellation_fee: cancellationFee,
         estimated_platform_fee: platformFee,
         estimated_refund_amount: refundAmount,
         estimated_owner_refund: ownerRefund,
-        cancellation_reason: (req.body && req.body.reason) || "Người thuê yêu cầu hủy booking",
+        cancellation_reason:
+          (req.body && req.body.reason) || "Người thuê yêu cầu hủy booking",
         cancel_requested_at: now,
       },
     });

@@ -30,7 +30,6 @@ const BookingManagement = () => {
     deposit_paid: "Đã đặt cọc",
     fully_paid: "Đã thanh toán",
     in_progress: "Đang thuê",
-    cancel_requested: "Yêu cầu hủy",
     canceled: "Đã hủy",
     completed: "Hoàn thành",
   };
@@ -42,7 +41,6 @@ const BookingManagement = () => {
     confirmed: "bg-purple-100 text-purple-800",
     in_progress: "bg-indigo-100 text-indigo-800",
     completed: "bg-green-100 text-green-800",
-    cancel_requested: "bg-red-100 text-red-800",
     canceled: "bg-gray-100 text-gray-800",
   };
 
