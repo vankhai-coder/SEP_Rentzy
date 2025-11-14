@@ -119,6 +119,16 @@ const Vehicle = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    blocked_by: {
+      type: DataTypes.ENUM('admin', 'owner'),
+      allowNull: true,
+      defaultValue: null
+    },
+    fuel_consumption: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'VD: 6.5 L/100km hoặc 15 kWh/100km'
+    },
   },
   {
     tableName: "vehicles",
