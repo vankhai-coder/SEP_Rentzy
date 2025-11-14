@@ -2,7 +2,15 @@ import db from "../../models/index.js";
 import multer from "multer";
 import cloudinary from "../../config/cloudinary.js";
 
-const { Booking, BookingHandover, Vehicle, User, BookingPayout, PointsTransaction, Notification } = db;
+const {
+  Booking,
+  BookingHandover,
+  Vehicle,
+  User,
+  BookingPayout,
+  PointsTransaction,
+  Notification,
+} = db;
 
 // Không cần hàm xóa file tạm vì sử dụng memory storage
 
@@ -59,6 +67,23 @@ export const confirmOwnerHandover = async (req, res) => {
         message: "Không tìm thấy booking hoặc bạn không có quyền truy cập",
       });
     }
+
+    // // Chỉ cho phép xác nhận bàn giao khi đã thanh toán đủ và hợp đồng hoàn tất
+    // if (booking.status !== "fully_paid") {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Booking chưa được thanh toán đầy đủ",
+    //   });
+    // }
+    // const contract = await db.BookingContract.findOne({
+    //   where: { booking_id: bookingId },
+    // });
+    // if (!contract || contract.contract_status !== "completed") {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Hợp đồng DocuSign chưa hoàn tất",
+    //   });
+    // }
 
     // Kiểm tra số lượng file
     if (!req.files || req.files.length < 5) {
@@ -147,6 +172,14 @@ export const confirmOwnerHandover = async (req, res) => {
       });
     }
 
+    // Nếu renter đã xác nhận và đủ điều kiện, chuyển booking sang in_progress
+    const latestHandover = await BookingHandover.findOne({
+      where: { booking_id: bookingId },
+    });
+    if (latestHandover?.renter_handover_confirmed) {
+      await booking.update({ status: "in_progress" });
+    }
+
     // Không cần cleanup vì sử dụng memory storage
 
     res.status(200).json({
@@ -200,6 +233,14 @@ export const confirmRenterHandover = async (req, res) => {
       message: "Booking chưa được thanh toán đầy đủ",
     });
   }
+  // const contract = await db.BookingContract.findOne({ where: { booking_id: id } });
+  // if (!contract || contract.contract_status !== "completed") {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Hợp đồng DocuSign chưa hoàn tất",
+  //   });
+  // }
+
   const handover = await BookingHandover.findOne({
     where: { booking_id: id },
   });
@@ -220,15 +261,20 @@ export const confirmRenterHandover = async (req, res) => {
       message: "Cập nhật handover record thất bại",
     });
   }
-  const updateBooking = await booking.update({
-    status: "in_progress",
-  });
-  if (!updateBooking) {
-    return res.status(400).json({
-      success: false,
-      message: "Cập nhật booking thất bại",
+
+  // Chỉ chuyển sang in_progress khi chủ xe đã xác nhận
+  if (handover.owner_handover_confirmed) {
+    const updateBooking = await booking.update({
+      status: "in_progress",
     });
+    if (!updateBooking) {
+      return res.status(400).json({
+        success: false,
+        message: "Cập nhật booking thất bại",
+      });
+    }
   }
+
   res.status(200).json({
     success: true,
     message: "Xác nhận handover record thành công",
@@ -414,7 +460,7 @@ export const confirmRenterReturn = async (req, res) => {
       ],
       transaction,
     });
-    
+
     if (!booking) {
       await transaction.rollback();
       return res.status(404).json({
@@ -427,7 +473,7 @@ export const confirmRenterReturn = async (req, res) => {
       where: { booking_id: id },
       transaction,
     });
-    
+
     if (!handover) {
       await transaction.rollback();
       return res.status(404).json({
@@ -437,11 +483,14 @@ export const confirmRenterReturn = async (req, res) => {
     }
 
     // Cập nhật handover
-    const update = await handover.update({
-      renter_return_confirmed: true,
-      return_time: new Date(),
-    }, { transaction });
-    
+    const update = await handover.update(
+      {
+        renter_return_confirmed: true,
+        return_time: new Date(),
+      },
+      { transaction }
+    );
+
     if (!update) {
       await transaction.rollback();
       return res.status(400).json({
@@ -451,10 +500,13 @@ export const confirmRenterReturn = async (req, res) => {
     }
 
     // Cập nhật booking status
-    const updateBooking = await booking.update({
-      status: "completed",
-    }, { transaction });
-    
+    const updateBooking = await booking.update(
+      {
+        status: "completed",
+      },
+      { transaction }
+    );
+
     if (!updateBooking) {
       await transaction.rollback();
       return res.status(400).json({
@@ -468,59 +520,82 @@ export const confirmRenterReturn = async (req, res) => {
       where: { vehicle_id: booking.vehicle_id },
       transaction,
     });
-    
-    await vehicle.update({
-      rent_count: vehicle.rent_count + 1,
-    }, { transaction });
+
+    await vehicle.update(
+      {
+        rent_count: vehicle.rent_count + 1,
+      },
+      { transaction }
+    );
 
     // Tính toán và cộng điểm thưởng 1% cho renter
     const pointsReward = Math.floor(booking.total_amount * 0.01); // 1% của tổng tiền đơn hàng
-    
+
     // Lấy thông tin user để cập nhật điểm
     const user = await User.findByPk(renterId, { transaction });
     const newBalance = user.points + pointsReward;
-    
+
     // Cập nhật điểm cho user
     await user.update({ points: newBalance }, { transaction });
 
     // Tạo transaction point
-    await PointsTransaction.create({
-      user_id: renterId,
-      transaction_type: "earn",
-      points_amount: pointsReward,
-      balance_after: newBalance,
-      reference_type: "booking",
-      reference_id: booking.booking_id,
-      description: `Thưởng điểm 1% khi hoàn thành chuyến đi #${booking.booking_id}`,
-    }, { transaction });
+    await PointsTransaction.create(
+      {
+        user_id: renterId,
+        transaction_type: "earn",
+        points_amount: pointsReward,
+        balance_after: newBalance,
+        reference_type: "booking",
+        reference_id: booking.booking_id,
+        description: `Thưởng điểm 1% khi hoàn thành chuyến đi #${booking.booking_id}`,
+      },
+      { transaction }
+    );
 
     // Tạo BookingPayout với status pending
-    const bookingPayout = await BookingPayout.create({
-      booking_id: booking.booking_id,
-      total_rental_amount: booking.total_amount,
-      platform_commission_rate: 0.10, // 10% commission
-      payout_status: "pending",
-      payout_method: "bank_transfer",
-      requested_at: new Date(),
-    }, { transaction });
+    const bookingPayout = await BookingPayout.create(
+      {
+        booking_id: booking.booking_id,
+        total_rental_amount: booking.total_amount,
+        platform_commission_rate: 0.1, // 10% commission
+        payout_status: "pending",
+        payout_method: "bank_transfer",
+        requested_at: new Date(),
+      },
+      { transaction }
+    );
 
     // Tạo thông báo cho renter về điểm thưởng
-    await Notification.create({
-      user_id: renterId,
-      title: "Hoàn thành chuyến đi và nhận điểm thưởng",
-      content: `Chúc mừng! Bạn đã hoàn thành chuyến đi #${booking.booking_id} và nhận được ${pointsReward.toLocaleString('vi-VN')} điểm thưởng. Yêu cầu thanh toán cho chủ xe đang được xử lý.`,
-      type: "rental",
-      is_read: false,
-    }, { transaction });
+    await Notification.create(
+      {
+        user_id: renterId,
+        title: "Hoàn thành chuyến đi và nhận điểm thưởng",
+        content: `Chúc mừng! Bạn đã hoàn thành chuyến đi #${
+          booking.booking_id
+        } và nhận được ${pointsReward.toLocaleString(
+          "vi-VN"
+        )} điểm thưởng. Yêu cầu thanh toán cho chủ xe đang được xử lý.`,
+        type: "rental",
+        is_read: false,
+      },
+      { transaction }
+    );
 
     // Tạo thông báo cho owner về payout
-    await Notification.create({
-      user_id: vehicle.owner_id,
-      title: "Yêu cầu thanh toán mới",
-      content: `Chuyến đi #${booking.booking_id} đã hoàn thành. Yêu cầu thanh toán ${booking.total_amount.toLocaleString('vi-VN')} VND đang được xử lý và sẽ được chuyển vào tài khoản của bạn sau khi trừ phí hoa hồng.`,
-      type: "rental",
-      is_read: false,
-    }, { transaction });
+    await Notification.create(
+      {
+        user_id: vehicle.owner_id,
+        title: "Yêu cầu thanh toán mới",
+        content: `Chuyến đi #${
+          booking.booking_id
+        } đã hoàn thành. Yêu cầu thanh toán ${booking.total_amount.toLocaleString(
+          "vi-VN"
+        )} VND đang được xử lý và sẽ được chuyển vào tài khoản của bạn sau khi trừ phí hoa hồng.`,
+        type: "rental",
+        is_read: false,
+      },
+      { transaction }
+    );
 
     await transaction.commit();
 

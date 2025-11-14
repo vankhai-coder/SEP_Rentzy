@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaInfoCircle } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 import HandoverImageViewer from "@/components/common/HandoverImageViewer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import "./BookingDetailsPage.scss";
 
 const BookingDetailsPage = () => {
@@ -12,6 +13,8 @@ const BookingDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [signUrl, setSignUrl] = useState("");
 
   useEffect(() => {
     fetchBookingDetails();
@@ -42,8 +45,9 @@ const BookingDetailsPage = () => {
 
       console.log("API Response:", response.data);
 
-      if (response.data.success && response.data.booking) {
-        setBooking(response.data.booking);
+      const payload = response.data.booking || response.data.data;
+      if (response.data.success && payload) {
+        setBooking(payload);
       } else {
         throw new Error("Không thể tải thông tin đặt xe");
       }
@@ -128,6 +132,43 @@ const BookingDetailsPage = () => {
       alert(errorMessage);
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleSignContract = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
+        params: { role: "renter" },
+      });
+      const url = resp.data?.url;
+      if (url) {
+        setSignUrl(url);
+        setShowSignModal(true);
+      } else {
+        alert("Không thể tạo URL ký hợp đồng.");
+      }
+    } catch (err) {
+      console.error("Error creating recipient view:", err);
+      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+    }
+  };
+
+  const handleViewContractPdf = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return alert("Không có hợp đồng để xem.");
+      const resp = await axiosInstance.get(
+        `/api/docusign/documents/${envelopeId}/combined`,
+        { responseType: "blob" }
+      );
+      const blobUrl = URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+      console.error("Error downloading contract PDF:", err);
+      alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
     }
   };
 
@@ -456,6 +497,42 @@ const BookingDetailsPage = () => {
             </div>
           )}
         </div>
+
+        {/* Hợp đồng DocuSign */}
+        {booking.contract && (
+          <div className="contract-section">
+            <h3>Hợp đồng thuê xe</h3>
+            <div className="contract-status">
+              Trạng thái: {booking.contract.contract_status}
+            </div>
+            <div className="contract-actions">
+              {booking.contract.contract_status === "pending_signatures" &&
+                !booking.contract.renter_signed_at && (
+                  <button className="payment-button" onClick={handleSignContract}>
+                    Ký hợp đồng
+                  </button>
+                )}
+              {booking.contract.contract_status === "completed" && (
+                <button className="payment-button" onClick={handleViewContractPdf}>
+                  Xem hợp đồng PDF
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <Dialog open={showSignModal} onOpenChange={setShowSignModal}>
+          <DialogContent className="sm:max-w-[900px] w-[95vw] h-[80vh] p-0">
+            <DialogHeader>
+              <DialogTitle>Ký hợp đồng DocuSign</DialogTitle>
+            </DialogHeader>
+            {signUrl ? (
+              <iframe src={signUrl} title="DocuSign" className="w-full h-[70vh] border-0" />
+            ) : (
+              <div className="p-4">Đang tải URL ký...</div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Lịch sử giao dịch */}
         <div className="transaction-section">

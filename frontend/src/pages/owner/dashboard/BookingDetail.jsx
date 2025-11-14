@@ -10,6 +10,7 @@ import {
   MdLocationOn,
   MdAttachMoney,
 } from "react-icons/md";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog.jsx";
 
 const BookingDetail = () => {
   const { id } = useParams();
@@ -17,6 +18,8 @@ const BookingDetail = () => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [signUrl, setSignUrl] = useState("");
 
   useEffect(() => {
     fetchBookingDetail();
@@ -117,6 +120,42 @@ const BookingDetail = () => {
         return "Hoàn thành";
       default:
         return status;
+    }
+  };
+
+  const handleSignContractOwner = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
+        params: { role: "owner" },
+      });
+      const url = resp.data?.url;
+      if (url) {
+        setSignUrl(url);
+        setShowSignModal(true);
+      } else {
+        alert("Không thể tạo URL ký hợp đồng.");
+      }
+    } catch (err) {
+      console.error("Error creating recipient view:", err);
+      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+    }
+  };
+
+  const handleViewContractPdf = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return alert("Không có hợp đồng để xem.");
+      const resp = await axiosInstance.get(`/api/docusign/documents/${envelopeId}/combined`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([resp.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error("Error fetching contract PDF:", err);
+      alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
     }
   };
 
@@ -400,6 +439,40 @@ const BookingDetail = () => {
                 </button>
               </div>
             )}
+            {/* Contract Section */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Hợp đồng thuê xe</h2>
+              {booking.contract ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Trạng thái:</span>
+                    <span className="font-medium">{booking.contract.status}</span>
+                  </div>
+                  <div className="flex gap-3">
+                    {booking.contract.status === "pending_signatures" &&
+                      booking.contract.renter_signed === true &&
+                      booking.contract.owner_signed === false && (
+                        <button
+                          onClick={handleSignContractOwner}
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                          Ký hợp đồng
+                        </button>
+                      )}
+                    {booking.contract.status === "completed" && (
+                      <button
+                        onClick={handleViewContractPdf}
+                        className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+                      >
+                        Xem hợp đồng PDF
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-600">Chưa có hợp đồng cho đơn này.</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -453,6 +526,23 @@ const BookingDetail = () => {
               </>
             )}
         </div>
+        {/* Sign Contract Modal */}
+        <Dialog open={showSignModal} onOpenChange={setShowSignModal}>
+          <DialogContent className="max-w-4xl w-full">
+            <DialogHeader>
+              <DialogTitle>Ký hợp đồng</DialogTitle>
+            </DialogHeader>
+            {signUrl ? (
+              <iframe
+                src={signUrl}
+                title="DocuSign Signing"
+                className="w-full h-[70vh] rounded"
+              />
+            ) : (
+              <div className="text-gray-600">Đang chuẩn bị URL ký...</div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

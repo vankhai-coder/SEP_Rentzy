@@ -20,6 +20,7 @@ import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
 import TransactionRoute from "./routes/renter/transactionRoute.js";
 import CompareVehicleRoute from "./routes/renter/compareVehicleRoute.js";
+import DocusignRoute from "./routes/docusign/docusignRoute.js";
 // booking route
 
 import BookingRoute from "./routes/booking/bookingRoute.js";
@@ -166,3 +167,5 @@ process.on("SIGINT", () => {
     process.exit(0);
   });
 });
+
+app.use("/api/docusign", DocusignRoute);

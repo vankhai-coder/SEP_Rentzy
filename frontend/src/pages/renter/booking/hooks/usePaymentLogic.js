@@ -65,11 +65,12 @@ export const usePaymentLogic = (bookingId) => {
       
       // Debug logs để theo dõi data từ API
       console.log("📊 Full API response:", res.data);
-      console.log("📋 Booking data:", res.data.booking);
-      console.log("🔍 Booking status:", res.data.booking?.status);
-      console.log("⏰ Booking created_at:", res.data.booking?.created_at);
+      const apiBooking = res.data?.data || res.data?.booking;
+      console.log("📋 Booking data:", apiBooking);
+      console.log("🔍 Booking status:", apiBooking?.status);
+      console.log("⏰ Booking created_at:", apiBooking?.created_at);
       
-      setBooking(res.data.booking);
+      setBooking(apiBooking);
       setError(null);
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Không thể tải thông tin đơn hàng";
@@ -249,64 +250,14 @@ export const usePaymentLogic = (bookingId) => {
     }
   }, [booking]);
 
-  /**
-   * Effect: Quản lý countdown timer
-   * 
-   * LUỒNG XỬ LÝ:
-   * 1. Chỉ chạy khi step = 1 (pending) và countdown > 0
-   * 2. Giảm countdown mỗi giây
-   * 3. Khi countdown = 0: set isTimeUp = true và clear timer
-   * 4. Cleanup timer khi component unmount hoặc dependencies thay đổi
-   * 
-   * Dependency: [step, countdown] để restart timer khi cần
-   */
-  useEffect(() => {
-    // Chỉ chạy countdown cho step 1 và khi còn thời gian
-    if (step !== 1 || countdown <= 0) return;
-
-    console.log("⏰ Starting countdown timer, remaining:", countdown, "seconds");
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // Hết thời gian
-          setIsTimeUp(true);
-          clearInterval(timer);
-          console.log("⏰ Countdown finished, time is up!");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    // Cleanup timer
-    return () => {
-      clearInterval(timer);
-      console.log("🧹 Countdown timer cleaned up");
-    };
-  }, [step, countdown]);
-
-  // ==================== RETURN VALUES ====================
-  
-  /**
-   * Return object với tất cả state và functions cần thiết
-   * Component sẽ destructure và sử dụng các giá trị này
-   */
   return {
-    // Data states
     booking,
     loading,
     error,
-    
-    // Timer states  
-    countdown,
     isTimeUp,
-    
-    // UI states
     isPaying,
     step,
-    
-    // Functions
+    countdown,
     fetchBooking,
     getPaidAndRemaining,
     handleDepositPaymentPayOS,

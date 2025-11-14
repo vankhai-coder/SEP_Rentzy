@@ -15,6 +15,7 @@ const {
   BookingHandover,
   BookingCancellation,
   Transaction,
+  BookingContract,
 } = db;
 
 // 1. GET /api/owner/bookings - Quản lý đơn thuê
@@ -760,7 +761,20 @@ export const getBookingDetail = async (req, res) => {
         {
           model: BookingHandover,
           as: "handover",
-          attributes: { exclude: [] }, //  lấy tất cả cột
+          attributes: { exclude: [] },
+        },
+        {
+          model: BookingContract,
+          as: "contract",
+          attributes: [
+            "contract_id",
+            "contract_number",
+            "contract_status",
+            "renter_signed_at",
+            "owner_signed_at",
+            "contract_file_url",
+          ],
+          required: false,
         },
       ],
     });

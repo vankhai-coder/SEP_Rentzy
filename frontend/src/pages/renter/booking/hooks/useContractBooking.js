@@ -31,23 +31,21 @@ export const useContractBooking = (bookingId) => {
       
       const response = await axiosInstance.get(`/api/renter/booking/${bookingId}`);
       
-      if (response.data.success) {
-        const bookingData = response.data.booking;
+      // Chuẩn hóa payload từ response
+      const bookingData = response?.data?.booking || response?.data?.data;
+
+      if (response?.data?.success && bookingData) {
         setBooking(bookingData);
         
-        // Extract owner and renter data from booking
-        if (bookingData.vehicle && bookingData.vehicle.owner) {
-          setOwner(bookingData.vehicle.owner);
-        }
-        if (bookingData.renter) {
-          setRenter(bookingData.renter);
-        }
+        // Extract owner and renter data từ booking (dùng optional chaining để an toàn)
+        setOwner(bookingData?.vehicle?.owner || null);
+        setRenter(bookingData?.renter || null);
         
         console.log('✅ Booking data loaded successfully:', bookingData);
-        console.log('✅ Owner data:', bookingData.vehicle?.owner);
-        console.log('✅ Renter data:', bookingData.renter);
+        console.log('✅ Owner data:', bookingData?.vehicle?.owner);
+        console.log('✅ Renter data:', bookingData?.renter);
       } else {
-        const errorMessage = response.data.message || 'Không thể tải thông tin booking';
+        const errorMessage = response?.data?.message || 'Không thể tải thông tin booking';
         setError(errorMessage);
         console.error('❌ Failed to load booking:', errorMessage);
       }
@@ -154,7 +152,7 @@ export const useContractBooking = (bookingId) => {
   }, []);
 
   const formatCurrency = useCallback((amount) => {
-    if (!amount) return '0 ₫';
+    if (!amount && amount !== 0) return '0 ₫';
     
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -201,11 +199,11 @@ export const useContractBooking = (bookingId) => {
     refreshBooking,
     cancelBooking,
     
-    // Utilities
+    // Utils
     formatDate,
     formatCurrency,
     calculateDuration,
     getStatusText,
-    canCancel
+    canCancel,
   };
 };

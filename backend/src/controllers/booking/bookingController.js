@@ -2,6 +2,7 @@ import Booking from "../../models/Booking.js";
 import Vehicle from "../../models/Vehicle.js";
 import User from "../../models/User.js";
 import BookingHandover from "../../models/BookingHandover.js";
+import BookingContract from "../../models/BookingContract.js";
 
 import { Op } from "sequelize";
 import Voucher from "../../models/Voucher.js";
@@ -95,7 +96,6 @@ export const getBookingById = async (req, res) => {
     const { bookingId } = req.params;
 
     const renterId = req.user?.userId;
-    console.log("🔍 Renter ID:", renterId);
 
     if (!bookingId) {
       return res.status(400).json({
@@ -108,7 +108,7 @@ export const getBookingById = async (req, res) => {
     const booking = await Booking.findOne({
       where: {
         booking_id: bookingId,
-        renter_id: renterId, // Đảm bảo chỉ lấy booking của user hiện tại
+        renter_id: renterId,
       },
       include: [
         {
@@ -188,12 +188,29 @@ export const getBookingById = async (req, res) => {
             "created_at",
             "processed_at",
           ],
-          required: false, // LEFT JOIN để lấy booking ngay cả khi chưa có transaction
+          required: false,
         },
         {
           model: BookingHandover,
           as: "handover",
-          attributes: { exclude: [] }, //  lấy tất cả cột
+          attributes: { exclude: [] },
+        },
+        {
+          model: BookingContract,
+          as: "contract",
+          attributes: [
+            "contract_id",
+            "contract_number",
+            "contract_status",
+            "renter_signature",
+            "owner_signature",
+            "renter_signed_at",
+            "owner_signed_at",
+            "contract_file_url",
+            "created_at",
+            "updated_at",
+          ],
+          required: false,
         },
       ],
     });
@@ -267,8 +284,6 @@ export const getBookingById = async (req, res) => {
             rent_count: booking.vehicle.rent_count,
             created_at: booking.vehicle.created_at,
             updated_at: booking.vehicle.updated_at,
-
-            // Thông tin chủ xe
             owner: booking.vehicle.owner
               ? {
                   user_id: booking.vehicle.owner.user_id,
@@ -288,7 +303,6 @@ export const getBookingById = async (req, res) => {
           }
         : null,
 
-      // Thông tin người thuê đầy đủ
       renter: booking.renter
         ? {
             user_id: booking.renter.user_id,
@@ -302,12 +316,11 @@ export const getBookingById = async (req, res) => {
           }
         : null,
 
-      // Danh sách giao dịch
       transactions: booking.Transactions
         ? booking.Transactions.map((transaction) => ({
             transaction_id: transaction.transaction_id,
             amount: transaction.amount,
-            transaction_type: transaction.type, // Đổi tên để phù hợp với frontend
+            transaction_type: transaction.type,
             status: transaction.status,
             payment_method: transaction.payment_method,
             note: transaction.note,
@@ -315,21 +328,26 @@ export const getBookingById = async (req, res) => {
             processed_at: transaction.processed_at,
           }))
         : [],
-      // thông tin handover
-      handover: booking.handover ? booking.handover : null,
+
+      handover: booking.handover || null,
+
+      // Thêm thông tin hợp đồng DocuSign
+      contract: booking.contract
+        ? {
+            contract_id: booking.contract.contract_id,
+            contract_number: booking.contract.contract_number,
+            contract_status: booking.contract.contract_status,
+            renter_signed_at: booking.contract.renter_signed_at,
+            owner_signed_at: booking.contract.owner_signed_at,
+            contract_file_url: booking.contract.contract_file_url,
+          }
+        : null,
     };
 
-    return res.status(200).json({
-      success: true,
-      booking: responseData,
-    });
+    return res.json({ success: true, data: responseData });
   } catch (error) {
-    console.error("❌ Error getting booking:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi hệ thống khi lấy thông tin booking",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    console.error("Error getBookingById:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -574,7 +592,7 @@ export const createBooking = async (req, res) => {
     }
 
     // Kiểm tra xung đột với các booking hiện có
-    // Logic: Hai khoảng thời gian xung đột nếu: requestStart < bookedEnd && requestEnd > bookedStart
+    // Logic: Hai khoảng thời gian xung Đột nếu: requestStart < bookedEnd && requestEnd > bookedStart
     const hasConflict = bookedIntervals.some(
       ({ startDateTime, endDateTime }) => {
         const isConflict =

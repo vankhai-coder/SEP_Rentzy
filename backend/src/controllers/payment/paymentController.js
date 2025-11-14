@@ -7,8 +7,9 @@ import {
   paymentSuccessTemplateForRenter,
   paymentSuccessTemplateForOwner,
 } from "../../utils/email/templates/emailTemplate.js";
+import { sendContractForBookingServerSide } from "../docusign/docusignController.js";
 
-const { Booking, Transaction, User, Notification } = db;
+const { Booking, Transaction, User, Notification, BookingContract } = db;
 
 const payOS = new PayOS({
   clientId: process.env.PAYOS_CLIENT_ID,
@@ -139,6 +140,32 @@ const handlePayOSWebhook = async (req, res) => {
           "Booking status updated to deposit_paid:",
           booking.booking_id
         );
+
+        // Gửi hợp đồng DocuSign tự động sau khi đặt cọc thành công
+        try {
+          const existingContract = await BookingContract.findOne({
+            where: { booking_id: booking.booking_id },
+          });
+          if (!existingContract || !existingContract.contract_number) {
+            const { envelopeId, status: envelopeStatus } =
+              await sendContractForBookingServerSide(booking.booking_id);
+            console.log("DocuSign envelope created:", {
+              envelopeId,
+              envelopeStatus,
+              bookingId: booking.booking_id,
+            });
+          } else {
+            console.log(
+              "DocuSign envelope already exists for booking:",
+              booking.booking_id
+            );
+          }
+        } catch (docuErr) {
+          console.error(
+            "DocuSign send contract error:",
+            docuErr?.message || docuErr
+          );
+        }
       }
 
       // Nếu là thanh toán phần còn lại
@@ -157,6 +184,32 @@ const handlePayOSWebhook = async (req, res) => {
           "Booking status updated to fully_paid:",
           booking.booking_id
         );
+
+        // Gửi hợp đồng DocuSign nếu chưa gửi ở bước đặt cọc
+        try {
+          const existingContract = await BookingContract.findOne({
+            where: { booking_id: booking.booking_id },
+          });
+          if (!existingContract || !existingContract.contract_number) {
+            const { envelopeId, status: envelopeStatus } =
+              await sendContractForBookingServerSide(booking.booking_id);
+            console.log("DocuSign envelope created on full payment:", {
+              envelopeId,
+              envelopeStatus,
+              bookingId: booking.booking_id,
+            });
+          } else {
+            console.log(
+              "DocuSign envelope already exists for booking:",
+              booking.booking_id
+            );
+          }
+        } catch (docuErr) {
+          console.error(
+            "DocuSign send contract error (full payment):",
+            docuErr?.message || docuErr
+          );
+        }
       }
 
       // Kiểm tra xem đã có transaction COMPLETED cho orderCode này chưa
