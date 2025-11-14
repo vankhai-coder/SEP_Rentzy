@@ -92,7 +92,7 @@ const Messages = () => {
                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
                                         {/* avatar a */}
                                         <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-18.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-19.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
                                             {/* green dot for active account */}
                                             <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
                                             </span>
@@ -101,7 +101,7 @@ const Messages = () => {
                                         <div className="w-full">
                                             <div className="flex items-start justify-between">
                                                 <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Khai</h5>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Hung</h5>
                                                     <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
                                                 </div>
                                                 <span className="text-xs text-gray-400">15 mins</span>
@@ -109,10 +109,11 @@ const Messages = () => {
                                         </div>
                                     </div>
                                     {/* first person */}
+                                   
                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
                                         {/* avatar a */}
                                         <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-18.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-12.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
                                             {/* green dot for active account */}
                                             <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
                                             </span>
@@ -121,7 +122,83 @@ const Messages = () => {
                                         <div className="w-full">
                                             <div className="flex items-start justify-between">
                                                 <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Khai</h5>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
+                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
+                                                </div>
+                                                <span className="text-xs text-gray-400">15 mins</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
+                                        {/* avatar a */}
+                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-13.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            {/* green dot for active account */}
+                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
+                                            </span>
+                                        </div>
+                                        {/* name and one last message */}
+                                        <div className="w-full">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
+                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
+                                                </div>
+                                                <span className="text-xs text-gray-400">15 mins</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
+                                        {/* avatar a */}
+                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-14.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            {/* green dot for active account */}
+                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
+                                            </span>
+                                        </div>
+                                        {/* name and one last message */}
+                                        <div className="w-full">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
+                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
+                                                </div>
+                                                <span className="text-xs text-gray-400">15 mins</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
+                                        {/* avatar a */}
+                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-15.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            {/* green dot for active account */}
+                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
+                                            </span>
+                                        </div>
+                                        {/* name and one last message */}
+                                        <div className="w-full">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
+                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
+                                                </div>
+                                                <span className="text-xs text-gray-400">15 mins</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
+                                        {/* avatar a */}
+                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
+                                            <img src="https://demo.tailadmin.com/src/images/user/user-16.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            {/* green dot for active account */}
+                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
+                                            </span>
+                                        </div>
+                                        {/* name and one last message */}
+                                        <div className="w-full">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
                                                     <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
                                                 </div>
                                                 <span className="text-xs text-gray-400">15 mins</span>
@@ -188,6 +265,71 @@ const Messages = () => {
                                     2 hours ago
                                 </p>
                             </div>
+                            {/* fake message */}
+                            <div className="max-w-[350px]">
+                                <div className="flex items-start gap-4">
+                                    <div className="h-10 w-full max-w-10 rounded-full">
+                                        <img src="https://demo.tailadmin.com/src/images/user/user-19.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                    </div>
+                                    <div>
+                                        <div className="rounded-lg rounded-tl-sm bg-gray-100 px-3 py-2 dark:bg-white/5">
+                                            <p className="text-sm text-gray-800 dark:text-white/90">
+                                                I am available tomorrow from 2:00 to 5:00pm?
+                                            </p>
+                                        </div>
+                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            3 hours ago
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {/* </div> */}
+                            {/* fake chat messages */}
+                            <div className="max-w-[350px]">
+                                <div className="flex items-start gap-4">
+                                    <div className="h-10 w-full max-w-10 rounded-full">
+                                        <img src="https://demo.tailadmin.com/src/images/user/user-20.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                    </div>
+                                    <div>
+                                        <div className="rounded-lg rounded-tl-sm bg-gray-100 px-3 py-2 dark:bg-white/5">
+                                            <p className="text-sm text-gray-800 dark:text-white/90">
+                                                Let's schedule a quick call to discuss the project details.
+                                            </p>
+                                        </div>
+                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            1 hour ago
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="ml-auto max-w-[350px] text-right">
+                                <div className="ml-auto max-w-max rounded-lg rounded-tr-sm bg-blue-500 px-3 py-2 dark:bg-blue-500">
+                                    <p className="text-sm text-white dark:text-white/90">
+                                        Sure, how about 3 PM today?
+                                    </p>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    1 hour ago
+                                </p>
+                            </div>
+                            <div className="max-w-[350px]">
+                                <div className="flex items-start gap-4">
+                                    <div className="h-10 w-full max-w-10 rounded-full">
+                                        <img src="https://demo.tailadmin.com/src/images/user/user-21.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                    </div>
+                                    <div>
+                                        <div className="rounded-lg rounded-tl-sm bg-gray-100 px-3 py-2 dark:bg-white/5">
+                                            <p className="text-sm text-gray-800 dark:text-white/90">
+                                                Perfect! I'll send the invite shortly.
+                                            </p>
+                                        </div>
+                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            45 mins ago
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                         </div>
                         {/* footer : that have text : "type message..." */}
                         <div className="sticky bottom-0 border-t border-gray-200 p-3 dark:border-gray-800">

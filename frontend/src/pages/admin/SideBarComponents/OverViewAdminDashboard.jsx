@@ -2,6 +2,40 @@ import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCar
 import React from 'react'
 
 const OverViewAdminDashboard = () => {
+  const recentOrders = [
+    { id: 'BK-1021', customer: 'John Doe', car: 'Toyota Camry 2019', amount: 128.5, status: 'completed' },
+    { id: 'BK-1022', customer: 'Jane Smith', car: 'Honda Civic 2020', amount: 92.3, status: 'pending' },
+    { id: 'BK-1023', customer: 'Minh Nguyen', car: 'Tesla Model 3 2022', amount: 230, status: 'processing' },
+    { id: 'BK-1024', customer: 'Anh Tran', car: 'Ford Ranger 2018', amount: 150.75, status: 'completed' },
+    { id: 'BK-1025', customer: 'Michael Lee', car: 'Hyundai Tucson 2021', amount: 175.2, status: 'pending' },
+    { id: 'BK-1026', customer: 'Sara Kim', car: 'Kia Seltos 2020', amount: 110, status: 'completed' },
+    { id: 'BK-1027', customer: 'David Brown', car: 'Mazda CX-5 2019', amount: 210.4, status: 'cancelled' },
+    { id: 'BK-1028', customer: 'Emily Clark', car: 'BMW 3 Series 2017', amount: 99.99, status: 'processing' },
+    { id: 'BK-1029', customer: 'Quang Pham', car: 'Mercedes C-Class 2018', amount: 189, status: 'completed' },
+    { id: 'BK-1030', customer: 'Linh Vo', car: 'VinFast VF8 2023', amount: 250, status: 'pending' }
+  ]
+
+  const statusBadge = {
+    completed: 'badge-success',
+    pending: 'badge-warning',
+    cancelled: 'badge-danger',
+    processing: 'badge-primary'
+  }
+
+  const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+
+  const revenues = [
+    { owner: 'Nguyen Van A', car: 'Toyota Camry', revenue: 1520, period: 'Nov 2025' },
+    { owner: 'Tran Thi B', car: 'Honda CR-V', revenue: 980, period: 'Nov 2025' },
+    { owner: 'Le Hoang C', car: 'Tesla Model Y', revenue: 2450, period: 'Nov 2025' },
+    { owner: 'Pham Quoc D', car: 'Ford Ranger', revenue: 1750, period: 'Nov 2025' },
+    { owner: 'Do Minh E', car: 'Hyundai Santa Fe', revenue: 1600, period: 'Nov 2025' },
+    { owner: 'Hoang Gia F', car: 'Kia Sorento', revenue: 1320, period: 'Nov 2025' },
+    { owner: 'Vu Tuan G', car: 'Mazda 6', revenue: 1190, period: 'Nov 2025' },
+    { owner: 'Bui Thu H', car: 'BMW X3', revenue: 2100, period: 'Nov 2025' },
+    { owner: 'Dang Khoa I', car: 'Mercedes GLC', revenue: 1990, period: 'Nov 2025' },
+    { owner: 'Phan Anh J', car: 'VinFast VF8', revenue: 2680, period: 'Nov 2025' }
+  ]
   return (
     <div className="p-4 lg:p-6 dark:bg-black min-h-screen">
       <div>
@@ -117,40 +151,20 @@ const OverViewAdminDashboard = () => {
               <h2 className='text-lg font-semibold text-secondary-900 dark:text-white'>
                 Recent Orders
               </h2>
-              {/* list */}
               <div>
                 <div className='space-y-4'>
-                  {/* first item */}
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
+                  {recentOrders.map((o) => (
+                    <div key={o.id} className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
+                      <div className='flex-1'>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{o.customer}</p>
+                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{o.car} • {o.id}</p>
+                      </div>
+                      <div className='text-right'>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{formatCurrency(o.amount)}</p>
+                        <span className={`badge ${statusBadge[o.status]} px-2 py-0.5 text-xs`}>{o.status}</span>
+                      </div>
                     </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-success px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
-                    </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-warning px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
-                    </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-primary px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -160,42 +174,22 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200'>
             <div className='flex flex-col space-y-1.5 mb-4'>
               <h2 className='text-lg font-semibold text-secondary-900 dark:text-white'>
-                Recent Orders
+                Revenue overview
               </h2>
-              {/* list */}
               <div>
                 <div className='space-y-4'>
-                  {/* first item */}
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
+                  {revenues.map((r, idx) => (
+                    <div key={`${r.owner}-${idx}`} className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
+                      <div className='flex-1'>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{r.owner}</p>
+                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{r.car}</p>
+                      </div>
+                      <div className='text-right'>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{formatCurrency(r.revenue)}</p>
+                        <span className='badge badge-primary px-2 py-0.5 text-xs'>{r.period}</span>
+                      </div>
                     </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-success px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
-                    </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-warning px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
-                  <div className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
-                    <div className='flex-1'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>John Doe</p>
-                      <p className='text-sm text-secondary-600 dark:text-secondary-400'>Wireless Headphones</p>
-                    </div>
-                    <div className='text-right'>
-                      <p className='font-medium text-secondary-900 dark:text-white'>$123.2</p>
-                      <span className='badge badge-primary px-2 py-0.5 text-xs'>completed</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
