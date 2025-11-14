@@ -584,10 +584,9 @@ export const updateVehicleStatus = async (req, res) => {
 
     // Kiểm tra nếu owner cố gắng mở khóa xe bị admin khóa
     if (
-      status === "active" && 
+      status === "available" && 
       vehicle.status === "blocked" && 
-      vehicle.blocked_by === "admin" &&
-      userRole !== "admin"
+      vehicle.blocked_by === "admin"
     ) {
       return res.status(403).json({
         success: false,
@@ -598,7 +597,7 @@ export const updateVehicleStatus = async (req, res) => {
     // Cập nhật trạng thái và người khóa
     await vehicle.update({ 
       status,
-      blocked_by: status === "blocked" ? userRole : null
+      blocked_by: status === "blocked" ? "owner" : null
     });
 
     res.json({
@@ -607,7 +606,7 @@ export const updateVehicleStatus = async (req, res) => {
       data: { 
         vehicle_id: id, 
         status,
-        blocked_by: status === "blocked" ? userRole : null
+        blocked_by: status === "blocked" ? "owner" : null
       },
     });
   } catch (error) {

@@ -121,7 +121,15 @@ const fetchVehicles = useCallback(async () => {
       }
     } catch (error) {
       console.error('Error updating vehicle status:', error);
-      toast.error('Lỗi khi cập nhật trạng thái xe');
+      if (error.response?.status === 403) {
+      toast.error(error.response.data.message || 'Không thể mở khóa, xe đã bị khóa bởi admin');
+      } 
+      else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } 
+      else {
+        toast.error('Lỗi khi cập nhật trạng thái xe');
+      }
     }
   };
 

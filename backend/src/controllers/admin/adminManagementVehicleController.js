@@ -189,7 +189,10 @@ export const updateVehicleStatus = async (req, res) => {
     }
 
     // Update the status
-    await vehicle.update({ status });
+    await vehicle.update({ 
+      status,
+      blocked_by: status === 'blocked' ? 'admin' : null
+    });
 
     // Get updated vehicle with associations
     const updatedVehicle = await Vehicle.findByPk(vehicleId, {
