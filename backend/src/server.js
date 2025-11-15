@@ -19,6 +19,7 @@ import BookingReviewRoute from "./routes/renter/bookingReviewRoute.js";
 import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
 import TransactionRoute from "./routes/renter/transactionRoute.js";
+import CompareVehicleRoute from "./routes/renter/compareVehicleRoute.js";
 // booking route
 
 import BookingRoute from "./routes/booking/bookingRoute.js";
@@ -40,6 +41,13 @@ import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRo
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
+
+// bank account
+import BankAccountRoute from "./routes/bank/bankAccountRoute.js";
+
+// admin
+import AdminRoute from "./routes/admin/adminCancelRoute.js";
+import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
@@ -76,6 +84,7 @@ app.use("/api/renter/vehicles/search", SearchVehicleRoute);
 
 // renter route :
 app.use("/api/renter/vehicles", RenterVehicleRoute);
+app.use("/api/renter/vehicles", CompareVehicleRoute);
 app.use("/api/renter/brands", RenterBrandRoute);
 app.use("/api/renter/favorites", RenterFavoriteRoute);
 app.use("/api/chat", ChatOpenAiRoute);
@@ -108,6 +117,13 @@ app.use("/api/renter/points", PointsRoute);
 
 // payment route
 app.use("/api/payment", PaymentRoute);
+
+// bank account route
+app.use("/api/bank-accounts", BankAccountRoute);
+
+// admin route
+app.use("/api/admin", AdminRoute);
+app.use("/api/admin", AdminPayoutRoute);
 
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");

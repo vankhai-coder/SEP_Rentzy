@@ -315,6 +315,18 @@ const userInformationSlice = createSlice({
       state.verifyOtpForPhoneNumberSuccess = false;
       state.isLoadingVerifyOtpForPhoneNumber = false;
       state.errorWhenVerifyOtpForPhoneNumber = '';
+      // check 2 face match :
+      state.is2FaceMatch = '';
+      state.is2FaceMatchError = '';
+      state.is2FaceMatchLoading = '';
+      // driver license :
+      state.isVerifyDriverLicenseOfRenterUploadSuccess = false;
+      state.driverLicenseError = '';
+      state.driverLicenseLoading = false;
+      state.isVerifyDriverLicenseMatchWithwebcam = '';
+      // get basic user information :
+      state.isLoadingGetBasicUserInformation = false;
+      state.errorGetBasicUserInformation = '';
     },
   },
   extraReducers: (builder) => {

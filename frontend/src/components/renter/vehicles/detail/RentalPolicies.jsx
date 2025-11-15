@@ -17,21 +17,21 @@ const RentalPolicies = ({ vehicle }) => {
       time: 'Trong vòng 1h sau giữ chỗ',
       fee: 'Miễn phí',
       refund: '100%',
-      description: 'Hoàn lại 100% số tiền đã thanh toán',
+      description: 'Hoàn lại 100% số tiền đơn thuê',
       color: 'text-green-600 '
     },
     {
       time: 'Trước chuyến đi >7 ngày (Sau 1h giữ chỗ)',
       fee: '20% giá trị chuyến đi',
       refund: '80%',
-      description: 'Hoàn lại 80% số tiền đã thanh toán',
+      description: 'Hoàn lại 80% số tiền đơn thuê',
       color: 'text-blue-600 '
     },
     {
       time: 'Trong vòng 7 ngày trước chuyến đi (Sau 1h giữ chỗ)',
       fee: '50% giá trị chuyến đi',
       refund: '50%',
-      description: 'Hoàn lại 50% số tiền đã thanh toán',
+      description: 'Hoàn lại 50% số tiền đơn thuê',
       color: 'text-orange-600 '
     }
   ];

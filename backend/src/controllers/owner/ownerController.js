@@ -257,6 +257,7 @@ export const createVehicle = async (req, res) => {
       seats,
       engine_capacity,
       fuel_consumption,
+      body_type,
       latitude,
       longitude,
       features,
@@ -293,6 +294,7 @@ export const createVehicle = async (req, res) => {
       seats: seats ? parseInt(seats) : null,
       engine_capacity,
       fuel_consumption,
+      body_type,
       main_image_url,
       additional_images: additional_images.length > 0 ? JSON.stringify(additional_images) : null,
       owner_id: ownerId,
@@ -413,6 +415,7 @@ export const updateVehicle = async (req, res) => {
       bike_type,
       engine_capacity,
       fuel_consumption,
+      body_type,
       latitude,
       longitude,
       features,
@@ -459,6 +462,7 @@ export const updateVehicle = async (req, res) => {
       bike_type,
       engine_capacity,
       fuel_consumption,
+      body_type,
       main_image_url,
       extra_images: JSON.stringify(additional_images),
       latitude: latitude ? parseFloat(latitude) : vehicle.latitude,
@@ -561,6 +565,7 @@ export const updateVehicleStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const ownerId = req.user.userId;
+    const userRole = req.user.role; // Lấy role từ token
 
     // Kiểm tra xe có thuộc về owner không
     const vehicle = await Vehicle.findOne({
@@ -577,13 +582,32 @@ export const updateVehicleStatus = async (req, res) => {
       });
     }
 
-    // Cập nhật trạng thái
-    await vehicle.update({ status });
+    // Kiểm tra nếu owner cố gắng mở khóa xe bị admin khóa
+    if (
+      status === "available" && 
+      vehicle.status === "blocked" && 
+      vehicle.blocked_by === "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Không thể mở khóa, xe đã bị khóa bởi admin",
+      });
+    }
+
+    // Cập nhật trạng thái và người khóa
+    await vehicle.update({ 
+      status,
+      blocked_by: status === "blocked" ? "owner" : null
+    });
 
     res.json({
       success: true,
       message: `Xe đã được ${status === "blocked" ? "khóa" : "mở khóa"}`,
-      data: { vehicle_id: id, status },
+      data: { 
+        vehicle_id: id, 
+        status,
+        blocked_by: status === "blocked" ? "owner" : null
+      },
     });
   } catch (error) {
     console.error("Error updating vehicle status:", error);

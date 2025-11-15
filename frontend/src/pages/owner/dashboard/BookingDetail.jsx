@@ -41,7 +41,32 @@ const BookingDetail = () => {
       setLoading(false);
     }
   };
+  // owner xác nhận tiền mà renter đã trả
+  const approveRemainingByOwner = async () => {
+    const isConfirmed = window.confirm(
+      "Bạn có chắc chắn muốn xác nhận rằng người thuê đã chuyển khoản phần còn lại (70%) không?"
+    );
 
+    if (!isConfirmed) return; // dừng lại nếu người dùng bấm “Hủy”
+    try {
+      setLoading(true);
+      const response = await axiosInstance.patch(
+        `/api/payment/approveRemainingByOwner/${id}`
+      );
+
+      if (response.status === 200) {
+        alert(" Xác nhận thanh toán thành công!");
+        await fetchBookingDetail();
+      } else {
+        alert("Không thể xác nhận thanh toán. Vui lòng thử lại!");
+      }
+    } catch (err) {
+      console.error("Error approving remaining payment:", err);
+      alert(" Có lỗi xảy ra khi xác nhận thanh toán!");
+    } finally {
+      setLoading(false);
+    }
+  };
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -134,7 +159,7 @@ const BookingDetail = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate("/owner/booking-management")}
-            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            className="flex border border-gray-600 px-4 py-2 rounded items-center text-black-600 hover:text-gray-800 mb-4"
           >
             <MdArrowBack className="mr-2" />
             Quay lại danh sách đơn thuê
@@ -209,7 +234,7 @@ const BookingDetail = () => {
 
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tổng chi phí:</span>
+                  <span className="text-gray-600">Chi phí thuê xe:</span>
                   <span className="font-medium">
                     {formatCurrency(booking.total_cost)}
                   </span>
@@ -253,6 +278,29 @@ const BookingDetail = () => {
                     <span className="font-medium">{booking.voucher_code}</span>
                   </div>
                 )}
+              </div>
+            </div>
+            {/* Booking Timeline */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Thời gian tạo đơn
+              </h2>
+
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm text-gray-600">Ngày tạo</p>
+                  <p className="font-medium">
+                    {new Date(booking.created_at).toLocaleDateString("vi-VN")}{" "}
+                    {new Date(booking.created_at).toLocaleTimeString("vi-VN")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Cập nhật lần cuối</p>
+                  <p className="font-medium">
+                    {new Date(booking.updated_at).toLocaleDateString("vi-VN")}{" "}
+                    {new Date(booking.updated_at).toLocaleTimeString("vi-VN")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -324,30 +372,34 @@ const BookingDetail = () => {
                 </div>
               </div>
             </div>
+            {/* Status remaining paid by cash  */}
+            {booking.remaining_paid_by_cash_status == "pending" && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  Thông tin chuyển tiền trả sau ( 70%)
+                </h2>
 
-            {/* Booking Timeline */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Thời gian tạo đơn
-              </h2>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600">Số tiền đã chuyển </p>
+                    <p className="text-sm text-gray-600">Vui lòng xác nhận </p>
 
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Ngày tạo</p>
-                  <p className="font-medium">
-                    {new Date(booking.created_at).toLocaleDateString("vi-VN")}{" "}
-                    {new Date(booking.created_at).toLocaleTimeString("vi-VN")}
-                  </p>
+                    <p className="font-medium">
+                      {formatCurrency(
+                        booking.total_amount - booking.total_paid
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Cập nhật lần cuối</p>
-                  <p className="font-medium">
-                    {new Date(booking.updated_at).toLocaleDateString("vi-VN")}{" "}
-                    {new Date(booking.updated_at).toLocaleTimeString("vi-VN")}
-                  </p>
-                </div>
+                <button
+                  onClick={() => {
+                    approveRemainingByOwner();
+                  }}
+                >
+                  Xác nhận
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

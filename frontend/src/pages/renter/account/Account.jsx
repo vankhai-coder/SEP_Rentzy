@@ -20,6 +20,7 @@ import {
   Star,
   ArrowRightLeft,
   TicketXIcon,
+  CreditCard,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -37,8 +38,8 @@ const Account = () => {
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
   useEffect(() => {
-    if (role === 'admin') {
-      navigate('/admin', { replace: true });
+    if (role === "admin") {
+      navigate("/admin", { replace: true });
     }
   }, [role, navigate]);
 
@@ -55,7 +56,7 @@ const Account = () => {
   }
 
   if (role === "admin") {
-    return null
+    return null;
   }
 
   return (
@@ -121,6 +122,12 @@ const Account = () => {
               value="/myaddress"
             >
               <LocationEditIcon /> Địa chỉ của tôi
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/bank-accounts"
+            >
+              <CreditCard /> Tài khoản ngân hàng
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -208,12 +215,12 @@ const Account = () => {
             </NavLink>
 
             <NavLink
-              to="/myreward"
+              to="/bank-accounts"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
               }
             >
-              <Gift /> Quà tặng
+              <CreditCard /> Tài khoản ngân hàng
             </NavLink>
 
             <NavLink

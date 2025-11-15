@@ -243,6 +243,16 @@ const AddMotoBikeForm = () => {
           Hãy vui lòng điền các thông tin chính xác của xe và giấy tờ xe hợp lệ.
         </p>
       </div>
+
+      <div className="mb-8">
+        <button
+            type="button"
+            onClick={() => navigate("/owner/vehicle-management")}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+          Quay lại quản lý xe
+        </button>
+      </div>
       
       <h1 className="text-3xl font-bold text-blue-600 mb-6">
         🏍️ Thêm xe máy mới
@@ -284,7 +294,7 @@ const AddMotoBikeForm = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Model *
+                    Dòng xe *
                   </label>
                   <input
                     type="text"

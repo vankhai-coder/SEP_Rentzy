@@ -2,7 +2,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
-
 const Bank = sequelize.define(
   "Bank",
   {
@@ -35,6 +34,12 @@ const Bank = sequelize.define(
     qr_code_url: {
       type: DataTypes.STRING(255),
     },
+    // Thêm trường này
+    is_primary: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false, // mặc định là bank phụ
+      allowNull: false,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -49,7 +54,10 @@ const Bank = sequelize.define(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
-    indexes: [{ name: "idx_banks_user", fields: ["user_id"] }],
+    indexes: [
+      { name: "idx_banks_user", fields: ["user_id"] },
+      { name: "idx_banks_primary", fields: ["user_id", "is_primary"] },
+    ]
   }
 );
 

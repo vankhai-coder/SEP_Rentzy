@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
-
 const AddCarForm = () => {
   const navigate = useNavigate();
 
@@ -278,6 +277,18 @@ const AddCarForm = () => {
           Hãy vui lòng điền các thông tin chính xác của xe và giấy tờ xe hợp lệ.
         </p>
       </div>
+      
+      <div className="mb-8">
+        <button
+            type="button"
+            onClick={() => navigate("/owner/vehicle-management")}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+          Quay lại quản lý xe
+        </button>
+      </div>
+
+      
 
       <h1 className="text-3xl font-bold text-blue-600 mb-6">
         🚗 Đăng xe ô tô cho thuê

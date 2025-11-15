@@ -42,20 +42,7 @@ const BookingCancellation = sequelize.define("BookingCancellation", {
     type: DataTypes.ENUM('renter', 'owner', 'admin', 'system'),
     allowNull: false,
   },
-  
-  // === THÔNG TIN DUYỆT HỦY ===
-  // Thời gian chủ xe duyệt hủy
-  owner_approved_cancel_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  // Thời gian hủy đơn thực tế
-  cancelled_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  
-  // === THÔNG TIN HOÀN TIỀN CHO NGƯỜI THUÊ ===
+
   // Tổng tiền hoàn cho người thuê
   total_refund_for_renter: {
     type: DataTypes.DECIMAL(12, 2),
@@ -66,7 +53,7 @@ const BookingCancellation = sequelize.define("BookingCancellation", {
   },
   // Trạng thái hoàn tiền cho người thuê
   refund_status_renter: {
-    type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected', 'completed'),
+    type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected'),
     defaultValue: 'none',
   },
   // Lý do hoàn tiền cho người thuê
@@ -91,7 +78,7 @@ const BookingCancellation = sequelize.define("BookingCancellation", {
   },
   // Trạng thái hoàn tiền cho chủ xe
   refund_status_owner: {
-    type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected', 'completed'),
+    type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected'),
     defaultValue: 'none',
   },
   // Thời gian xử lý hoàn tiền cho chủ xe

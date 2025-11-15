@@ -1,0 +1,96 @@
+.transaction-history {
+  padding: 1.5rem;
+  background: #f9f9f9;
+
+  .page-header {
+    margin-bottom: 1rem;
+    h1 { display: flex; align-items: center; gap: 0.5rem; }
+    p { color: #555; font-size: 0.9rem; }
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    .stat-card {
+      background: #fff;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+
+      h3 { font-size: 0.85rem; color: #555; margin:0; }
+      p { font-size: 1.1rem; font-weight: 600; margin:0; }
+
+      .income { color: green; }
+      .expense { color: red; }
+    }
+  }
+
+  .filters-section {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    .filters-header { font-weight: 600; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .filters-content { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    input[type=text] { padding: 0.4rem 0.5rem; border-radius: 0.25rem; border:1px solid #ccc; flex:1; }
+    select { padding: 0.4rem 0.5rem; border-radius:0.25rem; border:1px solid #ccc; }
+    .search-box { display:flex; align-items:center; gap:0.3rem; }
+  }
+
+  .table-scroll {
+    overflow-x:auto;
+    table {
+      width:100%;
+      border-collapse:collapse;
+      th,td { padding:0.6rem 0.8rem; text-align:left; border-bottom:1px solid #eee; }
+      th { cursor:pointer; user-select:none; }
+
+      .status-badge, .type-badge { display:flex; align-items:center; gap:0.2rem; padding:0.2rem 0.4rem; border-radius:0.25rem; font-size:0.8rem; }
+
+      .status-badge.pending { background:#fff3cd; color:#856404; }
+      .status-badge.completed { background:#d4edda; color:#155724; }
+      .status-badge.failed { background:#f8d7da; color:#721c24; }
+      .status-badge.cancelled { background:#f8d7da; color:#721c24; }
+
+      .type-badge.income { background:#d4edda; color:#155724; }
+      .type-badge.compensation { background:#cce5ff; color:#004085; }
+      .type-badge.payout { background:#f0f0f0; color:#555; }
+      .type-badge.deposit { background:#fff3cd; color:#856404; }
+      .type-badge.refund { background:#f8d7da; color:#721c24; }
+    }
+  }
+
+  .pagination {
+    margin-top:1rem;
+    display:flex;
+    gap:0.3rem;
+
+    button {
+      padding:0.3rem 0.6rem;
+      border:none;
+      border-radius:0.25rem;
+      cursor:pointer;
+      background:#fff;
+      box-shadow:0 1px 3px rgba(0,0,0,0.1);
+
+      &.active { background:#007bff; color:#fff; }
+      &:disabled { opacity:0.5; cursor:default; }
+    }
+  }
+
+  .loading-container, .error-container {
+    text-align:center;
+    padding:2rem;
+    svg { margin-bottom:0.5rem; color:#555; }
+  }
+
+  .retry-button { margin-top:0.5rem; padding:0.4rem 0.8rem; border:none; border-radius:0.25rem; background:#007bff; color:#fff; cursor:pointer; }
+}

@@ -218,7 +218,6 @@ export const paymentSuccessTemplateForRenter = (
     <body>
       <div class="container">
         <div class="header">
-          <div class="success-icon">✓</div>
           <h2>Thanh toán thành công!</h2>
         </div>
         
@@ -230,10 +229,7 @@ export const paymentSuccessTemplateForRenter = (
             <span class="detail-label">Mã booking:</span>
             <span class="detail-value">#${bookingId}</span>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">Xe thuê:</span>
-            <span class="detail-value">${vehicleName}</span>
-          </div>
+
           <div class="detail-row">
             <span class="detail-label">Loại thanh toán:</span>
             <span class="detail-value">${paymentType}</span>
@@ -354,23 +350,19 @@ export const paymentSuccessTemplateForOwner = (
         
         <div class="payment-details">
           <div class="detail-row">
-            <span class="detail-label">Mã booking:</span>
+            <span class="detail-label">Mã booking: </span>
             <span class="detail-value">#${bookingId}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">Xe cho thuê:</span>
-            <span class="detail-value">${vehicleName}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Người thuê:</span>
+            <span class="detail-label">Người thuê: </span>
             <span class="detail-value">${renterName}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">Loại thanh toán:</span>
+            <span class="detail-label">Loại thanh toán: </span>
             <span class="detail-value">${paymentType}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">Số tiền thanh toán được:</span>
+            <span class="detail-label">Số tiền thanh toán được: </span>
             <span class="detail-value">${amount.toLocaleString(
               "vi-VN"
             )} VNĐ</span>

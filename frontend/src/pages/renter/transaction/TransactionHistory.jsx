@@ -1,10 +1,10 @@
+// TransactionHistory.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import axiosInstance from "../../../config/axiosInstance.js";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   CreditCard,
-  DollarSign,
   Filter,
   Search,
   ChevronUp,
@@ -12,8 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
-  ArrowUpCircle,
-  ArrowDownCircle,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -47,7 +45,6 @@ const TransactionHistory = () => {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get("/api/renter/transactions");
-
       if (response.data.success && response.data.data) {
         setTransactions(response.data.data.transactions || []);
         if (response.data.data.statistics) {
@@ -59,50 +56,49 @@ const TransactionHistory = () => {
       }
     } catch (err) {
       setError("Không thể tải lịch sử giao dịch");
-      console.error("Error fetching transactions:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(amount);
-  };
 
   const getTransactionTypeText = (type) => {
-    const typeMap = {
+    const map = {
       DEPOSIT: "Cọc",
       RENTAL: "Thuê xe",
       REFUND: "Hoàn tiền",
       COMPENSATION: "Bồi thường",
       PAYOUT: "Thanh toán",
     };
-    return typeMap[type] || type;
+    return map[type] || type;
   };
 
   const getStatusInfo = (status) => {
-    const statusMap = {
+    const map = {
       COMPLETED: { text: "Thành công", icon: CheckCircle },
-      PENDING: { text: "Xử lý", icon: Clock },
+      PENDING: { text: "Đang xử lý", icon: Clock },
       FAILED: { text: "Thất bại", icon: XCircle },
       CANCELLED: { text: "Đã hủy", icon: AlertCircle },
     };
-    return statusMap[status] || { text: status, icon: AlertCircle };
+    return map[status] || { text: status, icon: AlertCircle };
   };
 
   const filteredAndSortedTransactions = useMemo(() => {
-    let filtered = transactions.filter((transaction) => {
-      const matchesFilter = filter === "all" || transaction.status === filter;
-      const matchesSearch =
-        transaction.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getTransactionTypeText(transaction.type)
+    let filtered = transactions.filter((t) => {
+      const matchFilter = filter === "all" || t.status === filter;
+      const matchSearch =
+        t.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getTransactionTypeText(t.type)
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        transaction.transaction_id?.toString().includes(searchTerm);
-      return matchesFilter && matchesSearch;
+        t.transaction_id?.toString().includes(searchTerm);
+      return matchFilter && matchSearch;
     });
 
     filtered.sort((a, b) => {
@@ -117,11 +113,13 @@ const TransactionHistory = () => {
         bValue = new Date(bValue);
       }
 
-      if (sortOrder === "ASC") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+      return sortOrder === "ASC"
+        ? aValue > bValue
+          ? 1
+          : -1
+        : aValue < bValue
+        ? 1
+        : -1;
     });
 
     return filtered;
@@ -138,6 +136,7 @@ const TransactionHistory = () => {
   );
 
   const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
 
@@ -152,23 +151,17 @@ const TransactionHistory = () => {
 
   const LoadingSkeleton = () => (
     <div className="transaction-history">
-      <div className="page-header">
-        <div className="skeleton skeleton-header"></div>
-      </div>
+      <div className="page-header skeleton skeleton-header"></div>
       <div className="stats-grid">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="stat-card">
-            <div className="skeleton skeleton-stat"></div>
-          </div>
+          <div key={i} className="stat-card skeleton skeleton-stat"></div>
         ))}
       </div>
       <div className="controls">
         <div className="skeleton skeleton-control"></div>
         <div className="skeleton skeleton-control"></div>
       </div>
-      <div className="table-card">
-        <div className="skeleton skeleton-table"></div>
-      </div>
+      <div className="table-card skeleton skeleton-table"></div>
     </div>
   );
 
@@ -176,14 +169,10 @@ const TransactionHistory = () => {
 
   if (error) {
     return (
-      <div className="transaction-history">
-        <div className="error-state">
-          <XCircle size={48} />
-          <h3>{error}</h3>
-          <button onClick={fetchTransactions} className="btn-retry">
-            Thử lại
-          </button>
-        </div>
+      <div className="transaction-history error-state">
+        <XCircle size={48} />
+        <h3>{error}</h3>
+        <button onClick={fetchTransactions}>Thử lại</button>
       </div>
     );
   }
@@ -205,7 +194,6 @@ const TransactionHistory = () => {
             <div className="stat-label">Giao dịch</div>
           </div>
         </div>
-
         <div className="stat-card">
           <div className="stat-content">
             <div className="stat-value">
@@ -214,7 +202,6 @@ const TransactionHistory = () => {
             <div className="stat-label">Tổng tiền</div>
           </div>
         </div>
-
         <div className="stat-card">
           <div className="stat-content">
             <div className="stat-value">
@@ -223,7 +210,6 @@ const TransactionHistory = () => {
             <div className="stat-label">Tiền vào</div>
           </div>
         </div>
-
         <div className="stat-card">
           <div className="stat-content">
             <div className="stat-value">
@@ -240,7 +226,7 @@ const TransactionHistory = () => {
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">Tất cả</option>
             <option value="COMPLETED">Thành công</option>
-            <option value="PENDING">Xử lý</option>
+            <option value="PENDING">Đang xử lý</option>
             <option value="FAILED">Thất bại</option>
             <option value="CANCELLED">Đã hủy</option>
           </select>
@@ -270,11 +256,8 @@ const TransactionHistory = () => {
               <table className="transaction-table">
                 <thead>
                   <tr>
-                    <th
-                      onClick={() => handleSort("transaction_id")}
-                      className="sortable"
-                    >
-                      <span>Mã GD</span>
+                    <th onClick={() => handleSort("transaction_id")}>
+                      Mã GD{" "}
                       {sortBy === "transaction_id" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -282,8 +265,8 @@ const TransactionHistory = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th onClick={() => handleSort("type")} className="sortable">
-                      <span>Loại</span>
+                    <th onClick={() => handleSort("type")}>
+                      Loại{" "}
                       {sortBy === "type" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -291,11 +274,8 @@ const TransactionHistory = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th
-                      onClick={() => handleSort("amount")}
-                      className="sortable"
-                    >
-                      <span>Số tiền</span>
+                    <th onClick={() => handleSort("amount")}>
+                      Số tiền{" "}
                       {sortBy === "amount" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -303,11 +283,8 @@ const TransactionHistory = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th
-                      onClick={() => handleSort("payment_method")}
-                      className="sortable"
-                    >
-                      <span>Phương thức</span>
+                    <th onClick={() => handleSort("payment_method")}>
+                      Phương thức{" "}
                       {sortBy === "payment_method" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -315,11 +292,8 @@ const TransactionHistory = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th
-                      onClick={() => handleSort("created_at")}
-                      className="sortable"
-                    >
-                      <span>Ngày</span>
+                    <th onClick={() => handleSort("created_at")}>
+                      Ngày{" "}
                       {sortBy === "created_at" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -327,11 +301,8 @@ const TransactionHistory = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th
-                      onClick={() => handleSort("status")}
-                      className="sortable"
-                    >
-                      <span>Trạng thái</span>
+                    <th onClick={() => handleSort("status")}>
+                      Trạng thái{" "}
                       {sortBy === "status" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
@@ -343,70 +314,21 @@ const TransactionHistory = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentTransactions.map((transaction) => {
-                    const StatusIcon = getStatusInfo(transaction.status).icon;
+                  {currentTransactions.map((t) => {
+                    const statusInfo = getStatusInfo(t.status);
                     return (
-                      <tr key={transaction.transaction_id}>
+                      <tr key={t.transaction_id}>
+                        <td>{t.transaction_id}</td>
+                        <td>{getTransactionTypeText(t.type)}</td>
+                        <td>{formatCurrency(t.amount)}</td>
+                        <td>{t.payment_method}</td>
                         <td>
-                          <span className="id-badge">
-                            #{transaction.transaction_id}
-                          </span>
+                          {format(new Date(t.created_at), "dd/MM/yyyy HH:mm", {
+                            locale: vi,
+                          })}
                         </td>
-                        <td>
-                          <span
-                            className={`type-badge ${transaction.type.toLowerCase()}`}
-                          >
-                            {getTransactionTypeText(transaction.type)}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`amount ${
-                              transaction.type === "REFUND" ||
-                              transaction.type === "COMPENSATION"
-                                ? "positive"
-                                : ""
-                            }`}
-                          >
-                            {formatCurrency(transaction.amount)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="method">
-                            {transaction.payment_method || "N/A"}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="date-time">
-                            <span>
-                              {format(
-                                new Date(transaction.created_at),
-                                "dd/MM/yyyy",
-                                { locale: vi }
-                              )}
-                            </span>
-                            <small>
-                              {format(
-                                new Date(transaction.created_at),
-                                "HH:mm",
-                                { locale: vi }
-                              )}
-                            </small>
-                          </div>
-                        </td>
-                        <td>
-                          <span
-                            className={`status-badge ${transaction.status.toLowerCase()}`}
-                          >
-                            <StatusIcon size={12} />
-                            {getStatusInfo(transaction.status).text}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="note">
-                            {transaction.note || "-"}
-                          </span>
-                        </td>
+                        <td>{statusInfo.text}</td>
+                        <td>{t.note || "-"}</td>
                       </tr>
                     );
                   })}
@@ -415,53 +337,21 @@ const TransactionHistory = () => {
             </div>
 
             <div className="pagination">
-              <div className="pagination-info">
-                {startIndex + 1}-
-                {Math.min(endIndex, filteredAndSortedTransactions.length)} /{" "}
-                {filteredAndSortedTransactions.length}
-              </div>
-              <div className="pagination-btns">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="btn-page"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`btn-page ${
-                        currentPage === pageNum ? "active" : ""
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="btn-page"
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft size={14} /> Trước
+              </button>
+              <span>
+                Trang {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight size={14} /> Sau
+              </button>
             </div>
           </>
         )}

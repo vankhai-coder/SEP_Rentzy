@@ -14,7 +14,8 @@ export const getAllVehicles = async (req, res) => {
     }
     const where = {
       vehicle_type: type || undefined, // Nếu không có type, lấy tất cả
-      approvalStatus: "approved", // Chỉ lấy xe đã duyệt
+      approvalStatus: "approved",// Chỉ lấy xe đã duyệt
+      status: "available", // chỉ lấy xe ở trạng thái available
     };
     // Loại bỏ undefined fields
     Object.keys(where).forEach(

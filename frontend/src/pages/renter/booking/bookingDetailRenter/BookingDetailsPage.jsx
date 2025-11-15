@@ -137,6 +137,8 @@ const BookingDetailsPage = () => {
         return "Chờ xác nhận";
       case "deposit_paid":
         return "Đã thanh toán cọc";
+      case "in_progress":
+        return "Đang thuê";
       case "fully_paid":
         return "Đã thanh toán đầy đủ";
       case "completed":
@@ -210,6 +212,23 @@ const BookingDetailsPage = () => {
       </div>
     );
   }
+  const handlePaymentRemainingByCash = async () => {
+    try {
+      const response = await axiosInstance.patch(
+        `/api/payment/byCash/${booking.booking_id}`
+      );
+      console.log("API Response:", response.data);
+
+      if (!response) {
+        console.log("yêu cầu thanh toán thành công");
+      }
+
+      alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+      fetchBookingDetails();
+    } catch (err) {
+      console.log("có lỗi", err);
+    }
+  };
 
   return (
     <div className="booking-details-container">
@@ -409,6 +428,10 @@ const BookingDetailsPage = () => {
 
           {showPaymentButton && (
             <div className="payment-action">
+              <h1>
+                {" "}
+                Thanh toán tiền còn lại {formatCurrency(nextPaymentAmount)}
+              </h1>
               <button
                 className="payment-button"
                 onClick={() => {
@@ -419,7 +442,16 @@ const BookingDetailsPage = () => {
               >
                 {paymentLoading
                   ? "Đang tạo link thanh toán..."
-                  : `Thanh toán ${formatCurrency(nextPaymentAmount)}`}
+                  : `Thanh  toán qua hệ thống  `}
+              </button>
+              {/* thanh toán bằng  tiền mặt  */}
+              <button
+                className="payment-button"
+                onClick={() => {
+                  handlePaymentRemainingByCash();
+                }}
+              >
+                Thanh toán bằng tiền mặt
               </button>
             </div>
           )}

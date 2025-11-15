@@ -12,6 +12,7 @@ const CarList = ({ cars = [] }) => {
         <VehicleCard
           key={car.vehicle_id}
           vehicle={car}
+          type="car"
           iconSpecs={[
             { icon: <Settings size={16} />, value: car.transmission },
             { icon: <Users size={16} />, value: `${car.seats} chỗ` },
