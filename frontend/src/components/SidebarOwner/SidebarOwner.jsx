@@ -11,6 +11,7 @@ import {
   MdAccountCircle,
   MdTransform,
   MdReceipt,
+  MdArrowBack,
 } from "react-icons/md";
 import {
   FaCar,
@@ -23,9 +24,19 @@ import {
 // SidebarOwner nhận prop handleLogout
 const SidebarOwner = ({ handleLogout }) => {
   return (
-    <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen fixed left-0 top-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000]">
-      <div className="text-2xl font-bold text-center mb-[30px] text-[#3498db]">
-        Bảng điều khiển chủ xe
+    <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen fixed left-0 top-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] relative">
+      {/* Back icon at top-left */}
+      <NavLink
+        to="/account"
+        className="absolute left-3 top-3 inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61]"
+        title="Quay về hồ sơ"
+        aria-label="Quay về hồ sơ"
+      >
+        <MdArrowBack className="text-xl" />
+      </NavLink>
+
+      <div className="px-5 pl-14 mb-[30px] pt-1">
+        <div className="text-2xl font-bold text-[#3498db]">Bảng điều khiển chủ xe</div>
       </div>
       <nav>
         <ul className="list-none p-0 m-0">

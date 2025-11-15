@@ -12,8 +12,6 @@ const Home = () => {
   useEffect(() => {
     if (role === 'admin') {
       navigate('/admin');
-    } else if (role === 'owner') {
-      navigate('/owner');
     }
   }, [role, navigate]);
 

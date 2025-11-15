@@ -6,17 +6,17 @@ import { checkAuth } from "@/redux/features/auth/authSlice";
 
 const ProtectedRoute = ({ children, allowRole }) => {
     const dispatch = useDispatch();
-    const { role, loading, userId } = useSelector(state => state.userStore);
+    const { role, loading, userId, error } = useSelector(state => state.userStore);
 
     useEffect(() => {
-        // If we don't know the user yet, try to check auth from cookie
-        if (!userId && !role) {
+        // Nếu chưa có thông tin user, kiểm tra từ cookie
+        if (!userId && !role && !loading) {
             dispatch(checkAuth());
         }
-    }, [dispatch, userId, role]);
+    }, [dispatch, userId, role, loading]);
 
-    // Show a simple loader while checking auth to avoid flicker/blank
-    if (loading && !role) {
+    // Trong khi đang kiểm tra hoặc chưa xác định vai trò, hiển thị trạng thái chờ
+    if (loading || (!userId && !role && !error)) {
         return (
             <div className="w-full py-20 text-center text-gray-500">Đang kiểm tra phiên đăng nhập...</div>
         );
@@ -28,6 +28,7 @@ const ProtectedRoute = ({ children, allowRole }) => {
         return children;
     }
 
+    // Sau khi kiểm tra xong mà không đúng quyền, chuyển về trang chủ
     return <Navigate to="/" replace />;
 }
 
