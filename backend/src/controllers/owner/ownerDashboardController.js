@@ -422,6 +422,13 @@ export const getOwnerRevenue = async (req, res) => {
     });
 
     // Doanh thu theo tháng (12 tháng gần nhất)
+    // Tạo placeholder cho mảng vehicleIds
+    const vehiclePlaceholders = vehicleIds.map((_, index) => `:vehicleId${index}`).join(',');
+    const vehicleReplacements = {};
+    vehicleIds.forEach((id, index) => {
+      vehicleReplacements[`vehicleId${index}`] = id;
+    });
+
     const monthlyRevenue = await db.sequelize.query(
       `
       SELECT 
@@ -430,49 +437,57 @@ export const getOwnerRevenue = async (req, res) => {
         SUM(total_amount) as revenue,
         COUNT(*) as booking_count
       FROM bookings 
-      WHERE vehicle_id IN (${vehicleIds.join(",")})
+      WHERE vehicle_id IN (${vehiclePlaceholders})
         AND status = 'completed'
         AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
       GROUP BY YEAR(created_at), MONTH(created_at)
       ORDER BY year DESC, month DESC
     `,
-      { type: db.sequelize.QueryTypes.SELECT }
+      {
+        replacements: vehicleReplacements,
+        type: db.sequelize.QueryTypes.SELECT
+      }
     );
 
-    // Thống kê theo xe
-    const vehicleStats = await Booking.findAll({
-      where: {
-        vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed",
+    // Thống kê theo xe - sử dụng raw query để tránh vấn đề với group và include
+    const vehicleStatsRaw = await db.sequelize.query(
+      `
+      SELECT 
+        b.vehicle_id,
+        SUM(b.total_amount) as totalRevenue,
+        COUNT(b.booking_id) as bookingCount,
+        v.model,
+        v.license_plate,
+        br.name as brand_name
+      FROM bookings b
+      INNER JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+      LEFT JOIN brands br ON v.brand_id = br.brand_id
+      WHERE b.vehicle_id IN (${vehiclePlaceholders})
+        AND b.status = 'completed'
+      GROUP BY b.vehicle_id, v.model, v.license_plate, br.name
+      ORDER BY totalRevenue DESC
+    `,
+      {
+        replacements: vehicleReplacements,
+        type: db.sequelize.QueryTypes.SELECT
+      }
+    );
+
+    // Format lại dữ liệu để phù hợp với frontend
+    const vehicleStats = vehicleStatsRaw.map(stat => ({
+      vehicle: {
+        vehicle_id: stat.vehicle_id,
+        model: stat.model,
+        license_plate: stat.license_plate,
+        brand: {
+          name: stat.brand_name
+        }
       },
-      include: [
-        {
-          model: Vehicle,
-          as: "vehicle",
-          include: [
-            {
-              model: Brand,
-              as: "brand",
-              attributes: ["brand_id", "name"],
-            },
-          ],
-          attributes: ["vehicle_id", "model", "license_plate"],
-        },
-      ],
-      attributes: [
-        "vehicle_id",
-        [
-          db.sequelize.fn("SUM", db.sequelize.col("total_amount")),
-          "totalRevenue",
-        ],
-        [
-          db.sequelize.fn("COUNT", db.sequelize.col("booking_id")),
-          "bookingCount",
-        ],
-      ],
-      group: ["vehicle_id"],
-      raw: false,
-    });
+      dataValues: {
+        totalRevenue: parseFloat(stat.totalRevenue || 0),
+        bookingCount: parseInt(stat.bookingCount || 0)
+      }
+    }));
 
     res.json({
       success: true,

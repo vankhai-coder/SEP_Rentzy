@@ -31,6 +31,7 @@ import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
+import RegisterOwner from "./pages/owner/RegisterOwner.jsx";
 import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
 
 // booking
@@ -72,6 +73,9 @@ const App = () => {
 
           {/* Home : */}
           <Route path="/" element={<HomePage />} />
+
+          {/* Trang đăng ký chủ xe */}
+          <Route path="/register_owner" element={<RegisterOwner />} />
 
           {/* RENTER ROUTES :  */}
           <Route path="/" element={<Account />}>

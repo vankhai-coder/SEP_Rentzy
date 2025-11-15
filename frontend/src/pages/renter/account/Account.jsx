@@ -21,6 +21,7 @@ import {
   ArrowRightLeft,
   TicketXIcon,
   CreditCard,
+  LayoutDashboard,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -85,6 +86,13 @@ const Account = () => {
               value="/my-reviews"
             >
               <Star /> Đánh giá của tôi
+            </SelectItem>
+            {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value={role === "owner" ? "/owner" : "/register_owner"}
+            >
+              <LayoutDashboard /> Bảng điều khiển chủ xe
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -162,7 +170,6 @@ const Account = () => {
             <div className="text-3xl font-bold text-center pb-4 border-b-1">
               Xin chào bạn!
             </div>
-
             <NavLink
               to="/account"
               className={({ isActive }) =>
@@ -194,6 +201,16 @@ const Account = () => {
               }
             >
               <Star size={20} /> Đánh giá của tôi
+            </NavLink>
+
+            {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
+            <NavLink
+              to={role === "owner" ? "/owner" : "/register_owner"}
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <LayoutDashboard /> Bảng điều khiển chủ xe
             </NavLink>
 
             <NavLink

@@ -34,11 +34,7 @@ const Layout = ({ children }) => {
   }, [dispatch]);
 
   // redirect owner to /owner when landing on home after auth
-  useEffect(() => {
-    if (role === 'owner' && location.pathname === '/') {
-      navigate('/owner', { replace: true });
-    }
-  }, [role, location.pathname, navigate]);
+  // Removed auto-redirect for owner to allow manual navigation via account page
 
   // redirect admin to /admin when landing on home after auth
   useEffect(() => {
