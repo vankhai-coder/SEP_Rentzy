@@ -1,29 +1,32 @@
-import React, { useEffect } from 'react'
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+// pages/renter/landingPage/Home.jsx
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import Hero from "@/components/common/Hero";
+import RecommendationSection from "@/components/renter/recommendation/RecommendationSection";
 
 const Home = () => {
-
-  // check role using redux and navigate based on role : 
   const { role, loading } = useSelector((state) => state.userStore);
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (role === 'admin') {
-      navigate('/admin');
-    } else if (role === 'owner') {
-      navigate('/owner');
-    }
+    if (role === "admin") navigate("/admin");
+    else if (role === "owner") navigate("/owner");
   }, [role, navigate]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
-    <div>Home</div>
-  )
-}
+    <div className="min-h-screen bg-gray-50">
+      <Hero />
+      <RecommendationSection limit={8} />
+    </div>
+  );
+};
 
-export default Home
+export default Home;
