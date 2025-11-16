@@ -92,7 +92,14 @@ export const getFavorites = async (req, res) => {
             "price_per_day",
             "main_image_url",
             "location",
-          ], // Chọn fields cần thiết
+            "vehicle_type", // Thêm để fix mismatch ở frontend
+            "transmission", // Thêm: hộp số
+            "fuel_type", // Thêm: nhiên liệu
+            "seats", // Thêm: số ghế
+            "bike_type", // Thêm: loại xe máy
+            "engine_capacity", // Thêm: phân khối
+            "features", // Thêm: tính năng tiện ích (JSON)
+          ], // Mở rộng fields cần thiết cho frontend
         },
       ],
       order: [["created_at", "DESC"]], // Sắp xếp theo mới nhất
