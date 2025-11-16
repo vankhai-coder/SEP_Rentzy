@@ -1,0 +1,298 @@
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getMyVehicleReports,
+  resetReportState,
+} from "../../../redux/features/renter/vehicleReport/vehicleReportSlice"; // Điều chỉnh đường dẫn slice nếu cần
+import {
+  AlertCircle,
+  Loader2,
+  Calendar,
+  CarFront,
+  UserCheck,
+  AlertTriangle,
+  MessageCircle,
+  BadgeCheck,
+  UserX,
+} from "lucide-react"; // Icons hiện đại
+import { useNavigate } from "react-router-dom";
+
+const MyReportedVehicles = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { userId } = useSelector((state) => state.userStore); // Check userId từ Redux
+  const { myReports, myReportsLoading, error } = useSelector(
+    (state) => state.vehicleReport // Giả sử reducer tên 'vehicleReport'
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      navigate("/login", { replace: true }); // Redirect nếu chưa login (backup)
+      return;
+    }
+    dispatch(getMyVehicleReports()); // Fetch tất cả reports của user
+    return () => dispatch(resetReportState()); // Cleanup khi unmount
+  }, [dispatch, userId, navigate]);
+
+  // Memoized data transformation & sorting confirmation (BE đã sort DESC, nhưng FE confirm)
+  const processedReports = useMemo(() => {
+    if (!myReports || myReportsLoading) return [];
+
+    // Map reason & status to VN labels
+    const reasonMap = {
+      fake_info: "Thông tin giả mạo",
+      illegal: "Vi phạm pháp luật",
+      bad_owner: "Chủ xe kém hợp tác",
+      dangerous: "Xe nguy hiểm",
+      other: "Khác",
+    };
+
+    const statusMap = {
+      pending: "Chờ xử lý",
+      reviewing: "Đang xem xét",
+      resolved: "Đã giải quyết",
+      rejected: "Bị từ chối",
+    };
+
+    // Confirm sorted by created_at DESC (newest first)
+    const sortedReports = [...myReports].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    return sortedReports.map((report) => ({
+      ...report,
+      reasonVN: reasonMap[report.reason] || report.reason,
+      statusVN: statusMap[report.status] || report.status,
+      adminNote: report.admin_note || "Chưa có ghi chú",
+    }));
+  }, [myReports, myReportsLoading]);
+
+  if (myReportsLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-pulse space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          <p className="text-gray-600">Đang tải báo cáo của bạn...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Xử lý error 401: Redirect login
+  if (error && error.includes("Phiên đăng nhập hết hạn")) {
+    localStorage.removeItem("user_id"); // Clear local nếu có
+    navigate("/login", { replace: true });
+    return (
+      <div className="text-center py-8">Đang chuyển hướng đăng nhập...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12 text-red-600 bg-red-50 rounded-lg border border-red-200 p-6">
+        <AlertCircle className="h-6 w-6 mr-2 flex-shrink-0" />
+        <span className="text-sm">Lỗi: {error}</span>
+      </div>
+    );
+  }
+
+  if (processedReports.length === 0) {
+    return (
+      <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm">
+        <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          Chưa có báo cáo nào
+        </h3>
+        <p className="text-gray-600 mb-6 max-w-md mx-auto">
+          Bạn chưa báo cáo xe nào. Hãy duyệt xe và báo cáo nếu phát hiện vấn đề
+          để giúp cộng đồng.
+        </p>
+        <a
+          href="/vehicles"
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+        >
+          Duyệt xe ngay
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header hiện đại với gradient & shadow */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <AlertCircle className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Xe đã báo cáo
+              </h1>
+              <p className="text-sm text-gray-600">
+                Danh sách báo cáo của bạn ({processedReports.length}) - Sắp xếp
+                mới nhất
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bảng hiện đại: Responsive, hover effects, badges */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>Ngày tạo</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <CarFront className="h-4 w-4" />
+                    <span>Biển số xe</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Model xe
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Chủ xe</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>Lý do</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Tin nhắn</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <BadgeCheck className="h-4 w-4" />
+                    <span>Trạng thái</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Ghi chú admin
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {processedReports.map((report) => (
+                <tr
+                  key={report.report_id}
+                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 transform hover:scale-[1.01]"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span>
+                        {new Date(report.created_at).toLocaleDateString(
+                          "vi-VN",
+                          {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                      {report.vehicle?.license_plate || "N/A"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {report.vehicle?.model || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="flex items-center space-x-2">
+                      <UserCheck className="h-4 w-4 text-green-500" />
+                      <span>{report.vehicle?.owner?.full_name || "N/A"}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        report.reason === "Thông tin giả mạo"
+                          ? "bg-orange-100 text-orange-800"
+                          : report.reason === "Vi phạm pháp luật"
+                          ? "bg-red-100 text-red-800"
+                          : report.reason === "Chủ xe kém hợp tác"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : report.reason === "Xe nguy hiểm"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {report.reasonVN}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
+                    <div className="flex items-center space-x-2">
+                      <MessageCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span
+                        className="truncate"
+                        title={report.message || "Không có"}
+                      >
+                        {report.message || "Không có mô tả"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span
+                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                        report.statusVN === "Chờ xử lý"
+                          ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800"
+                          : report.statusVN === "Đang xem xét"
+                          ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800"
+                          : report.statusVN === "Đã giải quyết"
+                          ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800"
+                          : "bg-gradient-to-r from-red-100 to-red-200 text-red-800"
+                      }`}
+                    >
+                      {report.statusVN}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
+                    <div className="flex items-center space-x-2">
+                      <UserX className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <span
+                        className="truncate italic"
+                        title={report.adminNote}
+                      >
+                        {report.adminNote}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer info nhỏ */}
+      <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
+        Dữ liệu được cập nhật theo thời gian thực. Báo cáo mới nhất ở trên cùng.
+      </div>
+    </div>
+  );
+};
+
+export default MyReportedVehicles;

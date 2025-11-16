@@ -109,7 +109,7 @@ Favorite.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
 
 // Vehicle ↔ VehicleReport
 Vehicle.hasMany(VehicleReport, { foreignKey: "vehicle_id" });
-VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id", as: "vehicle" });
 
 // User ↔ VehicleReport
 User.hasMany(VehicleReport, { foreignKey: "user_id", as: "reports" });

@@ -134,3 +134,74 @@ export const getVehicleReports = async (req, res) => {
     });
   }
 };
+
+// GET: Lấy báo cáo của user (tất cả hoặc filter theo xe cụ thể qua query param vehicle_id)
+export const getMyVehicleReports = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { vehicle_id } = req.query; // Lấy vehicle_id từ query param (optional)
+    let whereClause = { user_id: userId };
+    if (vehicle_id) {
+      whereClause.vehicle_id = parseInt(vehicle_id);
+      // Kiểm tra xe tồn tại nếu filter theo vehicle_id
+      const vehicle = await Vehicle.findByPk(parseInt(vehicle_id));
+      if (!vehicle) {
+        return res.status(404).json({
+          success: false,
+          message: "Xe không tồn tại.",
+        });
+      }
+    }
+    // Lấy danh sách báo cáo của user (include vehicle info để hiển thị xe nào, và status/admin_note)
+    const reports = await VehicleReport.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle", // Giả sử relation đã có as: "vehicle"
+          attributes: ["vehicle_id", "license_plate", "model"], // Info cơ bản về xe
+          include: [
+            {
+              model: User,
+              as: "owner", // Owner của xe nếu cần
+              attributes: ["user_id", "full_name"],
+            },
+          ],
+        },
+      ],
+      order: [["created_at", "DESC"]], // Sắp xếp mới nhất trước
+    });
+    const message = vehicle_id
+      ? "Lấy báo cáo của bạn cho xe này thành công."
+      : "Lấy tất cả báo cáo của bạn thành công.";
+    res.status(200).json({
+      success: true,
+      message,
+      data: reports.map((report) => ({
+        report_id: report.report_id,
+        vehicle_id: report.vehicle_id,
+        reason: report.reason,
+        message: report.message,
+        status: report.status,
+        admin_note: report.admin_note,
+        created_at: report.created_at,
+        vehicle: {
+          vehicle_id: report.vehicle.vehicle_id,
+          license_plate: report.vehicle.license_plate,
+          model: report.vehicle.model,
+          owner: {
+            user_id: report.vehicle.owner.user_id,
+            full_name: report.vehicle.owner.full_name,
+          },
+        },
+      })),
+      count: reports.length,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy báo cáo của user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy báo cáo.",
+    });
+  }
+};
