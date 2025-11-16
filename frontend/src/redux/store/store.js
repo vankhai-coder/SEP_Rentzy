@@ -9,6 +9,7 @@ import bookingHistoryReducer from "../features/renter/bookingHistory/bookingHist
 import bookingReviewReducer from "../features/renter/bookingReview/bookingReviewSlice.js";
 import vehicleReportReducer from "../features/renter/vehicleReport/vehicleReportSlice.js";
 import compareReducer from "../features/renter/compare/compareSlice";
+import recommendationReducer from "../features/renter/recommendation/recommendationSlice";
 export const store = configureStore({
   reducer: {
     userStore: UserReducer,
@@ -21,5 +22,6 @@ export const store = configureStore({
     bookingReview: bookingReviewReducer,
     vehicleReport: vehicleReportReducer,
     compareStore: compareReducer,
+    recommendation: recommendationReducer,
   },
 });
