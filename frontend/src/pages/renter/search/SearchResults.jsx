@@ -5,7 +5,16 @@ import { searchVehicles } from "../../../redux/features/renter/vehicles/vehicleS
 import SearchForm from "../../../components/renter/search/SearchForm";
 import FilterBar from "../../../components/renter/search/FilterSidebar"; // FIX: Đổi tên import nếu cần (trước là FilterSidebar?)
 import VehicleCard from "../../../components/renter/vehicles/VehicleCard";
-import { Calendar, MapPin, AlertCircle } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  AlertCircle,
+  Settings,
+  Users,
+  Fuel,
+  Bike,
+  Gauge,
+} from "lucide-react"; // Thêm icons cho specs giống HomeCar
 import CompareModal from "../../../components/renter/vehicles/compare/CompareModal"; // Mới: Import modal
 import { compareVehicles } from "../../../redux/features/renter/compare/compareSlice"; // Mới: Import action
 import { Scale } from "lucide-react"; // Mới: Icon cho nút so sánh
@@ -22,9 +31,7 @@ const SearchResults = ({ type }) => {
   } = useSelector((state) => state.vehicleStore);
   const { brands } = useSelector((state) => state.brandStore);
   const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy danh sách so sánh
-
   const [showModal, setShowModal] = useState(false); // Mới: State điều khiển modal
-
   const params = Object.fromEntries(searchParams.entries());
   const paramsKey = searchParams.toString();
 
@@ -74,6 +81,51 @@ const SearchResults = ({ type }) => {
     setShowModal(true);
   };
 
+  // Helper function để format fuel_type (để fix hiển thị "xe điện" nếu cần)
+  const formatFuelType = (fuel) => {
+    if (!fuel) return "N/A";
+    const normalized = fuel.toLowerCase();
+    if (normalized.includes("xăng") || normalized.includes("petrol"))
+      return "Xăng";
+    if (normalized.includes("điện") || normalized.includes("electric"))
+      return "Điện";
+    return fuel.charAt(0).toUpperCase() + fuel.slice(1); // Capitalize mặc định
+  };
+
+  // Helper function để format transmission (cho xe hơi)
+  const formatTransmission = (trans) => {
+    if (!trans) return "N/A";
+    const normalized = trans.toLowerCase();
+    if (
+      normalized.includes("auto") ||
+      normalized.includes("automatic") ||
+      normalized.includes("at")
+    )
+      return "Tự động";
+    if (normalized.includes("manual") || normalized.includes("mt"))
+      return "Số sàn";
+    return trans.charAt(0).toUpperCase() + trans.slice(1); // Capitalize mặc định
+  };
+
+  // CẬP NHẬT: Helper function để format bike_type (cho xe máy) - map tiếng Việt theo ví dụ: Xe ga, Xe côn, Xe số, Xe điện
+  const formatBikeType = (bikeType) => {
+    if (!bikeType) return "N/A";
+    const normalized = bikeType.toLowerCase();
+    if (
+      normalized.includes("scooter") ||
+      normalized.includes("ga") ||
+      normalized.includes("dutch")
+    )
+      return "Xe ga"; // scooter/dutch → Xe ga
+    if (normalized.includes("clutch") || normalized.includes("côn"))
+      return "Xe côn"; // clutch → Xe côn
+    if (normalized.includes("manual") || normalized.includes("số"))
+      return "Xe số"; // manual → Xe số
+    if (normalized.includes("electric") || normalized.includes("điện"))
+      return "Xe điện"; // electric → Xe điện
+    return bikeType.charAt(0).toUpperCase() + bikeType.slice(1); // Capitalize mặc định
+  };
+
   const renderVehicleList = () => {
     if (searchLoading)
       return <p className="text-center py-8">Đang tải xe...</p>;
@@ -91,24 +143,67 @@ const SearchResults = ({ type }) => {
         </div>
       );
 
+    // SỬA: Log data để debug (xóa sau khi test) - in raw và formatted cho bike_type
+    console.log(
+      "🔍 Vehicles data (motorbike example):",
+      vehicles.map((v) => ({
+        bike_type_raw: v.bike_type,
+        bike_type_formatted: formatBikeType(v.bike_type),
+        fuel_type: v.fuel_type,
+        engine_capacity: v.engine_capacity,
+      }))
+    );
+
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
-        {vehicles.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.vehicle_id}
-            vehicle={vehicle}
-            type={type} // Mới: Truyền type để handleCompare hoạt động
-            iconSpecs={[
-              { icon: <Calendar size={16} />, value: vehicle.year },
+        {vehicles.map((vehicle) => {
+          // SỬA: Set iconSpecs riêng cho từng vehicle dựa trên type và fields của nó
+          let iconSpecs = [
+            { icon: <Calendar size={16} />, value: vehicle.year || "N/A" }, // Fallback mặc định (nếu cần year ở specs)
+            { icon: <MapPin size={16} />, value: vehicle.location || "N/A" },
+          ];
+
+          if (type === "car") {
+            iconSpecs = [
               {
-                icon: <MapPin size={16} />,
-                value: `${
-                  vehicle.seats || vehicle.engine_capacity || "N/A"
-                } chỗ`,
+                icon: <Settings size={16} />,
+                value: formatTransmission(vehicle.transmission), // Format transmission
               },
-            ]}
-          />
-        ))}
+              {
+                icon: <Users size={16} />,
+                value: `${vehicle.seats || "N/A"} chỗ`,
+              },
+              {
+                icon: <Fuel size={16} />,
+                value: formatFuelType(vehicle.fuel_type),
+              },
+            ];
+          } else if (type === "motorbike") {
+            iconSpecs = [
+              {
+                icon: <Bike size={16} />,
+                value: formatBikeType(vehicle.bike_type), // CẬP NHẬT: Map tiếng Việt (scooter → Xe ga, clutch → Xe côn, manual → Xe số, electric → Xe điện)
+              },
+              {
+                icon: <Gauge size={16} />,
+                value: `${vehicle.engine_capacity || "N/A"}cc`, // Xử lý NULL → N/A cc
+              },
+              {
+                icon: <Fuel size={16} />,
+                value: formatFuelType(vehicle.fuel_type), // Ví dụ: electric → Điện
+              },
+            ];
+          }
+
+          return (
+            <VehicleCard
+              key={vehicle.vehicle_id}
+              vehicle={vehicle}
+              type={type} // Truyền type để handleCompare hoạt động
+              iconSpecs={iconSpecs} // SỬA: Specs riêng cho từng xe
+            />
+          );
+        })}
       </div>
     );
   };
@@ -126,7 +221,6 @@ const SearchResults = ({ type }) => {
           onSubmit={handleSearch}
         />
       </section>
-
       {/* Mới: Nút So Sánh - Đặt ở top right sau SearchForm */}
       <div className="flex justify-end mb-4">
         {compareList.length > 0 && (
@@ -140,7 +234,6 @@ const SearchResults = ({ type }) => {
           </button>
         )}
       </div>
-
       {/* 🔹 Filter ngang */}
       <section className="mt-6">
         <FilterBar
@@ -150,10 +243,8 @@ const SearchResults = ({ type }) => {
           onFilterChange={handleFilterChange}
         />
       </section>
-
       {/* 🔹 Kết quả */}
       <section className="mt-8">{renderVehicleList()}</section>
-
       {/* Mới: Modal so sánh - hiển thị khi showModal = true */}
       {showModal && (
         <CompareModal

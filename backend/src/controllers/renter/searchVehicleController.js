@@ -3,7 +3,7 @@ import { Op } from "sequelize";
 import db from "../../models/index.js"; // Import db để lấy sequelize
 import Vehicle from "../../models/Vehicle.js";
 import Brand from "../../models/Brand.js";
-
+import SearchHistory from "../../models/SearchHistory.js";
 export const searchVehicles = async (req, res) => {
   try {
     const {
@@ -277,6 +277,54 @@ export const searchVehicles = async (req, res) => {
       limit: limitNum,
       offset,
     });
+
+    // Log search (nếu user logged in)
+    const userId = req.user ? req.user.userId : null;
+    try {
+      const searchParams = {
+        type,
+        location,
+        brand_id: brand_id ? parseInt(brand_id) : null,
+        start_date,
+        end_date,
+        min_price: min_price ? parseFloat(min_price) : null,
+        max_price: max_price ? parseFloat(max_price) : null,
+        year_min: year_min ? parseInt(year_min) : null,
+        year_max: year_max ? parseInt(year_max) : null,
+        transmission,
+        fuel_type,
+        min_seats: min_seats ? parseInt(min_seats) : null,
+        max_seats: max_seats ? parseInt(max_seats) : null,
+        bike_type,
+        min_engine_capacity: min_engine_capacity
+          ? parseInt(min_engine_capacity)
+          : null,
+        max_engine_capacity: max_engine_capacity
+          ? parseInt(max_engine_capacity)
+          : null,
+        page: pageNum,
+        limit: limitNum,
+        sort_by,
+        sort_order,
+      };
+      console.log(
+        `[DEBUG] Creating SearchHistory: user_id=${userId}, params=${JSON.stringify(
+          searchParams
+        )}`
+      );
+      await SearchHistory.create({
+        user_id: userId, // Có thể null cho guest
+        search_params: searchParams,
+        results_count: total,
+      });
+      console.log(`[DEBUG] SearchHistory created successfully`);
+    } catch (searchError) {
+      console.error(
+        `[ERROR] Failed to create SearchHistory for user ${userId}:`,
+        searchError
+      );
+      // Không throw error để tránh break API
+    }
 
     res.json({
       success: true,
