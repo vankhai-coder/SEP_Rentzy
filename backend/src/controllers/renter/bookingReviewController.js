@@ -213,3 +213,80 @@ export const getMyReviews = async (req, res) => {
     });
   }
 };
+
+// Xóa đánh giá booking (chỉ renter có thể xóa review của mình)
+export const deleteBookingReview = async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const { review_id } = req.params;
+    const renter_id = req.user.userId;
+
+    // 1️⃣ Tìm review và kiểm tra thuộc về renter
+    const review = await BookingReview.findOne({
+      where: { review_id },
+      include: [
+        {
+          model: Booking,
+          as: "booking",
+          where: { renter_id }, // Đảm bảo booking thuộc renter này
+          attributes: ["booking_id", "renter_id"],
+        },
+      ],
+      transaction,
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đánh giá của bạn.",
+      });
+    }
+
+    // 2️⃣ Tìm lịch sử điểm thưởng liên quan (nếu có)
+    const pointsTrans = await PointsTransaction.findOne({
+      where: {
+        user_id: renter_id,
+        reference_type: "booking",
+        reference_id: review.booking_id,
+        description: "Thưởng điểm khi đánh giá xe",
+      },
+      transaction,
+    });
+
+    // 3️⃣ Trừ điểm cho renter
+    const POINTS_DEDUCT = 5000;
+    const user = await User.findByPk(renter_id, { transaction });
+
+    if (!user) {
+      throw new Error("Không tìm thấy người dùng.");
+    }
+
+    // Kiểm tra điểm hiện tại có đủ không (không cho âm)
+    const newBalance = Math.max(0, user.points - POINTS_DEDUCT);
+    await user.update({ points: newBalance }, { transaction });
+
+    // 4️⃣ Xóa lịch sử điểm (nếu tồn tại)
+    if (pointsTrans) {
+      await pointsTrans.destroy({ transaction });
+    }
+
+    // 5️⃣ Xóa review
+    await review.destroy({ transaction });
+
+    await transaction.commit();
+
+    res.json({
+      success: true,
+      message: "Xóa đánh giá thành công!",
+      points_deducted: pointsTrans ? POINTS_DEDUCT : 0,
+      new_balance: newBalance,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("❌ Error deleting booking review:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi xóa đánh giá.",
+    });
+  }
+};
