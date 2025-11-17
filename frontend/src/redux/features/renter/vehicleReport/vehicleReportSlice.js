@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 /* ============================================================
-   📤 TẠO BÁO CÁO MỚI (POST) - Không check local token, rely cookie
+   📤 TẠO BÁO CÁO MỚI (POST) - Renter only
    ============================================================ */
 export const createReport = createAsyncThunk(
   "vehicleReport/createReport",
@@ -13,25 +13,19 @@ export const createReport = createAsyncThunk(
           import.meta.env.VITE_API_URL
         }/api/renter/reports/vehicles/${vehicleId}`,
         { reason, message },
-        {
-          withCredentials: true, // Gửi cookie cho BE
-        }
+        { withCredentials: true }
       );
-
-      return response.data; // { success: true, data: {...} }
+      return response.data;
     } catch (error) {
       console.error(
         "❌ Lỗi khi tạo báo cáo:",
         error.response?.data || error.message
       );
-
       if (error.response?.status === 401) {
-        // BE reject → logout
         return rejectWithValue(
           "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại"
         );
       }
-
       return rejectWithValue(
         error.response?.data?.message || "Lỗi khi tạo báo cáo"
       );
@@ -40,7 +34,7 @@ export const createReport = createAsyncThunk(
 );
 
 /* ============================================================
-   🔍 KIỂM TRA XE ĐÃ BÁO CÁO (GET /my?vehicle_id) - Không check local token
+   🔍 KIỂM TRA XE ĐÃ BÁO CÁO (GET /my?vehicle_id) - Renter only
    ============================================================ */
 export const checkIfReported = createAsyncThunk(
   "vehicleReport/checkIfReported",
@@ -50,16 +44,10 @@ export const checkIfReported = createAsyncThunk(
         `${
           import.meta.env.VITE_API_URL
         }/api/renter/reports/my?vehicle_id=${vehicleId}`,
-        {
-          withCredentials: true, // Gửi cookie
-        }
+        { withCredentials: true }
       );
-
       const reports = response.data.data || [];
-      return {
-        isReported: reports.length > 0,
-        reports, // Trả về reports để dùng nếu cần
-      };
+      return { isReported: reports.length > 0, reports };
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) {
         return { isReported: false, reports: [] };
@@ -74,36 +62,29 @@ export const checkIfReported = createAsyncThunk(
 );
 
 /* ============================================================
-   📋 LẤY TẤT CẢ BÁO CÁO CỦA USER (GET /my) - Không check local token
+   📋 LẤY TẤT CẢ BÁO CÁO CỦA USER (GET /my) - Renter only
    ============================================================ */
 export const getMyVehicleReports = createAsyncThunk(
   "vehicleReport/getMyVehicleReports",
   async ({ vehicleId } = {}, { rejectWithValue }) => {
     try {
-      // Build URL: Nếu có vehicleId thì filter, không thì lấy tất cả
       const url = vehicleId
         ? `${
             import.meta.env.VITE_API_URL
           }/api/renter/reports/my?vehicle_id=${vehicleId}`
         : `${import.meta.env.VITE_API_URL}/api/renter/reports/my`;
-
-      const response = await axios.get(url, {
-        withCredentials: true, // Gửi cookie
-      });
-
-      return response.data; // { success: true, data: [...], count: N }
+      const response = await axios.get(url, { withCredentials: true });
+      return response.data;
     } catch (error) {
       console.error(
         "❌ Lỗi khi lấy báo cáo:",
         error.response?.data || error.message
       );
-
       if (error.response?.status === 401) {
         return rejectWithValue(
           "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại"
         );
       }
-
       return rejectWithValue(
         error.response?.data?.message || "Lỗi khi lấy báo cáo"
       );
@@ -112,19 +93,88 @@ export const getMyVehicleReports = createAsyncThunk(
 );
 
 /* ============================================================
-   🧩 SLICE - Không thay đổi
+   📋 LẤY TẤT CẢ BÁO CÁO (GET /api/renter/reports) - Admin only, hỗ trợ filter + pagination
+   ============================================================ */
+export const getAllVehicleReports = createAsyncThunk(
+  "vehicleReport/getAllVehicleReports",
+  async (
+    { status, vehicle_id, page = 1, limit = 10 } = {},
+    { rejectWithValue }
+  ) => {
+    try {
+      let url = `${import.meta.env.VITE_API_URL}/api/renter/reports`;
+      const params = new URLSearchParams();
+      if (status) params.append("status", status);
+      if (vehicle_id) params.append("vehicle_id", vehicle_id);
+      params.append("page", page.toString());
+      params.append("limit", limit.toString());
+      if (params.toString()) url += `?${params.toString()}`;
+      const response = await axios.get(url, { withCredentials: true });
+      return response.data;
+    } catch (error) {
+      console.error(
+        "❌ Lỗi khi lấy báo cáo admin:",
+        error.response?.data || error.message
+      );
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return rejectWithValue("Không có quyền truy cập hoặc phiên hết hạn");
+      }
+      return rejectWithValue(
+        error.response?.data?.message || "Lỗi khi lấy báo cáo"
+      );
+    }
+  }
+);
+
+/* ============================================================
+   🔄 CẬP NHẬT BÁO CÁO (PUT /api/renter/reports/:report_id) - Admin only
+   ============================================================ */
+export const updateVehicleReport = createAsyncThunk(
+  "vehicleReport/updateVehicleReport",
+  async ({ report_id, status, admin_note }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/renter/reports/${report_id}`,
+        { status, admin_note },
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "❌ Lỗi khi cập nhật báo cáo:",
+        error.response?.data || error.message
+      );
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return rejectWithValue("Không có quyền cập nhật hoặc phiên hết hạn");
+      }
+      return rejectWithValue(
+        error.response?.data?.message || "Lỗi khi cập nhật báo cáo"
+      );
+    }
+  }
+);
+
+/* ============================================================
+   🧩 SLICE - Thêm state cho admin
    ============================================================ */
 const vehicleReportSlice = createSlice({
   name: "vehicleReport",
   initialState: {
+    // Renter state
     loading: false,
     error: null,
     success: false,
     isReported: false,
     reportData: null,
-    myReports: [], // Danh sách báo cáo của user
+    myReports: [],
     myReportsCount: 0,
-    myReportsLoading: false, // Loading riêng cho getMyReports
+    myReportsLoading: false,
+    // Admin state
+    allReports: [],
+    allReportsCount: 0,
+    allReportsLoading: false,
+    updateLoading: false,
+    adminSuccess: false,
   },
   reducers: {
     resetReportState: (state) => {
@@ -136,10 +186,18 @@ const vehicleReportSlice = createSlice({
       state.myReports = [];
       state.myReportsCount = 0;
     },
+    resetAdminReportState: (state) => {
+      state.allReports = [];
+      state.allReportsCount = 0;
+      state.allReportsLoading = false;
+      state.updateLoading = false;
+      state.adminSuccess = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      /* 🟢 CREATE REPORT */
+      /* 🟢 CREATE REPORT (Renter) */
       .addCase(createReport.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -154,20 +212,18 @@ const vehicleReportSlice = createSlice({
       .addCase(createReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        // Nếu thông báo có chữ "đã báo cáo" thì vẫn đánh dấu là đã báo cáo
         if (String(action.payload).includes("đã báo cáo")) {
           state.isReported = true;
         }
       })
 
-      /* 🟡 CHECK REPORT */
+      /* 🟡 CHECK REPORT (Renter) */
       .addCase(checkIfReported.pending, (state) => {
         state.loading = true;
       })
       .addCase(checkIfReported.fulfilled, (state, action) => {
         state.loading = false;
         state.isReported = action.payload?.isReported || false;
-        // Nếu cần, lưu reports tạm
         if (action.payload?.reports) {
           state.myReports = action.payload.reports;
         }
@@ -178,7 +234,7 @@ const vehicleReportSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* 📋 GET MY REPORTS */
+      /* 📋 GET MY REPORTS (Renter) */
       .addCase(getMyVehicleReports.pending, (state) => {
         state.myReportsLoading = true;
         state.error = null;
@@ -195,9 +251,51 @@ const vehicleReportSlice = createSlice({
         state.error = action.payload;
         state.myReports = [];
         state.myReportsCount = 0;
+      })
+
+      /* 📋 GET ALL REPORTS (Admin) */
+      .addCase(getAllVehicleReports.pending, (state) => {
+        state.allReportsLoading = true;
+        state.error = null;
+      })
+      .addCase(getAllVehicleReports.fulfilled, (state, action) => {
+        state.allReportsLoading = false;
+        if (action.payload.success) {
+          state.allReports = action.payload.data || [];
+          state.allReportsCount = action.payload.count || 0;
+        }
+      })
+      .addCase(getAllVehicleReports.rejected, (state, action) => {
+        state.allReportsLoading = false;
+        state.error = action.payload;
+        state.allReports = [];
+        state.allReportsCount = 0;
+      })
+
+      /* 🔄 UPDATE REPORT (Admin) */
+      .addCase(updateVehicleReport.pending, (state) => {
+        state.updateLoading = true;
+        state.error = null;
+        state.adminSuccess = false;
+      })
+      .addCase(updateVehicleReport.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        state.adminSuccess = true;
+        const index = state.allReports.findIndex(
+          (r) => r.report_id === action.payload.data.report_id
+        );
+        if (index !== -1) {
+          state.allReports[index].status = action.payload.data.status;
+          state.allReports[index].admin_note = action.payload.data.admin_note;
+        }
+      })
+      .addCase(updateVehicleReport.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { resetReportState } = vehicleReportSlice.actions;
+export const { resetReportState, resetAdminReportState } =
+  vehicleReportSlice.actions;
 export default vehicleReportSlice.reducer;

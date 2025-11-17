@@ -205,3 +205,183 @@ export const getMyVehicleReports = async (req, res) => {
     });
   }
 };
+
+// GET: Lấy tất cả báo cáo xe (dành cho admin) - filter optional theo status hoặc vehicle_id
+export const getAllVehicleReports = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Kiểm tra quyền: Chỉ admin mới xem được tất cả
+    if (userRole !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Bạn không có quyền xem tất cả báo cáo. Chỉ admin mới được phép.",
+      });
+    }
+
+    const { status, vehicle_id } = req.query; // Optional filter
+    let whereClause = {};
+    if (status) {
+      whereClause.status = status; // Filter theo status (pending, reviewing, etc.)
+    }
+    if (vehicle_id) {
+      whereClause.vehicle_id = parseInt(vehicle_id);
+      // Kiểm tra xe tồn tại nếu filter theo vehicle_id
+      const vehicle = await Vehicle.findByPk(parseInt(vehicle_id));
+      if (!vehicle) {
+        return res.status(404).json({
+          success: false,
+          message: "Xe không tồn tại.",
+        });
+      }
+    }
+
+    // Lấy tất cả báo cáo (include vehicle info và reporter user)
+    const reports = await VehicleReport.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle", // Relation đã có
+          attributes: ["vehicle_id", "license_plate", "model", "status"], // Info cơ bản về xe
+          include: [
+            {
+              model: User,
+              as: "owner", // Owner của xe
+              attributes: ["user_id", "full_name"],
+            },
+          ],
+        },
+        {
+          model: User,
+          as: "user", // Người báo cáo
+          attributes: ["user_id", "full_name", "email"],
+        },
+      ],
+      order: [["created_at", "DESC"]], // Sắp xếp mới nhất trước
+    });
+
+    const message =
+      status || vehicle_id
+        ? "Lấy báo cáo (filter) thành công."
+        : "Lấy tất cả báo cáo thành công.";
+
+    res.status(200).json({
+      success: true,
+      message,
+      data: reports.map((report) => ({
+        report_id: report.report_id,
+        vehicle_id: report.vehicle_id,
+        reason: report.reason,
+        message: report.message,
+        status: report.status,
+        admin_note: report.admin_note,
+        created_at: report.created_at,
+        vehicle: {
+          vehicle_id: report.vehicle.vehicle_id,
+          license_plate: report.vehicle.license_plate,
+          model: report.vehicle.model,
+          status: report.vehicle.status, // Để admin biết xe có bị block chưa
+          owner: {
+            user_id: report.vehicle.owner.user_id,
+            full_name: report.vehicle.owner.full_name,
+          },
+        },
+        reporter: {
+          // Người báo cáo
+          user_id: report.user.user_id,
+          full_name: report.user.full_name,
+          email: report.user.email,
+        },
+      })),
+      count: reports.length,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy tất cả báo cáo:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy báo cáo.",
+    });
+  }
+};
+
+// PUT: Cập nhật status và admin_note cho một báo cáo (dành cho admin xử lý)
+export const updateVehicleReport = async (req, res) => {
+  try {
+    const { report_id } = req.params;
+    const { status, admin_note = "" } = req.body; // status bắt buộc, admin_note tùy chọn
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Kiểm tra quyền: Chỉ admin
+    if (userRole !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Bạn không có quyền cập nhật báo cáo. Chỉ admin mới được phép.",
+      });
+    }
+
+    // Validation: Kiểm tra status có hợp lệ không (ENUM)
+    const validStatuses = ["pending", "reviewing", "resolved", "rejected"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Status không hợp lệ. Các status cho phép: pending, reviewing, resolved, rejected.",
+      });
+    }
+
+    // Tìm báo cáo
+    const report = await VehicleReport.findByPk(parseInt(report_id));
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Báo cáo không tồn tại.",
+      });
+    }
+
+    // Cập nhật báo cáo
+    await report.update({
+      status,
+      admin_note,
+    });
+
+    // Logic xử lý vi phạm: Nếu resolved và note chứa từ khóa vi phạm, block xe
+    let blockMessage = "";
+    if (
+      status === "resolved" &&
+      (admin_note.toLowerCase().includes("vi phạm") ||
+        admin_note.toLowerCase().includes("block"))
+    ) {
+      const vehicle = await Vehicle.findByPk(report.vehicle_id);
+      if (vehicle && vehicle.status === "available") {
+        await vehicle.update({
+          status: "blocked",
+          blocked_by: "admin",
+        });
+        blockMessage = "Xe đã được block tự động do vi phạm.";
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Cập nhật báo cáo thành công.${
+        blockMessage ? " " + blockMessage : ""
+      }`,
+      data: {
+        report_id: report.report_id,
+        status: report.status, // Status mới
+        admin_note: report.admin_note, // Note mới
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi cập nhật báo cáo:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi cập nhật báo cáo.",
+    });
+  }
+};
