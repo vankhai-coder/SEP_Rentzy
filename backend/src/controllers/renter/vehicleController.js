@@ -2,7 +2,9 @@ import Vehicle from "../../models/Vehicle.js";
 import User from "../../models/User.js";
 import Booking from "../../models/Booking.js";
 import BookingReview from "../../models/BookingReview.js";
-
+import ViewHistory from "../../models/ViewHistory.js";
+import { Op } from "sequelize";
+import db from "../../models/index.js";
 // Lấy tất cả vehicles (filter theo type: car/motorbike, chỉ approved)
 export const getAllVehicles = async (req, res) => {
   try {
@@ -14,7 +16,7 @@ export const getAllVehicles = async (req, res) => {
     }
     const where = {
       vehicle_type: type || undefined, // Nếu không có type, lấy tất cả
-      approvalStatus: "approved",// Chỉ lấy xe đã duyệt
+      approvalStatus: "approved", // Chỉ lấy xe đã duyệt
       status: "available", // chỉ lấy xe ở trạng thái available
     };
     // Loại bỏ undefined fields
@@ -22,14 +24,62 @@ export const getAllVehicles = async (req, res) => {
       (key) => where[key] === undefined && delete where[key]
     );
 
-    const vehicles = await Vehicle.findAll({ where });
-    res.json({ success: true, data: vehicles });
+    // SỬA: Query với attributes include literal để tính average rating từ reviews (chỉ completed bookings)
+    // COALESCE(AVG, 5.0) mặc định 5.0 nếu không có review; ROUND để 1 chữ số thập phân
+    // SỬA: Dùng db.sequelize.literal thay vì sequelize.literal
+    const vehicles = await Vehicle.findAll({
+      where,
+      attributes: {
+        include: [
+          // MỚI: Tính average rating (không thêm rating_count vì dùng rent_count sẵn)
+          [
+            db.sequelize.literal(`(
+              COALESCE(
+                ROUND(
+                  (SELECT AVG(br.rating * 1.0) 
+                   FROM booking_reviews br 
+                   JOIN bookings b ON br.booking_id = b.booking_id 
+                   WHERE b.vehicle_id = Vehicle.vehicle_id 
+                   AND b.status = 'completed'), 
+                  1
+                ), 
+                5.0
+              )
+            )`),
+            "rating",
+          ],
+        ],
+      },
+    });
+
+    // SỬA: Parse JSON strings to arrays cho mỗi vehicle (optional, thêm để nhất quán)
+    const vehicleData = vehicles.map((vehicle) => {
+      const data = vehicle.toJSON();
+      if (data.extra_images && typeof data.extra_images === "string") {
+        try {
+          data.extra_images = JSON.parse(data.extra_images);
+        } catch (e) {
+          data.extra_images = [];
+        }
+      }
+      if (data.features && typeof data.features === "string") {
+        try {
+          data.features = JSON.parse(data.features);
+        } catch (e) {
+          data.features = [];
+        }
+      }
+      // SỬA: Đảm bảo rating là number, fallback 5.0
+      data.rating = parseFloat(data.rating) || 5.0;
+      return data;
+    });
+
+    res.json({ success: true, data: vehicleData });
   } catch (error) {
     console.error("Error fetching vehicles:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 // Lấy chi tiết 1 vehicle theo id (chỉ nếu approved, hoặc nếu renter là owner của xe)
 export const getVehicleById = async (req, res) => {
   try {
@@ -122,6 +172,42 @@ export const getVehicleById = async (req, res) => {
         : 0,
       count: ratings.length,
     };
+
+    // Log view history (nếu user logged in) - FIX: Thêm dedup để tránh multiple calls
+    if (req.user && req.user.userId) {
+      try {
+        const userId = req.user.userId;
+        // THÊM: Check recent view (trong 10 giây) để dedup
+        const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+        const recentView = await ViewHistory.findOne({
+          where: {
+            user_id: userId,
+            vehicle_id: parseInt(id),
+            created_at: { [Op.gte]: tenSecondsAgo },
+          },
+        });
+        if (recentView) {
+          // Update duration nếu cần (tăng dần, hoặc giữ nguyên)
+          console.log(
+            `[DEBUG] Skip duplicate ViewHistory: Recent view exists for user ${userId}, vehicle ${id}`
+          );
+          // Optional: recentView.duration_seconds += 10; await recentView.save();
+        } else {
+          // Create new nếu chưa có recent
+          console.log(
+            `[DEBUG] Creating ViewHistory: user_id=${userId}, vehicle_id=${id}`
+          );
+          await ViewHistory.create({
+            user_id: userId,
+            vehicle_id: parseInt(id),
+            duration_seconds: 30, // Default, có thể update sau nếu track thời gian
+          });
+          console.log(`[DEBUG] ViewHistory created successfully`);
+        }
+      } catch (error) {
+        console.error(`[ERROR] Failed ViewHistory:`, error);
+      }
+    }
 
     res.json({ success: true, data: vehicleData });
   } catch (error) {

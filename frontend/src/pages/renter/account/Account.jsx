@@ -20,6 +20,7 @@ import {
   Star,
   ArrowRightLeft,
   TicketXIcon,
+  AlertCircle,
   CreditCard,
   LayoutDashboard,
 } from "lucide-react";
@@ -99,6 +100,12 @@ const Account = () => {
               value="/favorites"
             >
               <Heart /> Xe yêu thích
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/my-reports"
+            >
+              <AlertCircle size={20} /> Xe đã báo cáo
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -185,6 +192,14 @@ const Account = () => {
               }
             >
               <Heart /> Xe yêu thích
+            </NavLink>
+            <NavLink
+              to="/my-reports"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <AlertCircle size={20} /> Xe đã báo cáo
             </NavLink>
             <NavLink
               to="/booking-history"

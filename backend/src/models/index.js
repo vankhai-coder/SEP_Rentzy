@@ -18,7 +18,8 @@ import Vehicle from "./Vehicle.js";
 import Booking from "./Booking.js";
 import Favorite from "./Favorite.js";
 import VehicleReport from "./VehicleReport.js";
-
+import SearchHistory from "./SearchHistory.js";
+import ViewHistory from "./ViewHistory.js";
 // Bảng phụ thuộc Booking
 import BookingReview from "./BookingReview.js";
 import BookingHandover from "./BookingHandover.js";
@@ -55,6 +56,13 @@ User.hasMany(Message, { foreignKey: "receiver_id", as: "ReceivedMessages" });
 Message.belongsTo(User, { as: "sender", foreignKey: "sender_id" });
 Message.belongsTo(User, { as: "receiver", foreignKey: "receiver_id" });
 
+// User ↔ SearchHistory
+User.hasMany(SearchHistory, { foreignKey: "user_id" });
+SearchHistory.belongsTo(User, { foreignKey: "user_id" });
+
+// User ↔ ViewHistory
+User.hasMany(ViewHistory, { foreignKey: "user_id" });
+ViewHistory.belongsTo(User, { foreignKey: "user_id" });
 // === BẢNG PHỤ THUỘC BRAND VÀ USER ===
 
 // Brand ↔ Vehicle
@@ -70,6 +78,10 @@ Vehicle.belongsTo(User, { as: "owner", foreignKey: "owner_id" });
 // Vehicle ↔ Booking
 Vehicle.hasMany(Booking, { foreignKey: "vehicle_id" });
 Booking.belongsTo(Vehicle, { foreignKey: "vehicle_id", as: "vehicle" });
+
+// Vehicle ↔ ViewHistory
+Vehicle.hasMany(ViewHistory, { foreignKey: "vehicle_id" });
+ViewHistory.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
 
 // User ↔ Booking
 User.hasMany(Booking, { foreignKey: "renter_id", as: "RenterBookings" });
@@ -97,7 +109,7 @@ Favorite.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
 
 // Vehicle ↔ VehicleReport
 Vehicle.hasMany(VehicleReport, { foreignKey: "vehicle_id" });
-VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id" });
+VehicleReport.belongsTo(Vehicle, { foreignKey: "vehicle_id", as: "vehicle" });
 
 // User ↔ VehicleReport
 User.hasMany(VehicleReport, { foreignKey: "user_id", as: "reports" });
@@ -169,6 +181,8 @@ const db = {
   Notification,
   PointsTransaction,
   Message,
+  SearchHistory,
+  ViewHistory,
   // Bảng phụ thuộc Brand và User
   Vehicle,
   // Bảng phụ thuộc Vehicle và User
