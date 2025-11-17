@@ -14,12 +14,16 @@ export const fetchFavorites = createAsyncThunk(
 export const addFavorite = createAsyncThunk(
   "favorite/addFavorite",
   async (thunkArg, { rejectWithValue }) => {
-    const { vehicle_id, vehicle } = thunkArg;
+    const { vehicle_id } = thunkArg; // Không cần vehicle nữa, server sẽ include full
     try {
-      const response = await axiosInstance.post("/api/renter/favorites", {
+      await axiosInstance.post("/api/renter/favorites", {
         vehicle_id,
       });
-      return { ...response.data.data, Vehicle: vehicle };
+      // Sau add, fetch lại để lấy full data từ server
+      const favoritesResponse = await axiosInstance.get(
+        "/api/renter/favorites"
+      );
+      return favoritesResponse.data.data; // Return full list để update state
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Lỗi không xác định"
@@ -73,7 +77,7 @@ const favoriteSlice = createSlice({
       })
       .addCase(addFavorite.fulfilled, (state, action) => {
         state.loading = false;
-        state.favorites.push(action.payload);
+        state.favorites = action.payload; // Update full list
       })
       .addCase(addFavorite.rejected, (state, action) => {
         state.loading = false;

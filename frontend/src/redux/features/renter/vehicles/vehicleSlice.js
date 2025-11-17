@@ -7,7 +7,8 @@ export const fetchVehicles = createAsyncThunk(
   async (type, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?type=${type}`
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?type=${type}`,
+        { withCredentials: true }
       );
       return response.data.data;
     } catch (error) {
@@ -24,7 +25,8 @@ export const fetchVehicleById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/renter/vehicles/${id}`
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles/${id}`,
+        { withCredentials: true }
       );
       return response.data.data;
     } catch (error) {
@@ -44,7 +46,8 @@ export const searchVehicles = createAsyncThunk(
       const query = new URLSearchParams({ ...(params || {}), type }).toString();
       // SỬA: Thêm /search vào URL để gọi đúng route backend
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/renter/vehicles/search?${query}`
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles/search?${query}`,
+        { withCredentials: true }
       );
       // FIX: Trả về response.data.data (như fetchVehicles) để match reducer
       return response.data.data;

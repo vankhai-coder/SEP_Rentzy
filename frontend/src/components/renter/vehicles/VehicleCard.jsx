@@ -177,14 +177,19 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         </p>
         {vehicle.features && (
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-700">
-            {vehicle.features.map((f, i) => (
-              <span
-                key={i}
-                className="bg-gray-100 px-2 py-1 rounded-full border border-gray-200"
-              >
-                {f}
-              </span>
-            ))}
+            {vehicle.features.slice(0, 3).map(
+              (
+                f,
+                i // SỬA: Chỉ lấy 3 features đầu tiên
+              ) => (
+                <span
+                  key={i}
+                  className="bg-gray-100 px-2 py-1 rounded-full border border-gray-200"
+                >
+                  {f}
+                </span>
+              )
+            )}
           </div>
         )}
         <hr className="my-3 border-gray-200" />

@@ -5,6 +5,7 @@ import {
   createBookingReview,
   getReviewsByVehicle,
   getMyReviews,
+  deleteBookingReview,
 } from "../../controllers/renter/bookingReviewController.js";
 
 const router = express.Router();
@@ -18,4 +19,6 @@ router.get("/vehicle/:vehicle_id", getReviewsByVehicle);
 // GET: xem tất cả review của người dùng đang đăng nhập
 router.get("/my-reviews", verifyJWTToken, getMyReviews);
 
+// DELETE: xóa review của chính mình (dựa trên review_id)
+router.delete("/:review_id", verifyJWTToken, deleteBookingReview);
 export default router;

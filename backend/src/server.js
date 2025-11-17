@@ -20,6 +20,7 @@ import BookingHistoryRoute from "./routes/renter/bookingHistoryRoute.js";
 import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
 import TransactionRoute from "./routes/renter/transactionRoute.js";
 import CompareVehicleRoute from "./routes/renter/compareVehicleRoute.js";
+import RecommendationRoute from "./routes/renter/recommendationRoute.js";
 // booking route
 
 import BookingRoute from "./routes/booking/bookingRoute.js";
@@ -93,6 +94,7 @@ app.use("/api/renter/booking-history", BookingHistoryRoute);
 app.use("/api/renter/reports", VehicleReportRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 app.use("/api/renter/transactions", TransactionRoute);
+app.use("/api/renter", RecommendationRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 

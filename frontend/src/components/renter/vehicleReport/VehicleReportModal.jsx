@@ -20,10 +20,10 @@ const VehicleReportModal = ({ isOpen, onClose, vehicleId }) => {
   );
 
   const reasonOptions = [
-    { value: "illegal", label: "GPLX điều chỉnh" },
     { value: "fake_info", label: "Thông tin giả mạo" },
-    { value: "bad_owner", label: "Gia chủ tệ" },
-    { value: "dangerous", label: "Nguy hiểm" },
+    { value: "illegal", label: "Vi phạm pháp luật" },
+    { value: "bad_owner", label: "Chủ xe kém hợp tác" },
+    { value: "dangerous", label: "Xe nguy hiểm" },
     { value: "other", label: "Khác" },
   ];
 
