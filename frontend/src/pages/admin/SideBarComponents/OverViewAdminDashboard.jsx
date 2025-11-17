@@ -4,40 +4,74 @@ import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCar
 import React from 'react'
 
 const OverViewAdminDashboard = () => {
-  const recentOrders = [
-    { id: 'BK-1021', customer: 'John Doe', car: 'Toyota Camry 2019', amount: 128.5, status: 'completed' },
-    { id: 'BK-1022', customer: 'Jane Smith', car: 'Honda Civic 2020', amount: 92.3, status: 'pending' },
-    { id: 'BK-1023', customer: 'Minh Nguyen', car: 'Tesla Model 3 2022', amount: 230, status: 'processing' },
-    { id: 'BK-1024', customer: 'Anh Tran', car: 'Ford Ranger 2018', amount: 150.75, status: 'completed' },
-    { id: 'BK-1025', customer: 'Michael Lee', car: 'Hyundai Tucson 2021', amount: 175.2, status: 'pending' },
-    { id: 'BK-1026', customer: 'Sara Kim', car: 'Kia Seltos 2020', amount: 110, status: 'completed' },
-    { id: 'BK-1027', customer: 'David Brown', car: 'Mazda CX-5 2019', amount: 210.4, status: 'cancelled' },
-    { id: 'BK-1028', customer: 'Emily Clark', car: 'BMW 3 Series 2017', amount: 99.99, status: 'processing' },
-    { id: 'BK-1029', customer: 'Quang Pham', car: 'Mercedes C-Class 2018', amount: 189, status: 'completed' },
-    { id: 'BK-1030', customer: 'Linh Vo', car: 'VinFast VF8 2023', amount: 250, status: 'pending' }
-  ]
 
+  // use react query to get 10 current bookings from : GET /api/admin/overview/current-bookings
+  const getRecentOrders = async () => {
+    const res = await axiosInstance.get('/api/admin/overview/current-bookings');
+    return res.data.bookings;
+    // res.data.bookings = [
+    //   {
+    //   "total_amount": "30000.00",
+    //   "status": "completed",
+    //   "renter": {
+    //     "full_name": "Pham Le Tien Vu (K17 DN)",
+    //     "email": "vupltde170269@fpt.edu.vn"
+    //   },
+    //   "vehicle": {
+    //     "model": "VF9"
+    //   }
+    // },
+    //   ...
+    // ]
+  };
+  const { data: recentOrders, isLoading: isLoadingBookings, isError: isErrorBookings } = useQuery({
+    queryKey: ["admin-recent-bookings"],
+    queryFn: getRecentOrders
+  });
+
+  console.log("recentOrders", recentOrders);
+
+
+  // all possible status from backend Booking model :
   const statusBadge = {
     completed: 'badge-success',
     pending: 'badge-warning',
-    cancelled: 'badge-danger',
-    processing: 'badge-primary'
+    canceled: 'badge-danger',
+    in_progress: 'badge-primary',
+    cancel_requested: 'badge-info',
+    fully_paid: 'badge-success',
+    deposit_paid: 'badge-warning',
   }
+  // format currency function to VND : 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+  // format day like : 12 tháng 9, 2023
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('vi-VN', options);
+  };
 
-  const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+  // use react query to get current-registered-users from : GET /api/admin/overview/current-registered-users
+  const getRecentRegisteredUsers = async () => {
+    const res = await axiosInstance.get('/api/admin/overview/current-registered-users');
+    return res.data.users;
+    // res.data.users = [
+    //   {
+    //     "full_name": "Nguyen Van A",
+    //     "email": "
+    //     "role": "renter",
+    //     "created_at": "2023-09-12T10:20:30.000Z",
+    //     "user_id": 123
+    //   },
+    //   ...
+    // ]
+  }
+  const { data: recentRegisteredUsers, isLoading: isLoadingRegisteredUsers, isError: isErrorRegisteredUsers } = useQuery({
+    queryKey: ["admin-recent-registered-users"],
+    queryFn: getRecentRegisteredUsers
+  });
 
-  const revenues = [
-    { owner: 'Nguyen Van A', car: 'Toyota Camry', revenue: 1520, period: 'Nov 2025' },
-    { owner: 'Tran Thi B', car: 'Honda CR-V', revenue: 980, period: 'Nov 2025' },
-    { owner: 'Le Hoang C', car: 'Tesla Model Y', revenue: 2450, period: 'Nov 2025' },
-    { owner: 'Pham Quoc D', car: 'Ford Ranger', revenue: 1750, period: 'Nov 2025' },
-    { owner: 'Do Minh E', car: 'Hyundai Santa Fe', revenue: 1600, period: 'Nov 2025' },
-    { owner: 'Hoang Gia F', car: 'Kia Sorento', revenue: 1320, period: 'Nov 2025' },
-    { owner: 'Vu Tuan G', car: 'Mazda 6', revenue: 1190, period: 'Nov 2025' },
-    { owner: 'Bui Thu H', car: 'BMW X3', revenue: 2100, period: 'Nov 2025' },
-    { owner: 'Dang Khoa I', car: 'Mercedes GLC', revenue: 1990, period: 'Nov 2025' },
-    { owner: 'Phan Anh J', car: 'VinFast VF8', revenue: 2680, period: 'Nov 2025' }
-  ]
   // function to get percentage change , eg : previous = 100 , current = 120 => return 20 (%)
   const getPercentageChange = (previous, current) => {
     if (previous === 0) return current === 0 ? 0 : 100;
@@ -189,7 +223,6 @@ const OverViewAdminDashboard = () => {
           <div>chart 1</div>
           <div>chart 2</div>
 
-
         </div>
         {/* 2 table */}
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
@@ -197,18 +230,20 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200'>
             <div className='flex flex-col space-y-1.5 mb-4'>
               <h2 className='text-lg font-semibold text-secondary-900 dark:text-white'>
-                Recent Orders
+                Các đặt xe gần đây
               </h2>
               <div>
                 <div className='space-y-4'>
-                  {recentOrders.map((o) => (
+                  {isLoadingBookings && <p>Loading...</p>}
+                  {isErrorBookings && <p>Error loading bookings.</p>}
+                  {recentOrders && recentOrders.map((o) => (
                     <div key={o.id} className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
                       <div className='flex-1'>
-                        <p className='font-medium text-secondary-900 dark:text-white'>{o.customer}</p>
-                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{o.car} • {o.id}</p>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{o.renter.full_name || o.renter.email}</p>
+                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{o.vehicle.model}</p>
                       </div>
                       <div className='text-right'>
-                        <p className='font-medium text-secondary-900 dark:text-white'>{formatCurrency(o.amount)}</p>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{formatCurrency(o.total_amount)}</p>
                         <span className={`badge ${statusBadge[o.status]} px-2 py-0.5 text-xs`}>{o.status}</span>
                       </div>
                     </div>
@@ -222,19 +257,21 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200'>
             <div className='flex flex-col space-y-1.5 mb-4'>
               <h2 className='text-lg font-semibold text-secondary-900 dark:text-white'>
-                Revenue overview
+                Các đăng ký người dùng gần đây
               </h2>
               <div>
                 <div className='space-y-4'>
-                  {revenues.map((r, idx) => (
-                    <div key={`${r.owner}-${idx}`} className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
+                  {isLoadingRegisteredUsers && <p>Loading...</p>}
+                  {isErrorRegisteredUsers && <p>Error loading registered users.</p>}
+                  {recentRegisteredUsers && recentRegisteredUsers.map((user, idx) => (
+                    <div key={`${user.email}-${idx}`} className='flex items-center justify-between py-3 border-b border-secondary-200 dark:border-secondary-700 last:border-0'>
                       <div className='flex-1'>
-                        <p className='font-medium text-secondary-900 dark:text-white'>{r.owner}</p>
-                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{r.car}</p>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{user.full_name || user.email || user.user_id}</p>
+                        <p className='text-sm text-secondary-600 dark:text-secondary-400'>{user.email || user.role}</p>
                       </div>
                       <div className='text-right'>
-                        <p className='font-medium text-secondary-900 dark:text-white'>{formatCurrency(r.revenue)}</p>
-                        <span className='badge badge-primary px-2 py-0.5 text-xs'>{r.period}</span>
+                        <p className='font-medium text-secondary-900 dark:text-white'>{formatDate(user.created_at)}</p>
+                        <span className='badge badge-primary px-2 py-0.5 text-xs'>{user.role}</span>
                       </div>
                     </div>
                   ))}

@@ -1,5 +1,5 @@
 import express from "express";
-import { getAdminOverviewStats } from "../../controllers/admin/adminOverviewDashboardController.js";
+import { getAdminCurrentBookings, getAdminCurrentRegisteredUsers, getAdminOverviewStats } from "../../controllers/admin/adminOverviewDashboardController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
 
@@ -20,6 +20,12 @@ const router = express.Router();
 
 // Get /api/admin/overview/stats
 router.get("/stats", getAdminOverviewStats);
+
+// GET /api/admin/overview/current-bookings   -- get 10 current bookings
+router.get("/current-bookings", getAdminCurrentBookings);
+
+// GET  /api/admin/overview/current-registered-users -- get 10 current registered users
+router.get("/current-registered-users", getAdminCurrentRegisteredUsers);
 
 
 export default router;

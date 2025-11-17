@@ -1,7 +1,7 @@
-
 import { Op } from 'sequelize';
 import Booking from '../../models/Booking.js';
 import User from '../../models/User.js';
+import Vehicle from '../../models/Vehicle.js';
 
 export const getAdminOverviewStats = async (req, res) => {
 
@@ -139,3 +139,48 @@ export const getAdminOverviewStats = async (req, res) => {
         },
     });
 };
+
+export const getAdminCurrentBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.findAll({
+            attributes: ["total_amount", "status"],
+            include: [
+                {
+                    model: User,
+                    as: "renter",
+                    attributes: ["full_name", "email"],
+                },
+                {
+                    model: Vehicle,
+                    as: "vehicle", // <--- bắt buộc phải dùng alias
+                    attributes: ["model"],
+                },
+            ],
+            order: [["created_at", "DESC"]],
+            limit: 10,
+        });
+
+        return res.status(200).json({ bookings });
+    } catch (error) {
+        console.error("Error fetching current bookings:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const getAdminCurrentRegisteredUsers = async (req, res) => {
+    // get 10 most recent registered users (renters and owners) , get fields :  full_name, email, role, created_at
+    try {
+        const users = await User.findAll({
+            attributes: ['full_name', 'email', 'role', 'created_at', 'user_id'],
+            where: {
+                is_active: true,
+            },
+            order: [['created_at', 'DESC']],
+            limit: 10,
+        });
+        return res.status(200).json({ users });
+    } catch (error) {
+        console.error("Error fetching current registered users:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
