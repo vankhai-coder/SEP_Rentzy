@@ -39,6 +39,7 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
+import AdminOverviewRoute from './routes/admin/adminOverviewDashboard.js'
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -110,6 +111,9 @@ app.use("/api/owner/overview", OwnerOverviewRoute);
 // admin route
 app.use("/api/admin/approval-vehicles", AdminApprovalVehicleRoute);
 app.use("/api/admin/management-vehicles", AdminManagementVehicleRoute);
+app.use("/api/admin", AdminRoute);
+app.use("/api/admin", AdminPayoutRoute);
+app.use("/api/admin/overview", AdminOverviewRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
@@ -123,10 +127,7 @@ app.use("/api/payment", PaymentRoute);
 // bank account route
 app.use("/api/bank-accounts", BankAccountRoute);
 
-// admin route
-app.use("/api/admin", AdminRoute);
-app.use("/api/admin", AdminPayoutRoute);
-
+// test route
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });

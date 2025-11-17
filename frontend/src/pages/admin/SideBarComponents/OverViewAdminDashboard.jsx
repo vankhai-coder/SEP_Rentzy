@@ -1,3 +1,5 @@
+import axiosInstance from '@/config/axiosInstance'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCart, User } from 'lucide-react'
 import React from 'react'
 
@@ -36,6 +38,42 @@ const OverViewAdminDashboard = () => {
     { owner: 'Dang Khoa I', car: 'Mercedes GLC', revenue: 1990, period: 'Nov 2025' },
     { owner: 'Phan Anh J', car: 'VinFast VF8', revenue: 2680, period: 'Nov 2025' }
   ]
+  // function to get percentage change , eg : previous = 100 , current = 120 => return 20 (%)
+  const getPercentageChange = (previous, current) => {
+    if (previous === 0) return current === 0 ? 0 : 100;
+    return ((current - previous) / previous * 100).toFixed(1);
+  };
+
+
+  // use tank query to get stats from : GET /api/admin/overview/stats
+  const getAdminOverviewStats = async () => {
+    const res = await axiosInstance.get('/api/admin/overview/stats');
+    return res.data;
+    // res.data = 
+    // {
+    //   totalRevenue: 123456.78,
+    //   totalRenters: {
+    //       count: 1820,
+    //       previousMonth: 1760,
+    //       currentMonth: 60,
+    //   },
+    //   totalOwners: {
+    //       count: 320,
+    //       previousMonth: 310,
+    //       currentMonth: 10,
+    //   },
+    //   totalCompletedBookings: {
+    //       count: 2200,
+    //       previousMonth: 2100,
+    //       currentMonth: 100,
+    //   },
+    // }
+  };
+  const { data: overviewStats, isLoading: isLoadingOverviewStats, isError: isErrorOverviewStats } = useQuery({
+    queryKey: ["admin-overview-stats"],
+    queryFn: getAdminOverviewStats
+  });
+
   return (
     <div className="p-4 lg:p-6 dark:bg-black min-h-screen">
       <div>
@@ -51,8 +89,8 @@ const OverViewAdminDashboard = () => {
         </nav>
         {/* title */}
         <div className='mb-6'>
-          <h1 className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>Dashboard Overview</h1>
-          <p className='text-secondary-600 dark:text-secondary-400'>Welcome back! Here's what's happening with your business today.</p>
+          <h1 className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>Tổng Quan Hệ Thống</h1>
+          <p className='text-secondary-600 dark:text-secondary-400'>Chào mừng bạn quay lại! Đây là những thông tin nổi bật về hoạt động kinh doanh của bạn hôm nay.</p>
         </div>
         {/* overview content : 4 boxes */}
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 '>
@@ -60,14 +98,9 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Total Revenue</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>$45,231.89</p>
+                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng doanh thu</p>
+                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRevenue}</p>
                 <div className='flex items-center gap-2'>
-                  <span className='badge badge-success px-2 py-0.5 text-xs flex items-center gap-1'>
-                    <MoveUpRight />
-                    <span>5.2%</span>
-                  </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Since last month</span>
                 </div>
               </div>
               <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
@@ -79,14 +112,19 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Active Users</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>1820</p>
+                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng người thuê</p>
+                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.count}</p>
                 <div className='flex items-center gap-2'>
-                  <span className='badge badge-success px-2 py-0.5 text-xs flex items-center gap-1'>
-                    <MoveUpRight />
-                    <span>3.4%</span>
+                  <span className={`  badge ${getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth) >= 0 ? "badge-success" : "badge-danger"}  px-2 py-0.5 text-xs flex items-center gap-1`}>
+                    {getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
+                    <span>{getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Since last month</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+
+                </div>
+                <div className='flex flex-col mt-2 gap-1'>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.previousMonth}</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.currentMonth}</span>
                 </div>
               </div>
               <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
@@ -98,14 +136,19 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Total Orders</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>220</p>
+                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng số đặt xe</p>
+                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.count}</p>
                 <div className='flex items-center gap-2'>
-                  <span className='badge badge-danger px-2 py-0.5 text-xs flex items-center gap-1'>
-                    <MoveDownRight />
-                    <span>1.4%</span>
+                  <span className={`badge ${getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth) >= 0 ? "badge-success" : "badge-danger"} px-2 py-0.5 text-xs flex items-center gap-1`}>
+                    {getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
+                    <span>{getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Since last month</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+
+                </div>
+                <div className='flex flex-col mt-2 gap-1'>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.previousMonth}</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.currentMonth}</span>
                 </div>
               </div>
               <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
@@ -118,14 +161,19 @@ const OverViewAdminDashboard = () => {
           <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Active Users</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>1820</p>
+                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng người cho thuê</p>
+                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.count}</p>
                 <div className='flex items-center gap-2'>
-                  <span className='badge badge-success px-2 py-0.5 text-xs flex items-center gap-1'>
-                    <MoveUpRight />
-                    <span>3.4%</span>
+                  <span className={`badge ${getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth) >= 0 ? "badge-success" : "badge-danger"} px-2 py-0.5 text-xs flex items-center gap-1`}>
+                    {getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
+                    <span>{getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Since last month</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+
+                </div>
+                <div className='flex flex-col mt-2 gap-1'>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.previousMonth}</span>
+                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.currentMonth}</span>
                 </div>
               </div>
               <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
