@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getUserManagementStats } from "../../controllers/admin/adminUserManagementController.js";
+import { getUserManagementStats, getUsers } from "../../controllers/admin/adminUserManagementController.js";
 
 
 const router = express.Router();
@@ -21,5 +21,8 @@ const router = express.Router();
 
 // GET /api/admin/user-management-stats
 router.get("/stats", getUserManagementStats);
+
+// GET /api/admin/user-management/users
+router.get("/users", getUsers);
 
 export default router;
