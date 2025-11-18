@@ -392,6 +392,26 @@ export const updateFullName = async (req, res) => {
     }
 }
 
+// check if user is verify email :
+export const checkIfUserIsVerifyEmail = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        return res.status(200).json({ isVerifyEmail: user.email_verified });
+
+    } catch (error) {
+        console.error("Error checking if user is verify email :", error.message);
+        return res.status(500).json({ message: error.message  , isVerifyEmail: false});
+    }
+};
+
 // get basic user information :
 export const getBasicUserInformation = async (req, res) => {
     try {

@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, sendOTPUsingTwilioForUpdatePhoneNumber, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import { check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsVerifyEmail, sendOTPUsingTwilioForUpdatePhoneNumber, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
 import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
 
@@ -20,6 +20,9 @@ router.post('/check-2-face-match-identity-card', verifyJWTToken, upload.fields([
 
 // update full name :
 router.post('/update-full-name', verifyJWTToken, updateFullName);
+
+// check if user is verify email : 
+router.get('/is-verify-email', verifyJWTToken, checkIfUserIsVerifyEmail);
 
 // get basic user information: 
 router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformation);
