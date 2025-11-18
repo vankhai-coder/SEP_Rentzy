@@ -31,7 +31,7 @@ const OwnerPage = () => {
   return (
     <div className="flex min-h-screen">
       <SidebarOwner handleLogout={handleLogout} />
-      <div className="flex-grow ml-[250px] p-5 bg-gray-50 min-h-screen">
+      <div className="flex-grow p-5 bg-gray-50 min-h-screen">
         <Routes>
           <Route path="/" element={<OverViewManagement />} />
           <Route path="/overview" element={<OverViewManagement />} />
