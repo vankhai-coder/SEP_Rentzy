@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, ChevronLeft, ChevronRight, Columns2, DollarSign, Download, Ellipsis, Eye, ShieldCheck, Trash2, UserPlus } from "lucide-react"
+import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -14,13 +14,49 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 import { TableFooter } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
 import { useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import axiosInstance from "@/config/axiosInstance"
+import { useQuery } from "@tanstack/react-query"
 
 const UserManagement = () => {
+
+
+  // use tankstack query to fetch stats from backend api /api/admin/user-management/stats using axiosInstance: 
+  const fetchUserStats = async () => {
+    const response = await axiosInstance.get('/api/admin/user-management/stats');
+    return response.data;
+    // response.data : {
+    //   totalUsers: 100,
+    //   activeUsers: 80,
+    //   renterUsers: 60,
+    //   ownerUsers: 40
+    // }
+  };
+  const { data: userStats, isLoading: isLoadingUserStats, isError: isErrorUserStats } = useQuery(
+    {
+      queryKey: ['user-stats'],
+      queryFn: fetchUserStats
+    }
+  );
+
+  // search filter states : include : nameOrEmail, role, isActive
+  const [searchFilter, setSearchFilter] = useState({
+    nameOrEmail: '',
+    role: '',
+    isActive: ''
+  });
 
   const [users, setUsers] = useState([
     { id: 1, avatar: 'JD', name: 'John Doe', email: 'john.doe@example.com', role: 'admin', status: 'active', lastLogin: '2025-11-01', point: 120, phone: '0901234567', driverNumber: 'DL-123456789', bookings: 12, banned: false },
@@ -92,18 +128,18 @@ const UserManagement = () => {
         <div className="flex items-center justify-between" >
           {/* User Management Title */}
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">User Management</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Manage your team members and their account permissions</p>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lí người dùng</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lí các thành viên trong nhóm và quyền truy cập tài khoản của họ</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">
             <button className="inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-transparent border-2 border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 focus:ring-primary-500 px-4 py-2 text-base">
               <Download className="w-4 h-4 mr-2" />
-              Export
+              <span className="hidden sm:block"> Xuất dữ liệu</span>
             </button>
-            <button className="inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 px-4 py-2 text-base">
+            <button className="inline-flex items-center gap-2 justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 px-4 py-2 text-base">
               <UserPlus />
-              Add User
+              <span className="hidden sm:block"> Thêm người dùng</span>
             </button>
           </div>
         </div>
@@ -113,8 +149,8 @@ const UserManagement = () => {
           <div className="card transition-all duration-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Users</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">10</p>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người dùng</p>
+                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.totalUsers}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
                 <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -125,8 +161,8 @@ const UserManagement = () => {
           <div className="card transition-all duration-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Users</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">10</p>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người dùng hoạt động</p>
+                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.activeUsers}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
                 <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -137,8 +173,8 @@ const UserManagement = () => {
           <div className="card transition-all duration-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Users</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">10</p>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng chủ xe</p>
+                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.ownerUsers}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
                 <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -149,8 +185,8 @@ const UserManagement = () => {
           <div className="card transition-all duration-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Users</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">10</p>
+                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người thuê</p>
+                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.renterUsers}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
                 <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -163,19 +199,91 @@ const UserManagement = () => {
           <div className="p-6">
             <div className="w-full space-y-4">
               {/* Search and filter */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-full">
-                  <input type="text" className="input max-w-sm" placeholder="Search by name..." />
-                </div>
-                <div className="relative inline-block text-left">
-                  <button className="inline-flex items-center justify-center gap-2 rounded-lg border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors duration-150">
-                    <button className="inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-transparent hover:bg-secondary-100 dark:hover:bg-secondary-800 text-secondary-700 dark:text-secondary-300 focus:ring-secondary-500 px-3 py-1.5 text-sm">
-                      <Columns2 className="lucide lucide-columns2 lucide-columns-2 h-4 w-4 mr-2" />
-                      Columns
-                      <ChevronDown className="lucide lucide-chevron-down h-4 w-4 ml-2" />
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-2  ">
+                {/* enter name or email */}
+                <div className="flex items-center gap-10 flex-col  md:flex-row ">
+                  <input type="text" className="input px-6"
+                    value={searchFilter.nameOrEmail}
+                    onChange={(e) => setSearchFilter(prev => ({ ...prev, nameOrEmail: e.target.value }))}
+                    placeholder="Tìm theo tên hoặc email..." />
+
+                  {/* filter role */}
+                  <div className="flex items-center gap-4">
+                    {/* select role  */}
+                    <Select
+                      value={searchFilter.role}
+                      onValueChange={(value) => setSearchFilter(prev => ({ ...prev, role: value }))}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Vai trò" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="renter">Người thuê</SelectItem>
+                        <SelectItem value="owner">Chủ xe</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {/* clear role that selected */}
+                    <button onClick={() => {
+                      setSearchFilter(prev => ({ ...prev, role: '' }));
+                    }}>
+                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
                     </button>
-                  </button>
+                  </div>
+
+                  {/* filter status(is_active) */}
+                  <div className="flex items-center gap-4">
+                    {/* select role  */}
+                    <Select
+                      value={searchFilter.isActive}
+                      onValueChange={(value) => setSearchFilter(prev => ({ ...prev, isActive: value }))}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Hoạt động</SelectItem>
+                        <SelectItem value="inactive">Không hoạt động</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {/* clear role that selected */}
+                    <button onClick={() => {
+                      setSearchFilter(prev => ({ ...prev, isActive: '' }));
+                    }}>
+                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
+                    </button>
+                  </div>
+
                 </div>
+
+                <div className="flex gap-6">
+                  {/* filter clear all */}
+                  <div className="flex items-center text-red-500">
+                    <Button
+                      onClick={() => {
+                        setSearchFilter({
+                          nameOrEmail: '',
+                          role: '',
+                          isActive: ''
+                        });
+                      }}
+                      variant={'outline'}>
+                      <Trash2 className="w-4 h-4" />
+                      Xóa tất cả
+                    </Button>
+                  </div>
+                  {/* search button */}
+                  <div>
+                    <Button
+                      onClick={() => {
+                        // Add search functionality here
+                        console.log('Searching with filters:', searchFilter);
+                      }}
+                    >
+                      <Search className="w-4 h-4" /> Tìm kiếm
+                    </Button>
+                  </div>
+                </div>
+
 
               </div>
               {/* table */}

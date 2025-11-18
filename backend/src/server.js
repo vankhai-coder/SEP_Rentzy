@@ -39,7 +39,8 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
-import AdminOverviewRoute from './routes/admin/adminOverviewDashboard.js'
+import AdminOverviewRoute from './routes/admin/adminOverviewRoute.js'
+import AdminUserManagementRoute from './routes/admin/adminUserManagementRoute.js'
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -115,6 +116,7 @@ app.use("/api/admin", AdminRoute);
 app.use("/api/admin", AdminPayoutRoute);
 // admin - Van Khai :
 app.use("/api/admin/overview", AdminOverviewRoute);
+app.use("/api/admin/user-management", AdminUserManagementRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
