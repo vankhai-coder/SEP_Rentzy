@@ -20,6 +20,7 @@ import Account from "./pages/renter/account/Account.jsx";
 import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import BankAccountPage from "./pages/renter/account/BankAccountPage.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
+import About from "./components/common/About.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
@@ -78,6 +79,7 @@ const App = () => {
           {/* Trang đăng ký chủ xe */}
           <Route path="/register_owner" element={<RegisterOwner />} />
 
+          <Route path="/about" element={<About />} />
           {/* RENTER ROUTES :  */}
           <Route path="/" element={<Account />}>
             <Route path="/account" element={<UserInformation />} />
