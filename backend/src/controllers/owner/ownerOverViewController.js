@@ -103,8 +103,8 @@ export const getRevenueChart = async (req, res) => {
       });
     }
 
-    const { period = 'day', year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
-    console.log('Parsed params:', { period, year, month, ownerId });
+    const { period = 'year', year = new Date().getFullYear(), month = new Date().getMonth() + 1, quarter } = req.query;
+    console.log('Parsed params:', { period, year, month, quarter, ownerId });
 
     // Lấy danh sách xe của owner với điều kiện chặt chẽ
     const ownerVehicles = await Vehicle.findAll({
@@ -191,12 +191,38 @@ export const getRevenueChart = async (req, res) => {
           sequelize.fn('MONTH', sequelize.col('created_at'))
         ];
         break;
-      case 'year':
-        // Lấy dữ liệu 5 năm gần nhất
-        const fiveYearsAgo = new Date();
-        fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+      case 'quarter':
+        // Lấy dữ liệu các tháng trong một quý của năm
+        if (!year || !quarter) {
+          return res.status(400).json({
+            success: false,
+            message: 'Thiếu tham số year hoặc quarter cho period=quarter'
+          });
+        }
+        const q = parseInt(quarter);
+        const startMonth = (q - 1) * 3 + 1; // 1,4,7,10
+        const endMonth = startMonth + 2;    // 3,6,9,12
         whereCondition.created_at = {
-          [Op.gte]: fiveYearsAgo
+          [Op.and]: [
+            sequelize.where(sequelize.fn('YEAR', sequelize.col('created_at')), year),
+            sequelize.where(sequelize.fn('MONTH', sequelize.col('created_at')), { [Op.between]: [startMonth, endMonth] })
+          ]
+        };
+        dateFormat = '%Y-%m';
+        groupBy = [
+          sequelize.fn('YEAR', sequelize.col('created_at')),
+          sequelize.fn('MONTH', sequelize.col('created_at'))
+        ];
+        break;
+      case 'year':
+        // Lấy dữ liệu 5 năm gần nhất tính đến năm được chọn
+        // Nếu frontend gửi selectedYear, dùng làm mốc; nếu không, dùng năm hiện tại
+        const endYear = parseInt(year) || new Date().getFullYear();
+        const startYear = endYear - 4;
+        const startDate = new Date(startYear, 0, 1);
+        const endDate = new Date(endYear, 11, 31, 23, 59, 59);
+        whereCondition.created_at = {
+          [Op.between]: [startDate, endDate]
         };
         dateFormat = '%Y';
         groupBy = sequelize.fn('YEAR', sequelize.col('created_at'));
@@ -244,6 +270,36 @@ export const getRevenueChart = async (req, res) => {
       finalData = finalData.filter(item => item.period.startsWith(monthPrefix));
       
       console.log('Filtered final data for month:', monthPrefix, finalData.length, 'days');
+    }
+
+    // Nếu là xem theo tháng, tạo dữ liệu đủ 12 tháng
+    if (period === 'month') {
+      const months = Array.from({ length: 12 }, (_, i) => i + 1);
+      const monthLabels = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+      const revenueMap = new Map(finalData.map(item => [item.period, item]));
+      finalData = monthLabels.map(label => revenueMap.get(label) || { period: label, revenue: 0, bookingCount: 0 });
+      console.log('Filled full 12 months data for year:', year, finalData.length, 'months');
+    }
+
+    // Nếu là xem theo quý, tạo dữ liệu đủ các tháng trong quý
+    if (period === 'quarter') {
+      const q = parseInt(quarter);
+      const startMonth = (q - 1) * 3 + 1;
+      const endMonth = startMonth + 2;
+      const months = Array.from({ length: 3 }, (_, i) => startMonth + i);
+      const monthLabels = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+      const revenueMap = new Map(finalData.map(item => [item.period, item]));
+      finalData = monthLabels.map(label => revenueMap.get(label) || { period: label, revenue: 0, bookingCount: 0 });
+      console.log('Filled full quarter months for year:', year, 'quarter:', quarter, finalData.length, 'months');
+    }
+
+    // Nếu là xem theo năm, tạo dữ liệu đủ 5 năm gần nhất
+    if (period === 'year') {
+      const endYear = parseInt(year) || new Date().getFullYear();
+      const years = Array.from({ length: 5 }, (_, i) => (endYear - 4) + i);
+      const revenueMap = new Map(finalData.map(item => [String(item.period), item]));
+      finalData = years.map(y => revenueMap.get(String(y)) || { period: String(y), revenue: 0, bookingCount: 0 });
+      console.log('Filled full 5-year range:', years, 'items:', finalData.length);
     }
 
     console.log('Final chart data:', finalData);
