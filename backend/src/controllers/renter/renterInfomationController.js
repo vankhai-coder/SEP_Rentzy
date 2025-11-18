@@ -74,8 +74,6 @@ export const verifyDriverLicenseCard = async (req, res) => {
         // if success : 
         console.log(" FPT.AI Response success :", response.data);
 
-
-
         return res.json(response.data);
 
     } catch (error) {
@@ -123,12 +121,13 @@ export const verifyIdentityCard = async (req, res) => {
         return res.json(response.data);
 
     } catch (error) {
-        console.error("Error verifying identify card ::", error.response?.data || error.message);
+        console.error("Error verifying identify card :", error.response?.data || error.message);
         return res.status(500).json({ message: error.response?.data?.errorMessage || error.message });
     }
 };
 
-export const check2FaceMatch = async (req, res) => {
+// check 2 face match and save driver license to aws s3 :
+export const check2FaceMatchAndSaveDriverLicenseToAWS = async (req, res) => {
     try {
         // check if user exist : 
         const user = await User.findOne({
@@ -243,6 +242,124 @@ export const check2FaceMatch = async (req, res) => {
     }
 }
 
+// check 2 face match and save identity card to aws s3 :
+export const check2FaceMatchAndSaveIdentityCardToAWS = async (req, res) => {
+    try {
+        // check if user exist : 
+        const user = await User.findOne({
+            where: {
+                user_id: req.user?.userId
+            }
+        });
+
+        const { identityName, identityDob, identityNumber } = req.body;
+        // Check if any parameter is missing
+        if (!identityName || !identityDob || !identityNumber) {
+            return res.status(400).json({
+                error: true,
+                message: "Missing required query parameters: identityName, identityDob, identityNumber",
+            });
+        }
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        if (!req.files) {
+            return res.status(400).json({ message: "No files were uploaded!" });
+        }
+
+        const image_1 = req.files['image_1']?.[0]
+        const image_2 = req.files['image_2']?.[0]
+
+        if (!image_1 || !image_2) {
+            return res.status(400).json({ message: "Both images are required!" });
+        }
+        // add 2 image to formData : 
+        const formData = new FormData();
+        formData.append("file[]", image_1.buffer, {
+            filename: image_1.originalname,
+            contentType: image_1.mimetype,
+        });
+        formData.append("file[]", image_2.buffer, {
+            filename: image_2.originalname,
+            contentType: image_2.mimetype,
+        });
+
+        // send to FPT AI to check if 2 image is come from same person : 
+        const response = await axios.post(
+            "https://api.fpt.ai/dmp/checkface/v1",
+            formData,
+            {
+                headers: {
+                    "api_key": process.env.FPT_AI_API_KEY,
+                    ...formData.getHeaders(),
+                },
+            }
+        );
+
+        // check if match : 
+        // sample response :
+        // {
+        //     "code" : "200",
+        //     "data" : {
+        //         "isMatch": false,
+        //         "similarity": 21.25160789489746,
+        //         "isBothImgIDCard": false
+        //     },
+        //     "message": "request successful."
+        // }    
+
+        const isMatch = response?.data?.data?.isMatch
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Ảnh chân dung không khớp với ảnh trên căn cước công dân. Vui lòng thử lại!' })
+        }
+
+        // save image to aws s3 server : 
+        // Generate unique file name
+        const fileName = `identity-cards/${Date.now()}-${image_1.originalname}`;
+
+        const uploadParams = {
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: fileName,
+            Body: image_1.buffer,
+            ContentType: image_1.mimetype,
+            ACL: "private", // keep it private
+        };
+
+        try {
+            // await s3.send(new PutObjectCommand(uploadParams));
+
+            // // Create a short-lived signed URL :
+            // const imageUrl = await getTemporaryImageUrl(fileName)
+            // console.log("Uploaded to S3:", imageUrl);
+
+            // console log : 
+            console.log("Simulating upload to S3 , upload to aws success :)) :", fileName);
+
+        } catch (err) {
+            console.error("Error uploading to S3:", err);
+            return res.status(500).json({ message: "Upload to S3 failed" });
+        }
+        // save fileName to db : 
+        user.national_id_image_url = fileName
+        user.national_id_status = 'approved'
+        // hash and save other field : 
+        user.national_id_number = encryptWithSecret(identityNumber, process.env.ENCRYPT_KEY)
+        user.national_id_name = encryptWithSecret(identityName, process.env.ENCRYPT_KEY)
+        user.national_id_dob = encryptWithSecret(identityDob, process.env.ENCRYPT_KEY)
+
+        await user.save()
+
+        // return to client : 
+        return res.status(200).json(response.data)
+
+    } catch (error) {
+        console.error("Error checking 2 face match :", error.response?.data || error.message);
+        return res.status(500).json(error.response?.data);
+    }
+};
+
 // update full name  : 
 export const updateFullName = async (req, res) => {
     try {
@@ -274,6 +391,26 @@ export const updateFullName = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 }
+
+// check if user is verify email :
+export const checkIfUserIsVerifyEmail = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        return res.status(200).json({ isVerifyEmail: user.email_verified });
+
+    } catch (error) {
+        console.error("Error checking if user is verify email :", error.message);
+        return res.status(500).json({ message: error.message  , isVerifyEmail: false});
+    }
+};
 
 // get basic user information :
 export const getBasicUserInformation = async (req, res) => {
