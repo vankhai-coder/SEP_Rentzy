@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaInfoCircle } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
@@ -15,6 +15,7 @@ const BookingDetailsPage = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
+  const iframeRef = useRef(null);
 
   useEffect(() => {
     fetchBookingDetails();
@@ -60,6 +61,19 @@ const BookingDetailsPage = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Refresh DocuSign status and reload booking
+  const refreshContractStatus = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return fetchBookingDetails();
+      await axiosInstance.get(`/api/docusign/status/${envelopeId}`);
+      await fetchBookingDetails();
+    } catch (err) {
+      console.error("Refresh DocuSign status error:", err);
+      await fetchBookingDetails();
     }
   };
 
@@ -135,12 +149,16 @@ const BookingDetailsPage = () => {
     }
   };
 
+  // Tạo URL ký hợp đồng cho người thuê (Embedded Signing DocuSign)
   const handleSignContract = async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      const fePublic = import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      const currentPath = window.location.pathname;
+      const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter" },
+        params: { role: "renter", returnUrl },
       });
       const url = resp.data?.url;
       if (url) {
@@ -155,22 +173,24 @@ const BookingDetailsPage = () => {
     }
   };
 
-  const handleViewContractPdf = async () => {
+  // Detect when iframe navigates to our FE returnUrl, then close modal and refresh
+  const handleIFrameLoad = () => {
     try {
-      const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có hợp đồng để xem.");
-      const resp = await axiosInstance.get(
-        `/api/docusign/documents/${envelopeId}/combined`,
-        { responseType: "blob" }
-      );
-      const blobUrl = URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
-      window.open(blobUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    } catch (err) {
-      console.error("Error downloading contract PDF:", err);
-      alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
+      const href = iframeRef.current?.contentWindow?.location?.href;
+      if (!href) return;
+      if (href.startsWith(window.location.origin)) {
+        // Khi DocuSign trả về cùng origin, không ràng buộc đường dẫn cụ thể
+        setShowSignModal(false);
+        setSignUrl("");
+        refreshContractStatus().then(() => {
+          window.location.reload();
+        });
+      }
+    } catch {
+      // Cross-origin while on DocuSign; ignore until it redirects to our domain
     }
   };
+
 
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
@@ -324,9 +344,9 @@ const BookingDetailsPage = () => {
         </div>
 
         {/* Pre-Rental Images Section */}
-        {(booking.status === "fully_paid" ||
+        {((booking.status === "fully_paid" ||
           booking.status === "in_progress" ||
-          booking.status === "completed") && (
+          booking.status === "completed") && booking.contract?.contract_status === "completed") && (
           <div className="pre-rental-images-section">
             <HandoverImageViewer
               bookingId={booking.booking_id}
@@ -340,10 +360,11 @@ const BookingDetailsPage = () => {
         )}
 
         {/* Post-Rental Images Section */}
-        {(booking.status === "fully_paid" ||
+        {((booking.status === "fully_paid" ||
           booking.status === "in_progress" ||
           booking.status === "completed") &&
-          booking.handover?.owner_return_confirmed === true && (
+          booking.contract?.contract_status === "completed" &&
+          booking.handover?.owner_return_confirmed === true) && (
             <div className="pre-rental-images-section">
               <HandoverImageViewer
                 bookingId={booking.booking_id}
@@ -420,7 +441,7 @@ const BookingDetailsPage = () => {
           <div className="payment-breakdown">
             <div className="payment-row">
               <span className="payment-label">
-                Giá thuê ({booking.totalDays} ngày ×{" "}
+                Giá thuê ({booking.totalDays} ngày × {" "}
                 {formatCurrency(booking.pricePerDay)})
               </span>
               <span className="payment-value">
@@ -512,29 +533,26 @@ const BookingDetailsPage = () => {
                     Ký hợp đồng
                   </button>
                 )}
-              {booking.contract.contract_status === "completed" && (
-                <button className="payment-button" onClick={handleViewContractPdf}>
-                  Xem hợp đồng PDF
-                </button>
-              )}
             </div>
           </div>
         )}
 
+        {/* Modal ký DocuSign */}
         <Dialog open={showSignModal} onOpenChange={setShowSignModal}>
           <DialogContent className="sm:max-w-[900px] w-[95vw] h-[80vh] p-0">
             <DialogHeader>
               <DialogTitle>Ký hợp đồng DocuSign</DialogTitle>
             </DialogHeader>
             {signUrl ? (
-              <iframe src={signUrl} title="DocuSign" className="w-full h-[70vh] border-0" />
+              <iframe ref={iframeRef} onLoad={handleIFrameLoad} src={signUrl} title="DocuSign" className="w-full h-[70vh] border-0" />
             ) : (
               <div className="p-4">Đang tải URL ký...</div>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Lịch sử giao dịch */}
+
+      {/* Lịch sử giao dịch */}
         <div className="transaction-section">
           <h3>Lịch sử giao dịch</h3>
           {booking.transactions && booking.transactions.length > 0 ? (

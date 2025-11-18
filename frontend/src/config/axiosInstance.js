@@ -28,7 +28,15 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Log tổng quan lỗi
     console.error('Response error:', error);
+    // Log chi tiết status/data từ backend nếu có
+    if (error.response) {
+      console.error('Response error status:', error.response.status);
+      console.error('Response error data:', error.response.data);
+      console.error('Response error headers:', error.response.headers);
+    }
+    // Log lỗi timeout riêng
     if (error.code === 'ECONNABORTED') {
       console.error('Request timeout - server took too long to respond');
     }

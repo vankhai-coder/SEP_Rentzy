@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../config/axiosInstance.js';
+import { useNavigate } from 'react-router-dom';
 import { 
   MdAttachMoney, 
   MdDirectionsCar, 
@@ -7,7 +8,9 @@ import {
   MdTrendingUp,
   MdPerson,
   MdStar,
-  MdCalendarToday
+  MdCalendarToday,
+  MdClose,
+  MdEmail
 } from 'react-icons/md';
 import {
   LineChart,
@@ -22,6 +25,7 @@ import {
 } from 'recharts';
 
 const OverViewManagement = () => {
+  const navigate = useNavigate();
   const [overviewData, setOverviewData] = useState(null);
   const [revenueChart, setRevenueChart] = useState([]);
   const [topRenters, setTopRenters] = useState([]);
@@ -31,6 +35,11 @@ const OverViewManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('day');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [vehicleHistory, setVehicleHistory] = useState([]);
 
   // Fetch overview stats
   const fetchOverviewStats = async () => {
@@ -112,6 +121,40 @@ const OverViewManagement = () => {
     } catch (error) {
       console.error('Error fetching top vehicles:', error);
       setTopVehicles([]);
+    }
+  };
+
+  // Open booking detail in a new browser tab
+  const handleRowClick = (bookingId) => {
+    navigate(`/owner/booking-management/detail/${bookingId}`);
+  };
+
+  // Fetch rental history for a specific vehicle
+  const fetchVehicleRentalHistory = async (vehicleId) => {
+    try {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      setHistoryModalOpen(true);
+
+      const response = await axiosInstance.get('/api/owner/overview/top-vehicles/rental-history', {
+        params: { vehicle_id: vehicleId, limit: 10 }
+      });
+
+      if (response.data.success) {
+        setSelectedVehicle(response.data.data?.vehicle || null);
+        setVehicleHistory(response.data.data?.bookings || []);
+      } else {
+        setSelectedVehicle(null);
+        setVehicleHistory([]);
+        setHistoryError(response.data.message || 'Không thể tải lịch sử thuê');
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle rental history:', error);
+      setSelectedVehicle(null);
+      setVehicleHistory([]);
+      setHistoryError('Đã xảy ra lỗi khi tải lịch sử thuê');
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -234,6 +277,71 @@ const OverViewManagement = () => {
       return '5 năm gần nhất';
     }
   };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Format date with optional time (HH:mm)
+  const formatDateTime = (dateStr, timeStr) => {
+    const date = formatDate(dateStr);
+    if (!timeStr) return date;
+    try {
+      const parts = String(timeStr).split(':');
+      const hh = parts[0]?.padStart(2, '0') || '00';
+      const mm = parts[1]?.padStart(2, '0') || '00';
+      return `${date} ${hh}:${mm}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return date;
+    }
+  };
+
+  const closeHistoryModal = () => {
+    setHistoryModalOpen(false);
+    setHistoryError(null);
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeHistoryModal();
+    };
+    if (historyModalOpen) {
+      window.addEventListener('keydown', onKeyDown);
+    }
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [historyModalOpen]);
+
+  // Lock scroll when modal open
+  useEffect(() => {
+    if (historyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [historyModalOpen]);
+
+  // const statusLabel = (s) => {
+  //   const map = {
+  //     completed: 'Hoàn thành',
+  //   };
+  //   return map[s] || s;
+  // };
+
+  // const statusStyle = (s) => {
+  //   const styles = {
+  //     completed: 'bg-green-100 text-green-700 border-green-200',
+  //   };
+  //   return styles[s] || 'bg-gray-100 text-gray-700 border-gray-200';
+  // };
 
   if (loading) {
     return (
@@ -509,7 +617,12 @@ const OverViewManagement = () => {
             <div className="space-y-4">
               {topVehicles.length > 0 ? (
                 topVehicles.map((vehicle, index) => (
-                  <div key={vehicle.vehicle_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div 
+                    key={vehicle.vehicle_id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:ring-2 hover:ring-purple-300 transition cursor-pointer"
+                    onClick={() => fetchVehicleRentalHistory(vehicle.vehicle_id)}
+                    title="Xem lịch sử thuê của xe"
+                  >
                     <div className="flex items-center space-x-4">
                       {/* Ranking number */}
                       <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -568,6 +681,116 @@ const OverViewManagement = () => {
               )}
             </div>
           </div>
+          {/* Rental History Modal */}
+          {historyModalOpen && (
+            <div 
+              class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) closeHistoryModal();
+              }}
+            >
+              <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <MdDirectionsCar className="mr-2 text-purple-600" />
+                    Lịch sử thuê xe
+                  </h3>
+                  <button
+                    onClick={closeHistoryModal}
+                    className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                    aria-label="Đóng"
+                  >
+                    <MdClose className="text-lg" />
+                  </button>
+                </div>
+
+                {/* Vehicle header */}
+                {selectedVehicle ? (
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-20 h-14 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                      {selectedVehicle.main_image_url ? (
+                        <img
+                          src={selectedVehicle.main_image_url}
+                          alt={selectedVehicle.model}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                          <MdDirectionsCar className="text-gray-500 text-2xl" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {selectedVehicle.license_plate}
+                      </p>
+                      <p className="text-sm text-gray-600 truncate">{selectedVehicle.model}</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Content */}
+                {historyLoading ? (
+                  <div className="py-10 text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
+                  </div>
+                ) : historyError ? (
+                  <div className="py-6 text-center text-red-600 text-sm">{historyError}</div>
+                ) : vehicleHistory && vehicleHistory.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {vehicleHistory.map((bk) => (
+                      <div key={bk.booking_id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            {/* Avatar */}
+                            <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center overflow-hidden">
+                              {bk.renter?.avatar_url ? (
+                                <img src={bk.renter.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                <MdPerson />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {bk.renter?.full_name || bk.renter?.email || 'Khách ẩn danh'}
+                              </p>
+                              {bk.renter?.email && (
+                                <p className="text-xs text-gray-600 flex items-center">
+                                  <MdEmail className="mr-1" /> {bk.renter.email}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-700 flex items-center justify-end">
+                              <MdCalendarToday className="mr-1" /> {formatDateTime(bk.start_date, bk.start_time)} - {formatDateTime(bk.end_date, bk.end_time)}
+                            </p>
+                            {/* <div className={`inline-flex text-xs mt-2 px-2 py-1 rounded border ${statusStyle(bk.status)}`}>
+                              {statusLabel(bk.status)}
+                            </div> */}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(bk.booking_id);
+                          }}
+                          className="mt-2 text-xs text-black hover:text-blue-600 hover:underline"
+                          title="Xem chi tiết đơn thuê"
+                        >
+                          Mã đơn: #{bk.booking_id}
+                        </button>
+
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-gray-600 text-sm">Không có lịch sử thuê cho xe này</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -575,3 +798,4 @@ const OverViewManagement = () => {
 };
 
 export default OverViewManagement;
+ 

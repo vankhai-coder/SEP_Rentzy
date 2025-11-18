@@ -10,7 +10,7 @@ import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // Áp dụng middleware xác thực cho tất cả routes
-// router.use(verifyJWTToken); // Temporarily disabled for testing
+router.use(verifyJWTToken); // Temporarily disabled for testing
 
 // GET /api/admin/approval-vehicles - Lấy danh sách xe chờ duyệt
 router.get("/", getPendingVehicles);

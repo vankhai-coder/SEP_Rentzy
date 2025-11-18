@@ -60,7 +60,7 @@ export const createReview = createAsyncThunk(
   }
 );
 
-// ✅ THÊM MỚI: Async thunk fetch my reviews (danh sách đánh giá của user)
+// Async thunk fetch my reviews (danh sách đánh giá của user)
 export const fetchMyReviews = createAsyncThunk(
   "bookingReview/fetchMyReviews",
   async (_, { rejectWithValue }) => {
@@ -83,11 +83,34 @@ export const fetchMyReviews = createAsyncThunk(
   }
 );
 
+// Async thunk để xóa review (gọi API DELETE)
+export const deleteReview = createAsyncThunk(
+  "bookingReview/deleteReview",
+  async (reviewId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/renter/reviews/${reviewId}`,
+        {
+          method: "DELETE",
+          credentials: "include", // Gửi JWT cookie
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Không thể xóa đánh giá");
+      }
+      const data = await response.json();
+      return data; // Trả về { success: true, message, points_deducted, new_balance }
+    } catch (error) {
+      return rejectWithValue(error.message || "Lỗi khi xóa đánh giá");
+    }
+  }
+);
+
 const bookingReviewSlice = createSlice({
   name: "bookingReview",
   initialState: {
     bookingDetail: null,
-    // ✅ THÊM MỚI: State cho my reviews
+    // State cho my reviews
     myReviews: [],
     totalReviews: 0,
     loading: false,
@@ -101,7 +124,7 @@ const bookingReviewSlice = createSlice({
       // Clear khi navigate away
       state.bookingDetail = null;
     },
-    // ✅ THÊM MỚI: Reducer clear my reviews (optional, dùng khi leave page)
+    //  Reducer clear my reviews (optional, dùng khi leave page)
     clearMyReviews: (state) => {
       state.myReviews = [];
       state.totalReviews = 0;
@@ -142,7 +165,7 @@ const bookingReviewSlice = createSlice({
         state.error = action.payload;
         toast.error(`Lỗi: ${action.payload}`);
       })
-      // ✅ THÊM MỚI: Cases cho fetchMyReviews
+      // Cases cho fetchMyReviews
       .addCase(fetchMyReviews.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -159,11 +182,32 @@ const bookingReviewSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         toast.error(`Lỗi: ${action.payload}`);
+      })
+      //  Cases cho deleteReview
+      .addCase(deleteReview.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteReview.fulfilled, (state, action) => {
+        state.loading = false;
+        // Filter bỏ review đã xóa khỏi state (dựa trên reviewId từ arg)
+        const deletedReviewId = action.meta.arg;
+        state.myReviews = state.myReviews.filter(
+          (review) => review.review_id !== deletedReviewId
+        );
+        state.totalReviews = state.myReviews.length; // Cập nhật total sau filter
+        toast.success(action.payload.message || "Xóa đánh giá thành công!");
+      })
+      .addCase(deleteReview.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(`Lỗi: ${action.payload}`);
       });
   },
 });
 
-// ✅ SỬA: Export thêm action clearMyReviews
+// Export thêm action clearMyReviews và thunk deleteReview
 export const { clearError, clearBookingDetail, clearMyReviews } =
   bookingReviewSlice.actions;
+
 export default bookingReviewSlice.reducer;

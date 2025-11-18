@@ -20,7 +20,9 @@ import {
   Star,
   ArrowRightLeft,
   TicketXIcon,
+  AlertCircle,
   CreditCard,
+  LayoutDashboard,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -86,11 +88,24 @@ const Account = () => {
             >
               <Star /> Đánh giá của tôi
             </SelectItem>
+            {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value={role === "owner" ? "/owner" : "/register_owner"}
+            >
+              <LayoutDashboard /> Bảng điều khiển chủ xe
+            </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
               value="/favorites"
             >
               <Heart /> Xe yêu thích
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/my-reports"
+            >
+              <AlertCircle size={20} /> Xe đã báo cáo
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -162,7 +177,6 @@ const Account = () => {
             <div className="text-3xl font-bold text-center pb-4 border-b-1">
               Xin chào bạn!
             </div>
-
             <NavLink
               to="/account"
               className={({ isActive }) =>
@@ -180,6 +194,14 @@ const Account = () => {
               <Heart /> Xe yêu thích
             </NavLink>
             <NavLink
+              to="/my-reports"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <AlertCircle size={20} /> Xe đã báo cáo
+            </NavLink>
+            <NavLink
               to="/booking-history"
               className={({ isActive }) =>
                 isActive ? `${baseClass} ${activeClass}` : baseClass
@@ -194,6 +216,16 @@ const Account = () => {
               }
             >
               <Star size={20} /> Đánh giá của tôi
+            </NavLink>
+
+            {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
+            <NavLink
+              to={role === "owner" ? "/owner" : "/register_owner"}
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <LayoutDashboard /> Bảng điều khiển chủ xe
             </NavLink>
 
             <NavLink

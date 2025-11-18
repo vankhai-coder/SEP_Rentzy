@@ -47,6 +47,8 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "renter",
     },
+
+    // Driver's License information
     driver_license_number: {  // will be hashed
       type: DataTypes.TEXT,
     },
@@ -66,6 +68,8 @@ const User = sequelize.define(
     driver_class: {
       type: DataTypes.STRING(10)
     },
+
+    // National ID information
     national_id_number: {
       type: DataTypes.STRING(50),
     },

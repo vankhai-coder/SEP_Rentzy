@@ -3,11 +3,11 @@ import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
 
 const REASON_ENUM = [
-  "fake_info",   // Xe không đúng thực tế
-  "illegal",     // Xe vi phạm pháp luật
-  "bad_owner",   // Chủ xe không hợp tác
-  "dangerous",   // Xe nguy hiểm/không an toàn
-  "other"        // Khác
+  "fake_info", // Xe không đúng thực tế
+  "illegal", // Xe vi phạm pháp luật
+  "bad_owner", // Chủ xe không hợp tác
+  "dangerous", // Xe nguy hiểm/không an toàn
+  "other", // Khác
 ];
 
 const VehicleReport = sequelize.define(
@@ -31,6 +31,14 @@ const VehicleReport = sequelize.define(
       allowNull: false,
     },
     message: {
+      type: DataTypes.TEXT,
+      defaultValue: "",
+    },
+    status: {
+      type: DataTypes.ENUM("pending", "reviewing", "resolved", "rejected"),
+      defaultValue: "pending",
+    },
+    admin_note: {
       type: DataTypes.TEXT,
       defaultValue: "",
     },

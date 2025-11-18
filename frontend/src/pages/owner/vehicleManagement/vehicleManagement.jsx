@@ -121,7 +121,15 @@ const fetchVehicles = useCallback(async () => {
       }
     } catch (error) {
       console.error('Error updating vehicle status:', error);
-      toast.error('Lỗi khi cập nhật trạng thái xe');
+      if (error.response?.status === 403) {
+      toast.error(error.response.data.message || 'Không thể mở khóa, xe đã bị khóa bởi admin');
+      } 
+      else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } 
+      else {
+        toast.error('Lỗi khi cập nhật trạng thái xe');
+      }
     }
   };
 
@@ -446,8 +454,8 @@ const fetchVehicles = useCallback(async () => {
 
       {/* Vehicle Type Selection Modal */}
       {showVehicleTypeModal && (
-        <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 ">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200">
             <div className="text-center">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Chọn loại xe mà bạn muốn thêm

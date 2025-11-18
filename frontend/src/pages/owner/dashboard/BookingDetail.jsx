@@ -478,9 +478,9 @@ const BookingDetail = () => {
 
         {/* Quản lý hình ảnh xe */}
         <div className="mt-8 space-y-8">
-          {(booking.status === "fully_paid" ||
+          {((booking.status === "fully_paid" ||
             booking.status === "in_progress" ||
-            booking.status === "completed") && (
+            booking.status === "completed") && (booking.contract?.contract_status === "completed" || booking.contract?.status === "completed")) && (
             <>
               <div className="flex items-center mb-4">
                 <span className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
@@ -502,10 +502,11 @@ const BookingDetail = () => {
             </>
           )}
 
-          {(booking.status === "fully_paid" ||
-            booking.status === "in_progress" ||
+          {((booking.status === "in_progress" ||
             booking.status === "completed") &&
-            booking.handover?.renter_handover_confirmed === true && (
+            (booking.contract?.contract_status === "completed" ||
+            booking.contract?.status === "completed") &&
+            booking.handover?.renter_handover_confirmed === true) && (
               <>
                 <div className="flex items-center mb-4">
                   <span className="bg-red-100 text-red-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">

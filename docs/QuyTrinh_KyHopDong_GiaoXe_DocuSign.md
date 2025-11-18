@@ -107,3 +107,35 @@
 - Yêu cầu thanh toán phần còn lại trước giao xe để giảm rủi ro.
 - Lưu ảnh hiện trường, đồng hồ công tơ, tình trạng nhiên liệu khi bàn giao.
 - Nhật ký (audit log) cho các thao tác quan trọng (gửi envelope, ký, xác nhận bàn giao).
+
+
+⭐ QUY TRÌNH KÝ HỢP ĐỒNG TRÊN WEB
+1️⃣ Luồng nghiệp vụ
+
+Người thuê thanh toán thành công → hệ thống tạo hợp đồng PDF.
+
+Backend tạo envelope trên DocuSign:
+
+Thêm 2 người ký: người thuê + người cho thuê.
+
+Mỗi signer có clientUserId → cho phép Embedded Signing.
+
+status: "sent" → envelope sẵn sàng ký.
+
+Người thuê/cho thuê vào web xem hợp đồng:
+
+Click “Xem hợp đồng / Ký ngay”.
+
+Frontend gọi backend → backend trả Embedded Signing URL.
+
+Người ký ký trực tiếp trên web, không cần email, không cần login DocuSign.
+
+Sau khi ký xong:
+
+DocuSign redirect về returnUrl trên web.
+
+Backend cập nhật trạng thái hợp đồng (signed, partially signed, completed).
+
+Người dùng có thể xem lại hợp đồng bất cứ lúc nào:
+
+Backend gọi API DocuSign: envelopesApi.getDocument → trả PDF base64.

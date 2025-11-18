@@ -27,10 +27,12 @@ import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
 import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/BookingDetailsPage.jsx";
 import TransactionHistory from "./pages/renter/transaction/TransactionHistory.jsx";
 import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
+import MyReportedVehicles from "./pages/renter/account/MyReportedVehicles";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
+import RegisterOwner from "./pages/owner/RegisterOwner.jsx";
 import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
 
 // booking
@@ -52,6 +54,7 @@ import RefundManagement from "./pages/admin/SideBarComponents/RefundManagement.j
 import PayoutManagement from "./pages/admin/SideBarComponents/PayoutManagement.jsx";
 import DisburseOwner from "./pages/admin/SideBarComponents/DisburseOwner.jsx";
 import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement.jsx";
+import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
 
 // Test pages
 
@@ -72,10 +75,14 @@ const App = () => {
           {/* Home : */}
           <Route path="/" element={<HomePage />} />
 
+          {/* Trang đăng ký chủ xe */}
+          <Route path="/register_owner" element={<RegisterOwner />} />
+
           {/* RENTER ROUTES :  */}
           <Route path="/" element={<Account />}>
             <Route path="/account" element={<UserInformation />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
+            <Route path="/my-reports" element={<MyReportedVehicles />} />
             <Route path="/booking-history" element={<BookingHistory />} />
             <Route path="/my-reviews" element={<MyReviewsPage />} />
             {/* booking detail renter */}
@@ -141,6 +148,8 @@ const App = () => {
           {/* ADMIN ROUTES :  */}
           <Route path="/admin" element={<AdminPage />}>
             {/* Admin Routes For Admin Here : */}
+            {/* index */}
+            <Route index element={<OverViewAdminDashboard />} />
             <Route path="approvalvehicle" element={<ApprovalVehicle />} />
             <Route path="managementvehicle" element={<ManagementVehicles />} />
             <Route path="userManagement" element={<UserManagement />} />

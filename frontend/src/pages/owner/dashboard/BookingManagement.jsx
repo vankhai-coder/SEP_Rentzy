@@ -372,6 +372,19 @@ const BookingManagement = () => {
                       >
                         Chi tiết
                       </button>
+                      {(booking.status === "deposit_paid" ||
+                        booking.status === "fully_paid" ||
+                        booking.status === "completed") && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/owner/contract/${booking.booking_id}`);
+                          }}
+                          className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                        >
+                          Hợp đồng
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

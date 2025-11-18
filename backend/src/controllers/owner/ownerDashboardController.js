@@ -761,7 +761,7 @@ export const getBookingDetail = async (req, res) => {
         {
           model: BookingHandover,
           as: "handover",
-          attributes: { exclude: [] },
+          attributes: { exclude: [] }, //  lấy tất cả cột
         },
         {
           model: BookingContract,
@@ -774,7 +774,6 @@ export const getBookingDetail = async (req, res) => {
             "owner_signed_at",
             "contract_file_url",
           ],
-          required: false,
         },
       ],
     });

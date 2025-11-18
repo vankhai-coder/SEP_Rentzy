@@ -1,13 +1,18 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { useContractBooking } from "./hooks/useContractBooking";
 import "./ContractBooking.scss";
 import axiosInstance from "@/config/axiosInstance";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ContractBooking = () => {
   const { bookingId } = useParams();
-  const autoOpenTriggeredRef = useRef(false);
+  const location = useLocation();
 
   const { booking, loading, error, refreshBooking } =
     useContractBooking(bookingId);
@@ -15,38 +20,51 @@ const ContractBooking = () => {
   // DocuSign state
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
+  const iframeRef = useRef(null);
 
   // Contract PDF state
   const [contractPdfUrl, setContractPdfUrl] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
 
-  const handlePrint = () => {
-    if (contractPdfUrl) {
-      const w = window.open(contractPdfUrl, "_blank");
-      if (w) w.focus();
-    } else {
-      window.print();
-    }
-  };
-  const handleDownloadPDF = () => {
-    if (contractPdfUrl) {
-      const a = document.createElement("a");
-      a.href = contractPdfUrl;
-      a.download = `contract_${booking?.contract?.contract_number || bookingId}.pdf`;
-      a.click();
-    } else {
-      window.print();
+  // Hỗ trợ khởi tạo hợp đồng nếu chưa có
+  const [initLoading, setInitLoading] = useState(false);
+  const [initError, setInitError] = useState("");
+
+  // ===== Derived states for UI flow =====
+  const isPaidEnough =
+    !!booking &&
+    (booking.status === "deposit_paid" ||
+      booking.status === "fully_paid" ||
+      booking.status === "completed");
+  const hasEnvelope = !!booking?.contract?.contract_number;
+  const renterHasSigned = Boolean(booking?.contract?.renter_signed_at);
+  const renterNeedsSign = !!booking?.contract && hasEnvelope && !renterHasSigned;
+
+  // ===== Actions =====
+  // handlePrint removed (unused after removing buttons)
+
+  const handleRefreshStatus = async () => {
+    try {
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) return refreshBooking();
+      await axiosInstance.get(`/api/docusign/status/${envelopeId}`);
+      await refreshBooking();
+    } catch (err) {
+      console.error("Refresh status error:", err);
+      await refreshBooking();
     }
   };
 
-  // Handle DocuSign signing (renter role)
   const handleSignContract = async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      const fePublic =
+        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      const returnUrl = `${fePublic}/contract/${booking.booking_id}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter" },
+        params: { role: "renter", returnUrl },
       });
       const url = resp.data?.url;
       if (url) {
@@ -61,26 +79,38 @@ const ContractBooking = () => {
     }
   };
 
-  // View combined contract PDF (open in new tab)
-  const handleViewContractPdf = async () => {
+  const initContractIfNeeded = async () => {
+    if (!booking) return;
+    const shouldInit =
+      (booking.status === "deposit_paid" || booking.status === "fully_paid") &&
+      (!booking.contract || !booking.contract.contract_number);
+
+    if (!shouldInit) return;
+
     try {
-      const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có hợp đồng để xem.");
-      const resp = await axiosInstance.get(
-        `/api/docusign/documents/${envelopeId}/combined`,
-        { responseType: "blob" }
+      setInitLoading(true);
+      setInitError("");
+      const resp = await axiosInstance.post(
+        `/api/docusign/booking/${booking.booking_id}/send`
       );
-      const blobUrl = URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
-      window.open(blobUrl, "_blank");
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      if (resp.data?.success) {
+        await refreshBooking();
+      } else {
+        setInitError(
+          resp.data?.error || "Không thể khởi tạo hợp đồng DocuSign"
+        );
+      }
     } catch (err) {
-      console.error("Error downloading contract PDF:", err);
-      alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
+      console.error("Init DocuSign contract error:", err);
+      setInitError(
+        err.response?.data?.error || "Không thể khởi tạo hợp đồng DocuSign"
+      );
+    } finally {
+      setInitLoading(false);
     }
   };
 
-  // Fetch and display combined contract PDF when entering the page
-  useEffect(() => {
+  const fetchCombinedPdf = async () => {
     const envelopeId = booking?.contract?.contract_number;
     if (!envelopeId) return;
 
@@ -88,45 +118,71 @@ const ContractBooking = () => {
     setPdfError("");
     setPdfLoading(true);
 
-    axiosInstance
-      .get(`/api/docusign/documents/${envelopeId}/combined`, {
-        responseType: "blob",
-      })
-      .then((resp) => {
-        const url = URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
-        createdUrl = url;
-        setContractPdfUrl(url);
-      })
-      .catch((err) => {
-        console.error("Error fetching combined contract:", err);
-        setPdfError(err.response?.data?.error || "Không thể lấy hợp đồng từ DocuSign");
-      })
-      .finally(() => {
-        setPdfLoading(false);
-      });
+    try {
+      const resp = await axiosInstance.get(
+        `/api/docusign/documents/${envelopeId}/combined`,
+        {
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(
+        new Blob([resp.data], { type: "application/pdf" })
+      );
+      createdUrl = url;
+      setContractPdfUrl(url);
+    } catch (err) {
+      console.error("Error fetching combined contract:", err);
+      setPdfError(
+        err.response?.data?.error || "Không thể lấy hợp đồng từ DocuSign"
+      );
+    } finally {
+      setPdfLoading(false);
+    }
 
     return () => {
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
-  }, [booking?.contract?.contract_number]);
+  };
 
-  // Tự động mở popup ký DocuSign sau khi thanh toán thành công
   useEffect(() => {
-    if (autoOpenTriggeredRef.current) return;
-    if (!booking?.contract) return;
+    initContractIfNeeded().then(() => {
+      fetchCombinedPdf();
+    });
+  }, [booking?.status, booking?.contract?.contract_number]);
 
-    const shouldOpen =
-      booking.contract.contract_status === "pending_signatures" &&
-      !booking.contract.renter_signed_at &&
-      (booking.status === "deposit_paid" || booking.status === "fully_paid");
+  // Auto refresh DB status when arriving from DocuSign returnUrl (no auto-open)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const event =
+      params.get("event") || params.get("source") || params.get("eventType");
+    const clientUserId =
+      params.get("client_user_id") || params.get("clientUserId");
 
-    if (shouldOpen) {
-      autoOpenTriggeredRef.current = true;
-      handleSignContract();
+    if (event || clientUserId) {
+      handleRefreshStatus();
+      setShowSignModal(false);
+      setSignUrl("");
     }
-  }, [booking]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
-  
+  // Khi có event trong URL và booking đã tải xong, đảm bảo gọi getStatus
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const event = params.get("event") || params.get("source") || params.get("eventType");
+    if (event && booking?.contract?.contract_number) {
+      handleRefreshStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking?.contract?.contract_number, location.search]);
+
+  // NEW: Khi envelope xuất hiện sau khi booking load xong, tự động gọi getStatus để đồng bộ DB
+  useEffect(() => {
+    if (hasEnvelope) {
+      handleRefreshStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasEnvelope]);
 
   if (loading) {
     return (
@@ -163,12 +219,12 @@ const ContractBooking = () => {
       <div className="contract-booking">
         <div className="error-container">
           <div className="error-content">
-            <div className="error-icon">ℹ️</div>
             <div className="error-text">
-              <h2>Không có thông tin booking</h2>
-              <button onClick={refreshBooking} className="retry-button">
-                Tải lại
-              </button>
+              <h2>Không tìm thấy thông tin đặt xe</h2>
+              <p>Vui lòng quay lại và chọn đơn đặt xe hợp lệ.</p>
+              <Link to="/bookings" className="retry-button">
+                Về danh sách đặt xe
+              </Link>
             </div>
           </div>
         </div>
@@ -176,27 +232,157 @@ const ContractBooking = () => {
     );
   }
 
+  const renderActionButtons = () => {
+    return (
+      <div className="actions-row">
+        <button
+          className="btn btn-primary"
+          onClick={handleSignContract}
+          disabled={!hasEnvelope || !renterNeedsSign}
+          title={
+            renterNeedsSign ? "Mở giao diện ký DocuSign" : "Bạn đã ký hợp đồng"
+          }
+        >
+          {renterNeedsSign ? "Ký hợp đồng" : "Đã ký"}
+        </button>
+      </div>
+    );
+  };
+
+  const handleIFrameLoad = () => {
+    try {
+      const href = iframeRef.current?.contentWindow?.location?.href;
+      if (!href) return;
+      if (href.startsWith(window.location.origin)) {
+        // Không ràng buộc đường dẫn cụ thể, miễn là đã quay về cùng origin
+        setShowSignModal(false);
+        setSignUrl("");
+        handleRefreshStatus();
+      }
+    } catch {
+      // ignore cross-origin while on DocuSign
+    }
+  };
+
   return (
     <div className="contract-booking">
+      {/* Banner */}
+      {(!hasEnvelope || renterNeedsSign) && (
+        <div className="banner">
+          <div className="banner-content">
+            <div className="banner-text">
+              {!hasEnvelope ? (
+                <>
+                  <h2>Chưa có hợp đồng để hiển thị</h2>
+                  <p>
+                    Vui lòng thanh toán đặt cọc để khởi tạo hợp đồng DocuSign.
+                  </p>
+                </>
+              ) : renterNeedsSign ? (
+                <>
+                  <h2>Hợp đồng đang chờ bạn ký</h2>
+                  <p>Nhấn "Ký hợp đồng" để hoàn tất.</p>
+                </>
+              ) : (
+                <>
+                  <h2>Bạn đã ký hợp đồng</h2>
+                  <p>Chờ phía chủ xe ký để hoàn tất.</p>
+                </>
+              )}
+            </div>
+            <div className="banner-actions">
+              {!hasEnvelope ? (
+                <>
+                  <Link
+                    to={`/payment-deposit/${booking.booking_id}`}
+                    className="btn btn-primary"
+                  >
+                    Thanh toán đặt cọc
+                  </Link>
+                  <Link
+                    to={`/order-confirmation/${booking.booking_id}`}
+                    className="btn btn-outline"
+                  >
+                    Xem lại đơn
+                  </Link>
+                </>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSignContract}
+                  disabled={!renterNeedsSign}
+                >
+                  Ký hợp đồng
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="contract-actions">
-        <button onClick={handleSignContract} disabled={!booking?.contract?.contract_number}>
-          Ký hợp đồng
-        </button>
-        <button onClick={handleViewContractPdf} disabled={!booking?.contract?.contract_number}>
-          Mở PDF trong tab mới
-        </button>
-        <button onClick={handleDownloadPDF} disabled={!contractPdfUrl}>
-          Tải PDF
-        </button>
-        <button onClick={handlePrint}>In</button>
+        {renderActionButtons()}
+        <div className="action-hint">
+          {!isPaidEnough && (
+            <span>Hãy thanh toán cọc để khởi tạo hợp đồng.</span>
+          )}
+          {isPaidEnough && !hasEnvelope && (
+            <span>Sau khi khởi tạo, bạn sẽ có thể ký hợp đồng.</span>
+          )}
+        </div>
       </div>
 
       <div className="contract-viewer">
+        {initLoading && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Đang khởi tạo hợp đồng DocuSign...</p>
+          </div>
+        )}
+        {!initLoading && initError && (
+          <div className="error-container">
+            <div className="error-content">
+              <div className="error-icon">⚠️</div>
+              <div className="error-text">
+                <h2>Khởi tạo hợp đồng thất bại</h2>
+                <p>{initError}</p>
+                {isPaidEnough ? (
+                  <button
+                    onClick={initContractIfNeeded}
+                    className="retry-button"
+                  >
+                    Khởi tạo hợp đồng
+                  </button>
+                ) : (
+                  <Link
+                    to={`/payment-deposit/${booking.booking_id}`}
+                    className="retry-button"
+                  >
+                    Thanh toán để khởi tạo
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {pdfLoading && (
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Đang tải giao diện hợp đồng từ DocuSign...</p>
           </div>
+        )}
+        {!pdfLoading && !pdfError && contractPdfUrl && (
+          <iframe
+            title="Contract PDF"
+            src={contractPdfUrl}
+            style={{
+              width: "100%",
+              height: "80vh",
+              border: "1px solid #ddd",
+              borderRadius: 8,
+            }}
+          />
         )}
         {!pdfLoading && pdfError && (
           <div className="error-container">
@@ -205,27 +391,39 @@ const ContractBooking = () => {
               <div className="error-text">
                 <h2>Lỗi tải hợp đồng DocuSign</h2>
                 <p>{pdfError}</p>
-                <button onClick={() => booking && setContractPdfUrl("") && refreshBooking()} className="retry-button">
+                <button
+                  onClick={() =>
+                    booking && setContractPdfUrl("") && refreshBooking()
+                  }
+                  className="retry-button"
+                >
                   Thử lại
                 </button>
               </div>
             </div>
           </div>
         )}
-        {!pdfLoading && !pdfError && contractPdfUrl && (
-          <iframe
-            title="Contract PDF"
-            src={contractPdfUrl}
-            style={{ width: "100%", height: "80vh", border: "1px solid #ddd", borderRadius: 8 }}
-          />
-        )}
-        {!pdfLoading && !pdfError && !contractPdfUrl && (
+        {!initLoading && !pdfLoading && !pdfError && !contractPdfUrl && (
           <div className="error-container">
             <div className="error-content">
-              <div className="error-icon">ℹ️</div>
               <div className="error-text">
                 <h2>Chưa có hợp đồng để hiển thị</h2>
                 <p>Vui lòng thanh toán và khởi tạo hợp đồng DocuSign.</p>
+                {isPaidEnough ? (
+                  <button
+                    onClick={initContractIfNeeded}
+                    className="retry-button"
+                  >
+                    Khởi tạo hợp đồng
+                  </button>
+                ) : (
+                  <Link
+                    to={`/payment-deposit/${booking.booking_id}`}
+                    className="retry-button"
+                  >
+                    Thanh toán đặt cọc
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -239,6 +437,8 @@ const ContractBooking = () => {
           </DialogHeader>
           {signUrl ? (
             <iframe
+              ref={iframeRef}
+              onLoad={handleIFrameLoad}
               title="DocuSign"
               src={signUrl}
               style={{ width: "100%", height: "80vh", border: "none" }}

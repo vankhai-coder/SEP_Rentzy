@@ -18,6 +18,7 @@ import TransactionManagement from "./dashboard/TransactionManagement.jsx";
 import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
 import TrafficFineSearch from "./dashboard/TrafficFineSearch.jsx";
+import ContractOwner from "./dashboard/ContractOwner.jsx";
 const OwnerPage = () => {
   const dispatch = useDispatch();
 
@@ -93,6 +94,14 @@ const OwnerPage = () => {
             element={
               <AuthRequired>
                 <TrafficFineSearch />
+              </AuthRequired>
+            }
+          />
+          <Route
+            path="/contract/:id"
+            element={
+              <AuthRequired>
+                <ContractOwner />
               </AuthRequired>
             }
           />

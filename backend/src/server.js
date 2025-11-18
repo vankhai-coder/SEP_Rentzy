@@ -21,6 +21,7 @@ import VehicleReportRoute from "./routes/renter/vehicleReportRoute.js";
 import TransactionRoute from "./routes/renter/transactionRoute.js";
 import CompareVehicleRoute from "./routes/renter/compareVehicleRoute.js";
 import DocusignRoute from "./routes/docusign/docusignRoute.js";
+import RecommendationRoute from "./routes/renter/recommendationRoute.js";
 // booking route
 
 import BookingRoute from "./routes/booking/bookingRoute.js";
@@ -39,6 +40,7 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
+import AdminOverviewRoute from './routes/admin/adminOverviewDashboard.js'
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -94,6 +96,7 @@ app.use("/api/renter/booking-history", BookingHistoryRoute);
 app.use("/api/renter/reports", VehicleReportRoute);
 app.use("/api/renter/info", RenterInfoRoute);
 app.use("/api/renter/transactions", TransactionRoute);
+app.use("/api/renter", RecommendationRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
@@ -109,6 +112,10 @@ app.use("/api/owner/overview", OwnerOverviewRoute);
 // admin route
 app.use("/api/admin/approval-vehicles", AdminApprovalVehicleRoute);
 app.use("/api/admin/management-vehicles", AdminManagementVehicleRoute);
+app.use("/api/admin", AdminRoute);
+app.use("/api/admin", AdminPayoutRoute);
+// admin - Van Khai :
+app.use("/api/admin/overview", AdminOverviewRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
@@ -122,10 +129,7 @@ app.use("/api/payment", PaymentRoute);
 // bank account route
 app.use("/api/bank-accounts", BankAccountRoute);
 
-// admin route
-app.use("/api/admin", AdminRoute);
-app.use("/api/admin", AdminPayoutRoute);
-
+// test route
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
 });
@@ -151,19 +155,19 @@ const server = app.listen(PORT, () =>
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("🛑 SIGTERM received, shutting down gracefully...");
+  console.log(" SIGTERM received, shutting down gracefully...");
   stopCronJobs();
   server.close(() => {
-    console.log("✅ Server closed");
+    console.log(" Server closed");
     process.exit(0);
   });
 });
 
 process.on("SIGINT", () => {
-  console.log("🛑 SIGINT received, shutting down gracefully...");
+  console.log("SIGINT received, shutting down gracefully...");
   stopCronJobs();
   server.close(() => {
-    console.log("✅ Server closed");
+    console.log("Server closed");
     process.exit(0);
   });
 });
