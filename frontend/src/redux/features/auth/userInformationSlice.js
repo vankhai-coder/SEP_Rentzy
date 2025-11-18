@@ -113,7 +113,7 @@ export const check2FaceMatch = createAsyncThunk(
       formData.append("image_2", image_2);
 
       const response = await axiosInstance.post(
-        `/api/renter/info/check-2-face-match`,
+        `/api/renter/info/check-2-face-match-driver-license`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

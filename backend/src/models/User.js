@@ -86,6 +86,8 @@ const User = sequelize.define(
       type: DataTypes.ENUM("pending", "approved", "rejected"),
       defaultValue: "pending",
     },
+
+    // Other fields
     points: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
