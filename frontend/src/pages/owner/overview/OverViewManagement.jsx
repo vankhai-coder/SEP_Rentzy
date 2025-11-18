@@ -32,9 +32,10 @@ const OverViewManagement = () => {
   const [topVehicles, setTopVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('day');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedPeriod, setSelectedPeriod] = useState('year');
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedQuarter, setSelectedQuarter] = useState(null);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
@@ -55,16 +56,21 @@ const OverViewManagement = () => {
   };
 
   // Fetch revenue chart data
-  const fetchRevenueChart = async (period, year, month) => {
+  const fetchRevenueChart = async (period, year, month, quarter) => {
     try {
       const params = { 
         period: period,
         year: year
       };
       
-      // Thêm tham số month nếu period là 'day' hoặc 'month'
-      if (period === 'day' || period === 'month') {
+      // Thêm tham số month nếu period là 'day'
+      if (period === 'day') {
         params.month = month;
+      }
+
+      // Thêm tham số quarter nếu period là 'quarter'
+      if (period === 'quarter' && quarter) {
+        params.quarter = quarter;
       }
       
       console.log('Fetching revenue chart with params:', params);
@@ -187,8 +193,9 @@ const OverViewManagement = () => {
     console.log('selectedPeriod:', selectedPeriod);
     console.log('selectedYear:', selectedYear);
     console.log('selectedMonth:', selectedMonth);
-    fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth);
-  }, [selectedPeriod, selectedYear, selectedMonth]);
+    console.log('selectedQuarter:', selectedQuarter);
+    fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth, selectedQuarter);
+  }, [selectedPeriod, selectedYear, selectedMonth, selectedQuarter]);
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -235,14 +242,14 @@ const OverViewManagement = () => {
       const parts = item.period.split('-');
       let label = item.period;
 
-      if (selectedPeriod === 'day' && parts.length === 2) {
-        const [month, day] = parts;
-        label = `${(day || '').padStart(2, '0')}/${(month || '').padStart(2, '0')}`;
-      } else if (selectedPeriod === 'month' && parts.length === 2) {
-        const [month, year] = parts;
-        label = `Tháng ${parseInt(month)} / ${year}`;
+      if (selectedPeriod === 'day' && parts.length === 3) {
+        const [ y, m, d] = parts;
+        label = `${(d || '').padStart(2, '0')}/${(m || '').padStart(2, '0')}`;
+      } else if ((selectedPeriod === 'month' || selectedPeriod === 'quarter') && parts.length === 2) {
+        const [y, m] = parts;
+        label = `Tháng ${parseInt(m)} / ${y}`;
       } else if (selectedPeriod === 'year') {
-        label = item.period;
+        label = parts[0];
       }
 
       return {
@@ -272,7 +279,9 @@ const OverViewManagement = () => {
     if (selectedPeriod === 'day') {
       return `${getMonthName(selectedMonth)} ${selectedYear}`;
     } else if (selectedPeriod === 'month') {
-      return `${getMonthName(selectedMonth)} ${selectedYear}`;
+      return `12 tháng của năm ${selectedYear}`;
+    } else if (selectedPeriod === 'quarter') {
+      return `Quý ${selectedQuarter} - ${selectedYear}`;
     } else {
       return '5 năm gần nhất';
     }
@@ -438,85 +447,68 @@ const OverViewManagement = () => {
               </p>
             </div>
             
-            {/* Enhanced Filter Controls */}
-            <div className="flex flex-wrap gap-3">
-              {/* Period Selector */}
-              <div className="flex flex-col">
-                <label className="text-xs text-gray-500 mb-1">Thời gian</label>
-                <select
-                  value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+            {/* Bộ lọc hiển thị theo yêu cầu: chuyển nhóm nút thành dropdown */}
+            <div className="flex flex-wrap gap-4 items-end w-full lg:w-auto lg:ml-auto lg:justify-end">
+              {/* Nút xem 5 năm gần nhất */}
+              {/* <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setSelectedPeriod('year'); setSelectedQuarter(null); }}
+                  className={`px-3 py-2 rounded-md text-sm border ${selectedPeriod === 'year' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
                 >
-                  <option value="day">Theo ngày</option>
-                  <option value="month">Theo tháng</option>
-                  <option value="year">Theo năm</option>
+                  Xem 5 năm gần nhất
+                </button>
+              </div> */}
+
+              {/* Dropdown chọn năm (10 năm) */}
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Chọn năm</label>
+                <select
+                  value={selectedYear ?? ''}
+                  onChange={(e) => { const y = parseInt(e.target.value); setSelectedYear(y); setSelectedPeriod('month'); setSelectedQuarter(null); }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[120px]"
+                >
+                  <option value="">-- Chọn năm --</option>
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
                 </select>
               </div>
 
-              {/* Month Selector for day view */}
-              {selectedPeriod === 'day' && (
-                <>
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Tháng</label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month}>
-                          {getMonthName(month)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Năm</label>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                    >
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
+              {/* Dropdown chọn quý */}
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Chọn quý</label>
+                <select
+                  value={selectedQuarter ?? ''}
+                  onChange={(e) => { const q = parseInt(e.target.value); if (!isNaN(q)) { setSelectedQuarter(q); setSelectedPeriod('quarter'); } else { setSelectedQuarter(null); } }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[120px]"
+                >
+                  <option value="">-- Chọn quý --</option>
+                  <option value={1}>Quý 1</option>
+                  <option value={2}>Quý 2</option>
+                  <option value={3}>Quý 3</option>
+                  <option value={4}>Quý 4</option>
+                </select>
+              </div>
 
-              {/* Month and Year Selector for month view */}
-              {selectedPeriod === 'month' && (
-                <>
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Tháng</label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month}>
-                          {getMonthName(month)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Năm</label>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
-                    >
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-              )}
+              {/* Dropdown chọn tháng: 12 tháng hoặc theo quý đã chọn */}
+              <div className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1">Chọn tháng</label>
+                <select
+                  value={selectedMonth ?? ''}
+                  onChange={(e) => { const m = parseInt(e.target.value); setSelectedMonth(m); setSelectedPeriod('day'); }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[140px]"
+                >
+                  <option value="">-- Chọn tháng --</option>
+                  {(() => {
+                    const months = selectedQuarter
+                      ? Array.from({ length: 3 }, (_, i) => (selectedQuarter - 1) * 3 + 1 + i)
+                      : Array.from({ length: 12 }, (_, i) => i + 1);
+                    return months.map(m => (
+                      <option key={m} value={m}>{getMonthName(m)}</option>
+                    ));
+                  })()}
+                </select>
+              </div>
             </div>
           </div>
 
