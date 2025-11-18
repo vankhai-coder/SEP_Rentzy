@@ -328,7 +328,7 @@ const UserManagement = () => {
                             <span className="px-2 py-1 rounded-full text-sm bg-red-300 text-red-800 ">Quản trị viên</span>
                           )}
                           {user.role === 'owner' && (
-                            <span className="px-2 py-1 rounded-full text-sm bg-blue-300 text-blue-800">Chủ sở hữu</span>
+                            <span className="px-2 py-1 rounded-full text-sm bg-blue-300 text-blue-800">Chủ xe</span>
                           )}
                           {user.role === 'renter' && (
                             <span className="px-2 py-1 rounded-full text-sm bg-green-300 text-green-800">Người thuê</span>
