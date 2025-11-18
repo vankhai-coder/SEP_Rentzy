@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
-import { Link } from "react-router-dom";
+import { Link, Links } from "react-router-dom";
 import { Button } from "../ui/button";
 import { logoutUser } from "@/redux/features/auth/authSlice";
 import {
@@ -40,13 +40,9 @@ const Header = () => {
       <nav className="flex items-center justify-between w-screen max-w-7xl py-4 md:py-8 px-8 md:px-24 lg:px-16 mx-auto bg-[##ffffff]">
         {/* Logo Section */}
         <div className="flex items-center space-x-2">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.href = "/";
-            }}
           >
             <img
               src="./rentzy_logo.png"
@@ -54,7 +50,7 @@ const Header = () => {
               className="size-8 md:size-12"
             />
             <span className="text-3xl font-bold hidden lg:block">RENTZY</span>
-          </a>
+          </Link>
         </div>
 
         {/* navigate Section */}
