@@ -22,7 +22,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CircleCheck, CircleX, Clock8, Loader } from "lucide-react";
+import { AlertCircleIcon, CircleCheck, CircleX, Clock8, Loader, PopcornIcon } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.jsx";
+import { CheckCircle2Icon } from "lucide-react";
 
 const RegisterOwner = () => {
   const { role } = useSelector((state) => state.userStore);
@@ -82,20 +84,20 @@ const RegisterOwner = () => {
     queryFn: checkIfUserIsLinkBankAccount,
   });
 
-  // function to check if user is already request to become owner , GET /api/renter/info/verify/is-request-to-be-owner using axiosInstance
-  const checkIfUserIsRequestToBecomeOwner = async () => {
+  // function to check if user is already request to become owner , GET /api/renter/info/status-request-to-be-owner using axiosInstance
+  const checkStatusForRequestToBecomeOwner = async () => {
     try {
-      const response = await axiosInstance.get('/api/renter/info/is-request-to-be-owner');
-      return response.data.isRequestToBecomeOwner; // Assuming the response contains a field 'isRequestToBecomeOwner'
+      const response = await axiosInstance.get('/api/renter/info/status-request-to-be-owner');
+      return response.data; // Assuming the response contains a field 'status'
     } catch (error) {
       console.error("Error checking request to become owner status:", error);
       return false;
     }
   }
   // user react query to check if user is already request to become owner
-  const { data: isRequestToBecomeOwner, isLoading: isRequestToBecomeOwnerLoading, refetch: refetchRequestToBecomeOwner } = useQuery({
-    queryKey: ['isRequestToBecomeOwner'],
-    queryFn: checkIfUserIsRequestToBecomeOwner,
+  const { data: statusForRequestToBecomeOwner, isLoading: isLoadingStatusForRequestToBecomeOwner, refetch: refetchRequestToBecomeOwner } = useQuery({
+    queryKey: ['statusForRequestToBecomeOwner'],
+    queryFn: checkStatusForRequestToBecomeOwner,
 
   });
 
@@ -109,7 +111,7 @@ const RegisterOwner = () => {
   }, [role, navigate]);
 
   // Loading state
-  if (isEmailVerifyLoading || isIdentityCardVerifyLoading || isLinkBankAccountLoading || isRequestToBecomeOwnerLoading) {
+  if (isEmailVerifyLoading || isIdentityCardVerifyLoading || isLinkBankAccountLoading || isLoadingStatusForRequestToBecomeOwner) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
@@ -158,7 +160,6 @@ const RegisterOwner = () => {
                   </DialogContent>
                 </Dialog>
               )}
-
             </div>
           </div>
 
@@ -234,12 +235,11 @@ const RegisterOwner = () => {
                   </DialogContent>
                 </Dialog>
               )}
-
             </div>
           </div>
 
           {/* STEP 4: agree terms */}
-          {!isRequestToBecomeOwner &&
+          {statusForRequestToBecomeOwner.status === 'pending' &&
             <div className="p-6 border-3 border-gray-200 rounded-lg w-full  ">
               <div className="flex items-center justify-between py-4 border-b-2 border-gray-200 mb-4">
                 <span className="font-bold text-xl">Bước 4 : Đồng ý với các điều khoản</span>
@@ -302,21 +302,28 @@ const RegisterOwner = () => {
             </div>
           }
 
-
           {/* STEP 5: Waiting for admin to accept */}
           <div className="p-6 border-3 border-gray-200 rounded-lg w-full  ">
             <div className="flex items-center justify-between py-4 border-b-2 border-gray-200 mb-4">
               <span className="font-bold text-xl">Bước 5 : Gửi yêu cầu thành chủ xe</span>
               <span>
-                {isRequestToBecomeOwner ? (
+                {statusForRequestToBecomeOwner.status === 'pending' ? (
                   <Clock8 className="text-yellow-400" />
-                ) : (
-                  <CircleX className="text-red-400" />
-                )}
+                ) :
+
+                  statusForRequestToBecomeOwner.status === 'no_request' ? (
+                    <CircleX className="text-red-400" />
+                  ) : statusForRequestToBecomeOwner.status === 'approved' ? (
+                    <CircleCheck className="text-green-400" />
+                  ) :
+
+                    (
+                      <CircleX className="text-red-400" />
+                    )}
               </span>
             </div>
             <div>
-              {isRequestToBecomeOwner ? (
+              {statusForRequestToBecomeOwner === 'pending' ? (
                 <span>Bạn đã gửi yêu cầu trở thành chủ xe. Vui lòng chờ quản trị viên phê duyệt.</span>
               ) :
                 <Button
@@ -344,6 +351,56 @@ const RegisterOwner = () => {
           </div>
 
 
+          {/* STEP 6 */}
+          {/* if  statusForRequestToBecomeOwner =  "rejected" , then display dialog to let the user know the reason */}
+          <Dialog open={statusForRequestToBecomeOwner.status === 'rejected'}>
+            <DialogContent showCloseButton={false}>
+              <DialogHeader>
+                <DialogTitle>Yêu cầu trở thành chủ xe bị từ chối</DialogTitle>
+                <DialogDescription className={'flex justify-center my-6'}>
+                  <div className="grid w-full max-w-xl items-start gap-4">
+                    <Alert variant="destructive">
+                      <AlertCircleIcon />
+                      <AlertTitle>Yêu cầu bị từ chối</AlertTitle>
+                      <AlertDescription>
+                        Lý do: {statusForRequestToBecomeOwner.reason_rejected || "Vui lòng liên hệ quản trị viên để biết thêm chi tiết."}
+                      </AlertDescription>
+                    </Alert>
+
+                    <Alert>
+                      {/* <PopcornIcon /> */}
+                      <AlertTitle className={'flex justify-center'}>
+                        <Button>
+                          <Link to='/' >Quay về trang chủ</Link>
+                        </Button>
+                      </AlertTitle>
+                    </Alert>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+
+          {/* STEP 7 */}
+          {/* if  statusForRequestToBecomeOwner =  "approved" , then display dialog to let the user know the success , in this case , they must log in again to set role */}
+          <Dialog open={statusForRequestToBecomeOwner.status === 'approved'}>
+            <DialogContent showCloseButton={false} >
+              <DialogHeader>
+                <DialogTitle>Yêu cầu trở thành chủ xe đã được phê duyệt</DialogTitle>
+                <DialogDescription className={'flex justify-center my-6'}>
+                  <Alert>
+                    <CheckCircle2Icon />
+                    <AlertTitle>Hãy đăng nhập lại để cập nhật vai trò của bạn</AlertTitle>
+                    <AlertDescription>
+                      <Button className={'mt-4 mx-auto'}>
+                        <Link to='/logout' >Đăng xuất ngay</Link>
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 

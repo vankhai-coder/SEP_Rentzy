@@ -804,7 +804,7 @@ export const checkIfUserRegisterBankAccount = async (req, res) => {
 //       type: DataTypes.ENUM("pending", "approved", "rejected"),
 //       defaultValue: "pending",
 //     },
-export const checkIfUserRequestToBecomeOwner = async (req, res) => {
+export const checkStatusForRequestToBecomeOwner = async (req, res) => {
     try {
         // check if user exist :
         const user = await User.findOne({
@@ -815,20 +815,22 @@ export const checkIfUserRequestToBecomeOwner = async (req, res) => {
             return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
         }
 
-        // check user_id and status = pending 
+        // check user_id and get status :
         const registerOwnerRequest = await RegisterOwner.findOne({
             where: {
                 user_id: user.user_id,
-                status: 'pending'
             }
         });
 
-        const isRequestToBecomeOwner = !!registerOwnerRequest;
+        if (!registerOwnerRequest) {
+            return res.status(200).json({ status: "no_request" });
+        }
 
-        return res.status(200).json({ isRequestToBecomeOwner: isRequestToBecomeOwner });
+        return res.status(200).json({ status: registerOwnerRequest.status, reason_rejected: registerOwnerRequest.reason_rejected || null });
+
     } catch (error) {
-        console.error("Error checking if user request to become owner :", error.message);
-        return res.status(500).json({ message: error.message, isRequestToBecomeOwner: false });
+        console.error("Error checking status for request to become owner :", error.message);
+        return res.status(500).json({ message: error.message });
     }
 }
 
