@@ -237,8 +237,8 @@ export const paymentSuccessTemplateForRenter = (
           <div class="detail-row">
             <span class="detail-label">Số tiền:</span>
             <span class="detail-value">${amount.toLocaleString(
-              "vi-VN"
-            )} VNĐ</span>
+    "vi-VN"
+  )} VNĐ</span>
           </div>
         </div>
         
@@ -364,13 +364,145 @@ export const paymentSuccessTemplateForOwner = (
           <div class="detail-row">
             <span class="detail-label">Số tiền thanh toán được: </span>
             <span class="detail-value">${amount.toLocaleString(
-              "vi-VN"
-            )} VNĐ</span>
+    "vi-VN"
+  )} VNĐ</span>
           </div>
         </div>
         
         <p>Tiền sẽ được chuyển vào tài khoản của bạn theo quy trình thanh toán của Rentzy.</p>
         
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
+        </div>
+      </div>
+    </body>
+  </html>
+  `;
+};
+// template for owner approval notification email
+export const ownerApprovalNotificationTemplate = (frontendURL) => {
+  const escapeHTML = (str = "") =>
+    str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Owner Approval Notification</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f9f9f9;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background: #ffffff;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          padding: 30px;
+        }
+        h2 {
+          color: #333333;
+        }
+        p {
+          color: #555555;
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 12px;
+          color: #888888;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Thông báo phê duyệt chủ xe</h2>
+        <p>Xin chào</p>
+        <p>Yêu cầu trở thành chủ xe của bạn đã được phê duyệt.</p>
+        <p>Bạn có thể đăng nhập vào bảng điều khiển chủ xe của mình <a href="${frontendURL}/logout" target="_blank">tại đây</a></p>
+        <p>Cảm ơn bạn đã sử dụng dịch vụ của Rentzy.</p>
+
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
+        </div>
+      </div>
+    </body>
+  </html>
+  `;
+};
+
+// template for owner rejection notification email
+export const ownerRejectionNotificationTemplate = (reasonRejected) => {
+  const escapeHTML = (str = "") =>
+    str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Owner Rejection Notification</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f9f9f9;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background: #ffffff;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          padding: 30px;
+        }
+        h2 {
+          color: #333333;
+        }
+        p {
+          color: #555555;
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 12px;
+          color: #888888;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Thông báo từ chối yêu cầu trở thành chủ xe</h2>
+
+        <p>Xin chào </p>
+
+        <p>Rất tiếc, yêu cầu trở thành chủ xe của bạn đã bị <strong>từ chối</strong>.</p>
+
+        <p><strong>Lý do từ chối:</strong> ${escapeHTML(reasonRejected)}</p>
+
+        <p>Nếu bạn có bất kỳ thắc mắc nào, hãy liên hệ với bộ phận hỗ trợ của chúng tôi.</p>
+
+        <p>Cảm ơn bạn đã sử dụng dịch vụ của Rentzy.</p>
+
         <div class="footer">
           <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
         </div>

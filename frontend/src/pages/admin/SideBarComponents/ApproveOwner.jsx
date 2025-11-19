@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, CircleX, DollarSign, Download, Ellipsis, Eye, Loader, ShieldCheck, Trash2, UserPlus } from "lucide-react"
+import { Ban, ChevronLeft, ChevronRight, CircleX, Download, Ellipsis, Eye, Handshake, Loader, ShieldCheck, UserPlus } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -37,10 +37,22 @@ import {
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
 import axiosInstance from "@/config/axiosInstance"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
+import { toast } from "sonner"
 
 const ApproveOwner = () => {
+
+  // state for open dialog for reject reason
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [isLoadingApprove, setIsLoadingApprove] = useState(false);
+  const [isLoadingReject, setIsLoadingReject] = useState(false);
+
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const queryClient = useQueryClient();
 
 
   // use tankstack query to fetch stats from backend api /api/admin/owner-approval/stats using axiosInstance: 
@@ -82,7 +94,6 @@ const ApproveOwner = () => {
       }
     });
     return response.data; // response.data : array of users and total pages
-    // backend just get fields :    attributes: ['user_id', 'avatar_url', 'full_name', 'email', 'role', 'is_active', 'created_at', 'points']
     // response.data = {
     //   "users": [
     //     {
@@ -106,6 +117,54 @@ const ApproveOwner = () => {
     }
   );
 
+
+  // function to accept to becom comowner : to : /api/admin/owner-approval/approve using axiosInstance post method :
+  const approveOwnerRequest = async (user_id) => {
+    try {
+      setIsLoadingApprove(true);
+      await axiosInstance.post('/api/admin/owner-approval/approve', {
+        user_id
+      });
+      // toast success
+      toast.info('Đã chấp nhận yêu cầu trở thành chủ xe!');
+      setSelectedUserId(null);
+      setIsApproveDialogOpen(false);
+      // refetch the list of users
+      queryClient.invalidateQueries(['users']);
+    } catch (error) {
+      toast.error('Lỗi khi chấp nhận yêu cầu trở thành chủ xe.Thử lại sau!');
+      console.error('Error approving owner request:', error);
+    } finally {
+      setIsLoadingApprove(false);
+      // close the dialog
+      setIsRejectDialogOpen(false);
+    }
+  };
+
+  // function to reject to becom comowner : to : /api/admin/owner-approval/reject using axiosInstance post method :
+  const rejectOwnerRequest = async (user_id, reason) => {
+    try {
+      setIsLoadingReject(true);
+      await axiosInstance.post('/api/admin/owner-approval/reject', {
+        user_id,
+        reason_rejected: reason,
+      });
+      // toast success
+      toast.info('Đã từ chối yêu cầu trở thành chủ xe!');
+      setSelectedUserId(null);
+      setRejectReason('');
+      // refetch the list of users
+      queryClient.invalidateQueries(['users']);
+    } catch (error) {
+      toast.error('Lỗi khi từ chối yêu cầu trở thành chủ xe.Thử lại sau!');
+      console.error('Error rejecting owner request:', error);
+    } finally {
+      setIsLoadingReject(false);
+      // close the dialog
+      setIsRejectDialogOpen(false);
+    }
+  }
+
   // function to change from : 2025-11-15T12:11:35.000Z to 15 thg 11, 2025 , and 12:11 PM
   const formatDateTime = (dateTimeString) => {
     const options = {
@@ -119,7 +178,6 @@ const ApproveOwner = () => {
     const date = new Date(dateTimeString);
     return date.toLocaleString('vi-VN', options);
   }
-
 
   return (
 
@@ -360,27 +418,27 @@ const ApproveOwner = () => {
                                       <span className="flex-shrink-0">
                                         <Eye className="lucide lucide-eye h-4 w-4" />
                                       </span>
-                                      <span>View Details</span>
+                                      <span>Xem chi tiết</span>
                                     </button>
                                   </PopoverClose>
 
-                                  {/* ban account */}
+                                  {/* accept request */}
                                   <PopoverClose>
                                     <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
                                       <span className="flex-shrink-0">
-                                        <Trash2 className="lucide h-4 w-4" />
+                                        <Handshake className="size-4" />
                                       </span>
-                                      <span>Delete User</span>
+                                      <span onClick={() => { setIsApproveDialogOpen(true); setSelectedUserId(user.user_id); }}>Chấp nhận</span>
                                     </button>
                                   </PopoverClose>
 
-                                  {/* view booking history */}
+                                  {/* reject request */}
                                   <PopoverClose>
                                     <button className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
                                       <span className="flex-shrink-0">
-                                        <DollarSign className="lucide lucide-dollar-sign h-4 w-4" />
+                                        <Ban className="size-4" />
                                       </span>
-                                      <span onClick={() => { }}>View Booking History</span>
+                                      <span onClick={() => { setIsRejectDialogOpen(true); setSelectedUserId(user.user_id); }}>Từ chối</span>
                                     </button>
                                   </PopoverClose>
 
@@ -462,6 +520,80 @@ const ApproveOwner = () => {
                   </div>
                 </div>
               )}
+
+              {/* dialog for action : reject and accept : */}
+              {/* dialog for reject : */}
+              <Dialog open={isRejectDialogOpen} onOpenChange={(open) => {
+                setIsRejectDialogOpen(open);
+                if (!open) {
+                  // dialog is closing
+                  setRejectReason("");
+                }
+              }}>
+                <DialogTrigger>
+                  {/* <Button variant={'outline'} className={'hover:cursor-pointer'}>Xem lý do</Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Lý do từ chối</DialogTitle>
+                    <DialogDescription className={'py-8'}>
+                      <textarea
+                        className="w-full h-32 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Nhập lý do từ chối..."
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                      />
+                      <div className="mt-4 flex justify-end gap-4">
+                        <Button variant="outline" onClick={() => {
+                          setIsRejectDialogOpen(false)
+                          setRejectReason('');
+                        }}>Hủy</Button>
+                        <Button
+                          onClick={() => {
+                            // check if rejectReason is empty : 
+                            if (rejectReason.trim() === '') {
+                              toast.error('Vui lòng nhập lý do từ chối');
+                              return;
+                            }
+                            rejectOwnerRequest(selectedUserId, rejectReason);
+                          }}
+                        >
+                          {isLoadingReject ? <Loader className="animate-spin mx-auto" /> : 'Xác nhận từ chối'}
+                        </Button>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
+              {/* dialog for approve : */}
+              <Dialog open={isApproveDialogOpen} onOpenChange={(open) => {
+                setIsApproveDialogOpen(open);
+              }}>
+                <DialogTrigger>
+                  {/* <Button variant={'outline'} className={'hover:cursor-pointer'}>Xem lý do</Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Xác nhận chấp nhận</DialogTitle>
+                    <DialogDescription className={'py-8'}>
+                      Bạn có chắc chắn muốn chấp nhận yêu cầu trở thành chủ xe này không?
+                      <div className="mt-4 flex justify-end gap-4">
+                        <Button variant="outline" onClick={() => {
+                          setIsApproveDialogOpen(false)
+                        }}>Hủy</Button>
+                        <Button
+                          onClick={() => {
+                            approveOwnerRequest(selectedUserId);
+                          }}
+                        >
+                          {isLoadingApprove ? <Loader className="animate-spin mx-auto" /> : 'Xác nhận chấp nhận'}
+                        </Button>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
 
             </div>
           </div>

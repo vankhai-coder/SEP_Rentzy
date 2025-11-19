@@ -25,15 +25,7 @@ const RegisterOwner = sequelize.define(
     },
     reason_rejected: {
       type: DataTypes.STRING(255),
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
+    }
   },
   {
     tableName: "register_owners",

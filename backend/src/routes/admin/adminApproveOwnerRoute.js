@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getOwnerApprovalRequestsWithFilter, getOwnerApprovalStats } from "../../controllers/admin/adminApproveOwnerController.js";
+import { approveOwnerRequest, getOwnerApprovalRequestsWithFilter, getOwnerApprovalStats, rejectOwnerRequest } from "../../controllers/admin/adminApproveOwnerController.js";
 
 
 const router = express.Router();
@@ -24,5 +24,11 @@ router.get("/stats", verifyJWTToken, getOwnerApprovalStats);
 
 // GEt /api/admin/owner-approval/requests
 router.get("/requests", verifyJWTToken, getOwnerApprovalRequestsWithFilter);
+
+// POST /api/admin/owner-approval/approve
+router.post("/approve", verifyJWTToken, approveOwnerRequest);
+
+// POST /api/admin/owner-approval/reject
+router.post("/reject", verifyJWTToken, rejectOwnerRequest);
 
 export default router;
