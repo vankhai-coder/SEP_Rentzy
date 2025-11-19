@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getUserManagementStats, getUsers } from "../../controllers/admin/adminUserManagementController.js";
+import { getOwnerApprovalRequestsWithFilter, getOwnerApprovalStats } from "../../controllers/admin/adminApproveOwnerController.js";
 
 
 const router = express.Router();
@@ -19,10 +19,10 @@ router.use((req, res, next) => {
 // all routes below are protected and only accessible by admin users :
 
 
-// GET /api/admin/user-management-stats
-router.get("/stats", getUserManagementStats);
+// GET /api/admin/owner-approval/stats
+router.get("/stats", verifyJWTToken, getOwnerApprovalStats);
 
-// GET /api/admin/user-management/users
-router.get("/users", getUsers);
+// GEt /api/admin/owner-approval/requests
+router.get("/requests", verifyJWTToken, getOwnerApprovalRequestsWithFilter);
 
 export default router;

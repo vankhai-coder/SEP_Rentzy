@@ -27,10 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { TableFooter } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import axiosInstance from "@/config/axiosInstance"
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
