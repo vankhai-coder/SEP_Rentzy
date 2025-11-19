@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsVerifyEmail, sendOTPUsingTwilioForUpdatePhoneNumber, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import { check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard, checkIfUserRegisterBankAccount, checkIfUserRequestToBecomeOwner, sendOTPUsingTwilioForUpdatePhoneNumber, sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
 import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
 
@@ -23,6 +23,18 @@ router.post('/update-full-name', verifyJWTToken, updateFullName);
 
 // check if user is verify email : 
 router.get('/is-verify-email', verifyJWTToken, checkIfUserIsVerifyEmail);
+
+// check if user is verify identity card :
+router.get('/is-verify-identity-card', verifyJWTToken, checkIfUserIsVerifyIdentityCard);
+
+// check if user is register bank account :
+router.get('/is-register-bank-account', verifyJWTToken, checkIfUserRegisterBankAccount);
+
+// check if user is request to be owner :
+router.get('/is-request-to-be-owner', verifyJWTToken, checkIfUserRequestToBecomeOwner);
+
+// register owner request :
+router.post('/register-owner-request', verifyJWTToken, sendRequestToBecomeOwner);
 
 // get basic user information: 
 router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformation);

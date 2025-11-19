@@ -7,6 +7,7 @@ import { decryptWithSecret, encryptWithSecret } from '../../utils/cryptoUtil.js'
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { v2 as cloudinary } from 'cloudinary';
+import RegisterOwner from '../../models/RegisterOwner.js';
 
 // Helper function to safely decrypt phone number
 const safeDecryptPhoneNumber = (encryptedPhone) => {
@@ -408,7 +409,7 @@ export const checkIfUserIsVerifyEmail = async (req, res) => {
 
     } catch (error) {
         console.error("Error checking if user is verify email :", error.message);
-        return res.status(500).json({ message: error.message  , isVerifyEmail: false});
+        return res.status(500).json({ message: error.message, isVerifyEmail: false });
     }
 };
 
@@ -708,5 +709,162 @@ export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
         return res.status(500).json({
             success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
         });
+    }
+}
+
+// check if user is verify identity card :
+export const checkIfUserIsVerifyIdentityCard = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        const isVerified = !!user.national_id_number;
+
+        return res.status(200).json({ isVerifyIdentityCard: isVerified });
+
+    } catch (error) {
+        console.error("Error checking if user is verify identity card :", error.message);
+        return res.status(500).json({ message: error.message, isVerifyIdentityCard: false });
+    }
+}
+
+// check if user register bank account :
+export const checkIfUserRegisterBankAccount = async (req, res) => {
+
+
+    // const Bank = sequelize.define( 
+    //   "Bank",
+    //   {
+    //     bank_id: {
+    //       type: DataTypes.BIGINT.UNSIGNED,
+    //       primaryKey: true,
+    //       autoIncrement: true,
+    //     },
+    //     user_id: {
+    //       type: DataTypes.BIGINT.UNSIGNED,
+    //       allowNull: false,
+    //       references: {
+    //         model: "users", // table name
+    //         key: "user_id",
+    //       },
+    //       onDelete: "CASCADE",
+    //     },
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        const bankAccount = await db.Bank.findOne({
+            where: { user_id: user.user_id }
+        });
+
+        const isRegisterBankAccount = !!bankAccount;
+
+        return res.status(200).json({ isRegisterBankAccount: isRegisterBankAccount });
+
+    } catch (error) {
+        console.error("Error checking if user register bank account :", error.message);
+        return res.status(500).json({ message: error.message, isRegisterBankAccount: false });
+    }
+}
+
+// check if this user is already request to become owner :
+
+// import { DataTypes } from "sequelize";
+// import sequelize from "../config/db.js";
+
+// const RegisterOwner = sequelize.define(
+//   "RegisterOwner",
+//   {
+//     register_owner_id: {
+//       type: DataTypes.BIGINT.UNSIGNED,
+//       primaryKey: true,
+//       autoIncrement: true,
+//     },
+//     user_id: {
+//       type: DataTypes.BIGINT.UNSIGNED,
+//       allowNull: false,
+//       references: {
+//         model: "users", // table name
+//         key: "user_id",
+//       },
+//     },
+//     status: {
+//       type: DataTypes.ENUM("pending", "approved", "rejected"),
+//       defaultValue: "pending",
+//     },
+export const checkIfUserRequestToBecomeOwner = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        // check user_id and status = pending 
+        const registerOwnerRequest = await RegisterOwner.findOne({
+            where: {
+                user_id: user.user_id,
+                status: 'pending'
+            }
+        });
+
+        const isRequestToBecomeOwner = !!registerOwnerRequest;
+
+        return res.status(200).json({ isRequestToBecomeOwner: isRequestToBecomeOwner });
+    } catch (error) {
+        console.error("Error checking if user request to become owner :", error.message);
+        return res.status(500).json({ message: error.message, isRequestToBecomeOwner: false });
+    }
+}
+
+// send request to become owner :
+export const sendRequestToBecomeOwner = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        // check if user already has a pending request
+        const existingRequest = await RegisterOwner.findOne({
+            where: {
+                user_id: user.user_id,
+                status: 'pending'
+            }
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ message: 'Bạn đã có một yêu cầu đang chờ xử lý.' });
+        }
+
+        // create new request
+        await RegisterOwner.create({
+            user_id: user.user_id,
+            status: 'pending'
+        });
+
+        return res.status(200).json({ message: 'Yêu cầu trở thành chủ xe đã được gửi thành công.' });
+    } catch (error) {
+        console.error("Error sending request to become owner :", error.message);
+        return res.status(500).json({ message: error.message });
     }
 }

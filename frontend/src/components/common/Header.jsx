@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
-import { Link, Links } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { logoutUser } from "@/redux/features/auth/authSlice";
 import {
@@ -58,7 +58,7 @@ const Header = () => {
           <Link to={"/about"} className="hover:text-green-500 hidden lg:block ">
             Về Rentzy
           </Link>
-          <Link to={"/"} className="hover:text-green-500 hidden lg:block ">
+          <Link to={"/register_owner"} className="hover:text-green-500 hidden lg:block ">
             Trở thành chủ xe
           </Link>
           <Link to={"/cars"} className="hover:text-green-500 hidden lg:block ">

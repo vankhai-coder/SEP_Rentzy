@@ -27,6 +27,7 @@ import BookingContract from "./BookingContract.js";
 import BookingCancellation from "./BookingCancellation.js";
 import BookingPayout from "./BookingPayout.js";
 import Transaction from "./Transaction.js";
+import RegisterOwner from "./RegisterOwner.js";
 
 // --- RELATIONS ---
 
@@ -168,6 +169,10 @@ PointsTransaction.belongsTo(Booking, {
   foreignKey: "reference_id",
   as: "booking",
 });
+
+// User ↔ RegisterOwner (1:1)
+User.hasOne(RegisterOwner, { foreignKey: "user_id", as: "registerOwner" });
+RegisterOwner.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 // --- COLLECT MODELS INTO ONE OBJECT ---
 const db = {

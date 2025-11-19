@@ -7,7 +7,7 @@ import { FaSpinner } from "react-icons/fa"
 import Webcam from "react-webcam"
 import { toast } from "sonner"
 
-const IdentifyCardVerify = () => {
+const IdentifyCardVerify = ({ refetchIdentityCard }) => {
 
   const [toggleEdit, setToggleEdit] = useState(false)
 
@@ -188,6 +188,11 @@ const IdentifyCardVerify = () => {
       // reset face image : 
       setFaceImage(null);
       setStartCamera(false);
+
+      // refetch parent state :
+      if (refetchIdentityCard) {
+        refetchIdentityCard();
+      }
 
     } catch (err) {
       console.log('error ', err.response?.data?.message)

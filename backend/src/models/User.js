@@ -77,7 +77,7 @@ const User = sequelize.define(
       type: DataTypes.STRING(100),
     },
     national_id_dob: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.STRING(20),
     },
     national_id_image_url: {
       type: DataTypes.STRING(255),

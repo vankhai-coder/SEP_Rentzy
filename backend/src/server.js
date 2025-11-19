@@ -139,7 +139,7 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({});
+    await db.sequelize.sync({alter: true});
     console.log("✅ All models synced!");
 
     // Initialize cron jobs after database sync
