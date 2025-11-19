@@ -24,7 +24,7 @@ import {
 // SidebarOwner nhận prop handleLogout
 const SidebarOwner = ({ handleLogout }) => {
   return (
-    <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen  left-0 top-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] relative">
+    <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen sticky top-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-30">
       {/* Back icon at top-left */}
       <NavLink
         to="/account"
@@ -36,7 +36,9 @@ const SidebarOwner = ({ handleLogout }) => {
       </NavLink>
 
       <div className="px-5 pl-14 mb-[30px] pt-1">
-        <div className="text-2xl font-bold text-[#3498db]">Bảng điều khiển chủ xe</div>
+        <div className="text-2xl font-bold text-[#3498db]">
+          Bảng điều khiển chủ xe
+        </div>
       </div>
       <nav>
         <ul className="list-none p-0 m-0">
