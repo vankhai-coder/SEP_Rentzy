@@ -54,6 +54,7 @@ import BankAccountRoute from "./routes/bank/bankAccountRoute.js";
 // admin
 import AdminRoute from "./routes/admin/adminCancelRoute.js";
 import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
+import AdminVoucherRoute from "./routes/admin/adminVoucherRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
@@ -122,6 +123,8 @@ app.use("/api/admin", AdminPayoutRoute);
 app.use("/api/admin/overview", AdminOverviewRoute);
 app.use("/api/admin/user-management", AdminUserManagementRoute);
 app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
+app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
+app.use("/api/admin/voucher-management", AdminVoucherRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

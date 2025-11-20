@@ -1,0 +1,133 @@
+import { Op } from "sequelize";
+import Voucher from "../../models/Voucher.js";
+
+export const getVoucherManagementStats = async (req, res) => {
+    try {
+        const now = new Date();
+
+        const [
+            totalVouchers,
+            activeVouchers,
+            expiredVouchers,
+            notStartYet,
+        ] = await Promise.all([
+            // 1. total
+            Voucher.count(),
+
+            // 2. active (started, not expired, active)
+            Voucher.count({
+                where: {
+                    is_active: true,
+                    valid_from: { [Op.lte]: now },
+                    valid_to: { [Op.gte]: now }
+                }
+            }),
+
+            // 3. expired
+            Voucher.count({
+                where: {
+                    [Op.or]: [
+                        { valid_to: { [Op.lt]: now } },
+                        { is_active: false }
+                    ]
+                }
+            }),
+
+            // 4. not started yet
+            Voucher.count({
+                where: {
+                    valid_from: { [Op.gt]: now }
+                }
+            }),
+        ]);
+
+        return res.status(200).json({
+            totalVouchers,
+            activeVouchers,
+            expiredVouchers,
+            notStartYet,
+        });
+    } catch (error) {
+        console.error("Error in getVoucherManagementStats:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const getVouchersWithFilter = async (req, res) => {
+    try {
+        // useQuery in frontend will send request like :
+        // const response = await axiosInstance.get('/api/admin/owner-approval/requests', {
+        //     params: {
+        //         nameOrDescOrCodeOrTitle: searchFilter.nameOrDescOrCodeOrTitle,
+        //         discountType: searchFilter.discountType,
+        //         isActive: searchFilter.isActive,
+        //         validFrom: searchFilter.validFrom,
+        //         validTo: searchFilter.validTo,
+        //         page: currentPage,
+        //         limit: limitPerPage,
+        //     }
+        // });
+        const { nameOrDescOrCodeOrTitle, discountType, isActive,
+            validFrom, validTo, page = 1, limit = 10 } = req.query;
+
+        const whereClause = {};
+
+        if (nameOrDescOrCodeOrTitle && nameOrDescOrCodeOrTitle.trim()) {
+            whereClause[Op.or] = [
+                { description: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } },
+                { title: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } }
+            ];
+        }
+
+        if (discountType) {
+            // check role is either : AMOUNT or PERCENT
+            if (discountType === 'AMOUNT' || discountType === 'PERCENT') {
+                whereClause.discount_type = discountType;
+            }
+        }
+
+        if (isActive) {
+            // check if isActive is either 'true' or 'false'
+            whereClause.is_active = isActive === 'true' ? true : false;
+        }
+
+        // TODO : validFrom, validTo
+        if (validFrom) {
+            // check if validFrom is a valid date follow format YYYY-MM-DD HH:mm:ss
+            const validFromDate = new Date(validFrom);
+            if (!isNaN(validFromDate)) {
+                whereClause.valid_from = { [Op.gte]: validFromDate };
+            }
+        }
+
+        if (validTo) {
+            const validToDate = new Date(validTo);
+            if (!isNaN(validToDate)) {
+                whereClause.valid_to = { [Op.lte]: validToDate };
+            }
+        }
+
+        const offset = (page - 1) * limit;
+
+        const { rows: vouchers, count: totalVouchers } = await Voucher.findAndCountAll({
+            where: whereClause,
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            //  TODO : add filter order : 
+            order: [['created_at', 'DESC']],
+        });
+
+        const totalPages = Math.ceil(totalVouchers / limit);
+
+        res.status(200).json({
+            vouchers,
+            totalPages
+        });
+
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+
