@@ -30,7 +30,8 @@ import HandoverRoute from "./routes/booking/handoverRoute.js";
 // voucher route
 import VoucherRoute from "./routes/renter/voucherRoute.js";
 import PointsRoute from "./routes/renter/pointsRoute.js";
-
+// owner routes
+import AiRoute from "./routes/ai/aiRoutes.js";
 import OwnerVehicleRoute from "./routes/owner/ownerVehicleRoute.js";
 import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
 import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
@@ -110,6 +111,7 @@ app.use("/api/owner", OwnerVehicleRoute);
 app.use("/api/owner/brands", OwnerBrandRoute);
 app.use("/api/owner/dashboard", OwnerDashboardRoute);
 app.use("/api/owner/overview", OwnerOverviewRoute);
+app.use("/api/ai", AiRoute);
 
 // admin route
 app.use("/api/admin/approval-vehicles", AdminApprovalVehicleRoute);

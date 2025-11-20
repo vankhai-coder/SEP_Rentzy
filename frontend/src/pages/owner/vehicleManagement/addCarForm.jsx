@@ -30,6 +30,7 @@ const AddCarForm = () => {
   const [loading, setLoading] = useState(false);
   const [autoLocationEnabled, setAutoLocationEnabled] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   // State cho danh sách brands
   const [brands, setBrands] = useState([]);
@@ -124,6 +125,41 @@ const AddCarForm = () => {
       }
     );
   };
+  // AI create description
+  const generateDescription = async () => {
+    try {
+      setGeneratingDescription(true);
+      const payload = {
+        brand: formData.brand,
+        model: formData.model,
+        year: formData.year,
+        bodyType: formData.body_type,
+        transmission: formData.transmission,
+        fuelType: formData.fuel_type,
+        fuelConsumption: formData.fuel_consumption,
+        seats: formData.seats,
+      };
+
+      const response = await axiosInstance.post('/api/ai/generate-car-description', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = response?.data;
+      if (data?.success && data?.description) {
+        setFormData({ ...formData, description: data.description });
+        toast.success("Đã tạo mô tả tự động");
+      } else {
+        toast.warning(data?.message || "Không nhận được mô tả từ AI");
+      }
+    } catch (error) {
+      console.error("generateDescription error", error);
+      const msg = error?.response?.data?.message || error?.message || "Lỗi khi gọi AI tạo mô tả";
+      toast.error(msg);
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+
 
   const handleAutoLocationChange = (e) => {
     const isChecked = e.target.checked;
@@ -549,7 +585,24 @@ const AddCarForm = () => {
 
         {/* Description */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Mô tả</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Mô tả</h2>
+            <button
+              type="button"
+              onClick={generateDescription}
+              disabled={generatingDescription}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {generatingDescription ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Đang tạo...
+                </>
+              ) : (
+                "Tạo mô tả tự động"
+              )}
+            </button>
+          </div>
           <textarea
             name="description"
             value={formData.description}
