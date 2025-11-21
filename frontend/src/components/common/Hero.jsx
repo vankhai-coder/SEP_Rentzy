@@ -3,9 +3,14 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Hero = () => (
-  <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-900">
+  <section
+    className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-900"
+    data-aos="fade-down" // [THÊM AOS: Fade từ trên xuống cho toàn section]
+    data-aos-duration="1000" // Thời gian dài hơn cho hero
+    data-aos-delay="0"
+  >
     <div
-      className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60"
+      className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60 parallax-bg" // [THÊM: Class cho parallax]
       style={{
         backgroundImage:
           'url("https://media-cdn-v2.laodong.vn/Storage/NewsPortal/2021/4/3/895460/Xe-Gia-Dinh.jpg")',
@@ -13,36 +18,105 @@ const Hero = () => (
     />
     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
     <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-      <h1 className="text-6xl md:text-8xl lg:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent leading-none tracking-tight">
+      <h1
+        className="text-6xl md:text-8xl lg:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent leading-none tracking-tight"
+        data-aos="zoom-in" // [THÊM AOS: Zoom cho title]
+        data-aos-delay="200"
+      >
         Rentzy
       </h1>
-      <p className="text-2xl md:text-3xl font-light mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed">
-        Tìm chiếc xe
-        <br className="hidden md:block" />
-        <span className="block md:inline">hoàn hảo cho chuyến đi của bạn.</span>
+      {/* [SỬA: Giảm text, thêm typewriter cho slogan */}
+      <p
+        className="text-2xl md:text-3xl font-light mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed typewriter"
+        data-aos="fade-up" // [THÊM AOS: Fade cho slogan]
+        data-aos-delay="400"
+      >
+        Tìm chiếc xe <span className="text-teal-300">hoàn hảo</span> cho chuyến
+        đi của bạn.
       </p>
-      <p className="text-lg md:text-xl mb-12 text-white/70 max-w-2xl mx-auto leading-relaxed">
-        Nhanh chóng, dễ dàng và giá tốt nhất. Dù bạn lên kế hoạch cho một chuyến
-        đi cuối tuần hay hành trình xuyên Việt, đội xe đa dạng và dịch vụ tận
-        tâm của chúng tôi sẽ giúp bạn lên đường thật dễ dàng.
+      <p
+        className="text-lg md:text-xl mb-12 text-white/70 max-w-2xl mx-auto leading-relaxed hidden md:block"
+        data-aos="fade-up" // [THÊM AOS: Fade cho subtext]
+        data-aos-delay="600"
+      >
+        {" "}
+        {/* [SỬA: Ẩn text dài trên mobile để gọn */}
+        Nhanh chóng, dễ dàng và giá tốt nhất.
       </p>
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <div
+        className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+        data-aos="fade-up" // [THÊM AOS: Fade cho buttons]
+        data-aos-delay="800"
+      >
         <Link
           to="/cars"
-          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none"
+          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none pulse-cta"
+          aria-label="Khám phá xe ô tô"
         >
           Khám Phá Xe Ô Tô
           <ArrowRight size={20} />
         </Link>
         <Link
           to="/motorbikes"
-          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none"
+          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none pulse-cta"
+          aria-label="Khám phá xe máy"
         >
           Khám Phá Xe Máy
           <ArrowRight size={20} />
         </Link>
       </div>
     </div>
+
+    {/* [THÊM AOS: CSS cho parallax background (di chuyển chậm khi scroll) */}
+    <style jsx>{`
+      @keyframes typewriter {
+        from {
+          width: 0;
+        }
+        to {
+          width: 100%;
+        }
+      }
+      .typewriter {
+        overflow: hidden;
+        border-right: 2px solid #14b8a6;
+        white-space: nowrap;
+        animation: typewriter 2s steps(40) forwards,
+          blink 0.75s step-end infinite;
+        width: 0;
+      }
+      @keyframes blink {
+        from,
+        to {
+          border-color: transparent;
+        }
+        50% {
+          border-color: #14b8a6;
+        }
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+        }
+        50% {
+          box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+        }
+      }
+      .pulse-cta {
+        animation: pulse 2s infinite;
+      }
+      /* [THÊM: Parallax cho bg - di chuyển chậm 0.5x tốc độ scroll] */
+      .parallax-bg {
+        background-attachment: fixed;
+        background-position: center top;
+      }
+      @media (max-width: 768px) {
+        .parallax-bg {
+          background-attachment: scroll; /* Tắt parallax trên mobile để tránh lag */
+        }
+      }
+    `}</style>
   </section>
 );
 
