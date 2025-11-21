@@ -1,15 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Async thunk để fetch vehicles theo type (car hoặc motorbike)
+// **SỬA: fetchVehicles - Nhận {type, page, limit}, gọi API với query params**
+// **Giữ nguyên**: Error handling**
 export const fetchVehicles = createAsyncThunk(
   "vehicles/fetchVehicles",
-  async (type, { rejectWithValue }) => {
+  async ({ type, page = 1, limit = 12 }, { rejectWithValue }) => {
+    // **SỬA: Nhận object params, default page/limit**
     try {
+      const query = new URLSearchParams({ type, page, limit }).toString(); // **SỬA: Build query string**
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?type=${type}`,
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?${query}`, // **SỬA: Thêm ?${query}**
         { withCredentials: true }
       );
+      // **SỬA: Trả về full response.data.data (bao gồm vehicles + pagination)**
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -19,7 +23,7 @@ export const fetchVehicles = createAsyncThunk(
   }
 );
 
-// Async thunk để fetch vehicle detail theo ID
+// **Giữ nguyên 100%**: fetchVehicleById
 export const fetchVehicleById = createAsyncThunk(
   "vehicles/fetchVehicleById",
   async (id, { rejectWithValue }) => {
@@ -37,8 +41,7 @@ export const fetchVehicleById = createAsyncThunk(
   }
 );
 
-// Async thunk để search vehicles theo nhiều tiêu chí (type + params từ URL)
-// FIX: SỬA URL TỪ /vehicles → /vehicles/search ĐỂ GỌI ĐÚNG CONTROLLER FILTER
+// **Giữ nguyên 100%**: searchVehicles (không liên quan đến infinite scroll ở home)
 export const searchVehicles = createAsyncThunk(
   "vehicles/searchVehicles",
   async ({ type, params }, { rejectWithValue }) => {
@@ -72,22 +75,36 @@ const vehicleSlice = createSlice({
     searchVehicles: [],
     searchLoading: false,
     searchError: null,
+    // **SỬA: Thêm state cho pagination/infinite scroll**
+    totalCount: 0,
+    currentPage: 1,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // **SỬA: fetchVehicles.pending - Giữ nguyên**
       .addCase(fetchVehicles.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+      // **SỬA: fetchVehicles.fulfilled - Merge vehicles (nếu page >1), set totalCount và currentPage**
       .addCase(fetchVehicles.fulfilled, (state, action) => {
         state.loading = false;
-        state.vehicles = action.payload;
+        const { vehicles, pagination } = action.payload; // **SỬA: Destructure từ response mới**
+        if (pagination.page > 1) {
+          state.vehicles = [...state.vehicles, ...vehicles]; // **SỬA: Merge cho load more**
+        } else {
+          state.vehicles = vehicles; // **SỬA: Replace nếu page=1 (initial load)**
+        }
+        state.totalCount = pagination.total; // **SỬA: Set total từ BE**
+        state.currentPage = pagination.page; // **SỬA: Update current page**
       })
+      // **Giữ nguyên**: fetchVehicles.rejected
       .addCase(fetchVehicles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+      // **Giữ nguyên 100%**: Các case cho fetchVehicleById và searchVehicles
       .addCase(fetchVehicleById.pending, (state) => {
         state.detailLoading = true;
         state.detailError = null;
