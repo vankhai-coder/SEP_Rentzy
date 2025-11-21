@@ -155,3 +155,112 @@ export const toggleVoucherActiveStatus = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// create voucher : 
+export const createVoucher = async (req, res) => {
+    // frontend will send req.body like :
+    //  const payload = {
+    //   code: voucherCode,
+    //   title: voucherTitle,
+    //   description: voucherDescription,
+    //   discount_type: discountType,
+    //   discount_value: Number(discountValue.toString().replace(/,/g, "")),
+    //   min_order_amount: Number(minBookingAmount.toString().replace(/,/g, "")),
+    //   max_discount: discountType === 'PERCENT' ? Number(maxDiscount.toString().replace(/,/g, "")) : null,
+    //   valid_from: formatVietnamDateForBackend(dateForValidFrom),
+    //   valid_to: formatVietnamDateForBackend(dateForValidTo),
+    //   usage_limit: Number(usageLimit.toString().replace(/,/g, "")),
+    //   // TODO : add image upload feature later
+    //   image_url: null,
+    // };
+
+    // validate input fields here if needed
+
+    try {
+
+        const {
+            code,
+            title,
+            description, // optional
+            discount_type,
+            discount_value,
+            min_order_amount,
+            max_discount,
+            valid_from,
+            valid_to,
+            usage_limit,
+            image_url, // TODO : implement image upload later
+        } = req.body || {};
+
+        // validate required fields
+        // validate code : 
+        if (!code || code.trim() === "") {
+            return res.status(400).json({ message: "Voucher code is required" });
+        }
+        // validate title : 
+        if (!title || title.trim() === "") {
+            return res.status(400).json({ message: "Voucher title is required" });
+        }
+        // validate discount_type : 
+        if (!["PERCENT", "AMOUNT"].includes(discount_type)) {
+            return res.status(400).json({ message: "Invalid discount type , must be either 'PERCENT' or 'AMOUNT'" });
+        }
+        // validate discount_value : 
+        if (isNaN(discount_value) || Number(discount_value) <= 0) {
+            return res.status(400).json({ message: "Invalid discount value , must be a positive number" });
+        }
+        // if discount_type is PERCENT , validate max_discount : 
+        if (discount_type === "PERCENT") {
+            if (isNaN(max_discount) || Number(max_discount) <= 0) {
+                return res.status(400).json({ message: "Invalid max discount , must be a positive number for PERCENT discount type" });
+            }
+        }
+        // if discount_type is AMOUNT , that discount_value must be number : 
+        if (discount_type === "AMOUNT") {
+            if (isNaN(discount_value) || Number(discount_value) <= 0) {
+                return res.status(400).json({ message: "Invalid discount value , must be a positive number for AMOUNT discount type" });
+            }
+        }
+        // validate valid_from and valid_to : 
+        if (!valid_from || !valid_to) {
+            return res.status(400).json({ message: "valid_from and valid_to dates are required" });
+        }
+
+        // validate valid_from and valid_to : 
+        const fromDate = new Date(valid_from);
+        const toDate = new Date(valid_to);
+        if (isNaN(fromDate) || isNaN(toDate) || fromDate >= toDate) {
+            return res.status(400).json({ message: "Invalid valid_from or valid_to date" });
+        }
+
+        // check if voucher code already exists
+        const existingVoucher = await Voucher.findOne({ where: { code } });
+        if (existingVoucher) {
+            return res.status(409).json({ message: `Voucher code already exists for code: ${code}` });
+        }
+
+
+
+        // create new voucher
+        const newVoucher = await Voucher.create({
+            code,
+            title,
+            description,
+            discount_type,
+            discount_value,
+            min_order_amount,
+            max_discount,
+            valid_from,
+            valid_to,
+            usage_limit,
+            image_url,
+            created_by: req.user?.userId || 2,
+        });
+
+        return res.status(201).json({ message: "Voucher created successfully", voucher: newVoucher });
+    } catch (error) {
+        console.error("Error creating voucher:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+
+}

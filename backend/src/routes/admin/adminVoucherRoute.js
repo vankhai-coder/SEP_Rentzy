@@ -1,20 +1,20 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getVoucherManagementStats, getVouchersWithFilter, toggleVoucherActiveStatus } from "../../controllers/admin/adminVoucherController.js";
+import { createVoucher, getVoucherManagementStats, getVouchersWithFilter, toggleVoucherActiveStatus } from "../../controllers/admin/adminVoucherController.js";
 
 
 const router = express.Router();
 
-// // // check JWT token for all admin overview dashboard routes : 
-// router.use(verifyJWTToken);
+// // check JWT token for all admin overview dashboard routes : 
+router.use(verifyJWTToken);
 
-// // // check admin role for all admin overview dashboard routes :
-// router.use((req, res, next) => {
-//     if (req.user.role !== "admin") {
-//         return res.status(403).json({ message: "Access denied. Admins only." });
-//     }
-//     next();
-// });
+// // check admin role for all admin overview dashboard routes :
+router.use((req, res, next) => {
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+    next();
+});
 
 // all routes below are protected and only accessible by admin users :
 
@@ -26,5 +26,8 @@ router.get("/vouchers", verifyJWTToken, getVouchersWithFilter);
 
 // PATCH /api/admin/voucher-management/ban-unban
 router.patch("/ban-unban", verifyJWTToken, toggleVoucherActiveStatus);
+
+// POST /api/admin/voucher-management/create
+router.post("/create", verifyJWTToken, createVoucher);
 
 export default router;

@@ -68,7 +68,7 @@ const Voucher = sequelize.define(
   },
   {
     tableName: "vouchers",
-    
+
     createdAt: "created_at",
     updatedAt: "updated_at",
     indexes: [

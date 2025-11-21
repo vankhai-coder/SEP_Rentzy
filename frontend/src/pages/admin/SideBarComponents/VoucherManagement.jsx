@@ -530,7 +530,7 @@ const VoucherManagement = () => {
                     {data?.vouchers && data?.vouchers.map((voucher) => (
                       <TableRow key={voucher.voucher_id}>
                         <TableCell>{voucher.code}</TableCell>
-                        <TableCell >{voucher.description &&
+                        <TableCell >{(voucher.description || voucher.title) &&
                           // dialog to show full description when click description
                           <Dialog>
                             <DialogTrigger asChild>
