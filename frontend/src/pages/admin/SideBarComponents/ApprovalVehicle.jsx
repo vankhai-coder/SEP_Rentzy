@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../../config/axiosInstance';
 import { toast } from 'react-toastify';
@@ -18,6 +19,8 @@ const ApprovalVehicle = () => {
   const [expandedVehicleId, setExpandedVehicleId] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [imageModal, setImageModal] = useState(null);
+  const [checkResults, setCheckResults] = useState({});
+  const [checkingId, setCheckingId] = useState(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -215,6 +218,22 @@ const ApprovalVehicle = () => {
   const closeImageModal = () => setImageModal(null);
   const prevImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index - 1 + m.images.length) % m.images.length }));
   const nextImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index + 1) % m.images.length }));
+
+  const handleCheckVehicleInfo = async (vehicle) => {
+    try {
+      setCheckingId(vehicle.vehicle_id);
+      const res = await axiosInstance.post('/api/ai/check-vehicle-info', { vehicle_id: vehicle.vehicle_id });
+      if (res.data && res.data.success) {
+        setCheckResults((prev) => ({ ...prev, [vehicle.vehicle_id]: res.data.data }));
+      } else {
+        toast.error('Kiểm tra thất bại');
+      }
+    } catch (error) {
+      toast.error('Lỗi khi kiểm tra thông tin xe');
+    } finally {
+      setCheckingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -496,14 +515,35 @@ const ApprovalVehicle = () => {
                                 Từ chối
                               </button> */}
                               <button
-                                onClick={(e) => { e.stopPropagation(); setExpandedVehicleId(null); setSelectedVehicle(null); }}
-                                className="ml-auto px-4 py-2 border rounded hover:bg-gray-100"
+                                onClick={(e) => { e.stopPropagation(); handleCheckVehicleInfo(vehicle); }}
+                                className="ml-auto px-4 py-2 border rounded bg-blue-400 text-white hover:bg-blue-500"
                               >
-                                Đóng
+                                {checkingId === vehicle.vehicle_id ? 'Đang kiểm tra...' : 'Kiểm tra'}
                               </button>
                             </div>
+                            {checkResults[vehicle.vehicle_id] && (
+                              <div className="mt-3 p-3 rounded border bg-white">
+                                <div className="text-sm font-semibold text-gray-700 mb-2">Kết quả kiểm tra</div>
+                                <div className="text-sm text-gray-900 mb-2">
+                                  {checkResults[vehicle.vehicle_id].brand} {checkResults[vehicle.vehicle_id].model} • {checkResults[vehicle.vehicle_id].year}
+                                </div>
+                                <div className="flex gap-3 text-xs mb-3">
+                                  <span className="px-2 py-1 rounded bg-green-100 text-green-700">Pass: {checkResults[vehicle.vehicle_id].summary.pass}</span>
+                                  <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">Warn: {checkResults[vehicle.vehicle_id].summary.warn}</span>
+                                  <span className="px-2 py-1 rounded bg-red-100 text-red-700">Fail: {checkResults[vehicle.vehicle_id].summary.fail}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {checkResults[vehicle.vehicle_id].checks.map((c, idx) => (
+                                    <div key={idx} className={`p-2 rounded border ${c.status === 'pass' ? 'border-green-200 bg-green-50' : c.status === 'fail' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
+                                      <div className="text-xs text-gray-500">{c.label}</div>
+                                      <div className="text-sm text-gray-900">{c.detail}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            </div>
                           </div>
-                        </div>
                       </td>
                     </tr>
                   )}

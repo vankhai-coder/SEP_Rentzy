@@ -133,11 +133,11 @@ const AddCarForm = () => {
         brand: formData.brand,
         model: formData.model,
         year: formData.year,
-        bodyType: formData.body_type,
-        transmission: formData.transmission,
-        fuelType: formData.fuel_type,
-        fuelConsumption: formData.fuel_consumption,
-        seats: formData.seats,
+        // bodyType: formData.body_type,
+        // transmission: formData.transmission,
+        // fuelType: formData.fuel_type,
+        // fuelConsumption: formData.fuel_consumption,
+        // seats: formData.seats,
       };
 
       const response = await axiosInstance.post('/api/ai/generate-car-description', payload, {

@@ -164,10 +164,6 @@ const AddMotoBikeForm = () => {
         brand: formData.brand,
         model: formData.model,
         year: formData.year,
-        bikeType: formData.bike_type,
-        engineCapacity: formData.engine_capacity,
-        fuelType: formData.fuel_type,
-        fuelConsumption: formData.fuel_consumption,
       };
 
       const response = await axiosInstance.post('/api/ai/generate-motorbike-description', payload, {
