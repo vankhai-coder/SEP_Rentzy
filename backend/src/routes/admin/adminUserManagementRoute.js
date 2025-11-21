@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getUserManagementStats, getUsers } from "../../controllers/admin/adminUserManagementController.js";
+import { getUserManagementStats, getUsers, toggleUserActiveStatus } from "../../controllers/admin/adminUserManagementController.js";
 
 
 const router = express.Router();
@@ -24,5 +24,8 @@ router.get("/stats", getUserManagementStats);
 
 // GET /api/admin/user-management/users
 router.get("/users", getUsers);
+
+// PATCH /api/admin/user-management/users/:userId/ban-unban
+router.patch("/users/:userId/ban-unban", toggleUserActiveStatus);
 
 export default router;

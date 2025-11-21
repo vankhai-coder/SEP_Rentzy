@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import User from "../../models/User.js";
-
+import { banUnbanNotificationTemplate } from "../../utils/email/templates/emailTemplate.js";
+import { sendEmail } from "../../utils/email/sendEmail.js";
 export const getUserManagementStats = async (req, res) => {
     try {
         // get total number of users 
@@ -60,11 +61,14 @@ export const getUsers = async (req, res) => {
                 whereClause.role = role;
             }
         }
+        // exclude role "admin" : 
+        whereClause.role = { [Op.not]: 'admin' };
 
         if (isActive) {
             // check if isActive is either 'active' or 'inactive'
             whereClause.is_active = isActive === 'active' ? true : false;
         }
+
 
         const offset = (page - 1) * limit;
 
@@ -86,6 +90,47 @@ export const getUsers = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+// ban or unban user
+export const toggleUserActiveStatus = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // toggle is_active status
+        user.is_active = !user.is_active;
+        await user.save();
+
+        const isBanned = !user.is_active;
+
+        // send email notification to user about account status change
+        try {
+            // send email notification to user about approval : 
+            await sendEmail({
+                from: process.env.GMAIL_USER,
+                to: user.email, // get email from req.body
+                subject: 'Tài khoản của bạn đã  ' + (isBanned ? 'bị khóa' : 'được mở khóa'),
+                html: banUnbanNotificationTemplate(isBanned),
+
+            });
+            // console log send email success : 
+            console.log(`Ban/Unban email sent to ${user.email} successfully.`);
+        } catch (error) {
+            console.error('Error sending ban/unban email:', error);
+        }
+
+        res.status(200).json({ message: `User has been ${user.is_active ? 'unbanned' : 'banned'} successfully.` });
+
+    } catch (error) {
+        console.error("Error toggling user active status:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }

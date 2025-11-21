@@ -120,9 +120,9 @@ const RegisterOwner = () => {
 
       <Card className={'lg:w-2xl'}>
         <CardHeader>
-          <CardTitle>Đăng ký chủ xe</CardTitle>
-          <CardDescription>desc</CardDescription>
-          <CardAction>Card Action</CardAction>
+          <CardTitle className={'text-2xl font-semibold'}>Đăng ký chủ xe</CardTitle>
+          {/* <CardDescription>desc</CardDescription> */}
+          {/* <CardAction>Card Action</CardAction> */}
         </CardHeader>
         <CardContent className={'flex flex-col gap-6 items-center justify-center'}>
           {/* each div for each step: */}
