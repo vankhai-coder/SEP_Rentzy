@@ -32,7 +32,8 @@ const Transaction = sequelize.define(
         "RENTAL", // Thanh toán tiền thuê 70% còn lại từ renter
         "REFUND", // Hoàn tiền từ admin cho renter khi mà huỷ chuêyns
         "COMPENSATION", // Bồi thường từ renter cho owner khi renter huỷ chuyến (admin chuyển tiền)
-        "PAYOUT" // Thanh toán tiền thuê từ admin cho owner khi hoàn thành chuyến (admin chuyển tiền )
+        "PAYOUT", // Thanh toán tiền thuê từ admin cho owner khi hoàn thành chuyến (admin chuyển tiền )
+        "TRAFFIC_FINE" // Thanh toán phí phạt nguội từ renter
       ),
       allowNull: false,
     },

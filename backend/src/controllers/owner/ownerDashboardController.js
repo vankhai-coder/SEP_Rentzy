@@ -1240,3 +1240,83 @@ export const searchTrafficFine = async (req, res) => {
     });
   }
 };
+
+// POST /api/owner/dashboard/bookings/:id/traffic-fine - Thêm/cập nhật phí phạt nguội
+export const addTrafficFine = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+    const { amount, description } = req.body;
+
+    // Validate input
+    if (!amount || amount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số tiền phạt nguội không hợp lệ",
+      });
+    }
+
+    // Tìm booking
+    const booking = await Booking.findOne({
+      where: { booking_id: id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          where: { owner_id: ownerId },
+          attributes: ["vehicle_id", "license_plate"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê",
+      });
+    }
+
+    // Chỉ cho phép thêm phí phạt nguội khi booking đang trong quá trình hoặc đã hoàn thành
+    if (!["in_progress", "completed"].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+      });
+    }
+
+    const trafficFineAmount = parseFloat(amount);
+
+    // Cập nhật booking - KHÔNG cập nhật total_amount, phí phạt nguội là riêng biệt
+    await booking.update({
+      traffic_fine_amount: trafficFineAmount,
+      traffic_fine_description: description || null,
+      updated_at: new Date(),
+    });
+
+    // Tạo notification cho renter
+    await Notification.create({
+      user_id: booking.renter_id,
+      title: "Phí phạt nguội mới",
+      content: `Bạn có phí phạt nguội mới cho đơn thuê #${booking.booking_id}. Số tiền: ${trafficFineAmount.toLocaleString('vi-VN')} VNĐ. ${description ? `Lý do: ${description}` : ''}`,
+      type: "alert",
+    });
+
+    return res.json({
+      success: true,
+      message: "Đã thêm phí phạt nguội thành công",
+      data: {
+        booking_id: booking.booking_id,
+        traffic_fine_amount: trafficFineAmount,
+        traffic_fine_description: description,
+        // total_amount không thay đổi vì phí phạt nguội là riêng biệt
+      },
+    });
+  } catch (error) {
+    console.error("Error adding traffic fine:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi thêm phí phạt nguội",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};

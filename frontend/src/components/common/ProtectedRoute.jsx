@@ -28,6 +28,12 @@ const ProtectedRoute = ({ children, allowRole }) => {
         return children;
     }
 
+    // Nếu yêu cầu role owner nhưng user không phải owner (có thể là renter)
+    // và đã đăng nhập, redirect về trang đăng ký làm chủ xe
+    if (allowRole === "owner" && userId && role && role !== "owner") {
+        return <Navigate to="/register_owner" replace />;
+    }
+
     // Sau khi kiểm tra xong mà không đúng quyền, chuyển về trang chủ
     return <Navigate to="/" replace />;
 }

@@ -25,22 +25,32 @@ const Revenue = () => {
   const fetchRevenueData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('Revenue: Fetching data with period:', selectedPeriod);
       const response = await axiosInstance.get('/api/owner/dashboard/revenue', {
         params: { period: selectedPeriod }
       });
 
+      console.log('Revenue: API response:', response.data);
       if (response.data.success) {
         setRevenueData(response.data.data);
+      } else {
+        setError('Không thể tải dữ liệu doanh thu');
+        setRevenueData(null);
       }
     } catch (error) {
       setError('Không thể tải dữ liệu doanh thu');
-      console.error('Error fetching revenue data:', error);
+      console.error('Revenue: Error fetching revenue data:', error);
+      // Đảm bảo set revenueData về null nếu có lỗi
+      setRevenueData(null);
     } finally {
       setLoading(false);
+      console.log('Revenue: Loading finished');
     }
   };
 
   useEffect(() => {
+    console.log('Revenue: Component mounted, fetching data');
     fetchRevenueData();
   }, [selectedPeriod]);
 
@@ -64,37 +74,56 @@ const Revenue = () => {
 
   // Prepare chart data
   const prepareChartData = () => {
-    if (!revenueData?.monthlyRevenue) return [];
+    try {
+      if (!revenueData?.monthlyRevenue || !Array.isArray(revenueData.monthlyRevenue)) {
+        return [];
+      }
 
-    return revenueData.monthlyRevenue.map(item => ({
-      month: `${item.month}/${item.year}`,
-      revenue: parseFloat(item.revenue || 0),
-      bookings: parseInt(item.booking_count || 0)
-    })).reverse(); // Show oldest to newest
+      return revenueData.monthlyRevenue.map(item => ({
+        month: `${item.month}/${item.year}`,
+        revenue: parseFloat(item.revenue || 0),
+        bookings: parseInt(item.booking_count || 0)
+      })).reverse(); // Show oldest to newest
+    } catch (error) {
+      console.error('Error preparing chart data:', error);
+      return [];
+    }
   };
 
   const prepareVehicleStats = () => {
-    if (!revenueData?.vehicleStats) return [];
+    try {
+      if (!revenueData?.vehicleStats || !Array.isArray(revenueData.vehicleStats)) {
+        return [];
+      }
 
-    return revenueData.vehicleStats.map(stat => ({
-      name: `${stat.vehicle.model} (${stat.vehicle.license_plate})`,
-      revenue: parseFloat(stat.dataValues.totalRevenue || 0),
-      bookings: parseInt(stat.dataValues.bookingCount || 0)
-    }));
+      return revenueData.vehicleStats.map(stat => ({
+        name: `${stat.vehicle?.model || 'N/A'} (${stat.vehicle?.license_plate || 'N/A'})`,
+        revenue: parseFloat(stat.dataValues?.totalRevenue || 0),
+        bookings: parseInt(stat.dataValues?.bookingCount || 0)
+      }));
+    } catch (error) {
+      console.error('Error preparing vehicle stats:', error);
+      return [];
+    }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  console.log('Revenue: Rendering, loading:', loading, 'error:', error, 'revenueData:', revenueData);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <p className="ml-4 text-gray-600">Đang tải dữ liệu doanh thu...</p>
       </div>
     );
   }
 
-  return (
-    <div className="p-6">
+  // Đảm bảo component luôn render được, ngay cả khi không có data
+  try {
+    return (
+      <div className="p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
@@ -296,7 +325,24 @@ const Revenue = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (renderError) {
+    console.error('Revenue: Error rendering component:', renderError);
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <h2 className="text-xl font-bold text-red-800 mb-2">Lỗi hiển thị trang doanh thu</h2>
+          <p className="text-red-600">{renderError.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Tải lại trang
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default Revenue;
