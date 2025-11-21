@@ -1,7 +1,7 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
 
-const { Vehicle, User, Brand } = db;
+const { Vehicle, User, Brand, Notification } = db;
 
 // GET /api/admin/approval-vehicles - Lấy danh sách xe chờ duyệt
 export const getPendingVehicles = async (req, res) => {
@@ -181,11 +181,25 @@ export const rejectVehicle = async (req, res) => {
       });
     }
 
-    // Cập nhật trạng thái thành rejected
-    await vehicle.update({ 
-      approvalStatus: "rejected",
-      updated_at: new Date()
-    });
+  // Cập nhật trạng thái thành rejected
+  await vehicle.update({ 
+    approvalStatus: "rejected",
+    updated_at: new Date()
+  });
+
+    try {
+      await Notification.create({
+        user_id: vehicle.owner?.user_id,
+        title: "Xe bị từ chối",
+        content: `Xe ${vehicle.model} (${vehicle.license_plate}) đã bị từ chối. Lý do: ${reason || "không cung cấp"}.`,
+        type: "alert",
+        is_read: false,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    } catch (e) {
+      console.error("Error creating notification for rejected vehicle:", e);
+    }
 
     res.json({
       success: true,

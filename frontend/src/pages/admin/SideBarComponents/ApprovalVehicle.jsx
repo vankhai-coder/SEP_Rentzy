@@ -32,6 +32,8 @@ const ApprovalVehicle = () => {
     approved: 0,
     rejected: 0
   });
+  const [rejectModal, setRejectModal] = useState({ open: false, vehicleId: null, vehicleModel: '' });
+  const [rejectReason, setRejectReason] = useState('');
 
   // Fetch pending vehicles
   const fetchVehicles = useCallback(async (page = 1) => {
@@ -101,23 +103,30 @@ const ApprovalVehicle = () => {
     }
   };
 
-  // Handle reject vehicle
-  const handleReject = async (vehicleId, vehicleModel) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn từ chối xe ${vehicleModel}?`)) {
+  const handleReject = (vehicleId, vehicleModel) => {
+    setRejectModal({ open: true, vehicleId, vehicleModel });
+    setRejectReason('');
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal.vehicleId) return;
+    if (!rejectReason.trim()) {
+      toast.error('Vui lòng nhập lí do từ chối');
       return;
     }
 
     try {
-      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${vehicleId}/reject`);
-      
+      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${rejectModal.vehicleId}/reject`, { reason: rejectReason.trim() });
       if (response.data.success) {
-        toast.success(`Đã từ chối xe ${vehicleModel}`);
+        toast.success(`Đã từ chối xe ${rejectModal.vehicleModel}`);
         fetchVehicles(pagination.currentPage);
         fetchStats();
-        if (expandedVehicleId === vehicleId) {
+        if (expandedVehicleId === rejectModal.vehicleId) {
           setExpandedVehicleId(null);
           setSelectedVehicle(null);
         }
+        setRejectModal({ open: false, vehicleId: null, vehicleModel: '' });
+        setRejectReason('');
       }
     } catch (error) {
       console.error('Error rejecting vehicle:', error);
@@ -633,6 +642,41 @@ const ApprovalVehicle = () => {
             />
             <div className="mt-2 text-center text-white text-sm">
               Ảnh {imageModal.index + 1} / {imageModal.images.length}
+            </div>
+          </div>
+        </div>
+      )}
+      {rejectModal.open && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-lg shadow-lg">
+            <div className="px-5 py-4 border-b flex items-center justify-between">
+              <div className="text-lg font-semibold text-gray-900">Nhập lí do từ chối</div>
+              <button onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })} className="text-gray-500 hover:text-gray-700">
+                <MdClose className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div className="text-sm text-gray-700">Xe: {rejectModal.vehicleModel}</div>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="w-full min-h-28 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Nhập lí do từ chối gửi tới chủ xe"
+              />
+            </div>
+            <div className="px-5 py-4 border-t flex items-center justify-end gap-2">
+              <button
+                onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmReject}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Xác nhận
+              </button>
             </div>
           </div>
         </div>
