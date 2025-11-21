@@ -58,6 +58,7 @@ import AdminVoucherRoute from "./routes/admin/adminVoucherRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
+import { setupWebSocket } from "./services/wsService.js";
 
 // init app :
 const app = express();
@@ -161,6 +162,7 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () =>
   console.log(`Server running on port ${PORT}`)
 );
+setupWebSocket(server);
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

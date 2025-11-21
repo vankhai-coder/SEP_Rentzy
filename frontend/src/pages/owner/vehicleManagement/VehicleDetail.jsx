@@ -137,12 +137,9 @@ const VehicleDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex">
-        <SidebarOwner />
-        <div className="flex-1 p-6">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+      <div className="p-6" style={{ marginLeft: '250px' }}>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -150,27 +147,22 @@ const VehicleDetail = () => {
 
   if (error || !vehicle) {
     return (
-      <div className="flex">
-        <SidebarOwner />
-        <div className="flex-1 p-6">
-          <div className="text-center py-12">
-            <div className="text-red-600 text-xl font-semibold mb-4">{error || 'Không tìm thấy xe'}</div>
-            <button
-              onClick={() => navigate('/owner/vehicle-management')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Quay lại danh sách xe
-            </button>
-          </div>
+      <div className="p-6" >
+        <div className="text-center py-12">
+          <div className="text-red-600 text-xl font-semibold mb-4">{error || 'Không tìm thấy xe'}</div>
+          <button
+            onClick={() => navigate('/owner/vehicle-management')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Quay lại danh sách xe
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex">
-      <SidebarOwner />
-      <div className="flex-1 p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
@@ -592,7 +584,6 @@ const VehicleDetail = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };
