@@ -17,7 +17,7 @@ const formatCurrency = (value) => {
 };
 
 const VehicleCard = ({ vehicle, iconSpecs, type }) => {
-  // Thêm prop 'type'
+  // **Giữ nguyên 100%**: Tất cả logic (dispatch, state, handlers)
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userId } = useSelector((state) => state.userStore);
@@ -112,10 +112,12 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
       onClick={handleCardClick}
     >
       <div className="relative">
+        {/* **SỬA: Thêm loading="lazy" để lazy load img, giảm lag initial */}
         <img
           src={vehicle.main_image_url}
           alt={vehicle.model}
           className="w-full h-56 object-cover"
+          loading="lazy" // **SỬA: Lazy load để mượt**
         />
         {vehicle.discount && (
           <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 text-sm rounded-full shadow">
@@ -156,6 +158,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
           />
         </button>
       </div>
+      {/* **Giữ nguyên 100%**: Phần nội dung dưới img */}
       <div className="p-4">
         <div className="flex items-center mb-2">
           <span className="flex items-center text-gray-700 border border-gray-300 px-3 py-1 rounded-full text-xs">
@@ -194,19 +197,21 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         )}
         <hr className="my-3 border-gray-200" />
         <div className="mt-4 flex items-center justify-between">
-          <div>
-            <p className="text-green-700 font-bold text-lg">
+          <div className="flex flex-col">
+            <p className="text-green-700 font-bold text-base whitespace-nowrap">
               {formatCurrency(vehicle.price_per_day)} / ngày
             </p>
             {vehicle.price_per_hour && (
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-xs">
                 {formatCurrency(vehicle.price_per_hour)} / giờ
               </p>
             )}
           </div>
-          <div className="flex items-center gap-1 text-gray-700 text-sm">
-            <Star size={16} className="text-yellow-500" />
-            {vehicle.rating ?? "5.0"} ({vehicle.rent_count ?? "3"} chuyến)
+          <div className="flex items-center gap-1 text-gray-700 text-xs">
+            <Star size={14} className="text-yellow-500" />
+            <span className="whitespace-nowrap">
+              {vehicle.rating ?? "5.0"} ({vehicle.rent_count ?? "3"} chuyến)
+            </span>
           </div>
         </div>
       </div>
