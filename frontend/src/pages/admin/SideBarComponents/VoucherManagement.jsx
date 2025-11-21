@@ -1,4 +1,4 @@
-import { Ban, Check, ChevronDownIcon, ChevronLeft, ChevronRight, CircleX, Download, Ellipsis, Eye, Handshake, Loader, ShieldCheck, UserPlus, X } from "lucide-react"
+import { Ban, Check, ChevronDownIcon, ChevronLeft, ChevronRight, CircleX, DollarSign, Download, Edit, Ellipsis, Eye, Handshake, Loader, Lock, LockKeyholeOpen, ShieldCheck, Trash2, UserPlus, X } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
 import axiosInstance from "@/config/axiosInstance"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
@@ -43,7 +43,7 @@ import { Badge } from "@/components/ui/badge"
 
 const VoucherManagement = () => {
 
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   // state for pick date "valid from" : 
   const [openDatePickerValidFrom, setOpenDatePickerValidFrom] = useState(false)
@@ -52,6 +52,21 @@ const VoucherManagement = () => {
   // state for pick date "valid to" :
   const [openDatePickerValidTo, setOpenDatePickerValidTo] = useState(false)
   const [dateForValidTo, setDateForValidTo] = useState(undefined)
+
+  // state for selected voucher : 
+  const [selectedVoucherId, setSelectedVoucherId] = useState(null);
+  // state for ban/unban voucher dialog and some fields to display in dialog  like : code , title , description .
+  const [isBanUnbanVoucherDialogOpen, setIsBanUnbanVoucherDialogOpen] = useState(false);
+  const [displayFieldOfSelectedVoucher, setDisplayFieldOfSelectedVoucher] = useState({
+    code: '',
+    title: '',
+    description: ''
+  });
+  // state for isLoadingBanUnbanVoucher :
+  const [isLoadingBanUnbanVoucher, setIsLoadingBanUnbanVoucher] = useState(false);
+  // state to check whether ban or unban voucher : 
+  const [isBanAction, setIsBanAction] = useState(true); // true : ban , false : unban
+
 
 
   // console
@@ -87,7 +102,7 @@ const VoucherManagement = () => {
 
   // pagination states :
   const [currentPage, setCurrentPage] = useState(1);
-  const [limitPerPage, setLimitPerPage] = useState(10);
+  const [limitPerPage, setLimitPerPage] = useState(5);
 
   console.log("searchFilter:", searchFilter);
 
@@ -138,6 +153,31 @@ const VoucherManagement = () => {
     }
   );
 
+  // PATCH to ban or unban voucher api : /api/admin/voucher-management/ban-unban , with body : { voucher_id, is_active: "true" or "false" }
+  const banUnbanVoucher = async (voucherId, isBanAction) => {
+    const response = await axiosInstance.patch('/api/admin/voucher-management/ban-unban', {
+      voucher_id: voucherId,
+      is_active: isBanAction ? "false" : "true"
+    });
+    return response.data;
+  };
+  // handle ban or unban voucher
+  const handleBanUnbanVoucher = async () => {
+    try {
+      setIsLoadingBanUnbanVoucher(true);
+      await banUnbanVoucher(selectedVoucherId, isBanAction);
+      toast.success(`Đã ${isBanAction ? 'khóa' : 'mở khóa'} voucher thành công`);
+      // refetch the vouchers list
+      queryClient.invalidateQueries(['vouchers']);
+    } catch (error) {
+      console.error("Error in handleBanUnbanVoucher:", error);
+      toast.error(`Lỗi khi ${isBanAction ? 'khóa' : 'mở khóa'} voucher`);
+    } finally {
+      setIsLoadingBanUnbanVoucher(false);
+      setSelectedVoucherId(null);
+      setDisplayFieldOfSelectedVoucher({ code: '', title: '', description: '' });
+    }
+  };
 
   // Format Vietnam date to YYYY-MM-DD HH:mm:ss
   function formatVietnamDateForBackend(date) {
@@ -464,6 +504,7 @@ const VoucherManagement = () => {
                       <TableHead>Trạng thái</TableHead>
                       <TableHead>Số lượng</TableHead>
                       <TableHead>Đã dùng</TableHead>
+                      <TableHead>Thêm</TableHead>
                     </TableRow>
                   </TableHeader>
 
@@ -523,7 +564,56 @@ const VoucherManagement = () => {
                         <TableCell >{formatNumberInVietnam(voucher.usage_limit)}</TableCell>
                         <TableCell >{formatNumberInVietnam(voucher.used_count)}</TableCell>
 
+                        <TableCell>
+                          {/* trigger "view more" in each voucher */}
+                          <Popover className="hover:cursor-pointer">
 
+                            <PopoverTrigger>
+                              <Button variant={'outline'} className={'hover:cursor-pointer p-6 px-19'}>
+                                <Ellipsis />
+                              </Button>
+                            </PopoverTrigger>
+
+                            <PopoverContent className={'p-0'}>
+
+                              <div className="py-1 flex flex-col">
+
+                                {/* edit voucher */}
+                                <PopoverClose>
+                                  <button onClick={() => {
+                                    setSelectedVoucherId(voucher.voucher_id);
+                                  }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white  hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
+                                    <span className="flex-shrink-0">
+                                      <Edit className="lucide lucide-eye h-4 w-4" />
+                                    </span>
+                                    <span>Chỉnh sửa</span>
+                                  </button>
+                                </PopoverClose>
+
+                                {/* ban or unban voucher */}
+                                <PopoverClose>
+                                  <button onClick={() => {
+                                    setSelectedVoucherId(voucher.voucher_id);
+                                    setDisplayFieldOfSelectedVoucher({
+                                      code: voucher.code,
+                                      title: voucher.title,
+                                      description: voucher.description
+                                    });
+                                    setIsBanAction(voucher.is_active ? true : false); // if is_active true then ban action
+                                    setIsBanUnbanVoucherDialogOpen(true);
+                                  }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
+                                    <span className="flex-shrink-0">
+                                      {voucher.is_active ? <Lock className="lucide lucide-ban h-4 w-4" /> : <LockKeyholeOpen className="lucide lucide-check h-4 w-4" />}
+                                    </span>
+                                    <span>{voucher.is_active ? "Khóa" : "Mở khóa"}</span>
+                                  </button>
+                                </PopoverClose>
+
+                              </div>
+
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -533,7 +623,7 @@ const VoucherManagement = () => {
 
               {/* Pagination */}
 
-              {data && data.totalPages > 1 && (
+              {data && data.totalPages && (
                 <div className="flex items-center justify-center gap-10 pt-4">
                   {/* commment : select max page */}
                   <div className="flex items-center gap-3">
@@ -593,6 +683,47 @@ const VoucherManagement = () => {
                   </div>
                 </div>
               )}
+
+              {/* dialog for ban/unban voucher */}
+              <Dialog open={isBanUnbanVoucherDialogOpen} onOpenChange={(open) => {
+                setIsBanUnbanVoucherDialogOpen(open);
+              }}>
+                <DialogTrigger>
+                  {/* <Button variant={'outline'} className={'hover:cursor-pointer'}>Xem lý do</Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Xác nhận {isBanAction ? 'khóa' : 'mở khóa'}</DialogTitle>
+                    <DialogDescription className={'py-8'}>
+                      Bạn có chắc chắn muốn {isBanAction ? 'khóa' : 'mở khóa'} voucher này không?
+                      {/* display some info of this voucher : */}
+                      <div className="mt-4 space-y-2">
+                        <p><span className="font-bold">Mã voucher:</span> {displayFieldOfSelectedVoucher.code}</p>
+                        <p><span className="font-bold">Tiêu đề:</span> {displayFieldOfSelectedVoucher.title}</p>
+                        <p><span className="font-bold">Mô tả:</span> {displayFieldOfSelectedVoucher.description}</p>
+                      </div>
+                      {/* BUTTONS */}
+                      <div className="mt-4 flex justify-end gap-4">
+                        <Button variant="outline" onClick={() => {
+                          setIsBanUnbanVoucherDialogOpen(false)
+                        }}>Hủy</Button>
+                        <Button
+                          onClick={() => {
+                            // call api to ban or unban voucher :
+                            handleBanUnbanVoucher();
+                            setIsBanUnbanVoucherDialogOpen(false);
+                            setSelectedVoucherId(null);
+                            setDisplayFieldOfSelectedVoucher({ code: '', title: '', description: '' });
+                          }}
+                        >
+                          {isLoadingBanUnbanVoucher ? <Loader className="animate-spin mx-auto" /> : 'Xác nhận'}
+                        </Button>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
 
             </div>
           </div>

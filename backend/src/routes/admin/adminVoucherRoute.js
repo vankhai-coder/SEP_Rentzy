@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { getVoucherManagementStats, getVouchersWithFilter } from "../../controllers/admin/adminVoucherController.js";
+import { getVoucherManagementStats, getVouchersWithFilter, toggleVoucherActiveStatus } from "../../controllers/admin/adminVoucherController.js";
 
 
 const router = express.Router();
@@ -22,6 +22,9 @@ const router = express.Router();
 router.get("/stats", verifyJWTToken, getVoucherManagementStats);
 
 // GET /api/admin/voucher-management/vouchers
-router.get("/vouchers", getVouchersWithFilter);
+router.get("/vouchers", verifyJWTToken, getVouchersWithFilter);
+
+// PATCH /api/admin/voucher-management/ban-unban
+router.patch("/ban-unban", verifyJWTToken, toggleVoucherActiveStatus);
 
 export default router;

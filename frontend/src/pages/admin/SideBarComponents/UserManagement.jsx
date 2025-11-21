@@ -447,64 +447,66 @@ const UserManagement = () => {
 
               {/* Pagination */}
 
-              <div className="flex items-center justify-center gap-10 pt-4">
-                {/* commment : select max page */}
-                <div className="flex items-center gap-3">
-                  <p className="text-secondary-600 dark:text-secondary-400">Hiển thị trang {currentPage} trên {data?.totalPages || 1} </p>
-                  {/* select max page */}
-                  {/* select role  */}
-                  <Select
-                    value={limitPerPage.toString()}
-                    onValueChange={(value) => {
-                      setLimitPerPage(Number(value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="">
-                      <SelectValue placeholder="Số mục trên trang" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* comment : Pagination controls */}
-                <div className="flex items-center justify-center gap-2 ">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-1"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Trước
-                  </Button>
-
-                  {data?.totalPages && Array.from({ length: data.totalPages }, (_, i) => i + 1).map((p) => (
-                    <Button
-                      key={p}
-                      variant={p === currentPage ? "default" : "outline"}
-                      onClick={() => setCurrentPage(p)}
+              {data && data.totalPages &&
+                <div className="flex items-center justify-center gap-10 pt-4">
+                  {/* commment : select max page */}
+                  <div className="flex items-center gap-3">
+                    <p className="text-secondary-600 dark:text-secondary-400">Hiển thị trang {currentPage} trên {data?.totalPages || 1} </p>
+                    {/* select max page */}
+                    {/* select role  */}
+                    <Select
+                      value={limitPerPage.toString()}
+                      onValueChange={(value) => {
+                        setLimitPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
                     >
-                      {p}
-                    </Button>
-                  ))}
+                      <SelectTrigger className="">
+                        <SelectValue placeholder="Số mục trên trang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === data?.totalPages || !data?.totalPages}
-                    className="flex items-center gap-1"
-                  >
-                    Tiếp
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+                  {/* comment : Pagination controls */}
+                  <div className="flex items-center justify-center gap-2 ">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Trước
+                    </Button>
+
+                    {data?.totalPages && Array.from({ length: data.totalPages }, (_, i) => i + 1).map((p) => (
+                      <Button
+                        key={p}
+                        variant={p === currentPage ? "default" : "outline"}
+                        onClick={() => setCurrentPage(p)}
+                      >
+                        {p}
+                      </Button>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === data?.totalPages || !data?.totalPages}
+                      className="flex items-center gap-1"
+                    >
+                      Tiếp
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              }
 
 
             </div>

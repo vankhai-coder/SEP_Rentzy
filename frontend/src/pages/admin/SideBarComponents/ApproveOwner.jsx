@@ -460,7 +460,7 @@ const ApproveOwner = () => {
 
               {/* Pagination */}
 
-              {data && data.totalPages > 1 && (
+              {data && data.totalPages  && (
                 <div className="flex items-center justify-center gap-10 pt-4">
                   {/* commment : select max page */}
                   <div className="flex items-center gap-3">

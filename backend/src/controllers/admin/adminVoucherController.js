@@ -130,4 +130,28 @@ export const getVouchersWithFilter = async (req, res) => {
     }
 }
 
+// function to ban or unban voucher : is_active field to false or true , req.body = { voucher_id, is_active: "true" or "false" }
+export const toggleVoucherActiveStatus = async (req, res) => {
+    try {
+        const { voucher_id, is_active } = req.body || {};
 
+        // validate voucher_id and is_active
+        if (!voucher_id || !["true", "false"].includes(is_active)) {
+            return res.status(400).json({ message: "Invalid voucher_id or is_active value" });
+        }
+        console.log("Toggling voucher_id:", voucher_id, "to is_active:", is_active);
+
+        const voucher = await Voucher.findByPk(voucher_id);
+        if (!voucher) {
+            return res.status(404).json({ message: `Voucher not found for voucher_id : ${voucher_id}` });
+        }
+
+        voucher.is_active = is_active === 'true' ? true : false;
+        await voucher.save();
+
+        return res.status(200).json({ message: `Voucher has been ${voucher.is_active ? 'activated' : 'deactivated'}` });
+    } catch (error) {
+        console.error("Error toggling voucher active status:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
