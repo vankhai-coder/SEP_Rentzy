@@ -1,5 +1,5 @@
 // fe/src/components/SidebarOwner/SidebarOwner.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   MdOutlineDashboard,
@@ -20,9 +20,59 @@ import {
   FaMoneyCheckAlt,
   FaTimesCircle,
 } from "react-icons/fa";
+import axiosInstance from "@/config/axiosInstance";
 
 
 const SidebarOwner = ({ handleLogout }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    let timerId;
+
+    const fetchUnread = async () => {
+      try {
+        const res = await axiosInstance.get("/api/owner/dashboard/notifications", { params: { limit: 1 } });
+        if (res.data && res.data.success && isMounted) {
+          setUnreadCount(res.data.data.unreadCount || 0);
+        }
+      } catch {
+        // silent
+      }
+    };
+
+    fetchUnread();
+    timerId = setInterval(fetchUnread, 30000);
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearInterval(timerId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_URL || "";
+    if (!base) return;
+    const wsUrl = base.replace(/^http/i, "ws") + "/ws";
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg && msg.type === "NOTIFICATIONS_UNREAD_COUNT") {
+            const next = msg.data && typeof msg.data.unreadCount === "number" ? msg.data.unreadCount : 0;
+            setUnreadCount(next);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+    } catch (err) {
+      console.error(err);
+    }
+    return () => { try { ws && ws.close(); } catch (err) { console.error(err); } };
+  }, []);
   return (
     <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen fixed top-0 left-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000]">
       {/* Back icon at top-left */}
@@ -166,6 +216,11 @@ const SidebarOwner = ({ handleLogout }) => {
             >
               <MdNotifications className="mr-[10px] text-xl" />
               Thông báo
+              {unreadCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
+                  {unreadCount}
+                </span>
+              )}
             </NavLink>
           </li>
 

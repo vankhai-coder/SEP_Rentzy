@@ -1,6 +1,7 @@
 // models/Notification.js
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import { sendToUser } from "../services/wsService.js";
 
 const Notification = sequelize.define("Notification", {
   notification_id: {
@@ -42,6 +43,20 @@ const Notification = sequelize.define("Notification", {
   indexes: [
     { fields: ["user_id", "is_read"] },
   ],
+});
+
+Notification.addHook("afterCreate", async (notification) => {
+  try {
+    const unreadCount = await Notification.count({ where: { user_id: notification.user_id, is_read: false } });
+    sendToUser(notification.user_id, { type: "NOTIFICATIONS_UNREAD_COUNT", data: { unreadCount } });
+  } catch {}
+});
+
+Notification.addHook("afterUpdate", async (notification) => {
+  try {
+    const unreadCount = await Notification.count({ where: { user_id: notification.user_id, is_read: false } });
+    sendToUser(notification.user_id, { type: "NOTIFICATIONS_UNREAD_COUNT", data: { unreadCount } });
+  } catch {}
 });
 
 export default Notification;
