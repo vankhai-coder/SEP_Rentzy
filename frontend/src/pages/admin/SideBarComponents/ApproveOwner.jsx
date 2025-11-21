@@ -414,7 +414,7 @@ const ApproveOwner = () => {
 
                                   {/* view details */}
                                   <PopoverClose>
-                                    <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                    <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700 ">
                                       <span className="flex-shrink-0">
                                         <Eye className="lucide lucide-eye h-4 w-4" />
                                       </span>
@@ -424,21 +424,21 @@ const ApproveOwner = () => {
 
                                   {/* accept request */}
                                   <PopoverClose>
-                                    <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                    <button  onClick={() => { setIsApproveDialogOpen(true); setSelectedUserId(user.user_id); }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
                                       <span className="flex-shrink-0">
                                         <Handshake className="size-4" />
                                       </span>
-                                      <span onClick={() => { setIsApproveDialogOpen(true); setSelectedUserId(user.user_id); }}>Chấp nhận</span>
+                                      <span>Chấp nhận</span>
                                     </button>
                                   </PopoverClose>
 
                                   {/* reject request */}
                                   <PopoverClose>
-                                    <button className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                    <button onClick={() => { setIsRejectDialogOpen(true); setSelectedUserId(user.user_id); }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
                                       <span className="flex-shrink-0">
                                         <Ban className="size-4" />
                                       </span>
-                                      <span onClick={() => { setIsRejectDialogOpen(true); setSelectedUserId(user.user_id); }}>Từ chối</span>
+                                      <span>Từ chối</span>
                                     </button>
                                   </PopoverClose>
 

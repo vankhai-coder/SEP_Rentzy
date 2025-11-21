@@ -228,12 +228,17 @@ const UserManagement = () => {
                       </SelectContent>
                     </Select>
                     {/* clear role that selected */}
-                    <button onClick={() => {
-                      setSearchFilter(prev => ({ ...prev, role: '' }));
-                      setCurrentPage(1);
-                    }}>
-                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
-                    </button>
+                    {
+
+                      searchFilter.role && (
+                        <button onClick={() => {
+                          setSearchFilter(prev => ({ ...prev, role: '' }));
+                          setCurrentPage(1);
+                        }}>
+                          <CircleX className="size-5 hover:cursor-pointer text-red-400" />
+                        </button>
+                      )
+                    }
                   </div>
 
                   {/* filter status(is_active) */}
@@ -255,32 +260,40 @@ const UserManagement = () => {
                       </SelectContent>
                     </Select>
                     {/* clear role that selected */}
-                    <button onClick={() => {
-                      setSearchFilter(prev => ({ ...prev, isActive: '' }));
-                      setCurrentPage(1);
-                    }}>
-                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
-                    </button>
+                    {
+                      searchFilter.isActive && (
+                        <button onClick={() => {
+                          setSearchFilter(prev => ({ ...prev, isActive: '' }));
+                          setCurrentPage(1);
+                        }}>
+                          <CircleX className="size-5 hover:cursor-pointer text-red-400" />
+                        </button>
+                      )
+                    }
                   </div>
 
                 </div>
 
                 <div className="flex gap-6">
                   {/* filter clear all */}
-                  <div className="flex items-center text-red-500">
-                    <Button
-                      onClick={() => {
-                        setSearchFilter({
-                          nameOrEmail: '',
-                          role: '',
-                          isActive: ''
-                        });
-                      }}
-                      variant={'outline'}>
-                      <Trash2 className="w-4 h-4" />
-                      Xóa tất cả
-                    </Button>
-                  </div>
+                  {
+                    (searchFilter.nameOrEmail || searchFilter.role || searchFilter.isActive) && (
+                      <div className="flex items-center text-red-500">
+                        <Button
+                          onClick={() => {
+                            setSearchFilter({
+                              nameOrEmail: '',
+                              role: '',
+                              isActive: ''
+                            });
+                          }}
+                          variant={'outline'}>
+                          <Trash2 className="w-4 h-4" />
+                          Xóa tất cả
+                        </Button>
+                      </div>
+                    )
+                  }
                   {/* display loading or error button */}
                   <div>
                     <Button
@@ -310,6 +323,34 @@ const UserManagement = () => {
                   </TableHeader>
 
                   <TableBody>
+                    {/* if error */}
+                    {isErrorFetchingUsers && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-red-500">
+                          Lỗi khi tải danh sách người dùng.
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* if loading */}
+                    {isLoadingFetchingUsers && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center">
+                          Đang tải...
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* if no users found */}
+                    {!isLoadingFetchingUsers && !isErrorFetchingUsers && data?.users?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center">
+                          Không tìm thấy người dùng.
+                        </TableCell>
+                      </TableRow>
+                    )}
+
+                    {/* display users */}
                     {data?.users && data?.users.map((user) => (
                       <TableRow key={user.user_id}>
                         <TableCell className="font-medium">

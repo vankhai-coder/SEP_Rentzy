@@ -32,11 +32,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
 import axiosInstance from "@/config/axiosInstance"
-import { useQuery, suseQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
+import CreateVoucherComponent from "@/components/admin/CreateVoucher"
+import { Badge } from "@/components/ui/badge"
+{/* <Badge variant="default | outline | secondary | destructive">Badge</Badge> */ }
 
 const VoucherManagement = () => {
 
@@ -154,10 +157,29 @@ const VoucherManagement = () => {
     const date = new Date(dateString);
     const pad = (n) => String(n).padStart(2, "0")
     return (
-      `${pad(date.getDate())} thg ` +
+      `${pad(date.getDate())} thg` +
       `${pad(date.getMonth() + 1)} ` +
       `${date.getFullYear()}`
     )
+  }
+
+  // function to display discount value with % if discount type is PERCENT , else display as amount and currency for matter : 1,000,000 VND
+  function formatDiscountValue(discountType, discountValue) {
+    if (discountType === 'PERCENT') {
+      return `${discountValue}%`;
+    } else {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(discountValue);
+    }
+  }
+
+  // function to format amount to VND currency
+  function formatAmountToVND(amount) {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  }
+
+  // functon for format number in vietnam : 1,000 for 1000
+  function formatNumberInVietnam(number) {
+    return new Intl.NumberFormat('vi-VN').format(number);
   }
 
 
@@ -179,10 +201,9 @@ const VoucherManagement = () => {
               <Download className="w-4 h-4 mr-2" />
               <span className="hidden sm:block"> Xuất dữ liệu</span>
             </button>
-            <button className="inline-flex items-center gap-2 justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 px-4 py-2 text-base">
-              <UserPlus />
-              <span className="hidden sm:block"> Thêm voucher</span>
-            </button>
+            {/* dialog for create new voucher */}
+            <CreateVoucherComponent />
+
           </div>
         </div>
 
@@ -404,16 +425,16 @@ const VoucherManagement = () => {
                     </PopoverContent>
                   </Popover>
                   {/* clear valid to date that selected */}
-                 {
-                  searchFilter.validTo &&
-                   <button onClick={() => {
-                    setSearchFilter(prev => ({ ...prev, validTo: '' }));
-                    setCurrentPage(1);
-                    setDateForValidTo(undefined);
-                  }}>
-                    <CircleX className="size-5 hover:cursor-pointer text-red-400" />
-                  </button>
-                 }
+                  {
+                    searchFilter.validTo &&
+                    <button onClick={() => {
+                      setSearchFilter(prev => ({ ...prev, validTo: '' }));
+                      setCurrentPage(1);
+                      setDateForValidTo(undefined);
+                    }}>
+                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
+                    </button>
+                  }
                 </div>
 
 
@@ -485,15 +506,22 @@ const VoucherManagement = () => {
                             </DialogContent>
                           </Dialog>
                         }</TableCell>
-                        <TableCell >{voucher.discount_type}</TableCell>
-                        <TableCell >{voucher.discount_value}</TableCell>
-                        <TableCell >{voucher.min_order_amount}</TableCell>
-                        <TableCell >{voucher.max_discount}</TableCell>
+                        <TableCell >{voucher.discount_type === 'PERCENT' ? "Phần trăm" : "Số tiền"}</TableCell>
+                        <TableCell >
+                          <Badge variant="secondary" className={'bg-blue-500 text-white dark:bg-blue-600'} >{formatDiscountValue(voucher.discount_type, voucher.discount_value)}</Badge>
+                        </TableCell>
+                        <TableCell >
+                          <Badge variant="">{formatAmountToVND(voucher.min_order_amount)}</Badge>
+                        </TableCell>
+                        <TableCell >
+                          {/* red badge for max amount */}
+                          <Badge variant="">{voucher.discount_type === 'PERCENT' && formatAmountToVND(voucher.max_discount)}</Badge>
+                        </TableCell>
                         <TableCell >{formatVietnamDateForDisplay(voucher.valid_from)}</TableCell>
                         <TableCell >{formatVietnamDateForDisplay(voucher.valid_to)}</TableCell>
-                        <TableCell >{voucher.is_active ? "Active" : "Inactive"}</TableCell>
-                        <TableCell >{voucher.usage_limit}</TableCell>
-                        <TableCell >{voucher.used_count}</TableCell>
+                        <TableCell >{voucher.is_active ? "Hoạt động" : "Không hoạt động"}</TableCell>
+                        <TableCell >{formatNumberInVietnam(voucher.usage_limit)}</TableCell>
+                        <TableCell >{formatNumberInVietnam(voucher.used_count)}</TableCell>
 
 
                       </TableRow>

@@ -108,6 +108,13 @@ const OverViewAdminDashboard = () => {
     queryFn: getAdminOverviewStats
   });
 
+  // css for each type of badge for role : 
+  const statusBadgeForRole = {
+    renter: 'badge-primary',
+    owner: 'badge-success',
+    admin: 'badge-danger',
+  }
+
   return (
     <div className="p-4 lg:p-6 dark:bg-black min-h-screen">
       <div>
@@ -271,7 +278,7 @@ const OverViewAdminDashboard = () => {
                       </div>
                       <div className='text-right'>
                         <p className='font-medium text-secondary-900 dark:text-white'>{formatDate(user.created_at)}</p>
-                        <span className='badge badge-primary px-2 py-0.5 text-xs'>{user.role}</span>
+                        <span className={`badge ${statusBadgeForRole[user.role]} px-2 py-0.5 text-xs`}>{user.role}</span>
                       </div>
                     </div>
                   ))}
