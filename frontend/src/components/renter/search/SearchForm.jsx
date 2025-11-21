@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Calendar, Search, ChevronDown } from "lucide-react";
+import { MapPin, Calendar, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import LocationModal from "./LocationModal";
 import DateTimeModal from "./DateTimeModal";
@@ -36,31 +36,30 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
         )}`
       : "Chọn thời gian";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.location.trim()) {
-      alert("Vui lòng chọn địa điểm!");
-      return;
-    }
-    if (!formData.startDate || !formData.endDate) {
-      alert("Vui lòng chọn thời gian!");
-      return;
-    }
-    onSubmit(formData);
-  };
-
   const handleLocationSelect = (location) => {
-    setFormData({ ...formData, location });
+    const newFormData = { ...formData, location };
+    setFormData(newFormData);
     setShowLocationModal(false);
+    
+    // Tự động tìm kiếm ngay khi chọn địa điểm
+    if (location.trim()) {
+      onSubmit(newFormData);
+    }
   };
 
   const handleDateSave = (start, end) => {
-    setFormData({
+    const newFormData = {
       ...formData,
       startDate: start.toISOString(),
       endDate: end.toISOString(),
-    });
+    };
+    setFormData(newFormData);
     setShowDateModal(false);
+    
+    // Tự động tìm kiếm ngay khi chọn thời gian
+    if (newFormData.startDate && newFormData.endDate) {
+      onSubmit(newFormData);
+    }
   };
 
   const themeClass = type === "car" ? "border-green-200" : "border-blue-200"; // Giữ cho theme, nhưng CSS chính ở file riêng
@@ -71,7 +70,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
       <div className="search-form-container">
         {" "}
         {/* Class mới cho container */}
-        <form onSubmit={handleSubmit} className={`search-form ${themeClass}`}>
+        <div className={`search-form ${themeClass}`}>
           {/* Địa điểm */}
           <div
             className="search-form-section" // Class mới
@@ -103,20 +102,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
             </div>
             <ChevronDown className="search-form-chevron" />
           </div>
-
-          <button
-            type="submit"
-            disabled={
-              !formData.location.trim() ||
-              !formData.startDate ||
-              !formData.endDate
-            }
-            className="search-form-submit" // Class mới
-          >
-            <Search className="search-form-submit-icon" />
-            <span>Tìm Xe</span>
-          </button>
-        </form>
+        </div>
       </div>
 
       {/* Modals - Giữ nguyên */}
