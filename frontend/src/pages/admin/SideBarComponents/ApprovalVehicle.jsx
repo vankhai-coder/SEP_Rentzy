@@ -528,12 +528,16 @@ const ApprovalVehicle = () => {
                                   {checkResults[vehicle.vehicle_id].brand} {checkResults[vehicle.vehicle_id].model} • {checkResults[vehicle.vehicle_id].year}
                                 </div>
                                 <div className="flex gap-3 text-xs mb-3">
-                                  <span className="px-2 py-1 rounded bg-green-100 text-green-700">Pass: {checkResults[vehicle.vehicle_id].summary.pass}</span>
-                                  <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">Warn: {checkResults[vehicle.vehicle_id].summary.warn}</span>
-                                  <span className="px-2 py-1 rounded bg-red-100 text-red-700">Fail: {checkResults[vehicle.vehicle_id].summary.fail}</span>
+                                  <span className="px-2 py-1 rounded bg-green-100 text-green-700">Tốt: {checkResults[vehicle.vehicle_id].summary.pass}</span>
+                                  <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">Cảnh báo: {checkResults[vehicle.vehicle_id].summary.warn}</span>
+                                  <span className="px-2 py-1 rounded bg-red-100 text-red-700">Nguy hiểm: {checkResults[vehicle.vehicle_id].summary.fail}</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {checkResults[vehicle.vehicle_id].checks.map((c, idx) => (
+                                  {(
+                                    (checkResults[vehicle.vehicle_id].checks || [])
+                                      .filter((c) => { const l = String(c.label || '').toLowerCase(); return !l.includes('vị trí') && !l.includes('vi tri'); })
+                                      .filter((c) => vehicle.vehicle_type === 'car' ? !String(c.label || '').toLowerCase().includes('dung tích') : true)
+                                  ).map((c, idx) => (
                                     <div key={idx} className={`p-2 rounded border ${c.status === 'pass' ? 'border-green-200 bg-green-50' : c.status === 'fail' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
                                       <div className="text-xs text-gray-500">{c.label}</div>
                                       <div className="text-sm text-gray-900">{c.detail}</div>

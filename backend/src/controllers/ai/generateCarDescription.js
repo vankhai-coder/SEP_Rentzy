@@ -211,16 +211,13 @@ export const checkVehicleInfo = async (req, res) => {
             `- Dáng xe: ${src.body_type || ""}\n`+
             `- Nhiên liệu: ${src.fuel_type || ""}\n`+
             `- Mức tiêu thụ: ${src.fuel_consumption || ""}\n`+
-            `- Số chỗ ngồi: ${src.seats ?? ""}\n`+
-            `- Dung tích động cơ: ${src.engine_capacity ?? ""}\n`+
-            `- Vị trí: ${src.location || ""}`;
+            `- Số chỗ ngồi: ${src.seats ?? ""}`;
         } else if (src.vehicle_type === "motorbike") {
           attrs = `Thuộc tính để kiểm tra:\n`+
             `- Loại xe: ${src.bike_type || src.body_type || ""}\n`+
             `- Nhiên liệu: ${src.fuel_type || ""}\n`+
             `- Mức tiêu thụ: ${src.fuel_consumption || ""}\n`+
-            `- Dung tích động cơ: ${src.engine_capacity ?? ""}\n`+
-            `- Vị trí: ${src.location || ""}`;
+            `- Dung tích động cơ: ${src.engine_capacity ?? ""}`;
         }
 
         const typeCatalog = `Danh mục loại xe tham chiếu: tay ga (scooter), underbone/cub, sport, naked, touring, cruiser, adventure, dual-sport, off-road/dirt.`;
@@ -279,7 +276,7 @@ export const checkVehicleInfo = async (req, res) => {
           }
           if (src.fuel_type) pushBase("Nhiên liệu", "pass", src.fuel_type); else pushBase("Nhiên liệu", "warn", "Thiếu");
           if (src.fuel_consumption) pushBase("Mức tiêu thụ", "pass", src.fuel_consumption); else pushBase("Mức tiêu thụ", "warn", "Thiếu");
-          if (src.location) pushBase("Vị trí", "pass", src.location); else pushBase("Vị trí", "warn", "Thiếu");
+          
 
           checks = baseChecks;
           summary = {
