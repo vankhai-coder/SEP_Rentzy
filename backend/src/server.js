@@ -147,7 +147,10 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({alter: true});
+    // Use alter: false to avoid "Too many keys" error
+    // Only use alter: true when you need to modify table structure
+    // For production, use migrations instead of sync with alter
+    await db.sequelize.sync({alter: false});
     console.log("✅ All models synced!");
 
     // Initialize cron jobs after database sync

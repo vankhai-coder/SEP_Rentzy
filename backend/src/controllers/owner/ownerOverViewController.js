@@ -103,7 +103,12 @@ export const getRevenueChart = async (req, res) => {
       });
     }
 
-    const { period = 'year', year = new Date().getFullYear(), month = new Date().getMonth() + 1, quarter } = req.query;
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentQuarter = Math.ceil(currentMonth / 3);
+    
+    const { period = 'year', year = currentYear, month = currentMonth, quarter = currentQuarter } = req.query;
     console.log('Parsed params:', { period, year, month, quarter, ownerId });
 
     // Lấy danh sách xe của owner với điều kiện chặt chẽ
@@ -193,18 +198,22 @@ export const getRevenueChart = async (req, res) => {
         break;
       case 'quarter':
         // Lấy dữ liệu các tháng trong một quý của năm
-        if (!year || !quarter) {
+        // Sử dụng giá trị mặc định nếu không được cung cấp
+        const q = parseInt(quarter) || currentQuarter;
+        const y = parseInt(year) || currentYear;
+        
+        // Validate quarter (1-4)
+        if (q < 1 || q > 4) {
           return res.status(400).json({
             success: false,
-            message: 'Thiếu tham số year hoặc quarter cho period=quarter'
+            message: 'Quarter phải là số từ 1 đến 4'
           });
         }
-        const q = parseInt(quarter);
         const startMonth = (q - 1) * 3 + 1; // 1,4,7,10
         const endMonth = startMonth + 2;    // 3,6,9,12
         whereCondition.created_at = {
           [Op.and]: [
-            sequelize.where(sequelize.fn('YEAR', sequelize.col('created_at')), year),
+            sequelize.where(sequelize.fn('YEAR', sequelize.col('created_at')), y),
             sequelize.where(sequelize.fn('MONTH', sequelize.col('created_at')), { [Op.between]: [startMonth, endMonth] })
           ]
         };
@@ -283,14 +292,15 @@ export const getRevenueChart = async (req, res) => {
 
     // Nếu là xem theo quý, tạo dữ liệu đủ các tháng trong quý
     if (period === 'quarter') {
-      const q = parseInt(quarter);
+      const q = parseInt(quarter) || currentQuarter;
+      const y = parseInt(year) || currentYear;
       const startMonth = (q - 1) * 3 + 1;
       const endMonth = startMonth + 2;
       const months = Array.from({ length: 3 }, (_, i) => startMonth + i);
-      const monthLabels = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+      const monthLabels = months.map(m => `${y}-${m.toString().padStart(2, '0')}`);
       const revenueMap = new Map(finalData.map(item => [item.period, item]));
       finalData = monthLabels.map(label => revenueMap.get(label) || { period: label, revenue: 0, bookingCount: 0 });
-      console.log('Filled full quarter months for year:', year, 'quarter:', quarter, finalData.length, 'months');
+      console.log('Filled full quarter months for year:', y, 'quarter:', q, finalData.length, 'months');
     }
 
     // Nếu là xem theo năm, tạo dữ liệu đủ 5 năm gần nhất

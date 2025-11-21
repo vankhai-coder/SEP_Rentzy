@@ -31,7 +31,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('api/owner/dashboard/notifications', {
+      const response = await axiosInstance.get('/api/owner/dashboard/notifications', {
         params: filters
       });
 
@@ -54,7 +54,7 @@ const Notifications = () => {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      const response = await axiosInstance.patch(`/owner/dashboard/notifications/${notificationId}/read`);
+      const response = await axiosInstance.patch(`/api/owner/dashboard/notifications/${notificationId}/read`);
 
       if (response.data.success) {
         // Update the notification in the list but DO NOT remove from view
@@ -71,16 +71,18 @@ const Notifications = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      const response = await axiosInstance.patch('/owner/dashboard/notifications/mark-all-read');
+      const response = await axiosInstance.patch('/api/owner/dashboard/notifications/mark-all-read');
 
       if (response.data.success) {
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
         setUnreadCount(0);
-        alert('Đã đánh dấu tất cả thông báo là đã đọc');
+        // Refresh lại danh sách để đảm bảo dữ liệu đồng bộ
+        await fetchNotifications();
       }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      alert('Có lỗi xảy ra khi đánh dấu tất cả thông báo');
+      const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi đánh dấu tất cả thông báo';
+      alert(errorMessage);
     }
   };
 

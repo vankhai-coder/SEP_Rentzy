@@ -9,8 +9,12 @@ import {
   MdDirectionsCar,
   MdLocationOn,
   MdAttachMoney,
+  MdWarning,
+  MdAdd,
+  MdEdit,
 } from "react-icons/md";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog.jsx";
+import { toast } from "sonner";
 
 const BookingDetail = () => {
   const { id } = useParams();
@@ -20,6 +24,10 @@ const BookingDetail = () => {
   const [error, setError] = useState(null);
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
+  const [showTrafficFineModal, setShowTrafficFineModal] = useState(false);
+  const [trafficFineAmount, setTrafficFineAmount] = useState("");
+  const [trafficFineDescription, setTrafficFineDescription] = useState("");
+  const [submittingTrafficFine, setSubmittingTrafficFine] = useState(false);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -156,6 +164,41 @@ const BookingDetail = () => {
     } catch (err) {
       console.error("Error fetching contract PDF:", err);
       alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
+    }
+  };
+
+  const handleAddTrafficFine = async () => {
+    if (!trafficFineAmount || parseFloat(trafficFineAmount) <= 0) {
+      toast.error("Vui lòng nhập số tiền phạt nguội hợp lệ");
+      return;
+    }
+
+    try {
+      setSubmittingTrafficFine(true);
+      const response = await axiosInstance.post(
+        `/api/owner/dashboard/bookings/${id}/traffic-fine`,
+        {
+          amount: parseFloat(trafficFineAmount),
+          description: trafficFineDescription || null,
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Đã thêm phí phạt nguội thành công");
+        setShowTrafficFineModal(false);
+        setTrafficFineAmount("");
+        setTrafficFineDescription("");
+        await fetchBookingDetail();
+      } else {
+        toast.error(response.data.message || "Không thể thêm phí phạt nguội");
+      }
+    } catch (error) {
+      console.error("Error adding traffic fine:", error);
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi thêm phí phạt nguội"
+      );
+    } finally {
+      setSubmittingTrafficFine(false);
     }
   };
 
@@ -319,6 +362,82 @@ const BookingDetail = () => {
                 )}
               </div>
             </div>
+            {/* Traffic Fine Section - Riêng biệt với thanh toán */}
+            {(booking.traffic_fine_amount > 0 || (booking.status === "in_progress" || booking.status === "completed")) && (
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <MdWarning className="mr-2 text-orange-600" />
+                    Phí phạt nguội
+                  </h2>
+                  {(booking.status === "in_progress" || booking.status === "completed") && (
+                    <button
+                      onClick={() => {
+                        setTrafficFineAmount(booking.traffic_fine_amount || "");
+                        setTrafficFineDescription(booking.traffic_fine_description || "");
+                        setShowTrafficFineModal(true);
+                      }}
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                      title={booking.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
+                    >
+                      {booking.traffic_fine_amount > 0 ? (
+                        <>
+                          <MdEdit className="mr-1" />
+                          Sửa
+                        </>
+                      ) : (
+                        <>
+                          <MdAdd className="mr-1" />
+                          Thêm phí phạt
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {booking.traffic_fine_amount > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 font-medium">Tổng phí phạt nguội:</span>
+                      <span className="font-bold text-lg text-orange-600">
+                        {formatCurrency(booking.traffic_fine_amount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Đã thanh toán:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(booking.traffic_fine_paid || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Còn lại:</span>
+                      <span className="font-medium text-red-600">
+                        {formatCurrency((booking.traffic_fine_amount || 0) - (booking.traffic_fine_paid || 0))}
+                      </span>
+                    </div>
+                    {booking.traffic_fine_description && (
+                      <div className="mt-3 p-3 bg-white rounded border border-orange-200">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Lý do phạt nguội:</p>
+                        <p className="text-sm text-gray-600">{booking.traffic_fine_description}</p>
+                      </div>
+                    )}
+                    <div className="mt-3 pt-3 border-t border-orange-200">
+                      <p className="text-xs text-gray-500 italic">
+                        * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-2">Chưa có phí phạt nguội</p>
+                    <p className="text-xs text-gray-500 italic">
+                      * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Booking Timeline */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -542,6 +661,87 @@ const BookingDetail = () => {
             ) : (
               <div className="text-gray-600">Đang chuẩn bị URL ký...</div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Traffic Fine Modal */}
+        <Dialog open={showTrafficFineModal} onOpenChange={setShowTrafficFineModal}>
+          <DialogContent className="max-w-2xl w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MdWarning className="text-orange-600" />
+                {booking?.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={trafficFineAmount}
+                  onChange={(e) => setTrafficFineAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập số tiền phạt nguội"
+                />
+                {trafficFineAmount && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    {formatCurrency(parseFloat(trafficFineAmount) || 0)}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mô tả / Lý do phạt nguội
+                </label>
+                <textarea
+                  value={trafficFineDescription}
+                  onChange={(e) => setTrafficFineDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="4"
+                  placeholder="Ví dụ: Vi phạm tốc độ tại đường ABC, ngày DD/MM/YYYY..."
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Mô tả chi tiết về vi phạm giao thông (tùy chọn)
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Lưu ý:</strong> Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                  {booking?.traffic_fine_paid > 0 && (
+                    <span className="block mt-1">
+                      Người thuê đã thanh toán: {formatCurrency(booking.traffic_fine_paid)}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowTrafficFineModal(false);
+                    setTrafficFineAmount("");
+                    setTrafficFineDescription("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={submittingTrafficFine}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddTrafficFine}
+                  disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
+                </button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

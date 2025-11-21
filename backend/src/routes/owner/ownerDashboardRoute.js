@@ -11,6 +11,7 @@ import {
   markAllNotificationsAsRead,
   searchTrafficFine,
   getTrafficFineCaptcha,
+  addTrafficFine,
 } from "../../controllers/owner/ownerDashboardController.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
@@ -57,5 +58,8 @@ router.patch("/notifications/mark-all-read", markAllNotificationsAsRead);
 // 6. Tra cứu phạt nguội
 router.get("/traffic-fine-search/captcha", getTrafficFineCaptcha);
 router.post("/traffic-fine-search", searchTrafficFine);
+
+// 7. Quản lý phí phạt nguội
+router.post("/bookings/:id/traffic-fine", addTrafficFine);
 
 export default router;

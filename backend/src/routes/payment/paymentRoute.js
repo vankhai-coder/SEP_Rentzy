@@ -7,6 +7,7 @@ import {
   cancelPayOSTransaction,
   paymentByCash,
   approveRemainingByOwner,
+  createPayOSLinkForTrafficFine,
 } from "../../controllers/payment/paymentController.js";
 
 const router = express.Router();
@@ -18,6 +19,12 @@ router.post(
   "/payos/remaining-link",
   verifyJWTToken,
   createPayOSLinkForRemaining
+);
+// PayOS Traffic Fine Payment Route
+router.post(
+  "/payos/traffic-fine-link",
+  verifyJWTToken,
+  createPayOSLinkForTrafficFine
 );
 // PayOS Cancel Transaction Route
 router.post("/payos/cancel", verifyJWTToken, cancelPayOSTransaction);
