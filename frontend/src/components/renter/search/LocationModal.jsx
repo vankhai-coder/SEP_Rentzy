@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Search as SearchIcon, Target, MapPin } from "lucide-react";
+import { X, Search as SearchIcon, MapPin } from "lucide-react";
 import { toast } from "react-toastify";
 
 const quickCities = [
@@ -28,86 +28,6 @@ const LocationModal = ({
       ?.toLowerCase()
       .replace(/tp\.?|thành phố|tỉnh|city|province|vn|vietnam/gi, "")
       .trim();
-
-  const handleGetCurrentLocation = async () => {
-    if (!navigator.geolocation) {
-      toast.error("Trình duyệt không hỗ trợ định vị.");
-      return;
-    }
-
-    setIsLoadingLocation(true);
-    toast.info("Đang lấy vị trí hiện tại...");
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=vi&zoom=10`
-          );
-          const data = await response.json();
-          const addr = data.address || {};
-          const displayName = data.display_name || "";
-
-          // FIX: Ưu tiên ward (phường) + city/province (thành phố/tỉnh)
-          const ward =
-            addr.suburb || addr.village || addr.town || addr.quarter || "";
-          let city =
-            addr.state || addr.province || addr.city || addr.municipality || "";
-
-          // FIX: Nếu city rỗng, extract từ display_name (lấy phần cuối: district + city)
-          if (!city.trim()) {
-            const nameParts = displayName.split(", ");
-            if (nameParts.length >= 2) {
-              city = nameParts.slice(-1)[0]; // Lấy phần cuối (thành phố, e.g., "Đà Nẵng")
-              if (nameParts.length >= 3) {
-                city = `${nameParts[nameParts.length - 2]}, ${city}`; // Nếu có district: "Hải Châu, Đà Nẵng"
-              }
-            }
-          }
-
-          // FIX: Build result: Ward + City (bỏ road nếu không cần, tập trung ward + city như yêu cầu)
-          let result = [ward, city].filter(Boolean).join(", ");
-          if (!result.trim()) result = displayName; // Fallback full nếu rỗng
-
-          // FIX: Backup forward search nếu vẫn miss city
-          if (!city.trim()) {
-            const forwardResponse = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${latitude},${longitude}&addressdetails=1&accept-language=vi&limit=1&zoom=10`
-            );
-            const forwardData = await forwardResponse.json();
-            if (forwardData.length > 0) {
-              const forwardAddr = forwardData[0].address || {};
-              city =
-                forwardAddr.state ||
-                forwardAddr.city ||
-                forwardAddr.municipality ||
-                "";
-              result = [ward, city].filter(Boolean).join(", ");
-            }
-          }
-
-          setSearchQuery(result);
-          setSelectedLocation(result);
-          toast.success("Đã lấy vị trí thành công!");
-        } catch (error) {
-          console.error("Reverse geocode error:", error);
-          toast.warn("Không thể lấy vị trí chi tiết, đã dùng tọa độ.");
-          setSelectedLocation(
-            `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-          );
-          setSearchQuery(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
-        } finally {
-          setIsLoadingLocation(false);
-        }
-      },
-      (error) => {
-        toast.error("Không thể lấy vị trí: " + error.message);
-        setIsLoadingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  };
 
   const handleManualSearch = async () => {
     if (!searchQuery.trim()) {
@@ -228,25 +148,16 @@ const LocationModal = ({
               placeholder="Nhập địa điểm (VD: 304 Phan Bội Châu, Huế)"
               value={searchQuery}
               onChange={handleInputChange} // FIX: Sử dụng handler mới để sync selectedLocation
-              className="w-full pl-10 pr-20 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
               type="button"
               onClick={handleManualSearch}
               disabled={isLoadingLocation}
-              className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 disabled:opacity-50"
               title="Tìm địa điểm"
             >
               <SearchIcon size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={handleGetCurrentLocation}
-              disabled={isLoadingLocation}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 disabled:opacity-50"
-              title="Lấy vị trí hiện tại"
-            >
-              <Target size={20} />
             </button>
           </div>
           {isLoadingLocation && (

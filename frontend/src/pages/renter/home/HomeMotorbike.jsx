@@ -12,16 +12,68 @@ import { compareVehicles } from "../../../redux/features/renter/compare/compareS
 import { Scale } from "lucide-react"; // Mới: Icon cho nút so sánh
 import { toast } from "react-toastify"; // Mới: Toast cho warn
 import { useState } from "react"; // Đã có, nhưng dùng cho modal
+// **Giữ nguyên**: Import InfiniteScroll
+import InfiniteScroll from "react-infinite-scroll-component";
 
+// **MỚI: Component SkeletonCard - Tương tự HomeCar**
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 animate-pulse">
+    <div className="relative">
+      <div className="w-full h-56 bg-gray-300 skeleton"></div>
+      <div className="absolute top-3 right-3 w-5 h-5 bg-gray-300 rounded-full skeleton"></div>
+      <div className="absolute top-3 right-12 w-5 h-5 bg-gray-300 rounded-full skeleton"></div>
+    </div>
+    <div className="p-4 space-y-3">
+      <div className="flex items-center">
+        <div className="w-20 h-4 bg-gray-300 rounded-full skeleton"></div>
+      </div>
+      <div className="h-5 bg-gray-300 rounded skeleton"></div>
+      <div className="flex gap-5">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-300 rounded-full skeleton"></div>
+          <div className="w-12 h-3 bg-gray-300 rounded skeleton"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-300 rounded-full skeleton"></div>
+          <div className="w-12 h-3 bg-gray-300 rounded skeleton"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-300 rounded-full skeleton"></div>
+          <div className="w-12 h-3 bg-gray-300 rounded skeleton"></div>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-3 bg-gray-300 rounded skeleton"></div>
+        <div className="w-20 h-3 bg-gray-300 rounded skeleton ml-1"></div>
+      </div>
+      <hr className="border-gray-200" />
+      <div className="flex justify-between items-end">
+        <div className="space-y-1">
+          <div className="h-5 w-24 bg-gray-300 rounded skeleton"></div>
+          <div className="h-3 w-16 bg-gray-300 rounded skeleton"></div>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-gray-300 rounded-full skeleton"></div>
+          <div className="w-16 h-3 bg-gray-300 rounded skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// **Giữ nguyên**: Phần còn lại của HomeMotorbike
 const HomeMotorbike = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = Object.fromEntries(searchParams.entries());
 
-  const { vehicles, loading: vehicleLoading } = useSelector(
-    (state) => state.vehicleStore
-  );
+  // **Giữ nguyên**: Selector
+  const {
+    vehicles,
+    loading: vehicleLoading,
+    totalCount,
+  } = useSelector((state) => state.vehicleStore);
   const {
     brands,
     loading: brandLoading,
@@ -31,9 +83,16 @@ const HomeMotorbike = () => {
   const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy danh sách so sánh
 
   const [showModal, setShowModal] = useState(false); // Mới: State điều khiển modal
+  // **Giữ nguyên**: State infinite scroll
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 12; // Fixed limit
 
+  // **Giữ nguyên**: useEffect
   useEffect(() => {
-    dispatch(fetchVehicles("motorbike"));
+    setPage(1);
+    setHasMore(true);
+    dispatch(fetchVehicles({ type: "motorbike", page: 1, limit }));
     dispatch(fetchBrands("motorbike"));
     if (userId) {
       console.log("Fetching favorites for user:", userId);
@@ -41,6 +100,22 @@ const HomeMotorbike = () => {
     }
   }, [dispatch, userId]);
 
+  // **Giữ nguyên**: loadMore
+  const loadMore = useCallback(async () => {
+    const nextPage = page + 1;
+    const actionResult = await dispatch(
+      fetchVehicles({ type: "motorbike", page: nextPage, limit })
+    );
+    if (actionResult.payload) {
+      const { vehicles: newVehicles } = actionResult.payload;
+      if (newVehicles.length < limit) {
+        setHasMore(false);
+      }
+      setPage(nextPage);
+    }
+  }, [dispatch, page, limit]);
+
+  // **Giữ nguyên 100%**: handleSearch, handleOpenCompare
   const handleSearch = useCallback(
     (formData) => {
       if (!formData.location?.trim()) {
@@ -68,8 +143,18 @@ const HomeMotorbike = () => {
     setShowModal(true);
   };
 
+  // **SỬA: Render skeletons tương tự HomeCar**
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {Array.from({ length: limit }).map((_, index) => (
+        <SkeletonCard key={`skeleton-${index}`} />
+      ))}
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-6 pt-1">
+      {/* **Giữ nguyên 100%**: SearchForm, nút Compare, BrandList */}
       <section className="mb-4">
         <SearchForm
           type="motorbike"
@@ -106,12 +191,32 @@ const HomeMotorbike = () => {
         )}
       </section>
 
-      {/* Phần Danh Sách Xe - Đưa xuống sau BrandList */}
+      {/* **SỬA: Phần Danh Sách Xe - Tương tự HomeCar */}
       <h2 className="text-2xl font-bold mb-4">Danh Sách Xe Máy</h2>
-      {vehicleLoading ? (
-        <p>Đang tải xe...</p>
+      {vehicleLoading && page === 1 ? (
+        renderSkeletons() // **SỬA: Skeletons cho initial**
       ) : (
-        <MotorbikeList bikes={vehicles} />
+        <InfiniteScroll
+          dataLength={vehicles.length}
+          next={loadMore}
+          hasMore={hasMore && !vehicleLoading}
+          loader={
+            <div className="text-center py-4">
+              <p className="text-gray-500">Đang tải thêm...</p>{" "}
+              {/* **SỬA: Loader "..." ở cuối */}
+            </div>
+          }
+          endMessage={
+            <p className="text-center py-4 text-gray-500">
+              Đã tải hết {totalCount} xe!
+            </p>
+          }
+          scrollThreshold={0.9} // **SỬA: Trigger sớm hơn cho mượt**
+          className="infinite-scroll-container"
+          style={{ overflow: "visible" }}
+        >
+          <MotorbikeList bikes={vehicles} />
+        </InfiniteScroll>
       )}
 
       {/* Hiển thị modal so sánh khi showModal = true */}

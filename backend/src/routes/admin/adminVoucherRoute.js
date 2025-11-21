@@ -19,15 +19,15 @@ router.use((req, res, next) => {
 // all routes below are protected and only accessible by admin users :
 
 // GET /api/admin/voucher-management/stats
-router.get("/stats", verifyJWTToken, getVoucherManagementStats);
+router.get("/stats", getVoucherManagementStats);
 
 // GET /api/admin/voucher-management/vouchers
-router.get("/vouchers", verifyJWTToken, getVouchersWithFilter);
+router.get("/vouchers", getVouchersWithFilter);
 
 // PATCH /api/admin/voucher-management/ban-unban
-router.patch("/ban-unban", verifyJWTToken, toggleVoucherActiveStatus);
+router.patch("/ban-unban", toggleVoucherActiveStatus);
 
 // POST /api/admin/voucher-management/create
-router.post("/create", verifyJWTToken, createVoucher);
+router.post("/create", createVoucher);
 
 export default router;
