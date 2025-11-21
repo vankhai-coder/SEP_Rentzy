@@ -24,7 +24,7 @@ const Home = () => {
 
   useEffect(() => {
     if (role === "admin") navigate("/admin");
-    else if (role === "owner") navigate("/owner");
+    // Removed auto-redirect for owner to allow manual navigation via account page
   }, [role, navigate]);
 
   useEffect(() => {
