@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance';
+import { useOwnerTheme } from '@/contexts/OwnerThemeContext';
+import { createThemeUtils } from '@/utils/themeUtils';
 import { toast } from 'react-toastify';
 import { 
   MdSearch, 
@@ -14,7 +16,6 @@ import {
   MdDirectionsCar,
   MdTwoWheeler
 } from 'react-icons/md';
-import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 
 // Custom debounce hook
 const useDebounce = (value, delay) => {
@@ -35,6 +36,8 @@ const useDebounce = (value, delay) => {
 
 
 const VehicleManagement = () => {
+  const theme = useOwnerTheme() || "light";
+  const themeUtils = createThemeUtils(theme);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -235,19 +238,19 @@ const fetchVehicles = useCallback(async () => {
   }
 
   return (
-    <div className="w-full">
+    <div className={`w-full p-4 lg:p-6 min-h-screen ${themeUtils.bgMain}`}>
         {/* Header */}
         <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>
           Quản lý xe của bạn
         </h1>
-        <p className="text-gray-600">
-          Tổng số xe: <span className="font-semibold text-blue-600">{stats.totalVehicles}</span>
+        <p className={themeUtils.textSecondary}>
+          Tổng số xe: <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.totalVehicles}</span>
         </p>
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="flex-1 flex gap-2">
             <div className="relative flex-1">
@@ -257,7 +260,7 @@ const fetchVehicles = useCallback(async () => {
                 placeholder="Tìm kiếm theo tên xe, biển số"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -270,7 +273,7 @@ const fetchVehicles = useCallback(async () => {
                 setSortBy(field);
                 setSortOrder(order);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="created_at-DESC">Mới nhất</option>
               <option value="created_at-ASC">Cũ nhất</option>
@@ -286,7 +289,7 @@ const fetchVehicles = useCallback(async () => {
                 setPagination(prev => ({ ...prev, currentPage: 1 }));
                 fetchVehicles();
               }}
-              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-3 py-2 bg-gray-100 dark:bg-secondary-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-secondary-600 transition-colors"
             >
               <MdRefresh className="w-5 h-5" />
             </button>
@@ -303,10 +306,10 @@ const fetchVehicles = useCallback(async () => {
       </div>
 
       {/* Vehicles Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-blue-600 text-white">
+            <thead className="bg-blue-600 dark:bg-blue-700 text-white">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ẢNH</th>
                 <th className="px-4 py-3 text-left font-medium">XE</th>
@@ -318,16 +321,16 @@ const fetchVehicles = useCallback(async () => {
                 <th className="px-4 py-3 text-left font-medium">HÀNH ĐỘNG</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-secondary-700">
               {vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Chưa có xe nào. Hãy thêm xe đầu tiên của bạn!
                   </td>
                 </tr>
               ) : (
                 vehicles.map((vehicle) => (
-                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50">
+                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 dark:hover:bg-secondary-700">
                     <td className="px-4 py-3">
                       <img
                         src={vehicle.main_image_url || '/default_avt.jpg'}
@@ -337,21 +340,21 @@ const fetchVehicles = useCallback(async () => {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 dark:text-white">
                           {vehicle.brand?.name} {vehicle.model}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {vehicle.year} • {vehicle.vehicle_type}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
+                    <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                       {vehicle.license_plate}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
+                    <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                       {formatPrice(vehicle.price_per_day)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900">
+                    <td className="px-4 py-3 text-gray-900 dark:text-white">
                       {vehicle.rent_count} lượt
                     </td>
                     <td className="px-4 py-3">

@@ -28,6 +28,7 @@ import BookingCancellation from "./BookingCancellation.js";
 import BookingPayout from "./BookingPayout.js";
 import Transaction from "./Transaction.js";
 import RegisterOwner from "./RegisterOwner.js";
+import TrafficFineRequest from "./TrafficFineRequest.js";
 
 // --- RELATIONS ---
 
@@ -174,6 +175,18 @@ PointsTransaction.belongsTo(Booking, {
 User.hasOne(RegisterOwner, { foreignKey: "user_id", as: "registerOwner" });
 RegisterOwner.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+// Booking ↔ TrafficFineRequest
+Booking.hasMany(TrafficFineRequest, { foreignKey: "booking_id", as: "trafficFineRequests" });
+TrafficFineRequest.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
+
+// User ↔ TrafficFineRequest (owner)
+User.hasMany(TrafficFineRequest, { foreignKey: "owner_id", as: "trafficFineRequests" });
+TrafficFineRequest.belongsTo(User, { foreignKey: "owner_id", as: "owner" });
+
+// User ↔ TrafficFineRequest (reviewer/admin)
+User.hasMany(TrafficFineRequest, { foreignKey: "reviewed_by", as: "reviewedTrafficFineRequests" });
+TrafficFineRequest.belongsTo(User, { foreignKey: "reviewed_by", as: "reviewer" });
+
 // --- COLLECT MODELS INTO ONE OBJECT ---
 const db = {
   sequelize,
@@ -201,6 +214,7 @@ const db = {
   BookingCancellation,
   BookingPayout,
   Transaction,
+  TrafficFineRequest,
 };
 
 export default db;

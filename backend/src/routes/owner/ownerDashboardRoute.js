@@ -16,6 +16,7 @@ import {
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
+import upload from "../../middlewares/multerConfig.js";
 
 const router = express.Router();
 
@@ -60,6 +61,6 @@ router.get("/traffic-fine-search/captcha", getTrafficFineCaptcha);
 router.post("/traffic-fine-search", searchTrafficFine);
 
 // 7. Quản lý phí phạt nguội
-router.post("/bookings/:id/traffic-fine", addTrafficFine);
+router.post("/bookings/:id/traffic-fine", upload.array("images", 10), addTrafficFine);
 
 export default router;

@@ -20,7 +20,6 @@ import {
   MdLock,
   MdLockOpen
 } from 'react-icons/md';
-import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 
 const VehicleDetail = () => {
   const { id } = useParams();

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
-  MdAttachMoney, 
-  MdDirectionsCar, 
-  MdAssignment, 
-  MdTrendingUp,
-  MdPerson,
-  MdStar,
-  MdCalendarToday,
-  MdClose,
-  MdEmail
-} from 'react-icons/md';
+  ChevronRight, 
+  DollarSign, 
+  Home, 
+  MoveDownRight, 
+  MoveUpRight, 
+  ShoppingCart, 
+  User,
+  Car,
+  TrendingUp,
+  Calendar,
+  X,
+  Mail
+} from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -26,12 +30,8 @@ import {
 
 const OverViewManagement = () => {
   const navigate = useNavigate();
-  const [overviewData, setOverviewData] = useState(null);
+  
   const [revenueChart, setRevenueChart] = useState([]);
-  const [topRenters, setTopRenters] = useState([]);
-  const [topVehicles, setTopVehicles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('year');
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -42,18 +42,51 @@ const OverViewManagement = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [vehicleHistory, setVehicleHistory] = useState([]);
 
-  // Fetch overview stats
-  const fetchOverviewStats = async () => {
-    try {
-      const response = await axiosInstance.get('/api/owner/overview/stats');
-      if (response.data.success) {
-        setOverviewData(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching overview stats:', error);
-      setError('Đã xảy ra lỗi khi tải dữ liệu tổng quan');
-    }
+  // Fetch overview stats using react-query
+  const getOverviewStats = async () => {
+    const res = await axiosInstance.get('/api/owner/overview/stats');
+    return res.data.data;
   };
+  const { data: overviewData, isLoading: isLoadingOverviewStats, isError: isErrorOverviewStats } = useQuery({
+    queryKey: ["owner-overview-stats"],
+    queryFn: getOverviewStats
+  });
+
+  // Fetch recent bookings using react-query
+  const getRecentBookings = async () => {
+    const res = await axiosInstance.get('/api/owner/dashboard/bookings', {
+      params: { limit: 10, page: 1, sortBy: 'created_at', sortOrder: 'DESC' }
+    });
+    return res.data.data.bookings || [];
+  };
+  const { data: recentBookings, isLoading: isLoadingBookings, isError: isErrorBookings } = useQuery({
+    queryKey: ["owner-recent-bookings"],
+    queryFn: getRecentBookings
+  });
+
+  // Fetch top renters using react-query
+  const getTopRenters = async () => {
+    const res = await axiosInstance.get('/api/owner/overview/top-renters', {
+      params: { limit: 5 }
+    });
+    return res.data.data || [];
+  };
+  const { data: topRenters, isLoading: isLoadingTopRenters, isError: isErrorTopRenters } = useQuery({
+    queryKey: ["owner-top-renters"],
+    queryFn: getTopRenters
+  });
+
+  // Fetch top vehicles using react-query
+  const getTopVehicles = async () => {
+    const res = await axiosInstance.get('/api/owner/overview/top-vehicles', {
+      params: { limit: 5 }
+    });
+    return res.data.data || [];
+  };
+  const { data: topVehicles, isLoading: isLoadingTopVehicles, isError: isErrorTopVehicles } = useQuery({
+    queryKey: ["owner-top-vehicles"],
+    queryFn: getTopVehicles
+  });
 
   // Fetch revenue chart data
   const fetchRevenueChart = async (period, year, month, quarter) => {
@@ -93,43 +126,6 @@ const OverViewManagement = () => {
     }
   };
 
-  // Fetch top renters
-  const fetchTopRenters = async () => {
-    try {
-      const response = await axiosInstance.get('/api/owner/overview/top-renters', {
-        params: { limit: 5 }
-      });
-      if (response.data.success) {
-        setTopRenters(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching top renters:', error);
-    }
-  };
-
-  // Fetch top vehicles
-  const fetchTopVehicles = async () => {
-    try {
-      console.log('Fetching top vehicles...');
-      
-      const response = await axiosInstance.get('/api/owner/overview/top-vehicles', {
-        params: { limit: 5 }
-      });
-      
-      console.log('Top vehicles response:', response.data);
-      
-      if (response.data.success) {
-        setTopVehicles(response.data.data || []);
-      } else {
-        console.error('Top vehicles API returned error:', response.data.message);
-        setTopVehicles([]);
-      }
-    } catch (error) {
-      console.error('Error fetching top vehicles:', error);
-      setTopVehicles([]);
-    }
-  };
-
   // Open booking detail in a new browser tab
   const handleRowClick = (bookingId) => {
     navigate(`/owner/booking-management/detail/${bookingId}`);
@@ -164,30 +160,6 @@ const OverViewManagement = () => {
     }
   };
 
-  // Load all data
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchOverviewStats(),
-        fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth),
-        fetchTopRenters(),
-        fetchTopVehicles()
-      ]);
-    } catch (error) {
-        console.error('Error loading all data:', error);
-      setError('Đã xảy ra lỗi khi tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    console.log('=== OverViewManagement: Initial load ===');
-    loadAllData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     console.log('=== OverViewManagement: Period/Year/Month changed ===');
     console.log('selectedPeriod:', selectedPeriod);
@@ -197,16 +169,35 @@ const OverViewManagement = () => {
     fetchRevenueChart(selectedPeriod, selectedYear, selectedMonth, selectedQuarter);
   }, [selectedPeriod, selectedYear, selectedMonth, selectedQuarter]);
 
-  // Format currency
+  // Format currency function to VND
   const formatCurrency = (amount) => {
     if (!amount || amount === 0) return '0 ₫';
-    
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+
+  // Format date like : 12 tháng 9, 2023
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('vi-VN', options);
+  };
+
+  // All possible status from backend Booking model
+  const statusBadge = {
+    completed: 'badge-success',
+    pending: 'badge-warning',
+    canceled: 'badge-danger',
+    in_progress: 'badge-primary',
+    cancel_requested: 'badge-info',
+    fully_paid: 'badge-success',
+    deposit_paid: 'badge-warning',
+    ongoing: 'badge-primary',
+  };
+
+  // Function to get percentage change
+  const getPercentageChange = (previous, current) => {
+    if (previous === 0) return current === 0 ? 0 : 100;
+    return ((current - previous) / previous * 100).toFixed(1);
   };
 
   // Format currency for chart (shorter format)
@@ -287,7 +278,7 @@ const OverViewManagement = () => {
     }
   };
 
-  const formatDate = (dateStr) => {
+  const formatDateShort = (dateStr) => {
     if (!dateStr) return 'N/A';
     const d = new Date(dateStr);
     const day = String(d.getDate()).padStart(2, '0');
@@ -298,7 +289,7 @@ const OverViewManagement = () => {
 
   // Format date with optional time (HH:mm)
   const formatDateTime = (dateStr, timeStr) => {
-    const date = formatDate(dateStr);
+    const date = formatDateShort(dateStr);
     if (!timeStr) return date;
     try {
       const parts = String(timeStr).split(':');
@@ -352,120 +343,87 @@ const OverViewManagement = () => {
   //   return styles[s] || 'bg-gray-100 text-gray-700 border-gray-200';
   // };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500 text-center">
-          <p className="text-xl font-semibold">{error}</p>
-          <button 
-            onClick={loadAllData}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Thử lại
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tổng quan</h1>
-          <p className="text-gray-600">Thống kê tổng quan về hoạt động kinh doanh của bạn</p>
+    <div className="p-4 lg:p-6 min-h-screen bg-white">
+      <div>
+        {/* navigation */}
+        <nav className="flex items-center space-x-2 text-sm mb-6">
+          <a href="" className="flex items-center text-gray-600 hover:text-primary-600 transition-colors">
+            <Home />
+          </a>
+          <div className="flex items-center gap-2">
+            <ChevronRight />
+            <span className="text-black font-medium">Tổng Quan</span>
+          </div>
+        </nav>
+        {/* title */}
+        <div className='mb-6'>
+          <h1 className="text-3xl font-bold mb-2 text-black">Tổng Quan Hệ Thống</h1>
+          <p className="text-gray-700">Chào mừng bạn quay lại! Đây là những thông tin nổi bật về hoạt động kinh doanh của bạn hôm nay.</p>
+        </div>
+        {/* overview content : 3 boxes */}
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 '>
+          {/* first box - Total Revenue */}
+          <div className='card p-6 transition-all duration-200 relative overflow-hidden border border-gray-200 shadow-md'>
+            <div className='flex items-start justify-between'>
+              <div className='flex-1'>
+                <p className="text-sm font-medium mb-1 text-gray-700">Tổng doanh thu</p>
+                <p className="text-3xl font-bold mb-2 text-black">{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : formatCurrency(overviewData?.totalRevenue || 0)}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-100">
+                <DollarSign className="lucide lucide-dollar-sign w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          {/* second box - Total Bookings */}
+          <div className='card p-6 transition-all duration-200 relative overflow-hidden border border-gray-200 shadow-md'>
+            <div className='flex items-start justify-between'>
+              <div className='flex-1'>
+                <p className="text-sm font-medium mb-1 text-gray-700">Tổng số đặt xe</p>
+                <p className="text-3xl font-bold mb-2 text-black">{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewData?.totalBookings || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-100">
+                <ShoppingCart className="lucide lucide-shopping-cart w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          {/* third box - Total Vehicles */}
+          <div className='card p-6 transition-all duration-200 relative overflow-hidden border border-gray-200 shadow-md'>
+            <div className='flex items-start justify-between'>
+              <div className='flex-1'>
+                <p className="text-sm font-medium mb-1 text-gray-700">Tổng số xe</p>
+                <p className="text-3xl font-bold mb-2 text-black">{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewData?.totalVehicles || 0}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-100">
+                <Car className="lucide lucide-car w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Total Revenue */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng doanh thu</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(overviewData?.totalRevenue || 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <MdAttachMoney className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Total Bookings */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng số đơn thuê</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {overviewData?.totalBookings || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <MdAssignment className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Total Vehicles */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng số xe</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {overviewData?.totalVehicles || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <MdDirectionsCar className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue Chart */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-            <div className="mb-4 lg:mb-0">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                <MdTrendingUp className="mr-2" />
+        {/*2 chart  */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          {/* Revenue Chart */}
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold flex items-center text-black">
+                <TrendingUp className="mr-2" />
                 Biểu đồ doanh thu
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                <MdCalendarToday className="inline mr-1" />
+              <p className="text-sm text-gray-700">
+                <Calendar className="inline mr-1" />
                 {getPeriodDisplayText()}
               </p>
             </div>
-            
             {/* Bộ lọc hiển thị theo yêu cầu: chuyển nhóm nút thành dropdown */}
             <div className="flex flex-wrap gap-4 items-end w-full lg:w-auto lg:ml-auto lg:justify-end">
-              {/* Nút xem 5 năm gần nhất */}
-              {/* <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setSelectedPeriod('year'); setSelectedQuarter(null); }}
-                  className={`px-3 py-2 rounded-md text-sm border ${selectedPeriod === 'year' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
-                >
-                  Xem 5 năm gần nhất
-                </button>
-              </div> */}
-
               {/* Dropdown chọn năm (10 năm) */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-500 mb-1">Chọn năm</label>
+                <label className="text-xs text-gray-600 mb-1">Chọn năm</label>
                 <select
                   value={selectedYear ?? ''}
                   onChange={(e) => { const y = parseInt(e.target.value); setSelectedYear(y); setSelectedPeriod('month'); setSelectedQuarter(null); }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[120px]"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[120px]"
                 >
                   <option value="">-- Chọn năm --</option>
                   {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -476,11 +434,11 @@ const OverViewManagement = () => {
 
               {/* Dropdown chọn quý */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-500 mb-1">Chọn quý</label>
+                <label className="text-xs text-gray-600 mb-1">Chọn quý</label>
                 <select
                   value={selectedQuarter ?? ''}
                   onChange={(e) => { const q = parseInt(e.target.value); if (!isNaN(q)) { setSelectedQuarter(q); setSelectedPeriod('quarter'); } else { setSelectedQuarter(null); } }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[120px]"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[120px]"
                 >
                   <option value="">-- Chọn quý --</option>
                   <option value={1}>Quý 1</option>
@@ -492,11 +450,11 @@ const OverViewManagement = () => {
 
               {/* Dropdown chọn tháng: 12 tháng hoặc theo quý đã chọn */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-500 mb-1">Chọn tháng</label>
+                <label className="text-xs text-gray-600 mb-1">Chọn tháng</label>
                 <select
                   value={selectedMonth ?? ''}
                   onChange={(e) => { const m = parseInt(e.target.value); setSelectedMonth(m); setSelectedPeriod('day'); }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm min-w-[140px]"
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[140px]"
                 >
                   <option value="">-- Chọn tháng --</option>
                   {(() => {
@@ -510,114 +468,154 @@ const OverViewManagement = () => {
                 </select>
               </div>
             </div>
-          </div>
-
-          <div className="h-80">
-            {formatChartData(revenueChart).length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                {selectedPeriod === 'day' ? (
-                  <BarChart data={formatChartData(revenueChart)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="label" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      fontSize={12}
-                    />
-                    <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
-                    <Tooltip 
-                      formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                      labelFormatter={(label) => `Ngày: ${label}`}
-                    />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#3B82F6"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                ) : (
-                  <LineChart data={formatChartData(revenueChart)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
-                    <Tooltip 
-                      formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                      labelFormatter={(label) => `Thời gian: ${label}`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#3B82F6" 
-                      strokeWidth={2}
-                      dot={{ fill: '#3B82F6' }}
-                    />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center text-gray-500">
-                  <MdTrendingUp className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                  <p className="text-lg font-medium">Chưa có dữ liệu doanh thu</p>
-                  <p className="text-sm">Dữ liệu sẽ hiển thị khi có đơn đặt xe</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Top Renters */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-              <MdPerson className="mr-2" />
-              Khách hàng thuê nhiều nhất
-            </h2>
-            <div className="space-y-4">
-              {topRenters.length > 0 ? (
-                topRenters.map((renter, index) => (
-                  <div key={renter.user_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{renter.full_name}</p>
-                        <p className="text-sm text-gray-600">{renter.email}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-blue-600">{renter.rentCount} lượt</p>
-                      <p className="text-sm text-gray-600">{formatCurrency(renter.totalSpent)}</p>
-                    </div>
-                  </div>
-                ))
+            <div className="h-80">
+              {formatChartData(revenueChart).length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  {selectedPeriod === 'day' ? (
+                    <BarChart data={formatChartData(revenueChart)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="label" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        fontSize={12}
+                      />
+                      <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                        labelFormatter={(label) => `Ngày: ${label}`}
+                      />
+                      <Bar 
+                        dataKey="revenue" 
+                        fill="#3B82F6"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  ) : (
+                    <LineChart data={formatChartData(revenueChart)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="label" />
+                      <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                        labelFormatter={(label) => `Thời gian: ${label}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="#3B82F6" 
+                        strokeWidth={2}
+                        dot={{ fill: '#3B82F6' }}
+                      />
+                    </LineChart>
+                  )}
+                </ResponsiveContainer>
               ) : (
-                <p className="text-gray-500 text-center py-8">Chưa có dữ liệu khách hàng</p>
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-700">
+                    <TrendingUp className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <p className="text-lg font-medium">Chưa có dữ liệu doanh thu</p>
+                    <p className="text-sm">Dữ liệu sẽ hiển thị khi có đơn đặt xe</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Top Vehicles - Enhanced with images */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-              <MdDirectionsCar className="mr-2" />
-              Xe được thuê nhiều nhất
-            </h2>
-            <div className="space-y-4">
-              {topVehicles.length > 0 ? (
+          {/* Placeholder for second chart */}
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold text-black">
+                Biểu đồ thống kê
+              </h2>
+            </div>
+            <div className="h-80 flex items-center justify-center">
+              <p className="text-gray-700">Chart 2</p>
+            </div>
+          </div>
+        </div>
+        {/* 2 table */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+          {/* table 1 - Recent Bookings */}
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold text-black">
+                Các đặt xe gần đây
+              </h2>
+              <div>
+                <div className='space-y-4'>
+                  {isLoadingBookings && <p className="text-gray-700">Loading...</p>}
+                  {isErrorBookings && <p className="text-gray-700">Error loading bookings.</p>}
+                  {recentBookings && recentBookings.length > 0 ? recentBookings.map((booking) => (
+                    <div key={booking.booking_id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+                      <div className='flex-1'>
+                        <p className="font-medium text-black">{booking.renter?.full_name || booking.renter?.email || 'N/A'}</p>
+                        <p className="text-sm text-gray-700">{booking.vehicle?.model || 'N/A'}</p>
+                      </div>
+                      <div className='text-right'>
+                        <p className="font-medium text-black">{formatCurrency(booking.total_amount || 0)}</p>
+                        <span className={`badge ${statusBadge[booking.status] || 'badge-warning'} px-2 py-0.5 text-xs`}>{booking.status || 'N/A'}</span>
+                      </div>
+                    </div>
+                  )) : !isLoadingBookings && !isErrorBookings && (
+                    <p className="text-gray-700 text-center py-4">Chưa có đặt xe gần đây</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* table 2 - Top Renters */}
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold text-black">
+                Khách hàng thuê nhiều nhất
+              </h2>
+              <div>
+                <div className='space-y-4'>
+                  {isLoadingTopRenters && <p className="text-gray-700">Loading...</p>}
+                  {isErrorTopRenters && <p className="text-gray-700">Error loading top renters.</p>}
+                  {topRenters && topRenters.length > 0 ? topRenters.map((renter, index) => (
+                    <div key={renter.user_id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+                      <div className='flex-1'>
+                        <p className="font-medium text-black">{renter.full_name || renter.email || 'N/A'}</p>
+                        <p className="text-sm text-gray-700">{renter.email || 'N/A'}</p>
+                      </div>
+                      <div className='text-right'>
+                        <p className="font-medium text-black">{renter.rentCount || 0} lượt</p>
+                        <p className="text-xs text-gray-700">{formatCurrency(renter.totalSpent || 0)}</p>
+                      </div>
+                    </div>
+                  )) : !isLoadingTopRenters && !isErrorTopRenters && (
+                    <p className="text-gray-700 text-center py-4">Chưa có dữ liệu khách hàng</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Top Vehicles Section */}
+        <div className='mt-6'>
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold text-black flex items-center">
+                <Car className="mr-2" />
+                Xe được thuê nhiều nhất
+              </h2>
+            </div>
+            <div className='space-y-4'>
+              {isLoadingTopVehicles && <p className="text-gray-700">Loading...</p>}
+              {isErrorTopVehicles && <p className="text-gray-700">Error loading top vehicles.</p>}
+              {topVehicles && topVehicles.length > 0 ? (
                 topVehicles.map((vehicle, index) => (
                   <div 
                     key={vehicle.vehicle_id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:ring-2 hover:ring-purple-300 transition cursor-pointer"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:ring-2 hover:ring-primary-300 transition cursor-pointer"
                     onClick={() => fetchVehicleRentalHistory(vehicle.vehicle_id)}
                     title="Xem lịch sử thuê của xe"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className='flex items-center space-x-4'>
                       {/* Ranking number */}
-                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      <div className='w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold text-sm'>
                         {index + 1}
                       </div>
                       
@@ -630,161 +628,156 @@ const OverViewManagement = () => {
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
+                              if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                             }}
                           />
                         ) : null}
                         <div 
                           className={`w-full h-full ${vehicle.main_image_url ? 'hidden' : 'flex'} items-center justify-center bg-gray-300`}
                         >
-                          <MdDirectionsCar className="text-gray-500 text-xl" />
+                          <Car className="text-gray-700 text-xl" />
                         </div>
                       </div>
                       
                       {/* Vehicle info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-medium text-gray-900 truncate">
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center space-x-2'>
+                          <p className="font-medium text-black truncate">
                             {vehicle.brand?.name || 'N/A'}
                           </p>
-                          <span className="text-gray-400">•</span>
-                          <p className="font-medium text-gray-900 truncate">
+                          <span className="text-gray-700">•</span>
+                          <p className="font-medium text-black truncate">
                             {vehicle.model}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-600">{vehicle.license_plate}</p>
-                        <p className="text-xs text-gray-500">{formatCurrency(vehicle.price_per_day)}/ngày</p>
+                        <p className="text-sm text-gray-700">{vehicle.license_plate}</p>
+                        <p className="text-xs text-gray-700">{formatCurrency(vehicle.price_per_day)}/ngày</p>
                       </div>
                     </div>
                     
                     {/* Stats */}
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-semibold text-purple-600 text-lg">{vehicle.rent_count} lượt</p>
-                      
-                      <p className="text-sm text-gray-600 font-medium">{formatCurrency(vehicle.total_paid)}</p>
+                    <div className='text-right flex-shrink-0'>
+                      <p className="font-semibold text-primary-600 text-lg">{vehicle.rent_count || 0} lượt</p>
+                      <p className="text-sm text-gray-700 font-medium">{formatCurrency(vehicle.total_paid || 0)}</p>
                     </div>
                   </div>
                 ))
-              ) : (
-                <div className="text-center py-8">
-                  <MdDirectionsCar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-500">Chưa có xe được thuê</p>
+              ) : !isLoadingTopVehicles && !isErrorTopVehicles && (
+                <div className='text-center py-8'>
+                  <Car className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-700">Chưa có xe được thuê</p>
                 </div>
               )}
             </div>
           </div>
-          {/* Rental History Modal */}
-          {historyModalOpen && (
-            <div 
-              class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) closeHistoryModal();
-              }}
-            >
-              <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <MdDirectionsCar className="mr-2 text-purple-600" />
-                    Lịch sử thuê xe
-                  </h3>
-                  <button
-                    onClick={closeHistoryModal}
-                    className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
-                    aria-label="Đóng"
-                  >
-                    <MdClose className="text-lg" />
-                  </button>
-                </div>
-
-                {/* Vehicle header */}
-                {selectedVehicle ? (
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-20 h-14 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                      {selectedVehicle.main_image_url ? (
-                        <img
-                          src={selectedVehicle.main_image_url}
-                          alt={selectedVehicle.model}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-300">
-                          <MdDirectionsCar className="text-gray-500 text-2xl" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">
-                        {selectedVehicle.license_plate}
-                      </p>
-                      <p className="text-sm text-gray-600 truncate">{selectedVehicle.model}</p>
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Content */}
-                {historyLoading ? (
-                  <div className="py-10 text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
-                  </div>
-                ) : historyError ? (
-                  <div className="py-6 text-center text-red-600 text-sm">{historyError}</div>
-                ) : vehicleHistory && vehicleHistory.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {vehicleHistory.map((bk) => (
-                      <div key={bk.booking_id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3 min-w-0">
-                            {/* Avatar */}
-                            <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center overflow-hidden">
-                              {bk.renter?.avatar_url ? (
-                                <img src={bk.renter.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                              ) : (
-                                <MdPerson />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {bk.renter?.full_name || bk.renter?.email || 'Khách ẩn danh'}
-                              </p>
-                              {bk.renter?.email && (
-                                <p className="text-xs text-gray-600 flex items-center">
-                                  <MdEmail className="mr-1" /> {bk.renter.email}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-700 flex items-center justify-end">
-                              <MdCalendarToday className="mr-1" /> {formatDateTime(bk.start_date, bk.start_time)} - {formatDateTime(bk.end_date, bk.end_time)}
-                            </p>
-                            {/* <div className={`inline-flex text-xs mt-2 px-2 py-1 rounded border ${statusStyle(bk.status)}`}>
-                              {statusLabel(bk.status)}
-                            </div> */}
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(bk.booking_id);
-                          }}
-                          className="mt-2 text-xs text-black hover:text-blue-600 hover:underline"
-                          title="Xem chi tiết đơn thuê"
-                        >
-                          Mã đơn: #{bk.booking_id}
-                        </button>
-
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-6 text-center text-gray-600 text-sm">Không có lịch sử thuê cho xe này</div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+      {/* Rental History Modal */}
+      {historyModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeHistoryModal();
+          }}
+        >
+          <div className="bg-white backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-semibold text-black flex items-center">
+                <Car className="mr-2 text-primary-600" />
+                Lịch sử thuê xe
+              </h3>
+              <button
+                onClick={closeHistoryModal}
+                className="p-2 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="Đóng"
+              >
+                <X className="text-lg" />
+              </button>
+            </div>
+
+            {/* Vehicle header */}
+            {selectedVehicle ? (
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-20 h-14 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                  {selectedVehicle.main_image_url ? (
+                    <img
+                      src={selectedVehicle.main_image_url}
+                      alt={selectedVehicle.model}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                      <Car className="text-gray-700 text-2xl" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-black truncate">
+                    {selectedVehicle.license_plate}
+                  </p>
+                  <p className="text-sm text-gray-700 truncate">{selectedVehicle.model}</p>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Content */}
+            {historyLoading ? (
+              <div className="py-10 text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mx-auto"></div>
+              </div>
+            ) : historyError ? (
+              <div className="py-6 text-center text-red-600 text-sm">{historyError}</div>
+            ) : vehicleHistory && vehicleHistory.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {vehicleHistory.map((bk) => (
+                  <div key={bk.booking_id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {/* Avatar */}
+                        <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center overflow-hidden">
+                          {bk.renter?.avatar_url ? (
+                            <img src={bk.renter.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-black truncate">
+                            {bk.renter?.full_name || bk.renter?.email || 'Khách ẩn danh'}
+                          </p>
+                          {bk.renter?.email && (
+                            <p className="text-xs text-gray-700 flex items-center">
+                              <Mail className="mr-1 w-3 h-3" /> {bk.renter.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-700 flex items-center justify-end">
+                          <Calendar className="mr-1 w-3 h-3" /> {formatDateTime(bk.start_date, bk.start_time)} - {formatDateTime(bk.end_date, bk.end_time)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(bk.booking_id);
+                      }}
+                      className="mt-2 text-xs text-black hover:text-primary-600 hover:underline"
+                      title="Xem chi tiết đơn thuê"
+                    >
+                      Mã đơn: #{bk.booking_id}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-gray-700 text-sm">Không có lịch sử thuê cho xe này</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

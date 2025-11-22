@@ -27,6 +27,7 @@ const BookingDetail = () => {
   const [showTrafficFineModal, setShowTrafficFineModal] = useState(false);
   const [trafficFineAmount, setTrafficFineAmount] = useState("");
   const [trafficFineDescription, setTrafficFineDescription] = useState("");
+  const [trafficFineImages, setTrafficFineImages] = useState([]);
   const [submittingTrafficFine, setSubmittingTrafficFine] = useState(false);
 
   useEffect(() => {
@@ -173,13 +174,29 @@ const BookingDetail = () => {
       return;
     }
 
+    if (trafficFineImages.length === 0) {
+      toast.error("Vui lòng thêm ít nhất một hình ảnh phạt nguội");
+      return;
+    }
+
     try {
       setSubmittingTrafficFine(true);
+      const formData = new FormData();
+      formData.append("amount", parseFloat(trafficFineAmount));
+      if (trafficFineDescription) {
+        formData.append("description", trafficFineDescription);
+      }
+      trafficFineImages.forEach((image) => {
+        formData.append("images", image.file);
+      });
+
       const response = await axiosInstance.post(
         `/api/owner/dashboard/bookings/${id}/traffic-fine`,
+        formData,
         {
-          amount: parseFloat(trafficFineAmount),
-          description: trafficFineDescription || null,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
@@ -188,6 +205,7 @@ const BookingDetail = () => {
         setShowTrafficFineModal(false);
         setTrafficFineAmount("");
         setTrafficFineDescription("");
+        setTrafficFineImages([]);
         await fetchBookingDetail();
       } else {
         toast.error(response.data.message || "Không thể thêm phí phạt nguội");
@@ -200,6 +218,48 @@ const BookingDetail = () => {
     } finally {
       setSubmittingTrafficFine(false);
     }
+  };
+
+  const handleTrafficFineImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File ${file.name} không phải là ảnh`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File ${file.name} quá lớn (tối đa 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (trafficFineImages.length + validFiles.length > 10) {
+      toast.error("Chỉ được upload tối đa 10 ảnh");
+      return;
+    }
+
+    const newImages = validFiles.map((file) => {
+      const preview = URL.createObjectURL(file);
+      return {
+        id: Date.now() + Math.random(),
+        file,
+        preview,
+        name: file.name,
+      };
+    });
+
+    setTrafficFineImages((prev) => [...prev, ...newImages]);
+  };
+
+  const removeTrafficFineImage = (imageId) => {
+    setTrafficFineImages((prev) => {
+      const imageToRemove = prev.find((img) => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter((img) => img.id !== imageId);
+    });
   };
 
   if (loading) {
@@ -375,6 +435,7 @@ const BookingDetail = () => {
                       onClick={() => {
                         setTrafficFineAmount(booking.traffic_fine_amount || "");
                         setTrafficFineDescription(booking.traffic_fine_description || "");
+                        setTrafficFineImages([]);
                         setShowTrafficFineModal(true);
                       }}
                       className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
@@ -419,6 +480,23 @@ const BookingDetail = () => {
                       <div className="mt-3 p-3 bg-white rounded border border-orange-200">
                         <p className="text-sm font-medium text-gray-700 mb-1">Lý do phạt nguội:</p>
                         <p className="text-sm text-gray-600">{booking.traffic_fine_description}</p>
+                      </div>
+                    )}
+                    {booking.traffic_fine_images && booking.traffic_fine_images.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Hình ảnh phạt nguội:</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {booking.traffic_fine_images.map((imageUrl, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageUrl}
+                                alt={`Phạt nguội ${index + 1}`}
+                                className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(imageUrl, "_blank")}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     <div className="mt-3 pt-3 border-t border-orange-200">
@@ -710,6 +788,81 @@ const BookingDetail = () => {
                 </p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hình ảnh phạt nguội <span className="text-red-500">*</span>
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <label className="cursor-pointer">
+                    <div className="text-center">
+                      <svg
+                        className="mx-auto h-10 w-10 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Nhấp để chọn ảnh hoặc kéo thả ảnh vào đây
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, GIF tối đa 5MB mỗi file. Tối đa 10 ảnh.
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleTrafficFineImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {trafficFineImages.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {trafficFineImages.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <img
+                          src={image.preview}
+                          alt={image.name}
+                          className="w-full h-32 object-cover rounded border border-gray-300"
+                        />
+                        <button
+                          onClick={() => removeTrafficFineImage(image.id)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Xóa ảnh"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {trafficFineImages.length === 0 && (
+                  <p className="mt-2 text-xs text-red-500">
+                    * Vui lòng thêm ít nhất một hình ảnh phạt nguội
+                  </p>
+                )}
+              </div>
+
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                 <p className="text-sm text-blue-800">
                   <strong>Lưu ý:</strong> Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
@@ -727,6 +880,7 @@ const BookingDetail = () => {
                     setShowTrafficFineModal(false);
                     setTrafficFineAmount("");
                     setTrafficFineDescription("");
+                    setTrafficFineImages([]);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   disabled={submittingTrafficFine}
@@ -735,7 +889,7 @@ const BookingDetail = () => {
                 </button>
                 <button
                   onClick={handleAddTrafficFine}
-                  disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0}
+                  disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0 || trafficFineImages.length === 0}
                   className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}

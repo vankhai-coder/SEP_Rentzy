@@ -1,6 +1,10 @@
 .transaction-history {
   padding: 1.5rem;
   background: #f9f9f9;
+  
+  .dark & {
+    background: #0f172a;
+  }
 
   .page-header {
     margin-bottom: 1rem;
