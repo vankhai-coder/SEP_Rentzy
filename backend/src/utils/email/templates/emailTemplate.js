@@ -379,6 +379,42 @@ export const paymentSuccessTemplateForOwner = (
   </html>
   `;
 };
+
+// ========= New: DocuSign Signing OTP & Notifications =========
+export const signingOtpTemplate = (otp, bookingId) => {
+  return `
+  <div style="font-family: Arial, sans-serif; line-height:1.6;">
+    <h2>Mã xác thực ký hợp đồng</h2>
+    <p>Bạn đang yêu cầu mở giao diện ký hợp đồng thuê xe${bookingId ? ` #${bookingId}` : ""}.</p>
+    <p>Mã OTP gồm 6 chữ số của bạn là:</p>
+    <div style="font-size:24px;font-weight:bold;letter-spacing:4px;">${otp}</div>
+    <p>Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ mã cho bất kỳ ai.</p>
+  </div>
+  `;
+};
+
+export const signingConfirmationTemplate = ({ signerName, bookingId, signedAt }) => {
+  return `
+  <div style="font-family: Arial, sans-serif; line-height:1.6;">
+    <h2>Xác nhận đã ký hợp đồng</h2>
+    <p>Xin chào ${signerName || "Bạn"},</p>
+    <p>Bạn đã ký thành công hợp đồng thuê xe${bookingId ? ` #${bookingId}` : ""}.</p>
+    <p>Thời gian ký: <strong>${signedAt}</strong></p>
+  </div>
+  `;
+};
+
+export const otherPartyNotificationTemplate = ({ otherName, bookingId, signerName, signedAt }) => {
+  return `
+  <div style="font-family: Arial, sans-serif; line-height:1.6;">
+    <h2>Thông báo: Bên kia đã ký hợp đồng</h2>
+    <p>Xin chào ${otherName || "Bạn"},</p>
+    <p>${signerName || "Người ký"} đã ký hợp đồng thuê xe${bookingId ? ` #${bookingId}` : ""}.</p>
+    <p>Thời gian ký: <strong>${signedAt}</strong></p>
+    <p>Vui lòng truy cập hệ thống để tiếp tục ký (nếu chưa ký).</p>
+  </div>
+  `;
+};
 // template for owner approval notification email
 export const ownerApprovalNotificationTemplate = (frontendURL) => {
   const escapeHTML = (str = "") =>

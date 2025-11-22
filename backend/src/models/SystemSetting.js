@@ -19,6 +19,7 @@ const SystemSetting = sequelize.define(
     },
 
     // Mã định danh phí (dùng enum để thống nhất, truy vấn đơn giản)
+    // Dùng thuộc tính JS 'feeCode', ánh xạ xuống cột DB 'fee_code'
     feeCode: {
       type: DataTypes.ENUM(
         "CANCEL_WITHIN_HOLD_1H",
@@ -30,6 +31,7 @@ const SystemSetting = sequelize.define(
       ),
       allowNull: false,
       unique: true,
+      field: "fee_code",
       comment:
         "Mã định danh của phí (vd: CANCEL_WITHIN_7_DAYS, PLATFORM_FEE_COMPLETE_ORDER)",
     },
@@ -62,9 +64,9 @@ const SystemSetting = sequelize.define(
     underscored: true,
     indexes: [
       {
-        name: "idx_system_settings_feeCode",
+        name: "idx_system_settings_fee_code",
         unique: true,
-        fields: ["feeCode"],
+        fields: ["fee_code"],
       },
     ],
   }

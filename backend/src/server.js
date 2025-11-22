@@ -38,6 +38,7 @@ import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 import RenterSystemSettingRoute from "./routes/renter/systemSettingPublicRoute.js";
+import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
@@ -105,6 +106,7 @@ app.use("/api/renter/info", RenterInfoRoute);
 app.use("/api/renter/system-settings", RenterSystemSettingRoute);
 app.use("/api/renter/transactions", TransactionRoute);
 app.use("/api/renter", RecommendationRoute);
+app.use("/api/renter/notifications", RenterNotificationRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 

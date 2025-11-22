@@ -23,6 +23,7 @@ import {
   AlertCircle,
   CreditCard,
   LayoutDashboard,
+  Bell,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -75,6 +76,12 @@ const Account = () => {
               value="/account"
             >
               <User /> Tài khoản của tôi
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/notifications"
+            >
+              <Bell /> Thông báo
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -185,6 +192,7 @@ const Account = () => {
             >
               <User /> Tài khoản của tôi
             </NavLink>
+
             <NavLink
               to="/favorites"
               className={({ isActive }) =>
@@ -245,7 +253,14 @@ const Account = () => {
             >
               <Gift /> Điểm thưởng
             </NavLink>
-
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <Bell /> Thông báo
+            </NavLink>
             <NavLink
               to="/bank-accounts"
               className={({ isActive }) =>

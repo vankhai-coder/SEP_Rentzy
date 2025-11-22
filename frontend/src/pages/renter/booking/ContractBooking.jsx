@@ -23,6 +23,12 @@ const ContractBooking = () => {
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
+  // OTP state
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
   // Contract PDF state
   const [contractPdfUrl, setContractPdfUrl] = useState("");
@@ -59,27 +65,62 @@ const ContractBooking = () => {
     }
   };
 
-  const handleSignContract = async () => {
+  const sendOtp = async () => {
     try {
+      setOtpError("");
+      setOtpSent(false);
+      setOtpSending(true);
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) {
+        alert("Không có thông tin hợp đồng để ký.");
+        return;
+      }
+      await axiosInstance.post(`/api/docusign/sign/send-otp`, {
+        envelopeId,
+        role: "renter",
+      });
+      setOtpSent(true);
+    } catch (err) {
+      console.error("Error sending OTP:", err);
+      setOtpError(err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtpAndOpenSigning = async () => {
+    try {
+      setOtpError("");
+      setOtpVerifying(true);
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
       const fePublic =
         import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       const returnUrl = `${fePublic}/contract/${booking.booking_id}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter", returnUrl },
+        params: { role: "renter", returnUrl, otp },
       });
       const url = resp.data?.url;
       if (url) {
         setSignUrl(url);
-        setShowSignModal(true);
       } else {
-        alert("Không thể tạo URL ký hợp đồng.");
+        setOtpError("OTP không chính xác hoặc đã hết hạn.");
       }
     } catch (err) {
-      console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+      console.error("Error verifying OTP / creating recipient view:", err);
+      setOtpError(err.response?.data?.error || "OTP không chính xác hoặc đã hết hạn.");
+    } finally {
+      setOtpVerifying(false);
     }
+  };
+
+  const handleSignContract = async () => {
+    setSignUrl("");
+    setOtp("");
+    setOtpError("");
+    setOtpSent(false);
+    setShowSignModal(true);
+    await sendOtp();
   };
 
   const initContractIfNeeded = async () => {
@@ -523,7 +564,38 @@ const ContractBooking = () => {
               style={{ width: "100%", height: "80vh", border: "none" }}
             />
           ) : (
-            <div style={{ padding: 16 }}>Đang chuẩn bị URL ký...</div>
+            <div className="space-y-4">
+              <p className="text-gray-700">Nhập mã OTP đã gửi tới email của bạn để mở trang ký.</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Nhập mã OTP"
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button
+                  onClick={verifyOtpAndOpenSigning}
+                  disabled={otpVerifying || !otp}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+                >
+                  {otpVerifying ? "Đang xác thực..." : "Xác nhận"}
+                </button>
+              </div>
+              {otpError && <p className="text-red-600 text-sm">{otpError}</p>}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={sendOtp}
+                  disabled={otpSending}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                >
+                  {otpSending ? "Đang gửi OTP..." : "Gửi lại OTP"}
+                </button>
+                {otpSent && (
+                  <span className="text-green-600 text-sm">Đã gửi OTP tới email của bạn.</span>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

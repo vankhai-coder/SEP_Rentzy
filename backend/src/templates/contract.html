@@ -118,6 +118,33 @@
       font-size: 12px;
       color: #000;
       text-align: center;
+      background: #fff;
+      page-break-inside: avoid;
+    }
+
+    /* Thu gọn dòng và khoảng cách cho trang 1 */
+    .first-page {
+      line-height: 1.2;
+    }
+    .first-page .row { margin: 2px 0; }
+    .first-page .bullet { margin: 2px 0; }
+
+    /* Khung ký để đặt vị trí ký rõ ràng */
+    .signature-pad {
+      display: inline-block;
+      width: 100%;
+      min-height: 100px;
+      border: 1px dashed rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+      margin-top: 8px;
+      position: relative;
+    }
+    .signature-pad .anchor-text {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      font-size: 10px;
+      color: #333;
     }
   </style>
 </head>
@@ -129,7 +156,7 @@
 
     <div class="title">HỢP ĐỒNG THUÊ XE Ô TÔ TỰ LÁI</div>
 
-
+    <div class="first-page">
     <div class="section box">
       <div class="terms">
         <div class="bullet">- Căn cứ Bộ luật Dân sự năm 2015;</div>
@@ -248,6 +275,8 @@
         </div>
       </div>
     </div>
+
+    </div><!-- /first-page -->
 
     <div class="section">
       <div class="section-title">Điều 4. Giao nhận và hoàn trả xe</div>
@@ -377,17 +406,41 @@
     </div>
 
     <div class="section">
+      <div class="section-title">Điều 14. Phí phát sinh và phụ phí</div>
+      <div class="box terms">
+        <div class="bullet">- Phụ phí trả xe trễ, vệ sinh/khử mùi, nhiên liệu thiếu, phí giao/nhận tận nơi (nếu có) áp dụng theo bảng giá hiện hành hoặc thỏa thuận.</div>
+        <div class="bullet">- Vé phạt giao thông, phí cầu đường/đậu xe phát sinh trong thời gian thuê do Bên B chịu.</div>
+        <div class="bullet">- Mọi chi phí hợp lý nhằm khắc phục sự cố do lỗi của Bên B sẽ do Bên B thanh toán.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Điều 15. Chấm dứt hợp đồng và xử lý</div>
+      <div class="box terms">
+        <div class="bullet">- Hợp đồng có thể bị chấm dứt khi một bên vi phạm nghiêm trọng nghĩa vụ, sử dụng xe trái mục đích, hoặc theo yêu cầu cơ quan có thẩm quyền.</div>
+        <div class="bullet">- Trường hợp chấm dứt, các bên thực hiện bàn giao xe, quyết toán chi phí, bồi thường thiệt hại thực tế theo quy định.</div>
+        <div class="bullet">- Các khoản đặt cọc/ thanh toán sẽ được xử lý theo biên bản và thỏa thuận/ chính sách nền tảng.</div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title">Xác nhận và chữ ký</div>
       <div class="signatures">
         <div class="signature-box">
           <div class="signature-label">Bên A (Chủ xe)</div>
           <div class="signature-anchor">Ký và ghi rõ họ tên</div>
-          <span style="opacity:0">SIGN_OWNER</span>
+          <div class="signature-pad">
+            <span class="anchor-text">Vị trí ký Bên A</span>
+            <span style="opacity:0">SIGN_OWNER</span>
+          </div>
         </div>
         <div class="signature-box">
           <div class="signature-label">Bên B (Người thuê)</div>
           <div class="signature-anchor">Ký và ghi rõ họ tên</div>
-          <span style="opacity:0">SIGN_RENTER</span>
+          <div class="signature-pad">
+            <span class="anchor-text">Vị trí ký Bên B</span>
+            <span style="opacity:0">SIGN_RENTER</span>
+          </div>
         </div>
       </div>
     </div>

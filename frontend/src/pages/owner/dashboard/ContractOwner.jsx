@@ -22,6 +22,12 @@ const ContractOwner = () => {
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
   const prevOwnerNeedsSignRef = useRef(null);
+  // OTP state
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
   const [contractPdfUrl, setContractPdfUrl] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -56,8 +62,35 @@ const ContractOwner = () => {
     booking?.contract?.owner_signed === true;
   const ownerNeedsSign = !!booking?.contract && hasEnvelope && !ownerHasSigned;
 
-  const handleSignContract = async () => {
+  const sendOtp = async () => {
     try {
+      setOtpError("");
+      setOtpSent(false);
+      setOtpSending(true);
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) {
+        toast.error("Không có thông tin hợp đồng để ký.");
+        return;
+      }
+      await axiosInstance.post(`/api/docusign/sign/send-otp`, {
+        envelopeId,
+        role: "owner",
+      });
+      setOtpSent(true);
+      toast.info("Đã gửi OTP tới email của bạn.");
+    } catch (err) {
+      console.error("Error sending OTP:", err);
+      toast.error(err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại.");
+      setOtpError(err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtpAndOpenSigning = async () => {
+    try {
+      setOtpError("");
+      setOtpVerifying(true);
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) {
         toast.error("Không có thông tin hợp đồng để ký.");
@@ -65,31 +98,35 @@ const ContractOwner = () => {
       }
       const fePublic =
         import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
-      const currentPath = window.location.pathname; // giữ nguyên đường dẫn hiện tại
+      const currentPath = window.location.pathname;
       const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "owner", returnUrl },
+        params: { role: "owner", returnUrl, otp },
       });
       const url = resp.data?.url;
       if (url) {
         setSignUrl(url);
-        setShowSignModal(true);
-        toast.info("Đang mở giao diện ký DocuSign...");
       } else {
-        toast.error("Không thể tạo URL ký hợp đồng.");
+        setOtpError("OTP không chính xác hoặc đã hết hạn.");
+        toast.error("OTP không chính xác hoặc đã hết hạn.");
       }
     } catch (err) {
-      console.error("Error creating recipient view:", err);
-      const status = err.response?.status;
+      console.error("Error verifying OTP / creating recipient view:", err);
       const data = err.response?.data || {};
-      if (status === 409 && data.errorCode === "RECIPIENT_NOT_IN_SEQUENCE") {
-        toast.error(
-          "Chưa tới lượt ký theo thứ tự. Vui lòng chờ người thuê ký trước."
-        );
-      } else {
-        toast.error(data.message || data.error || "Không thể tạo URL ký hợp đồng.");
-      }
+      setOtpError(data.message || data.error || "OTP không chính xác hoặc đã hết hạn.");
+      toast.error(data.message || data.error || "OTP không chính xác hoặc đã hết hạn.");
+    } finally {
+      setOtpVerifying(false);
     }
+  };
+
+  const handleSignContract = async () => {
+    setSignUrl("");
+    setOtp("");
+    setOtpError("");
+    setOtpSent(false);
+    setShowSignModal(true);
+    await sendOtp();
   };
 
   const handleRefreshStatus = async () => {
@@ -421,7 +458,38 @@ const ContractOwner = () => {
               className="w-full h-[70vh] rounded"
             />
           ) : (
-            <div className="text-gray-600">Đang chuẩn bị URL ký...</div>
+            <div className="space-y-4">
+              <p className="text-gray-700">Nhập mã OTP đã gửi tới email của bạn để mở trang ký.</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Nhập mã OTP"
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button
+                  onClick={verifyOtpAndOpenSigning}
+                  disabled={otpVerifying || !otp}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+                >
+                  {otpVerifying ? "Đang xác thực..." : "Xác nhận"}
+                </button>
+              </div>
+              {otpError && <p className="text-red-600 text-sm">{otpError}</p>}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={sendOtp}
+                  disabled={otpSending}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                >
+                  {otpSending ? "Đang gửi OTP..." : "Gửi lại OTP"}
+                </button>
+                {otpSent && (
+                  <span className="text-green-600 text-sm">Đã gửi OTP tới email của bạn.</span>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

@@ -29,6 +29,7 @@ import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/Booki
 import TransactionHistory from "./pages/renter/transaction/TransactionHistory.jsx";
 import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 import MyReportedVehicles from "./pages/renter/account/MyReportedVehicles";
+import NotificationsRenter from "./pages/renter/account/Notifications.jsx";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
@@ -84,6 +85,7 @@ const App = () => {
           {/* RENTER ROUTES :  */}
           <Route path="/" element={<Account />}>
             <Route path="/account" element={<UserInformation />} />
+            <Route path="/notifications" element={<NotificationsRenter />} />
             <Route path="/myvehicles" element={<MyVehicles />} />
             <Route path="/my-reports" element={<MyReportedVehicles />} />
             <Route path="/booking-history" element={<BookingHistory />} />
@@ -169,7 +171,10 @@ const App = () => {
 
             <Route path="voucherManagement" element={<VoucherManagement />} />
 
-            <Route path="systemSettings" element={<SystemSettingManagement />} />
+            <Route
+              path="systemSettings"
+              element={<SystemSettingManagement />}
+            />
 
             {/* catch all route start with /admin  */}
             <Route path="*" element={<ApprovalVehicle />} />
