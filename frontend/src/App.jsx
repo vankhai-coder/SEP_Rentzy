@@ -92,6 +92,8 @@ const App = () => {
               path="/booking-history/booking-detail/:id"
               element={<BookingDetailsPage />}
             />
+            {/* Contract Page */}
+            <Route path="/contract/:bookingId" element={<ContractPage />} />
             <Route path="/transactions" element={<TransactionHistory />} />
             <Route path="/points" element={<PointsHistory />} />
             <Route path="/favorites" element={<FavoritesPage />} />
@@ -128,8 +130,6 @@ const App = () => {
             path="/payment-deposit/:bookingId"
             element={<PaymentDeposit />}
           />
-          {/* Contract Page */}
-          <Route path="/contract/:bookingId" element={<ContractPage />} />
 
           {/* Home Xe Máy */}
           <Route path="/motorbikes" element={<HomeMotorbike />} />

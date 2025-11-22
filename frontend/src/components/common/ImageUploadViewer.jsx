@@ -14,6 +14,16 @@ const ImageUploadViewer = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  // Trạng thái/ghi chú tình trạng xe sau khi trả
+  const [damageReported, setDamageReported] = useState(
+    handoverData?.damage_reported || false
+  );
+  const [damageDescription, setDamageDescription] = useState(
+    handoverData?.damage_description || ""
+  );
+  const [compensationAmount, setCompensationAmount] = useState(
+    handoverData?.compensation_amount || 0
+  );
 
   useEffect(() => {
     // Kiểm tra xem đã có ảnh được xác nhận chưa
@@ -132,6 +142,13 @@ const ImageUploadViewer = ({
         formData.append("images", image.file);
       });
 
+      // Gửi kèm ghi chú tình trạng xe khi nhận lại xe (post-rental)
+      if (imageType === "post-rental") {
+        formData.append("damage_reported", damageReported ? "true" : "false");
+        formData.append("damage_description", damageDescription || "");
+        formData.append("compensation_amount", String(compensationAmount || 0));
+      }
+
       // Sử dụng endpoint đúng cho từng loại handover
       const endpoint =
         imageType === "pre-rental"
@@ -148,6 +165,13 @@ const ImageUploadViewer = ({
         setConfirmedImages(data.data.uploadedImages.map((url) => ({ url })));
         setLocalImages([]); // Clear local images
         setIsConfirmed(true);
+
+        // Đồng bộ thông tin tình trạng xe sau khi server lưu
+        if (imageType === "post-rental") {
+          setDamageReported(Boolean(data.data.damage_reported));
+          setDamageDescription(data.data.damage_description || "");
+          setCompensationAmount(Number(data.data.compensation_amount || 0));
+        }
 
         const successMessage =
           imageType === "pre-rental"
@@ -454,6 +478,82 @@ const ImageUploadViewer = ({
                   </>
                 )}
               </div>
+            </div>
+
+            {/* Ghi chú tình trạng xe/hư hỏng khi trả xe - chỉ hiển thị cho post-rental */}
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-3">
+                Ghi chú tình trạng xe khi trả
+              </h4>
+              {!isConfirmed ? (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={damageReported}
+                      onChange={(e) => setDamageReported(e.target.checked)}
+                    />
+                    <span className="text-sm text-gray-700">
+                      Có hư hỏng cần ghi nhận
+                    </span>
+                  </label>
+                  <textarea
+                    value={damageDescription}
+                    onChange={(e) => setDamageDescription(e.target.value)}
+                    placeholder="Mô tả tình trạng xe/hư hỏng, vị trí, mức độ..."
+                    className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                    rows={3}
+                  />
+                  {damageReported && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">Bồi thường:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={compensationAmount}
+                        onChange={(e) =>
+                          setCompensationAmount(Number(e.target.value || 0))
+                        }
+                        className="border border-gray-300 rounded-lg p-2 text-sm w-40"
+                      />
+                      <span className="text-sm text-gray-500">VND</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Ghi chú này sẽ hiển thị cho người thuê để xác nhận tình trạng
+                    xe.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-700">Hư hỏng:</span>
+                    <span
+                      className={`text-sm font-medium ${
+                        damageReported ? "text-red-600" : "text-green-600"
+                      }`}
+                    >
+                      {damageReported ? "Có" : "Không"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-700">Mô tả:</span>
+                    <p className="text-sm text-gray-800 mt-1">
+                      {damageDescription || "Không có"}
+                    </p>
+                  </div>
+                  {damageReported && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">Bồi thường:</span>
+                      <span className="text-sm text-gray-800">
+                        {Number(compensationAmount || 0).toLocaleString(
+                          "vi-VN"
+                        )} VND
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

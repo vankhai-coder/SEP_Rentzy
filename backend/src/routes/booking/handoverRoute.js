@@ -7,6 +7,7 @@ import {
   confirmRenterReturn,
 } from "../../controllers/booking/handoverController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
+import { requireContractFullySigned } from "../../middlewares/contractMiddleware.js";
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ const router = express.Router();
 router.post(
   "/:bookingId/confirm-owner-handover",
   verifyJWTToken,
+  requireContractFullySigned,
   uploadMiddleware,
   confirmOwnerHandover
 );

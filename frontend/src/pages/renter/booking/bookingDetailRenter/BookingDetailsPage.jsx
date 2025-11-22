@@ -3,7 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaInfoCircle } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 import HandoverImageViewer from "@/components/common/HandoverImageViewer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import "./BookingDetailsPage.scss";
 
 const BookingDetailsPage = () => {
@@ -27,7 +32,7 @@ const BookingDetailsPage = () => {
     if (paymentStatus === "success") {
       // Hiển thị thông báo thành công và refresh data
       setTimeout(() => {
-        alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+        alert("Xác nhận thanh toán thành công! Vui lòng chờ chủ xe xác nhận.");
         fetchBookingDetails();
       }, 1000);
 
@@ -154,7 +159,8 @@ const BookingDetailsPage = () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
-      const fePublic = import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      const fePublic =
+        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       const currentPath = window.location.pathname;
       const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
@@ -190,7 +196,6 @@ const BookingDetailsPage = () => {
       // Cross-origin while on DocuSign; ignore until it redirects to our domain
     }
   };
-
 
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
@@ -275,6 +280,13 @@ const BookingDetailsPage = () => {
   }
   const handlePaymentRemainingByCash = async () => {
     try {
+      const proceed = window.confirm(
+        `Bạn xác nhận thanh toán TIỀN MẶT trực tiếp cho CHỦ XE với số tiền ${formatCurrency(
+          nextPaymentAmount
+        )}"`
+      );
+      if (!proceed) return;
+
       const response = await axiosInstance.patch(
         `/api/payment/byCash/${booking.booking_id}`
       );
@@ -344,27 +356,28 @@ const BookingDetailsPage = () => {
         </div>
 
         {/* Pre-Rental Images Section */}
-        {((booking.status === "fully_paid" ||
+        {(booking.status === "fully_paid" ||
           booking.status === "in_progress" ||
-          booking.status === "completed") && booking.contract?.contract_status === "completed") && (
-          <div className="pre-rental-images-section">
-            <HandoverImageViewer
-              bookingId={booking.booking_id}
-              booking={booking}
-              userRole="renter"
-              imageType="pre-rental"
-              onConfirmSuccess={fetchBookingDetails}
-              handoverData={booking.handover || {}}
-            />
-          </div>
-        )}
+          booking.status === "completed") &&
+          booking.contract?.contract_status === "completed" && (
+            <div className="pre-rental-images-section">
+              <HandoverImageViewer
+                bookingId={booking.booking_id}
+                booking={booking}
+                userRole="renter"
+                imageType="pre-rental"
+                onConfirmSuccess={fetchBookingDetails}
+                handoverData={booking.handover || {}}
+              />
+            </div>
+          )}
 
         {/* Post-Rental Images Section */}
-        {((booking.status === "fully_paid" ||
+        {(booking.status === "fully_paid" ||
           booking.status === "in_progress" ||
           booking.status === "completed") &&
           booking.contract?.contract_status === "completed" &&
-          booking.handover?.owner_return_confirmed === true) && (
+          booking.handover?.owner_return_confirmed === true && (
             <div className="pre-rental-images-section">
               <HandoverImageViewer
                 bookingId={booking.booking_id}
@@ -435,13 +448,34 @@ const BookingDetailsPage = () => {
           </div>
         </div>
 
+        {/* Trạng thái hợp đồng DocuSign - tách riêng */}
+        {booking.contract && (
+          <div className="contract-section">
+            <h3>Trạng thái hợp đồng</h3>
+            <div className="contract-status">
+              Hợp đồng thuê xe: {booking.contract.contract_status}
+            </div>
+            <div className="contract-actions">
+              {booking.contract.contract_status === "pending_signatures" &&
+                !booking.contract.renter_signed_at && (
+                  <button
+                    className="payment-button"
+                    onClick={handleSignContract}
+                  >
+                    Ký hợp đồng
+                  </button>
+                )}
+            </div>
+          </div>
+        )}
+
         {/* Thông tin thanh toán */}
         <div className="payment-section">
           <h3>Chi tiết thanh toán</h3>
           <div className="payment-breakdown">
             <div className="payment-row">
               <span className="payment-label">
-                Giá thuê ({booking.totalDays} ngày × {" "}
+                Giá thuê ({booking.totalDays} ngày ×{" "}
                 {formatCurrency(booking.pricePerDay)})
               </span>
               <span className="payment-value">
@@ -488,54 +522,44 @@ const BookingDetailsPage = () => {
             </div>
           </div>
 
-          {showPaymentButton && (
+          {showPaymentButton &&
+            booking.remaining_paid_by_cash_status === "none" && (
+              <div className="payment-action">
+                <div className="payment-actions-grid">
+                  <button
+                    className="payment-button primary"
+                    onClick={() => {
+                      const isRemaining = booking.status === "deposit_paid";
+                      handlePayOSPayment(nextPaymentAmount, isRemaining);
+                    }}
+                    disabled={paymentLoading}
+                  >
+                    {paymentLoading
+                      ? "Đang tạo link thanh toán..."
+                      : "Thanh toán qua hệ thống"}
+                  </button>
+                  <button
+                    className="payment-button secondary"
+                    onClick={() => {
+                      handlePaymentRemainingByCash();
+                    }}
+                    disabled={
+                      booking.remaining_paid_by_cash_status === "pending" ||
+                      booking.remaining_paid_by_cash_status === "approved"
+                    }
+                  >
+                    Thanh toán tiền mặt cho chủ xe
+                  </button>
+                </div>
+              </div>
+            )}
+
+          {booking.remaining_paid_by_cash_status === "pending" && (
             <div className="payment-action">
-              <h1>
-                {" "}
-                Thanh toán tiền còn lại {formatCurrency(nextPaymentAmount)}
-              </h1>
-              <button
-                className="payment-button"
-                onClick={() => {
-                  const isRemaining = booking.status === "deposit_paid";
-                  handlePayOSPayment(nextPaymentAmount, isRemaining);
-                }}
-                disabled={paymentLoading}
-              >
-                {paymentLoading
-                  ? "Đang tạo link thanh toán..."
-                  : `Thanh  toán qua hệ thống  `}
-              </button>
-              {/* thanh toán bằng  tiền mặt  */}
-              <button
-                className="payment-button"
-                onClick={() => {
-                  handlePaymentRemainingByCash();
-                }}
-              >
-                Thanh toán bằng tiền mặt
-              </button>
+              <h1>Vui lòng chờ chủ xe xác nhận thanh toán tiền mặt.</h1>
             </div>
           )}
         </div>
-
-        {/* Hợp đồng DocuSign */}
-        {booking.contract && (
-          <div className="contract-section">
-            <h3>Hợp đồng thuê xe</h3>
-            <div className="contract-status">
-              Trạng thái: {booking.contract.contract_status}
-            </div>
-            <div className="contract-actions">
-              {booking.contract.contract_status === "pending_signatures" &&
-                !booking.contract.renter_signed_at && (
-                  <button className="payment-button" onClick={handleSignContract}>
-                    Ký hợp đồng
-                  </button>
-                )}
-            </div>
-          </div>
-        )}
 
         {/* Modal ký DocuSign */}
         <Dialog open={showSignModal} onOpenChange={setShowSignModal}>
@@ -544,15 +568,20 @@ const BookingDetailsPage = () => {
               <DialogTitle>Ký hợp đồng DocuSign</DialogTitle>
             </DialogHeader>
             {signUrl ? (
-              <iframe ref={iframeRef} onLoad={handleIFrameLoad} src={signUrl} title="DocuSign" className="w-full h-[70vh] border-0" />
+              <iframe
+                ref={iframeRef}
+                onLoad={handleIFrameLoad}
+                src={signUrl}
+                title="DocuSign"
+                className="w-full h-[70vh] border-0"
+              />
             ) : (
               <div className="p-4">Đang tải URL ký...</div>
             )}
           </DialogContent>
         </Dialog>
 
-
-      {/* Lịch sử giao dịch */}
+        {/* Lịch sử giao dịch */}
         <div className="transaction-section">
           <h3>Lịch sử giao dịch</h3>
           {booking.transactions && booking.transactions.length > 0 ? (

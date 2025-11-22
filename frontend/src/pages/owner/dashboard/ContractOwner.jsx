@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import axiosInstance from "@/config/axiosInstance";
 import "./ContractOwner.scss";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "react-toastify";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ContractOwner = () => {
   const { id } = useParams();
@@ -15,6 +21,7 @@ const ContractOwner = () => {
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
+  const prevOwnerNeedsSignRef = useRef(null);
 
   const [contractPdfUrl, setContractPdfUrl] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -24,7 +31,9 @@ const ContractOwner = () => {
     try {
       setLoading(true);
       setError("");
-      const resp = await axiosInstance.get(`/api/owner/dashboard/bookings/detail/${id}`);
+      const resp = await axiosInstance.get(
+        `/api/owner/dashboard/bookings/detail/${id}`
+      );
       if (resp.data?.success && resp.data?.data) {
         setBooking(resp.data.data);
       } else {
@@ -32,21 +41,30 @@ const ContractOwner = () => {
       }
     } catch (err) {
       console.error("Error fetching booking detail:", err);
-      setError(err.response?.data?.message || "Có lỗi xảy ra khi tải thông tin đơn thuê");
+      setError(
+        err.response?.data?.message ||
+          "Có lỗi xảy ra khi tải thông tin đơn thuê"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const hasEnvelope = !!booking?.contract?.contract_number;
-  const ownerHasSigned = Boolean(booking?.contract?.owner_signed_at) || booking?.contract?.owner_signed === true;
+  const ownerHasSigned =
+    Boolean(booking?.contract?.owner_signed_at) ||
+    booking?.contract?.owner_signed === true;
   const ownerNeedsSign = !!booking?.contract && hasEnvelope && !ownerHasSigned;
 
   const handleSignContract = async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
-      const fePublic = import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      if (!envelopeId) {
+        toast.error("Không có thông tin hợp đồng để ký.");
+        return;
+      }
+      const fePublic =
+        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       const currentPath = window.location.pathname; // giữ nguyên đường dẫn hiện tại
       const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
@@ -56,12 +74,21 @@ const ContractOwner = () => {
       if (url) {
         setSignUrl(url);
         setShowSignModal(true);
+        toast.info("Đang mở giao diện ký DocuSign...");
       } else {
-        alert("Không thể tạo URL ký hợp đồng.");
+        toast.error("Không thể tạo URL ký hợp đồng.");
       }
     } catch (err) {
       console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+      const status = err.response?.status;
+      const data = err.response?.data || {};
+      if (status === 409 && data.errorCode === "RECIPIENT_NOT_IN_SEQUENCE") {
+        toast.error(
+          "Chưa tới lượt ký theo thứ tự. Vui lòng chờ người thuê ký trước."
+        );
+      } else {
+        toast.error(data.message || data.error || "Không thể tạo URL ký hợp đồng.");
+      }
     }
   };
 
@@ -82,9 +109,12 @@ const ContractOwner = () => {
       if (!envelopeId) return;
       setPdfLoading(true);
       setPdfError("");
-      const resp = await axiosInstance.get(`/api/docusign/documents/${envelopeId}/combined`, {
-        responseType: "blob",
-      });
+      const resp = await axiosInstance.get(
+        `/api/docusign/documents/${envelopeId}/combined`,
+        {
+          responseType: "blob",
+        }
+      );
       const blob = new Blob([resp.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
       setContractPdfUrl(url);
@@ -103,12 +133,15 @@ const ContractOwner = () => {
   // Khi quay về từ DocuSign returnUrl, tự refresh trạng thái
   useEffect(() => {
     const params = new URLSearchParams(location.search || "");
-    const event = params.get("event") || params.get("source") || params.get("eventType");
-    const clientUserId = params.get("client_user_id") || params.get("clientUserId");
+    const event =
+      params.get("event") || params.get("source") || params.get("eventType");
+    const clientUserId =
+      params.get("client_user_id") || params.get("clientUserId");
     if (event || clientUserId) {
       handleRefreshStatus();
       setShowSignModal(false);
       setSignUrl("");
+      toast.success("Đã cập nhật trạng thái hợp đồng sau khi ký.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
@@ -116,7 +149,8 @@ const ContractOwner = () => {
   // Khi có event và đã có envelope
   useEffect(() => {
     const params = new URLSearchParams(location.search || "");
-    const event = params.get("event") || params.get("source") || params.get("eventType");
+    const event =
+      params.get("event") || params.get("source") || params.get("eventType");
     if (event && booking?.contract?.contract_number) {
       handleRefreshStatus();
     }
@@ -131,6 +165,15 @@ const ContractOwner = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasEnvelope]);
+
+  // Toast khi trạng thái chuyển từ cần ký -> đã ký
+  useEffect(() => {
+    if (prevOwnerNeedsSignRef.current === true && ownerHasSigned) {
+      toast.success("Ký hợp đồng thành công!");
+    }
+    prevOwnerNeedsSignRef.current = ownerNeedsSign;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerHasSigned, ownerNeedsSign]);
 
   if (loading) {
     return (
@@ -180,23 +223,97 @@ const ContractOwner = () => {
     );
   }
 
-  const renderActionButtons = () => {
-    return (
-      <div className="actions-row">
-        <button
-          className="btn btn-primary"
-          onClick={handleSignContract}
-          disabled={!hasEnvelope || !ownerNeedsSign}
-          title={ownerNeedsSign ? "Mở giao diện ký DocuSign" : "Bạn đã ký hợp đồng"}
-        >
-          {ownerNeedsSign ? "Ký hợp đồng" : "Đã ký"}
-        </button>
-      </div>
-    );
-  };
+  // Đã bỏ renderActionButtons để chỉ hiển thị một nút trong banner
 
   return (
     <div className="contract-owner">
+      {/* Thông tin hợp đồng */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Thông tin hợp đồng
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Mã hợp đồng DocuSign</p>
+            <p className="font-medium">
+              {booking.contract?.contract_number || "Chưa có"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái hợp đồng</p>
+            <p className="font-medium">
+              {(() => {
+                const raw =
+                  booking.contract?.contract_status ||
+                  booking.contract?.status ||
+                  "unknown";
+                const map = {
+                  pending_signatures: "Đang chờ ký",
+                  completed: "Hoàn tất",
+                  sent: "Đã gửi",
+                  created: "Đã tạo",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-600">Chủ xe đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.owner_signed ||
+              booking.contract?.owner_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.owner_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.owner_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Người thuê đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.renter_signed ||
+              booking.contract?.renter_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.renter_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.renter_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái đơn thuê</p>
+            <p className="font-medium">
+              {(() => {
+                const raw = booking.status || "unknown";
+                const map = {
+                  pending: "Chờ xác nhận",
+                  deposit_paid: "Đã đặt cọc",
+                  fully_paid: "Đã thanh toán toàn bộ",
+                  in_progress: "Đang thuê",
+                  completed: "Hoàn thành",
+                  cancel_requested: "Yêu cầu hủy",
+                  canceled: "Đã hủy",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Banner */}
       {(!hasEnvelope || ownerNeedsSign) && (
         <div className="banner">
@@ -205,7 +322,10 @@ const ContractOwner = () => {
               {!hasEnvelope ? (
                 <>
                   <h2>Chưa có hợp đồng để hiển thị</h2>
-                  <p>Vui lòng chờ người thuê thanh toán đặt cọc để khởi tạo hợp đồng.</p>
+                  <p>
+                    Vui lòng chờ người thuê thanh toán đặt cọc để khởi tạo hợp
+                    đồng.
+                  </p>
                 </>
               ) : ownerNeedsSign ? (
                 <>
@@ -222,12 +342,19 @@ const ContractOwner = () => {
             <div className="banner-actions">
               {!hasEnvelope ? (
                 <>
-                  <Link to="/owner/booking-management" className="btn btn-outline">
+                  <Link
+                    to="/owner/booking-management"
+                    className="btn btn-outline"
+                  >
                     Về danh sách đơn
                   </Link>
                 </>
               ) : (
-                <button className="btn btn-primary" onClick={handleSignContract} disabled={!ownerNeedsSign}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSignContract}
+                  disabled={!ownerNeedsSign}
+                >
                   Ký hợp đồng
                 </button>
               )}
@@ -236,13 +363,7 @@ const ContractOwner = () => {
         </div>
       )}
 
-      <div className="contract-actions">
-        {renderActionButtons()}
-        <div className="action-hint">
-          {!hasEnvelope && <span>Chưa khởi tạo hợp đồng. Hãy đợi người thuê thanh toán.</span>}
-          {hasEnvelope && !ownerNeedsSign && <span>Bạn đã ký. Có thể xem PDF hợp đồng.</span>}
-        </div>
-      </div>
+      {/* Bỏ khu vực contract-actions để tránh hiển thị trùng nút ký */}
 
       <div className="contract-viewer">
         {pdfLoading && (
@@ -277,7 +398,11 @@ const ContractOwner = () => {
         )}
         {!pdfLoading && !pdfError && contractPdfUrl && (
           <div className="pdf-container">
-            <iframe src={contractPdfUrl} title="Contract PDF" className="pdf-iframe" />
+            <iframe
+              src={contractPdfUrl}
+              title="Contract PDF"
+              className="pdf-iframe"
+            />
           </div>
         )}
       </div>
@@ -289,7 +414,12 @@ const ContractOwner = () => {
             <DialogTitle>Ký hợp đồng</DialogTitle>
           </DialogHeader>
           {signUrl ? (
-            <iframe ref={iframeRef} src={signUrl} title="DocuSign Signing" className="w-full h-[70vh] rounded" />
+            <iframe
+              ref={iframeRef}
+              src={signUrl}
+              title="DocuSign Signing"
+              className="w-full h-[70vh] rounded"
+            />
           ) : (
             <div className="text-gray-600">Đang chuẩn bị URL ký...</div>
           )}

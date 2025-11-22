@@ -571,13 +571,26 @@ export const signRecipientView = async (req, res) => {
     });
     res.json({ success: true, url: resp.data.url });
   } catch (err) {
-    console.error("Recipient view error:", err.response?.data || err.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to create recipient view",
-        details: err.response?.data || err.message,
+    const docuErr = err.response?.data || {};
+    console.error("Recipient view error:", docuErr || err.message);
+    const code = docuErr.errorCode || docuErr.error || "UNKNOWN";
+    const message = docuErr.message || err.message || "Unknown error";
+
+    // Return more specific status for known DocuSign errors
+    if (code === "RECIPIENT_NOT_IN_SEQUENCE") {
+      return res.status(409).json({
+        errorCode: code,
+        message:
+          "Người ký này chưa tới lượt theo thứ tự ký. Vui lòng để bên trước hoàn tất trước khi tiếp tục.",
+        details: docuErr,
       });
+    }
+
+    // Default error response
+    return res.status(500).json({
+      error: "Failed to create recipient view",
+      details: docuErr || err.message,
+    });
   }
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useContractBooking } from "./hooks/useContractBooking";
 import "./ContractBooking.scss";
 import axiosInstance from "@/config/axiosInstance";
@@ -10,9 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+
 const ContractBooking = () => {
   const { bookingId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { booking, loading, error, refreshBooking } =
     useContractBooking(bookingId);
@@ -39,7 +41,8 @@ const ContractBooking = () => {
       booking.status === "completed");
   const hasEnvelope = !!booking?.contract?.contract_number;
   const renterHasSigned = Boolean(booking?.contract?.renter_signed_at);
-  const renterNeedsSign = !!booking?.contract && hasEnvelope && !renterHasSigned;
+  const renterNeedsSign =
+    !!booking?.contract && hasEnvelope && !renterHasSigned;
 
   // ===== Actions =====
   // handlePrint removed (unused after removing buttons)
@@ -169,7 +172,8 @@ const ContractBooking = () => {
   // Khi có event trong URL và booking đã tải xong, đảm bảo gọi getStatus
   useEffect(() => {
     const params = new URLSearchParams(location.search || "");
-    const event = params.get("event") || params.get("source") || params.get("eventType");
+    const event =
+      params.get("event") || params.get("source") || params.get("eventType");
     if (event && booking?.contract?.contract_number) {
       handleRefreshStatus();
     }
@@ -232,22 +236,7 @@ const ContractBooking = () => {
     );
   }
 
-  const renderActionButtons = () => {
-    return (
-      <div className="actions-row">
-        <button
-          className="btn btn-primary"
-          onClick={handleSignContract}
-          disabled={!hasEnvelope || !renterNeedsSign}
-          title={
-            renterNeedsSign ? "Mở giao diện ký DocuSign" : "Bạn đã ký hợp đồng"
-          }
-        >
-          {renterNeedsSign ? "Ký hợp đồng" : "Đã ký"}
-        </button>
-      </div>
-    );
-  };
+  // Đã bỏ renderActionButtons để tránh trùng nút, chỉ hiển thị nút trong banner
 
   const handleIFrameLoad = () => {
     try {
@@ -266,6 +255,106 @@ const ContractBooking = () => {
 
   return (
     <div className="contract-booking">
+      {/* Header + Back button */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-gray-900">
+          Hợp đồng thuê xe
+        </h1>
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+        >
+          Quay về
+        </button>
+      </div>
+
+      {/* Thông tin hợp đồng */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Thông tin hợp đồng
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Mã hợp đồng DocuSign</p>
+            <p className="font-medium">
+              {booking.contract?.contract_number || "Chưa có"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái hợp đồng</p>
+            <p className="font-medium">
+              {(() => {
+                const raw =
+                  booking.contract?.contract_status ||
+                  booking.contract?.status ||
+                  "unknown";
+                const map = {
+                  pending_signatures: "Đang chờ ký",
+                  completed: "Hoàn tất",
+                  sent: "Đã gửi",
+                  created: "Đã tạo",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-600">Chủ xe đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.owner_signed ||
+              booking.contract?.owner_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.owner_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.owner_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Người thuê đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.renter_signed ||
+              booking.contract?.renter_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.renter_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.renter_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái đơn thuê</p>
+            <p className="font-medium">
+              {(() => {
+                const raw = booking.status || "unknown";
+                const map = {
+                  pending: "Chờ xác nhận",
+                  deposit_paid: "Đã đặt cọc",
+                  fully_paid: "Đã thanh toán toàn bộ",
+                  in_progress: "Đang thuê",
+                  completed: "Hoàn thành",
+                  cancel_requested: "Yêu cầu hủy",
+                  canceled: "Đã hủy",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Banner */}
       {(!hasEnvelope || renterNeedsSign) && (
         <div className="banner">
@@ -320,17 +409,7 @@ const ContractBooking = () => {
         </div>
       )}
 
-      <div className="contract-actions">
-        {renderActionButtons()}
-        <div className="action-hint">
-          {!isPaidEnough && (
-            <span>Hãy thanh toán cọc để khởi tạo hợp đồng.</span>
-          )}
-          {isPaidEnough && !hasEnvelope && (
-            <span>Sau khi khởi tạo, bạn sẽ có thể ký hợp đồng.</span>
-          )}
-        </div>
-      </div>
+      {/* Bỏ khu vực contract-actions để tránh hiển thị trùng nút ký */}
 
       <div className="contract-viewer">
         {initLoading && (
