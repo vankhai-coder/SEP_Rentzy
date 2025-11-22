@@ -1,8 +1,7 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import axiosInstance from "@/config/axiosInstance";
 
 const RentalPolicies = ({ vehicle }) => {
-  if (!vehicle) return null;
-
   const terms = [
     "Người thuê phải từ 18 tuổi trở lên và có bằng lái xe hợp lệ",
     "Không sử dụng xe vào mục đích bất hợp pháp",
@@ -12,29 +11,57 @@ const RentalPolicies = ({ vehicle }) => {
     "Bồi thường thiệt hại nếu có sự cố xảy ra do lỗi của người thuê",
   ];
 
-  const cancellationPolicy = [
-    {
-      time: "Trong vòng 1h sau giữ chỗ",
-      fee: "Miễn phí",
-      refund: "100%",
-      description: "Hoàn lại 100% số tiền đơn thuê",
-      color: "text-green-600 ",
-    },
-    {
-      time: "Trước chuyến đi >7 ngày (Sau 1h giữ chỗ)",
-      fee: "20% giá trị chuyến đi",
-      refund: "80%",
-      description: "Hoàn lại 80% số tiền đơn thuê",
-      color: "text-blue-600 ",
-    },
-    {
-      time: "Trong vòng 7 ngày trước chuyến đi (Sau 1h giữ chỗ)",
-      fee: "50% giá trị chuyến đi",
-      refund: "50%",
-      description: "Hoàn lại 50% số tiền đơn thuê",
-      color: "text-orange-600 ",
-    },
+  const [policies, setPolicies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const CODE_TO_LABEL = useMemo(
+    () => ({
+      CANCEL_WITHIN_HOLD_1H: "Trong vòng 1h sau giữ chỗ",
+      CANCEL_BEFORE_7_DAYS: "Trước chuyến đi >7 ngày (Sau 1h giữ chỗ)",
+      CANCEL_WITHIN_7_DAYS: "Trong vòng 7 ngày trước chuyến đi (Sau 1h giữ chỗ)",
+    }),
+    []
+  );
+
+  const CODE_ORDER = [
+    "CANCEL_WITHIN_HOLD_1H",
+    "CANCEL_BEFORE_7_DAYS",
+    "CANCEL_WITHIN_7_DAYS",
   ];
+
+  const feeColor = (percent) => {
+    if (percent === 0) return "text-green-600";
+    if (percent <= 25) return "text-blue-600";
+    return "text-orange-600";
+  };
+
+  useEffect(() => {
+    const fetchPolicy = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await axiosInstance.get(
+          "/api/renter/system-settings/cancellation-policy"
+        );
+        const items = Array.isArray(res.data) ? res.data : [];
+        // sort by code order
+        const sorted = items.sort(
+          (a, b) => CODE_ORDER.indexOf(a.feeCode) - CODE_ORDER.indexOf(b.feeCode)
+        );
+        setPolicies(sorted);
+      } catch (e) {
+        console.error(e);
+        setError("Không thể tải chính sách hủy từ hệ thống");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPolicy();
+  }, []);
+
+  // Bảo đảm hooks luôn được gọi trước, sau đó mới điều kiện trả về
+  if (!vehicle) return null;
   // Thêm data cho Giấy tờ thuê xe
   const requiredDocuments = [
     {
@@ -207,39 +234,59 @@ const RentalPolicies = ({ vehicle }) => {
               </tr>
             </thead>
             <tbody>
-              {cancellationPolicy.map((policy, index) => (
-                <tr
-                  key={index}
-                  className="hover:bg-gray-50 transition-colors duration-200"
-                >
-                  <td className="border border-gray-200 px-4 py-3 font-medium text-gray-800">
-                    {policy.time}
-                  </td>
-                  <td className={`border border-gray-200 px-4 py-3`}>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5  text-xs font-medium ${policy.color}`}
-                    >
-                      {policy.fee}
-                    </span>
-                  </td>
-                  <td className="border border-gray-200 px-4 py-3">
-                    <span
-                      className={`font-semibold ${
-                        policy.refund === "100%"
-                          ? "text-green-600"
-                          : policy.refund === "80%"
-                          ? "text-blue-600"
-                          : "text-orange-600"
-                      }`}
-                    >
-                      {policy.refund}
-                    </span>
-                  </td>
-                  <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600">
-                    {policy.description}
+              {loading && (
+                <tr>
+                  <td colSpan="4" className="px-4 py-3 text-center text-sm">
+                    Đang tải...
                   </td>
                 </tr>
-              ))}
+              )}
+              {error && !loading && (
+                <tr>
+                  <td colSpan="4" className="px-4 py-3 text-center text-sm text-red-600">
+                    {error}
+                  </td>
+                </tr>
+              )}
+              {!loading && !error && policies.length > 0 && (
+                policies.map((it) => {
+                  const percent = Number(it.percent || 0);
+                  const refundPercent = Math.max(0, 100 - percent);
+                  const feeText = percent === 0 ? "Miễn phí" : `${percent}% giá trị chuyến đi`;
+                  const timeText = CODE_TO_LABEL[it.feeCode] || it.name || it.feeCode;
+                  return (
+                    <tr key={it.id} className="hover:bg-gray-50 transition-colors duration-200">
+                      <td className="border border-gray-200 px-4 py-3 font-medium text-gray-800">
+                        {timeText}
+                      </td>
+                      <td className={`border border-gray-200 px-4 py-3`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${feeColor(percent)}`}
+                        >
+                          {feeText}
+                        </span>
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3">
+                        <span
+                          className={`font-semibold ${refundPercent >= 80 ? "text-green-600" : refundPercent >= 50 ? "text-blue-600" : "text-orange-600"}`}
+                        >
+                          {refundPercent}%
+                        </span>
+                      </td>
+                      <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600">
+                        {it.description || ""}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+              {!loading && !error && policies.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="px-4 py-3 text-center text-sm text-gray-600">
+                    Chưa có chính sách hủy từ hệ thống
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

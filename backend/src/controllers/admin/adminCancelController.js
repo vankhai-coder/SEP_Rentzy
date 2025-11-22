@@ -310,8 +310,14 @@ export const getRefundManagement = async (req, res) => {
       });
     }
 
-    const { count, rows: refundData } =
-      await BookingCancellation.findAndCountAll({
+    // Lấy phần trăm phí nền tảng từ SystemSetting (sử dụng chung cho hiển thị admin)
+    const platformFeeSetting = await db.SystemSetting.findOne({
+      where: { feeCode: "PLATFORM_FEE_COMPLETE_ORDER" },
+      attributes: ["feeCode", "percent"],
+    });
+    const platformFeePercent = Number(platformFeeSetting?.percent ?? 10);
+
+    const { count, rows: refundData } = await BookingCancellation.findAndCountAll({
         where: whereConditions,
         include: [
           {
@@ -399,6 +405,12 @@ export const getRefundManagement = async (req, res) => {
     const formattedData = refundData.map((cancellation) => {
       const renterBank = cancellation.booking.renter.banks?.[0] || null;
       const ownerBank = cancellation.booking.vehicle.owner.banks?.[0] || null;
+      const totalAmount = Number(cancellation.booking.total_amount) || 0;
+      const totalPaid = Number(cancellation.booking.total_paid) || 0;
+      const cancellationFee = Number(cancellation.cancellation_fee) || 0;
+      const ownerRefundAmount = Number(cancellation.total_refund_for_owner) || 0;
+      const renterRefundAmount = Number(cancellation.total_refund_for_renter) || 0;
+      const platformFeeAmount = Number(((cancellationFee * platformFeePercent) / 100).toFixed(2));
 
       return {
         cancellation_id: cancellation.cancellation_id,
@@ -408,6 +420,17 @@ export const getRefundManagement = async (req, res) => {
         cancelled_at: cancellation.cancelled_at,
         cancellation_fee: cancellation.cancellation_fee,
         created_at: cancellation.created_at,
+
+        // Tóm tắt tài chính phục vụ hiển thị
+        financial_summary: {
+          total_amount: totalAmount,
+          total_paid: totalPaid,
+          cancellation_fee: cancellationFee,
+          renter_refund_amount: renterRefundAmount,
+          owner_compensation_amount: ownerRefundAmount,
+          platform_fee_percent: platformFeePercent,
+          platform_fee_amount: platformFeeAmount,
+        },
 
         // Booking info
         booking_info: {

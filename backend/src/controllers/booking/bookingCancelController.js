@@ -87,7 +87,24 @@ export const calculateCancellationFee = async (req, res) => {
     // Tính toán phí hủy sử dụng hàm chung
     const now = new Date();
     const bookingData = booking.toJSON();
-    const calculation = calculateCancellationFeeLogic(bookingData, now);
+    // Lấy phần trăm phí hủy từ SystemSetting trong DB
+    const settings = await db.SystemSetting.findAll({
+      where: {
+        feeCode: [
+          "CANCEL_WITHIN_HOLD_1H",
+          "CANCEL_BEFORE_7_DAYS",
+          "CANCEL_WITHIN_7_DAYS",
+        ],
+      },
+    });
+    const policyPercents = Object.fromEntries(
+      settings.map((s) => [s.feeCode, Number(s.percent) || 0])
+    );
+    const calculation = calculateCancellationFeeLogic(
+      bookingData,
+      now,
+      policyPercents
+    );
 
     // Kiểm tra nếu đã bắt đầu chuyến đi
     if (calculation.daysToStart < 0) {
@@ -197,7 +214,24 @@ export const confirmCancellation = async (req, res) => {
     // Tính toán phí hủy sử dụng hàm chung
     const now = new Date();
     const bookingData = booking.toJSON();
-    const calculation = calculateCancellationFeeLogic(bookingData, now);
+    // Lấy phần trăm phí hủy từ SystemSetting trong DB
+    const settings = await db.SystemSetting.findAll({
+      where: {
+        feeCode: [
+          "CANCEL_WITHIN_HOLD_1H",
+          "CANCEL_BEFORE_7_DAYS",
+          "CANCEL_WITHIN_7_DAYS",
+        ],
+      },
+    });
+    const policyPercents = Object.fromEntries(
+      settings.map((s) => [s.feeCode, Number(s.percent) || 0])
+    );
+    const calculation = calculateCancellationFeeLogic(
+      bookingData,
+      now,
+      policyPercents
+    );
 
     // Kiểm tra nếu đã bắt đầu chuyến đi
     if (calculation.daysToStart < 0) {

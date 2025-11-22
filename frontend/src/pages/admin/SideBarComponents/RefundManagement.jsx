@@ -382,6 +382,24 @@ const RefundManagement = () => {
                     Booking ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng tiền
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Đã thanh toán
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phí hủy
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bồi thường chủ xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phí nền tảng
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    % phí admin
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Số tiền hoàn
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -408,6 +426,13 @@ const RefundManagement = () => {
                       ? refund.renter_refund
                       : refund.owner_refund;
                   const bankInfo = refundData?.bank_info;
+                  const summary = refund.financial_summary || {};
+                  const totalAmount = summary.total_amount ?? refund.booking_info?.total_amount ?? 0;
+                  const totalPaid = summary.total_paid ?? refund.booking_info?.total_paid ?? 0;
+                  const cancellationFee = summary.cancellation_fee ?? refund.cancellation_fee ?? 0;
+                  const ownerCompensation = summary.owner_compensation_amount ?? refund.owner_refund?.refund_amount ?? 0;
+                  const platformFee = summary.platform_fee_amount ?? Math.max(0, cancellationFee - ownerCompensation);
+                  const adminPercent = summary.platform_fee_percent ?? undefined;
 
                   return (
                     <tr
@@ -424,6 +449,48 @@ const RefundManagement = () => {
                                 refund.booking_id}
                             </div>
                           </div>
+                        </div>
+                      </td>
+
+                      {/* Tổng tiền */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatCurrency(totalAmount)}
+                        </div>
+                      </td>
+
+                      {/* Đã thanh toán */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatCurrency(totalPaid)}
+                        </div>
+                      </td>
+
+                      {/* Phí hủy */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatCurrency(cancellationFee)}
+                        </div>
+                      </td>
+
+                      {/* Bồi thường chủ xe */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatCurrency(ownerCompensation)}
+                        </div>
+                      </td>
+
+                      {/* Phí nền tảng */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {formatCurrency(platformFee)}
+                        </div>
+                      </td>
+
+                      {/* % phí admin */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {adminPercent !== undefined ? `${adminPercent}%` : "-"}
                         </div>
                       </td>
 

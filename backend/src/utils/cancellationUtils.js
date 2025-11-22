@@ -8,7 +8,11 @@
  * @param {Date} cancellationTime - Thời gian hủy (mặc định là hiện tại)
  * @returns {Object} Thông tin tính toán phí hủy
  */
-export const calculateCancellationFeeLogic = (booking, cancellationTime = new Date()) => {
+export const calculateCancellationFeeLogic = (
+  booking,
+  cancellationTime = new Date(),
+  policyPercents = {}
+) => {
   // Hàm helper để convert UTC sang giờ Việt Nam
   const convertToVietnamTime = (utcDate) => {
     return new Date(utcDate.toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
@@ -34,21 +38,29 @@ export const calculateCancellationFeeLogic = (booking, cancellationTime = new Da
   let feeDescription = "";
 
   // Calculate cancellation fee based on total booking value
+  const within1hPercent = Number(policyPercents.CANCEL_WITHIN_HOLD_1H ?? 0);
+  const before7DaysPercent = Number(
+    policyPercents.CANCEL_BEFORE_7_DAYS ?? 20
+  );
+  const within7DaysPercent = Number(
+    policyPercents.CANCEL_WITHIN_7_DAYS ?? 50
+  );
+
   if (hoursFromCreation <= 1) {
-    // Free cancellation within 1 hour
-    cancellationFeePercent = 0;
-    cancellationFee = 0;
-    feeDescription = "Hủy miễn phí trong vòng 1 giờ sau giữ chỗ";
+    // Trong 1h sau giữ chỗ
+    cancellationFeePercent = within1hPercent;
+    cancellationFee = totalAmount * (cancellationFeePercent / 100);
+    feeDescription = `Trong vòng 1 giờ sau giữ chỗ - Phí ${cancellationFeePercent}% tổng giá trị hóa đơn`;
   } else if (daysToStart > 7) {
-    // >7 days before trip - 20% fee on total booking value
-    cancellationFeePercent = 20;
-    cancellationFee = totalAmount * 0.2;
-    feeDescription = "Trước chuyến đi >7 ngày - Phí 20% tổng giá trị hóa đơn";
+    // Trước chuyến đi >7 ngày
+    cancellationFeePercent = before7DaysPercent;
+    cancellationFee = totalAmount * (cancellationFeePercent / 100);
+    feeDescription = `Trước chuyến đi >7 ngày - Phí ${cancellationFeePercent}% tổng giá trị hóa đơn`;
   } else {
-    // Within 7 days before trip - 50% fee on total booking value
-    cancellationFeePercent = 50;
-    cancellationFee = totalAmount * 0.5;
-    feeDescription = "Trong vòng 7 ngày trước chuyến đi - Phí 50% tổng giá trị hóa đơn";
+    // Trong vòng 7 ngày trước chuyến đi
+    cancellationFeePercent = within7DaysPercent;
+    cancellationFee = totalAmount * (cancellationFeePercent / 100);
+    feeDescription = `Trong vòng 7 ngày trước chuyến đi - Phí ${cancellationFeePercent}% tổng giá trị hóa đơn`;
   }
 
   // Số tiền hoàn lại = tiền đã thanh toán - phí hủy
