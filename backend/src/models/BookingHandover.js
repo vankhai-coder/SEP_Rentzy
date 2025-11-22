@@ -62,7 +62,7 @@ const BookingHandover = sequelize.define(
       allowNull: true,
     },
 
-    // === THÔNG TIN HƯ HỎNG VÀ BỒI THƯỜNG ===
+    // THÔNG TIN HƯ HỎNG VÀ BỒI THƯỜNG
     // Có báo cáo hư hỏng không
     damage_reported: {
       type: DataTypes.BOOLEAN,
@@ -80,6 +80,25 @@ const BookingHandover = sequelize.define(
       validate: {
         min: 0,
       },
+    },
+
+    // có trễ hay ko
+    late_return: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    // Phí trả xe trễ
+    late_return_fee: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+      validate: {
+        min: 0,
+      },
+    },
+    // Mô tả chi tiết về phí trả trễ
+    late_return_fee_description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
 
     // Thời gian tạo bản ghi
