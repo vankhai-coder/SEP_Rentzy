@@ -27,8 +27,8 @@ const ManagementVehicles = () => {
     totalItems: 0,
     itemsPerPage: 10
   });
-  const [expandedVehicleId, setExpandedVehicleId] = useState(null);
-  const [imageModal, setImageModal] = useState(null);
+    const [expandedVehicleId, setExpandedVehicleId] = useState(null);
+    const [imageModal, setImageModal] = useState(null);
 
   // Fetch all vehicles
   const fetchVehicles = useCallback(async (page = 1, isSearch = false) => {
@@ -194,7 +194,7 @@ const ManagementVehicles = () => {
       </span>
     );
   };
-
+  
   const normalizeImages = (vehicle) => {
     const extras = typeof vehicle?.extra_images === 'string'
       ? (() => { try { return JSON.parse(vehicle.extra_images); } catch { return []; } })()
@@ -590,9 +590,7 @@ const ManagementVehicles = () => {
             </div>
           </div>
         </div>
-      )}
-
-    </div>
+      )}</div>
   );
 };
 
