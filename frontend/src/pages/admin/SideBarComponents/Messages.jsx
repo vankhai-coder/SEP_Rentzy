@@ -1,11 +1,31 @@
+import { useState } from "react" // <-- Import useState
 import { ChevronRightIcon, Ellipsis, EllipsisVertical, Mic, Paperclip, Phone, Search, Send, Smile, Video } from "lucide-react"
 import { Link } from "react-router-dom"
 
 const Messages = () => {
+    // 1. State to manage sidebar visibility on mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+    // Helper function to toggle the sidebar
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen)
+    }
+
+    // New: Handle opening a chat item (and close sidebar on mobile)
+    const handleChatSelect = () => {
+        // You would typically set the active chat ID here
+        // For responsiveness, close the sidebar when a chat is selected on mobile
+        if (window.innerWidth < 1280) { // 1280px is Tailwind's 'xl' breakpoint
+            setIsSidebarOpen(false)
+        }
+    }
+
     return (
-        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 pb-20 md:p-6 md:pb-6 dark:bg-[#101828]">
-            {/* Breastcrumb start */}
-            <div>
+        <div className="mx-auto max-w-[1440px] p-4 md:p-6 dark:bg-[#101828]">
+            {/* Removed fragile height calculation. Let content fill space. */}
+            <div className="h-full">
+                
+                {/* Header/Breadcrumb is fine */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-6">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Chat</h2>
                     <nav>
@@ -18,224 +38,115 @@ const Messages = () => {
                         </ol>
                     </nav>
                 </div>
-            </div>
-            {/* Breastcrumb end */}
-            <div className="h-[calc(100vh-186px)] overflow-hidden sm:h-[calc(100vh-174px)]">
-                <div className="flex h-full flex-col gap-6 xl:flex-row xl:gap-5">
-                    {/* chat side bar start */}
-                    <div className="flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white xl:flex xl:w-1/4 dark:border-gray-800 dark:bg-white/[0.03]">
-                        {/* chat list start  */}
+                
+                {/* Main Content Area */}
+                <div className="relative flex h-[calc(100vh-140px)] flex-col gap-6 xl:flex-row xl:gap-5">
+                    
+                    {/* 2. CHAT SIDE BAR (Messages List) START */}
+                    {/* Added conditional classes for mobile/desktop view and a max-w to prevent overflow on very small screens */}
+                    <div className={`
+                        ${isSidebarOpen ? 'flex' : 'hidden'} 
+                        absolute inset-0 z-50 
+                        h-full w-full 
+                        flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white 
+                        xl:relative xl:flex xl:w-1/4 xl:min-w-[300px] xl:max-w-none 
+                        dark:border-gray-800 dark:bg-white/[0.03]
+                    `}>
                         <div className="sticky px-4 pt-4 pb-4 sm:px-5 sm:pt-5 xl:pb-0">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-theme-xl font-semibold text-gray-800 sm:text-2xl dark:text-white/90">Messages</h3>
+                                    <h3 className="text-xl font-semibold text-gray-800 sm:text-2xl dark:text-white/90">Messages</h3>
                                 </div>
-                                <div className="relative">
-                                    <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">
-                                        <EllipsisVertical />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="mt-4 flex items-center gap-3 pb-14 xl:pb-0">
-                                <button className="flex h-11 w-full max-w-11 items-center justify-center rounded-lg border border-gray-300 text-gray-700 xl:hidden dark:border-gray-700 dark:text-gray-400">
-                                    <Ellipsis />
+                                {/* Close button for mobile sidebar (optional, can use existing ellipsis) */}
+                                <button 
+                                    onClick={toggleSidebar} 
+                                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white xl:hidden"
+                                >
+                                    <EllipsisVertical className="size-6" /> 
                                 </button>
-                                <div className="relative my-2 w-full">
+                            </div>
+                            
+                            <div className="mt-4 flex items-center gap-3 pb-4 xl:pb-0"> 
+                                {/* 3. MOBILE SIDEBAR OPENER - ONLY SHOW ON MOBILE */}
+                                {/* Replaced Ellipsis button with Search input on mobile to simplify */}
+                                <div className="relative w-full">
                                     <form action="">
                                         <button className="absolute top-1/2 left-4 -translate-y-1/2">
                                             <Search className="size-4" />
                                         </button>
-                                        <input type="text" className="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pr-3.5 pl-[42px] text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" placeholder="Search..." />
+                                        <input type="text" className="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pr-3.5 pl-[42px] text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" placeholder="Search..." />
                                     </form>
                                 </div>
                             </div>
                         </div>
-                        <div className="no-scrollbar flex-col overflow-auto flex fixed xl:static top-0 left-0 z-999999 h-screen bg-white dark:bg-gray-900">
-
-                            <div className="flex items-center justify-between border-b border-gray-200 p-5 xl:hidden dark:border-gray-800">
-                                <div>
-                                    <h3 className="text-theme-xl font-semibold text-gray-800 sm:text-2xl dark:text-white/90">Messages</h3>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <div className="relative -mb-1.5">
-                                        <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex max-h-full flex-col overflow-auto px-4 sm:px-5">
-                                <div className="custom-scrollbar max-h-full space-y-1 overflow-auto">
-                                    {/* chat list item */}
-
-                                    {/* first person */}
-                                    <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
+                        
+                        {/* 4. CHAT LIST CONTAINER */}
+                        {/* Removed redundant fixed positioning and background from the inner div. Let parent control the layout. */}
+                        <div className="flex max-h-full flex-1 flex-col overflow-y-auto px-4 sm:px-5">
+                            <div className="custom-scrollbar space-y-1 pb-4"> 
+                                {/* MAPPED CHAT LIST ITEMS (added onClick to close sidebar on mobile) */}
+                                {[18, 19, 12, 13, 14, 15, 16].map((i) => (
+                                    <div key={i} onClick={handleChatSelect} className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
                                         <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-18.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
+                                            <img src={`https://demo.tailadmin.com/src/images/user/user-${i}.jpg`} alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
+                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900"></span>
                                         </div>
-                                        {/* name and one last message */}
                                         <div className="w-full">
                                             <div className="flex items-start justify-between">
                                                 <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Khai</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">User {i}</h5>
+                                                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Project Manager</p>
                                                 </div>
                                                 <span className="text-xs text-gray-400">15 mins</span>
                                             </div>
                                         </div>
                                     </div>
-                                    {/* first person */}
-                                    <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-19.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Hung</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* first person */}
-                                   
-                                    <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-12.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-13.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-14.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-15.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        {/* avatar a */}
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
-                                            <img src="https://demo.tailadmin.com/src/images/user/user-16.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            {/* green dot for active account */}
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900">
-                                            </span>
-                                        </div>
-                                        {/* name and one last message */}
-                                        <div className="w-full">
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Ngoc Thy</h5>
-                                                    <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">Project Manager</p>
-                                                </div>
-                                                <span className="text-xs text-gray-400">15 mins</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                ))}
+                                {/* End of Mapped Chat List Items */}
                             </div>
                         </div>
                     </div>
-
-                    {/* chat box start */}
-
-                    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] xl:w-3/4">
-                        {/* call video */}
-                        <div className="sticky flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800 xl:px-6">
+                    
+                    {/* CHAT BOX START */}
+                    {/* Added conditional hidden class to hide chat box when sidebar is open on mobile */}
+                    <div className={`
+                        ${isSidebarOpen ? 'hidden' : 'flex'} 
+                        h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white 
+                        dark:border-gray-800 dark:bg-white/[0.03] 
+                        xl:flex xl:w-3/4
+                    `}>
+                        {/* Call/Video Header */}
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800 xl:px-6">
                             <div className="flex items-center gap-3">
+                                {/* Back button for mobile when chat box is shown */}
+                                <button 
+                                    onClick={toggleSidebar} 
+                                    className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90 xl:hidden"
+                                >
+                                    <ChevronRightIcon className="size-6 rotate-180" />
+                                </button>
                                 <div className="relative h-12 w-full max-w-[48px] rounded-full">
                                     <img src="https://demo.tailadmin.com/src/images/user/user-18.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
                                     <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-[1.5px] border-white bg-success-500 dark:border-gray-900"></span>
                                 </div>
-                                <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400">Van Khai</h5>
+                                <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">Van Khai</h5>
                             </div>
                             <div className="flex items-center gap-5">
                                 <button className="text-gray-700 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90">
                                     <Phone className="size-5" />
                                 </button>
                                 <button className="text-gray-700 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90">
-                                    <Video />
+                                    <Video className="size-5" />
                                 </button>
                                 <button className="text-gray-700 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90">
-                                    <Ellipsis />
+                                    <Ellipsis className="size-5" />
                                 </button>
                             </div>
                         </div>
-                        {/* message from 2 people */}
-                        <div className="custom-scrollbar max-h-full flex-1 space-y-6 overflow-auto p-5 xl:space-y-8 xl:p-6">
+                        
+                        {/* Message Content Area */}
+                        <div className="custom-scrollbar max-h-full flex-1 space-y-6 overflow-y-auto p-5 xl:space-y-8 xl:p-6">
+                            {/* Message items here... (no changes needed) */}
                             {/* SENDEr */}
                             <div className="max-w-[350px]">
                                 <div className="flex items-start gap-4">
@@ -265,8 +176,8 @@ const Messages = () => {
                                     2 hours ago
                                 </p>
                             </div>
-                            {/* fake message */}
-                            <div className="max-w-[350px]">
+                            {/* ... other messages ... */}
+                             <div className="max-w-[350px]">
                                 <div className="flex items-start gap-4">
                                     <div className="h-10 w-full max-w-10 rounded-full">
                                         <img src="https://demo.tailadmin.com/src/images/user/user-19.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
@@ -283,8 +194,6 @@ const Messages = () => {
                                     </div>
                                 </div>
                             </div>
-                        {/* </div> */}
-                            {/* fake chat messages */}
                             <div className="max-w-[350px]">
                                 <div className="flex items-start gap-4">
                                     <div className="h-10 w-full max-w-10 rounded-full">
@@ -312,7 +221,7 @@ const Messages = () => {
                                     1 hour ago
                                 </p>
                             </div>
-                            <div className="max-w-[350px]">
+                             <div className="max-w-[350px]">
                                 <div className="flex items-start gap-4">
                                     <div className="h-10 w-full max-w-10 rounded-full">
                                         <img src="https://demo.tailadmin.com/src/images/user/user-21.jpg" alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
@@ -329,9 +238,9 @@ const Messages = () => {
                                     </div>
                                 </div>
                             </div>
-                            
                         </div>
-                        {/* footer : that have text : "type message..." */}
+                        
+                        {/* Footer (Message Input) */}
                         <div className="sticky bottom-0 border-t border-gray-200 p-3 dark:border-gray-800">
                             <div className="flex items-center justify-between">
                                 <div className="relative w-full">
@@ -347,8 +256,9 @@ const Messages = () => {
                                     <button className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90">
                                         <Mic />
                                     </button>
-                                    <button className="flex items-center justify-center rounded-lg bg-brand-500 text-green-500 hover:bg-brand-600">
-                                        <Send />
+                                    {/* Made Send button visible and gave it a better size/style */}
+                                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600">
+                                        <Send className="size-5" />
                                     </button>
                                 </div>
                             </div>
