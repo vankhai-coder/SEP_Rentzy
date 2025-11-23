@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/features/auth/authSlice";
@@ -9,6 +9,7 @@ import AddMotoBikeForm from "./vehicleManagement/addMotoBikeForm.jsx";
 import EditCarForm from "./vehicleManagement/editCarForm.jsx";
 import EditMotoBikeForm from "./vehicleManagement/editMotoBikeForm.jsx";
 import SidebarOwner from "@/components/SidebarOwner/SidebarOwner";
+import { MdMenu } from "react-icons/md";
 import BookingManagement from "./dashboard/BookingManagement.jsx";
 import BookingDetail from "./dashboard/BookingDetail.jsx";
 import Revenue from "./dashboard/Revenue.jsx";
@@ -28,10 +29,22 @@ const OwnerPage = () => {
     window.location.href = "/";
   };
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   return (
     <div className="min-h-screen">
-      <SidebarOwner handleLogout={handleLogout} />
-      <div className="p-5 bg-gray-50 min-h-screen" style={{ marginLeft: '250px' }}>
+      <SidebarOwner handleLogout={handleLogout} isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+      <div className="p-5 bg-gray-50 min-h-screen md:ml-[250px] ml-0">
+        <div className="md:hidden mb-4 flex items-center">
+          <button
+            aria-label="Mở menu"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white border border-gray-200 shadow-sm text-gray-700"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <MdMenu className="text-xl" />
+          </button>
+          <span className="ml-3 text-lg font-semibold text-gray-800 whitespace-nowrap">Khu vực chủ xe</span>
+        </div>
         <Routes>
           <Route path="/" element={<OverViewManagement />} />
           <Route path="/overview" element={<OverViewManagement />} />

@@ -172,7 +172,7 @@ const fetchVehicles = useCallback(async () => {
 
   // Get status badge
   const getStatusBadge = (status) => {
-    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap";
     
     switch (status) {
       case 'available':
@@ -186,7 +186,7 @@ const fetchVehicles = useCallback(async () => {
 
   // Get approval badge
   const getApprovalBadge = (approvalStatus) => {
-    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+    const baseClasses = "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap";
     
     switch (approvalStatus) {
       case 'approved':
@@ -308,14 +308,14 @@ const fetchVehicles = useCallback(async () => {
           <table className="w-full">
             <thead className="bg-blue-600 text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">ẢNH</th>
-                <th className="px-4 py-3 text-left font-medium">XE</th>
-                <th className="px-4 py-3 text-left font-medium">BIỂN SỐ</th>
-                <th className="px-4 py-3 text-left font-medium">GIÁ/NGÀY</th>
-                <th className="px-4 py-3 text-left font-medium">LƯỢT THUÊ</th>
-                <th className="px-4 py-3 text-left font-medium">TRẠNG THÁI</th>
-                <th className="px-4 py-3 text-left font-medium">DUYỆT</th>
-                <th className="px-4 py-3 text-left font-medium">HÀNH ĐỘNG</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">ẢNH</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">XE</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">BIỂN SỐ</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">GIÁ/NGÀY</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">LƯỢT THUÊ</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">TRẠNG THÁI</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">DUYỆT</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">HÀNH ĐỘNG</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -337,21 +337,21 @@ const fetchVehicles = useCallback(async () => {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 whitespace-nowrap">
                           {vehicle.brand?.name} {vehicle.model}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 whitespace-nowrap">
                           {vehicle.year} • {vehicle.vehicle_type}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                       {vehicle.license_plate}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                       {formatPrice(vehicle.price_per_day)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900">
+                    <td className="px-4 py-3 text-gray-900 whitespace-nowrap">
                       {vehicle.rent_count} lượt
                     </td>
                     <td className="px-4 py-3">
