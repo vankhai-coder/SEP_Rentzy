@@ -149,7 +149,7 @@
       overflow-x: auto;
     }
 
-    .payout-table {
+  .payout-table {
       width: 100%;
       border-collapse: collapse;
 
@@ -188,6 +188,7 @@
         padding: 16px;
         border-bottom: 1px solid #f1f5f9;
         vertical-align: middle;
+        font-size: 13px; // giảm font chữ một chút
 
         .id-badge {
           background: #eff6ff;
@@ -228,6 +229,22 @@
             color: #ef4444;
             font-size: 12px;
             font-style: italic;
+          }
+        }
+
+        // Bank info vertical layout
+        .bank-info {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+
+          .bank-name {
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          .account-number, .account-holder {
+            color: #475569;
           }
         }
 
@@ -320,43 +337,36 @@
           display: flex;
           gap: 8px;
 
-          .btn-action {
-            display: flex;
+          // Table action buttons (text + icon)
+          .btn-approve, .btn-reject {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
+            gap: 0; // bỏ icon nên không cần khoảng cách
+            padding: 8px 12px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 13px;
+          }
 
-            &.btn-view {
-              background: #eff6ff;
-              color: #1d4ed8;
+          .btn-approve {
+            background: #059669;
+            color: white;
 
-              &:hover {
-                background: #dbeafe;
-              }
+            &:hover { background: #047857; }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
             }
+          }
 
-            &.btn-approve {
-              background: #d1fae5;
-              color: #065f46;
-
-              &:hover {
-                background: #a7f3d0;
-              }
-            }
-
-            &.btn-reject {
-              background: #fee2e2;
-              color: #991b1b;
-
-              &:hover {
-                background: #fecaca;
-              }
-            }
+          .btn-reject {
+            background: #dc2626;
+            color: white;
+            &:hover { background: #b91c1c; }
           }
         }
       }

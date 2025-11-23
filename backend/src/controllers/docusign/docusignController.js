@@ -5,6 +5,9 @@ import fs from "fs";
 import path from "path";
 import jwt from "jsonwebtoken";
 import { decryptWithSecret } from "../../utils/cryptoUtil.js";
+import { sendEmail } from "../../utils/email/sendEmail.js";
+import { signingOtpTemplate, signingConfirmationTemplate, otherPartyNotificationTemplate } from "../../utils/email/templates/emailTemplate.js";
+import { createOtp, verifyOtp, hasOtp } from "../../utils/otp/otpStore.js";
 
 const { BookingContract, Booking, Vehicle, User } = db;
 
@@ -271,7 +274,8 @@ export const sendContract = async (req, res) => {
         name: s.name,
         recipientId: String(idx + 1),
         routingOrder: String(s.routingOrder || idx + 1),
-        clientUserId: String(s.clientUserId),
+        // Use signer's email as clientUserId for embedded signing verification
+        clientUserId: String(s.email),
         tabs: {
           signHereTabs: [
             {
@@ -324,7 +328,8 @@ export const sendContract = async (req, res) => {
           name: booking.renter?.full_name || "Renter",
           recipientId: "1",
           routingOrder: "1",
-          clientUserId: "renter",
+          // clientUserId must match when creating recipient view; use email
+          clientUserId: String(booking.renter?.email || "renter"),
           tabs: {
             signHereTabs: [
               {
@@ -343,7 +348,7 @@ export const sendContract = async (req, res) => {
           name: booking.vehicle?.owner?.full_name || "Owner",
           recipientId: "2",
           routingOrder: "2",
-          clientUserId: "owner",
+          clientUserId: String(booking.vehicle?.owner?.email || "owner"),
           tabs: {
             signHereTabs: [
               {
@@ -470,7 +475,7 @@ export const sendContract = async (req, res) => {
  */
 export const signRecipientView = async (req, res) => {
   const { envelopeId } = req.params;
-  const { role, name, email, clientUserId, returnUrl } = req.query;
+  const { role, name, email, clientUserId, returnUrl, otp } = req.query;
 
   try {
     let signerName = name;
@@ -508,11 +513,11 @@ export const signRecipientView = async (req, res) => {
       if (role === "renter") {
         signerName = booking.renter?.full_name || "Renter";
         signerEmail = booking.renter?.email;
-        signerClientUserId = "renter"; // MUST match envelopeDefinition clientUserId
+        signerClientUserId = booking.renter?.email || "renter"; // MUST match envelopeDefinition clientUserId
       } else {
         signerName = booking.vehicle?.owner?.full_name || "Owner";
         signerEmail = booking.vehicle?.owner?.email;
-        signerClientUserId = "owner"; // MUST match envelopeDefinition clientUserId
+        signerClientUserId = booking.vehicle?.owner?.email || "owner"; // MUST match envelopeDefinition clientUserId
       }
     }
 
@@ -523,6 +528,34 @@ export const signRecipientView = async (req, res) => {
           error: "Missing signer email",
           message: "Không tìm thấy email người ký phù hợp với role.",
         });
+    }
+
+    // OTP gate: require a valid OTP before generating recipient view
+    if (!otp || !verifyOtp(envelopeId, signerEmail, otp)) {
+      // If no active OTP, send a new one
+      const code = createOtp(envelopeId, signerEmail);
+      // Try to resolve bookingId for email content
+      let bookingIdForEmail = null;
+      try {
+        const c = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
+        bookingIdForEmail = c?.booking_id || null;
+      } catch {}
+      try {
+        await sendEmail({
+          from: process.env.GMAIL_USER,
+          to: signerEmail,
+          subject: `Mã OTP xác thực ký hợp đồng${bookingIdForEmail ? ` #${bookingIdForEmail}` : ""}`,
+          html: signingOtpTemplate(code, bookingIdForEmail),
+        });
+      } catch (e) {
+        console.error("Failed to send signing OTP:", e.message || e);
+      }
+      return res.status(401).json({
+        success: false,
+        error: "OTP_REQUIRED",
+        message: "Yêu cầu nhập mã OTP đã gửi tới email để mở giao diện ký.",
+        otp_sent: true,
+      });
     }
 
     const rawOrigin = (
@@ -551,7 +584,7 @@ export const signRecipientView = async (req, res) => {
 
     const recipientViewRequest = {
       authenticationMethod: "none",
-      clientUserId: String(signerClientUserId || "123"),
+      clientUserId: String(signerClientUserId || signerEmail || "123"),
       userName: signerName,
       email: signerEmail,
       returnUrl: redirectUrlCandidate,
@@ -571,13 +604,26 @@ export const signRecipientView = async (req, res) => {
     });
     res.json({ success: true, url: resp.data.url });
   } catch (err) {
-    console.error("Recipient view error:", err.response?.data || err.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to create recipient view",
-        details: err.response?.data || err.message,
+    const docuErr = err.response?.data || {};
+    console.error("Recipient view error:", docuErr || err.message);
+    const code = docuErr.errorCode || docuErr.error || "UNKNOWN";
+    const message = docuErr.message || err.message || "Unknown error";
+
+    // Return more specific status for known DocuSign errors
+    if (code === "RECIPIENT_NOT_IN_SEQUENCE") {
+      return res.status(409).json({
+        errorCode: code,
+        message:
+          "Người ký này chưa tới lượt theo thứ tự ký. Vui lòng để bên trước hoàn tất trước khi tiếp tục.",
+        details: docuErr,
       });
+    }
+
+    // Default error response
+    return res.status(500).json({
+      error: "Failed to create recipient view",
+      details: docuErr || err.message,
+    });
   }
 };
 
@@ -666,14 +712,8 @@ export const getStatus = async (req, res) => {
         const signerEmail = String(s.email || "").toLowerCase();
         const signerStatus = String(s.status || "").toLowerCase();
         if (signerStatus === "completed") {
-          const isRenter =
-            clientId === "renter" ||
-            clientId.startsWith("renter_") ||
-            (renterEmail && signerEmail === renterEmail);
-          const isOwner =
-            clientId === "owner" ||
-            clientId.startsWith("owner_") ||
-            (ownerEmail && signerEmail === ownerEmail);
+          const isRenter = renterEmail && signerEmail === renterEmail;
+          const isOwner = ownerEmail && signerEmail === ownerEmail;
           if (isRenter) {
             updates.renter_signed_at = updates.renter_signed_at || now;
           }
@@ -940,14 +980,82 @@ export const webhook = async (req, res) => {
         const now = new Date();
         const updates = {};
 
+        // Fetch booking and existing contract to avoid duplicate mails
+        const contractRecord = await BookingContract.findOne({ where: { contract_number: envelopeId } });
+        let booking = null;
+        let renterEmail = null;
+        let renterName = null;
+        let ownerEmail = null;
+        let ownerName = null;
+        if (contractRecord) {
+          booking = await Booking.findByPk(contractRecord.booking_id, {
+            include: [
+              { model: User, as: "renter", attributes: ["full_name", "email"] },
+              { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["full_name", "email"] }] },
+            ],
+          });
+          renterEmail = booking?.renter?.email || null;
+          renterName = booking?.renter?.full_name || "Người thuê";
+          ownerEmail = booking?.vehicle?.owner?.email || null;
+          ownerName = booking?.vehicle?.owner?.full_name || "Chủ xe";
+        }
+
         for (const s of signers) {
-          const clientId = String(s.clientUserId || "");
-          if (s.status === "completed") {
-            if (clientId === "renter" || clientId.startsWith("renter_")) {
+          if (String(s.status || "").toLowerCase() === "completed") {
+            const sEmail = String(s.email || "").toLowerCase();
+            const isRenter = renterEmail && sEmail === String(renterEmail).toLowerCase();
+            const isOwner = ownerEmail && sEmail === String(ownerEmail).toLowerCase();
+            if (isRenter) {
+              const wasSigned = !!contractRecord?.renter_signed_at;
               updates.renter_signed_at = updates.renter_signed_at || now;
+              if (!wasSigned && renterEmail) {
+                // Send confirmation to renter
+                try {
+                  await sendEmail({
+                    from: process.env.GMAIL_USER,
+                    to: renterEmail,
+                    subject: `Xác nhận đã ký hợp đồng #${booking?.booking_id || ""}`,
+                    html: signingConfirmationTemplate({ signerName: renterName, bookingId: booking?.booking_id, signedAt: now.toLocaleString("vi-VN") }),
+                  });
+                } catch (e) { console.error("Email renter confirmation error:", e.message || e); }
+                // Notify owner that renter signed
+                if (ownerEmail) {
+                  try {
+                    await sendEmail({
+                      from: process.env.GMAIL_USER,
+                      to: ownerEmail,
+                      subject: `Thông báo: Người thuê đã ký hợp đồng #${booking?.booking_id || ""}`,
+                      html: otherPartyNotificationTemplate({ otherName: ownerName, bookingId: booking?.booking_id, signerName: renterName, signedAt: now.toLocaleString("vi-VN") }),
+                    });
+                  } catch (e) { console.error("Email owner notify error:", e.message || e); }
+                }
+              }
             }
-            if (clientId === "owner" || clientId.startsWith("owner_")) {
+            if (isOwner) {
+              const wasSigned = !!contractRecord?.owner_signed_at;
               updates.owner_signed_at = updates.owner_signed_at || now;
+              if (!wasSigned && ownerEmail) {
+                // Send confirmation to owner
+                try {
+                  await sendEmail({
+                    from: process.env.GMAIL_USER,
+                    to: ownerEmail,
+                    subject: `Xác nhận đã ký hợp đồng #${booking?.booking_id || ""}`,
+                    html: signingConfirmationTemplate({ signerName: ownerName, bookingId: booking?.booking_id, signedAt: now.toLocaleString("vi-VN") }),
+                  });
+                } catch (e) { console.error("Email owner confirmation error:", e.message || e); }
+                // Notify renter that owner signed (optional)
+                if (renterEmail) {
+                  try {
+                    await sendEmail({
+                      from: process.env.GMAIL_USER,
+                      to: renterEmail,
+                      subject: `Thông báo: Chủ xe đã ký hợp đồng #${booking?.booking_id || ""}`,
+                      html: otherPartyNotificationTemplate({ otherName: renterName, bookingId: booking?.booking_id, signerName: ownerName, signedAt: now.toLocaleString("vi-VN") }),
+                    });
+                  } catch (e) { console.error("Email renter notify error:", e.message || e); }
+                }
+              }
             }
           }
         }
@@ -1051,7 +1159,7 @@ export async function sendContractForBookingServerSide(bookingId) {
           recipientId: "1",
           routingOrder: "1",
           roleName: "Renter",
-          clientUserId: "renter",
+          clientUserId: renterEmail || "renter",
           tabs: {
             signHereTabs: [
               {
@@ -1071,7 +1179,7 @@ export async function sendContractForBookingServerSide(bookingId) {
           recipientId: "2",
           routingOrder: "2",
           roleName: "Owner",
-          clientUserId: "owner",
+          clientUserId: ownerEmail || "owner",
           tabs: {
             signHereTabs: [
               {
@@ -1166,7 +1274,7 @@ export async function getRecipientViewUrlServerSide(
   const name = isOwner
     ? booking.vehicle?.owner?.full_name
     : booking.renter?.full_name;
-  const clientUserId = isOwner ? "owner" : "renter";
+  const clientUserId = isOwner ? (booking.vehicle?.owner?.email || "owner") : (booking.renter?.email || "renter");
 
   const feOrigin =
     process.env.CLIENT_ORIGIN ||
@@ -1187,3 +1295,92 @@ export async function getRecipientViewUrlServerSide(
   });
   return resp.data?.url;
 }
+
+// ========= New: OTP endpoints =========
+// POST /api/docusign/sign/send-otp
+// Body: { envelopeId, role, email }
+export const sendSigningOtp = async (req, res) => {
+  const { envelopeId, role, email } = req.body || {};
+  try {
+    let targetEmail = email;
+    let bookingIdForEmail = null;
+    if (!targetEmail) {
+      const bc = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
+      if (!bc) return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
+      bookingIdForEmail = bc.booking_id;
+      const b = await Booking.findByPk(bc.booking_id, {
+        include: [
+          { model: User, as: "renter", attributes: ["email"] },
+          { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["email"] }] },
+        ],
+      });
+      targetEmail = String(role).toLowerCase() === "owner" ? b?.vehicle?.owner?.email : b?.renter?.email;
+    }
+    if (!targetEmail) return res.status(400).json({ error: "Thiếu email người ký" });
+    const code = createOtp(envelopeId, targetEmail);
+    await sendEmail({
+      from: process.env.GMAIL_USER,
+      to: targetEmail,
+      subject: `Mã OTP xác thực ký hợp đồng${bookingIdForEmail ? ` #${bookingIdForEmail}` : ""}`,
+      html: signingOtpTemplate(code, bookingIdForEmail),
+    });
+    return res.json({ success: true, otp_sent: true });
+  } catch (err) {
+    console.error("sendSigningOtp error:", err.message || err);
+    return res.status(500).json({ error: "Gửi OTP thất bại", details: err.message || String(err) });
+  }
+};
+
+// POST /api/docusign/sign/verify-otp
+// Body: { envelopeId, role, email, otp, returnUrl }
+export const verifySigningOtpAndCreateView = async (req, res) => {
+  const { envelopeId, role, email, otp, returnUrl } = req.body || {};
+  try {
+    if (!envelopeId || !otp) return res.status(400).json({ error: "Thiếu envelopeId hoặc OTP" });
+    if (!email && !role) return res.status(400).json({ error: "Thiếu email hoặc role" });
+
+    // Resolve email by role if needed
+    let signerEmail = email;
+    let signerName = null;
+    let bookingId = null;
+    if (!signerEmail) {
+      const bc = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
+      if (!bc) return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
+      bookingId = bc.booking_id;
+      const b = await Booking.findByPk(bc.booking_id, {
+        include: [
+          { model: User, as: "renter", attributes: ["full_name", "email"] },
+          { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["full_name", "email"] }] },
+        ],
+      });
+      const isOwner = String(role).toLowerCase() === "owner";
+      signerEmail = isOwner ? b?.vehicle?.owner?.email : b?.renter?.email;
+      signerName = isOwner ? (b?.vehicle?.owner?.full_name || "Owner") : (b?.renter?.full_name || "Renter");
+    }
+    if (!signerEmail) return res.status(400).json({ error: "Không tìm thấy email người ký" });
+
+    // Verify OTP
+    const ok = verifyOtp(envelopeId, signerEmail, otp);
+    if (!ok) return res.status(401).json({ error: "OTP không hợp lệ hoặc đã hết hạn" });
+
+    // Build recipient view request
+    const feOrigin = process.env.CLIENT_ORIGIN || process.env.FRONTEND_ORIGIN || process.env.APP_BASE_URL || "";
+    const redir = returnUrl || (feOrigin ? `${feOrigin.replace(/\/$/, "")}/contract/${bookingId || "return"}` : "");
+    if (!/^https:\/\//.test(redir)) {
+      return res.status(400).json({ errorCode: "HTTPS_REQUIRED_FOR_RETURN_URL", message: "Return URL phải là HTTPS" });
+    }
+    const reqBody = {
+      authenticationMethod: "none",
+      clientUserId: String(signerEmail),
+      userName: signerName || signerEmail,
+      email: signerEmail,
+      returnUrl: redir,
+    };
+    const url = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/views/recipient`;
+    const resp = await axios.post(url, reqBody, { headers: { Authorization: `Bearer ${docusignAccessToken}` } });
+    return res.json({ success: true, url: resp.data?.url });
+  } catch (err) {
+    console.error("verifySigningOtpAndCreateView error:", err.response?.data || err.message || err);
+    return res.status(500).json({ error: "Tạo recipient view thất bại", details: err.response?.data || err.message || String(err) });
+  }
+};

@@ -289,6 +289,15 @@ export const confirmOwnerReturn = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const ownerId = req.user.userId;
+    // Nhận thêm thông tin tình trạng xe/hư hỏng từ body
+  const {
+      damage_reported,
+      damage_description,
+      compensation_amount,
+      late_return,
+      late_return_fee,
+      late_return_fee_description,
+    } = req.body || {};
 
     // Không cần lưu file tạm vì sử dụng memory storage
 
@@ -405,6 +414,30 @@ export const confirmOwnerReturn = async (req, res) => {
         post_rental_images: uploadedUrls,
         owner_return_confirmed: true,
         return_time: new Date(),
+        // lưu tình trạng xe/hư hỏng nếu có
+        damage_reported:
+          typeof damage_reported === "string"
+            ? damage_reported === "true"
+            : Boolean(damage_reported),
+        damage_description:
+          (damage_description && String(damage_description).trim()) || null,
+        compensation_amount:
+          compensation_amount !== undefined && compensation_amount !== null
+            ? Number(compensation_amount) || 0
+            : 0,
+        // trả xe trễ
+        late_return:
+          typeof late_return === "string" ? late_return === "true" : Boolean(late_return),
+        late_return_fee:
+          (typeof late_return === "string" ? late_return === "true" : Boolean(late_return))
+            ? (late_return_fee !== undefined && late_return_fee !== null
+                ? Number(late_return_fee) || 0
+                : null)
+            : null,
+        late_return_fee_description:
+          (typeof late_return === "string" ? late_return === "true" : Boolean(late_return))
+            ? ((late_return_fee_description && String(late_return_fee_description).trim()) || null)
+            : null,
       });
     } else {
       console.log("Updating existing handover record");
@@ -413,6 +446,38 @@ export const confirmOwnerReturn = async (req, res) => {
         post_rental_images: uploadedUrls,
         owner_return_confirmed: true,
         return_time: new Date(),
+        // cập nhật tình trạng xe/hư hỏng nếu có
+        damage_reported:
+          typeof damage_reported === "string"
+            ? damage_reported === "true"
+            : damage_reported !== undefined
+            ? Boolean(damage_reported)
+            : handover.damage_reported,
+        damage_description:
+          damage_description !== undefined
+            ? (String(damage_description).trim() || null)
+            : handover.damage_description,
+        compensation_amount:
+          compensation_amount !== undefined && compensation_amount !== null
+            ? Number(compensation_amount) || 0
+            : handover.compensation_amount,
+        // cập nhật thông tin trả xe trễ nếu có
+        late_return:
+          late_return !== undefined
+            ? (typeof late_return === "string" ? late_return === "true" : Boolean(late_return))
+            : handover.late_return,
+        late_return_fee:
+          late_return !== undefined
+            ? ((typeof late_return === "string" ? late_return === "true" : Boolean(late_return))
+                ? (late_return_fee !== undefined && late_return_fee !== null
+                    ? Number(late_return_fee) || 0
+                    : null)
+                : null)
+            : handover.late_return_fee,
+        late_return_fee_description:
+          late_return_fee_description !== undefined
+            ? ((late_return_fee_description && String(late_return_fee_description).trim()) || null)
+            : handover.late_return_fee_description,
       });
     }
 
@@ -420,11 +485,17 @@ export const confirmOwnerReturn = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Xác nhận bàn giao xe thành công",
+      message: "Xác nhận nhận lại xe thành công",
       data: {
         handover_id: handover.handover_id,
         uploadedImages: uploadedUrls,
         return_time: handover.return_time,
+        damage_reported: handover.damage_reported,
+        damage_description: handover.damage_description,
+        compensation_amount: handover.compensation_amount,
+        late_return: handover.late_return,
+        late_return_fee: handover.late_return_fee,
+        late_return_fee_description: handover.late_return_fee_description,
       },
     });
   } catch (error) {

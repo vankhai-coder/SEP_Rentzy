@@ -46,7 +46,8 @@ const PayoutManagement = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmPayout, setConfirmPayout] = useState(null);
-  
+  const [confirmReason, setConfirmReason] = useState("");
+
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [selectedQrCode, setSelectedQrCode] = useState(null);
 
@@ -91,10 +92,11 @@ const PayoutManagement = () => {
     }
   };
 
-  const handleReject = async (payoutId) => {
+  const handleReject = async (payoutId, reason) => {
     try {
       const response = await axiosInstance.put(
-        `/api/admin/payouts/${payoutId}/reject`
+        `/api/admin/payouts/${payoutId}/reject`,
+        { reason }
       );
       if (response.data.success) {
         fetchPayouts();
@@ -109,6 +111,20 @@ const PayoutManagement = () => {
       style: "currency",
       currency: "VND",
     }).format(amount);
+  };
+
+  // Tính toán các khoản tiền hiển thị theo yêu cầu
+  const calcAmounts = (payout) => {
+    const total = Number(
+      payout?.booking_info?.total_amount ?? payout?.total_rental_amount ?? 0
+    );
+    const rate = Number(payout?.platform_commission_rate ?? 0.1);
+    const cashApproved =
+      payout?.booking_info?.remaining_paid_by_cash_status === "approved";
+    const offlineCash = cashApproved ? total * 0.7 : 0; // 70% nếu đã xác nhận trả sau bằng tiền mặt
+    const platformFee = total * rate; // 10% mặc định từ backend
+    const finalToOwner = Math.max(total - offlineCash - platformFee, 0);
+    return { total, offlineCash, platformFee, finalToOwner };
   };
 
   const openQrModal = (qrCodeUrl) => {
@@ -143,9 +159,7 @@ const PayoutManagement = () => {
       const matchesSearch =
         searchTerm === "" ||
         payout.payout_id.toString().includes(searchTerm) ||
-        payout.booking_info?.booking_id
-          ?.toString()
-          .includes(searchTerm) ||
+        payout.booking_info?.booking_id?.toString().includes(searchTerm) ||
         payout.owner_info?.full_name
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
@@ -160,12 +174,25 @@ const PayoutManagement = () => {
     });
 
     filtered.sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
+      let aValue;
+      let bValue;
 
       if (sortBy === "created_at") {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
+        aValue = new Date(a.created_at);
+        bValue = new Date(b.created_at);
+      } else if (sortBy === "final_amount") {
+        aValue = calcAmounts(a).finalToOwner;
+        bValue = calcAmounts(b).finalToOwner;
+      } else if (sortBy === "total_amount") {
+        aValue = Number(
+          a?.booking_info?.total_amount ?? a?.total_rental_amount ?? 0
+        );
+        bValue = Number(
+          b?.booking_info?.total_amount ?? b?.total_rental_amount ?? 0
+        );
+      } else {
+        aValue = a[sortBy];
+        bValue = b[sortBy];
       }
 
       if (sortOrder === "ASC") {
@@ -194,6 +221,7 @@ const PayoutManagement = () => {
   const showConfirmModal = (action, payout) => {
     setConfirmAction(action);
     setConfirmPayout(payout);
+    setConfirmReason("");
     setIsConfirmModalOpen(true);
   };
 
@@ -201,7 +229,7 @@ const PayoutManagement = () => {
     if (confirmAction === "approve") {
       await handleApprove(confirmPayout.payout_id);
     } else if (confirmAction === "reject") {
-      await handleReject(confirmPayout.payout_id);
+      await handleReject(confirmPayout.payout_id, confirmReason);
     }
     closeConfirmModal();
   };
@@ -249,10 +277,27 @@ const PayoutManagement = () => {
   return (
     <div className="payout-management">
       <div className="page-header">
-        <Wallet size={24} />
-        <div>
-          <h1>Quản lý thanh toán</h1>
-          <p>Quản lý các yêu cầu thanh toán cho chủ xe</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+            <Wallet size={22} className="text-primary-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Giải ngân cho chủ xe</h1>
+            <p className="text-secondary-500">
+              Danh sách các yêu cầu cần xử lý
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="badge badge-primary px-2 py-0.5 text-xs">
+            Tổng: {statistics.total || 0}
+          </span>
+          <span className="badge badge-warning px-2 py-0.5 text-xs">
+            Chờ duyệt: {statistics.pending || 0}
+          </span>
+          <span className="badge badge-success px-2 py-0.5 text-xs">
+            Hoàn thành: {statistics.completed || 0}
+          </span>
         </div>
       </div>
 
@@ -303,22 +348,39 @@ const PayoutManagement = () => {
       <div className="controls">
         <div className="control-group">
           <Filter size={16} />
-          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="all">Tất cả</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="approved">Đã duyệt</option>
-            <option value="cancelled">Từ chối</option>
-            <option value="completed">Hoàn thành</option>
-            <option value="failed">Thất bại</option>
-            <option value="processed">Đã xử lý</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <button
+              className={`chip ${filter === "all" ? "chip-active" : ""}`}
+              onClick={() => setFilter("all")}
+            >
+              Tất cả
+            </button>
+            <button
+              className={`chip ${filter === "pending" ? "chip-active" : ""}`}
+              onClick={() => setFilter("pending")}
+            >
+              Chờ duyệt
+            </button>
+            <button
+              className={`chip ${filter === "completed" ? "chip-active" : ""}`}
+              onClick={() => setFilter("completed")}
+            >
+              Hoàn thành
+            </button>
+            <button
+              className={`chip ${filter === "cancelled" ? "chip-active" : ""}`}
+              onClick={() => setFilter("cancelled")}
+            >
+              Từ chối
+            </button>
+          </div>
         </div>
 
         <div className="control-group">
           <Search size={16} />
           <input
             type="text"
-            placeholder="Tìm kiếm..."
+            placeholder="Tìm theo payout, booking, chủ xe, xe..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -335,7 +397,7 @@ const PayoutManagement = () => {
         ) : (
           <>
             <div className="table-scroll">
-              <table className="payout-table">
+              <table className="payout-table modern">
                 <thead>
                   <tr>
                     <th
@@ -362,16 +424,35 @@ const PayoutManagement = () => {
                           <ChevronDown size={14} />
                         ))}
                     </th>
-                    <th>Chủ xe</th>
-                    <th>Xe</th>
+                    <th>Tên chủ xe</th>
+                    <th>Email</th>
+                    <th>Điện thoại</th>
                     <th>Thông tin Bank</th>
                     <th>QR Code</th>
                     <th
-                      onClick={() => handleSort("amount")}
+                      onClick={() => handleSort("total_amount")}
                       className="sortable"
                     >
-                      <span>Số tiền</span>
-                      {sortBy === "amount" &&
+                      <span>Tổng đơn</span>
+                      {sortBy === "total_amount" &&
+                        (sortOrder === "ASC" ? (
+                          <ChevronUp size={14} />
+                        ) : (
+                          <ChevronDown size={14} />
+                        ))}
+                    </th>
+                    <th>
+                      <span>Tiền người thuê chuyển cho chủ xe</span>
+                    </th>
+                    <th>
+                      <span>Phí nền tảng</span>
+                    </th>
+                    <th
+                      onClick={() => handleSort("final_amount")}
+                      className="sortable"
+                    >
+                      <span>Chủ xe thực nhận </span>
+                      {sortBy === "final_amount" &&
                         (sortOrder === "ASC" ? (
                           <ChevronUp size={14} />
                         ) : (
@@ -410,58 +491,52 @@ const PayoutManagement = () => {
                     const statusInfo = getStatusInfo(payout.status);
                     const StatusIcon = statusInfo.icon;
 
+                    const amounts = calcAmounts(payout);
                     return (
                       <tr key={payout.payout_id}>
                         <td>
-                          <span className="payout-id">
-                            #{payout.payout_id}
-                          </span>
+                          <span className="payout-id">#{payout.payout_id}</span>
                         </td>
                         <td>
-                          <span className="booking-id">
-                            BK{payout.booking_info?.booking_id}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="user-info">
-                            <div className="user-name">
-                              {payout.owner_info?.full_name}
-                            </div>
-                            <div className="user-email">
-                              {payout.owner_info?.email}
-                            </div>
-                            <div className="user-phone">
-                              {payout.owner_info?.phone_number}
-                            </div>
+                          <div className="booking-cell">
+                            <span className="booking-id">
+                              BK{payout.booking_info?.booking_id}
+                            </span>
                           </div>
                         </td>
                         <td>
-                          <div className="vehicle-info">
-                            <div className="vehicle-name">
-                              {payout.vehicle_info?.brand}{" "}
-                              {payout.vehicle_info?.model}
-                            </div>
-                            <div className="vehicle-plate">
-                              {payout.vehicle_info?.license_plate}
-                            </div>
-                          </div>
+                          <span className="owner-name">
+                            {payout.owner_info?.full_name}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="owner-email">
+                            {payout.owner_info?.email}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="owner-phone">
+                            {payout.owner_info?.phone_number}
+                          </span>
                         </td>
                         <td>
                           <div className="bank-info">
                             {payout.owner_info?.bank_name ? (
                               <>
-                                <div className="bank-name">
+                                <div className="bank-name font-semibold">
                                   {payout.owner_info.bank_name}
                                 </div>
-                                <div className="account-number">
+                                <div className="account-number text-secondary-600">
                                   {payout.owner_info.account_number}
                                 </div>
-                                <div className="account-holder">
+                                <div className="account-holder text-secondary-600">
                                   {payout.owner_info.account_holder_name}
                                 </div>
                               </>
                             ) : (
-                              <div className="no-bank">Chưa có thông tin bank</div>
+                              <div className="no-bank text-secondary-500">
+                                Chưa có thông tin bank
+                              </div>
                             )}
                           </div>
                         </td>
@@ -472,7 +547,9 @@ const PayoutManagement = () => {
                                 src={payout.owner_info.qr_code}
                                 alt="QR Code"
                                 className="qr-code-small"
-                                onClick={() => openQrModal(payout.owner_info.qr_code)}
+                                onClick={() =>
+                                  openQrModal(payout.owner_info.qr_code)
+                                }
                               />
                             ) : (
                               <div className="no-qr">Chưa có QR</div>
@@ -481,7 +558,22 @@ const PayoutManagement = () => {
                         </td>
                         <td>
                           <div className="amount">
-                            {formatCurrency(payout.total_rental_amount)}
+                            {formatCurrency(amounts.total)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="amount">
+                            {formatCurrency(amounts.offlineCash)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="amount">
+                            {formatCurrency(amounts.platformFee)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="amount font-semibold">
+                            {formatCurrency(amounts.finalToOwner)}
                           </div>
                         </td>
                         <td>
@@ -495,8 +587,15 @@ const PayoutManagement = () => {
                         </td>
                         <td>
                           <div
-                            className="status-badge"
-                            style={{ color: statusInfo.color }}
+                            className={`status-badge ${
+                              payout.status === "pending"
+                                ? "badge-warning"
+                                : payout.status === "completed"
+                                ? "badge-success"
+                                : payout.status === "cancelled"
+                                ? "badge-danger"
+                                : "badge-secondary"
+                            }`}
                           >
                             <StatusIcon size={16} />
                             <span>{statusInfo.text}</span>
@@ -510,25 +609,25 @@ const PayoutManagement = () => {
                                   onClick={() =>
                                     showConfirmModal("approve", payout)
                                   }
-                                  className="btn-approve"
+                                  className={`btn-approve`}
                                   title="Duyệt thanh toán"
+                                  disabled={
+                                    calcAmounts(payout).finalToOwner <= 0
+                                  }
                                 >
-                                  <CheckCircle size={16} />
+                                  Duyệt
                                 </button>
                                 <button
                                   onClick={() =>
                                     showConfirmModal("reject", payout)
                                   }
-                                  className="btn-reject"
+                                  className={`btn-reject`}
                                   title="Từ chối thanh toán"
                                 >
-                                  <XCircle size={16} />
+                                  Huỷ duyệt
                                 </button>
                               </>
                             )}
-                            <button className="btn-view" title="Xem chi tiết">
-                              <Eye size={16} />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -608,13 +707,34 @@ const PayoutManagement = () => {
                 <p>
                   Bạn có chắc chắn muốn{" "}
                   {confirmAction === "approve" ? "duyệt" : "từ chối"} thanh toán
-                  <strong> #{confirmPayout.payout_id}</strong> với số tiền
-                  <strong>
-                    {" "}
-                    {formatCurrency(confirmPayout.total_rental_amount)}
-                  </strong>
-                  ?
+                  <strong> #{confirmPayout.payout_id}</strong>?
                 </p>
+                <div className="grid grid-cols-2 gap-3 my-3">
+                  <div className="flex items-center justify-between">
+                    <span>Tổng đơn</span>
+                    <strong>
+                      {formatCurrency(calcAmounts(confirmPayout).total)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Tiền mặt (renter → owner)</span>
+                    <strong>
+                      {formatCurrency(calcAmounts(confirmPayout).offlineCash)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Phí nền tảng</span>
+                    <strong>
+                      {formatCurrency(calcAmounts(confirmPayout).platformFee)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Cần chuyển cho owner</span>
+                    <strong>
+                      {formatCurrency(calcAmounts(confirmPayout).finalToOwner)}
+                    </strong>
+                  </div>
+                </div>
                 <div className="payout-info">
                   <p>
                     <strong>Chủ xe:</strong>{" "}
@@ -625,6 +745,20 @@ const PayoutManagement = () => {
                     {confirmPayout.booking_info?.booking_id}
                   </p>
                 </div>
+                {confirmAction === "reject" && (
+                  <div className="mt-3">
+                    <label className="text-sm text-secondary-600">
+                      Lý do từ chối (tuỳ chọn)
+                    </label>
+                    <textarea
+                      className="input w-full mt-1"
+                      rows={3}
+                      placeholder="Nhập lý do từ chối..."
+                      value={confirmReason}
+                      onChange={(e) => setConfirmReason(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -652,7 +786,10 @@ const PayoutManagement = () => {
       {/* QR Code Modal */}
       {isQrModalOpen && (
         <div className="modal-overlay" onClick={closeQrModal}>
-          <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="qr-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="qr-modal-header">
               <h3>QR Code Thanh Toán</h3>
               <button onClick={closeQrModal} className="btn-close">

@@ -14,6 +14,29 @@ const ImageUploadViewer = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  // Trạng thái/ghi chú tình trạng xe sau khi trả
+  const [damageReported, setDamageReported] = useState(
+    handoverData?.damage_reported || false
+  );
+  const [damageDescription, setDamageDescription] = useState(
+    handoverData?.damage_description || ""
+  );
+  const [compensationAmount, setCompensationAmount] = useState(
+    handoverData?.compensation_amount || 0
+  );
+  // Trả xe trễ
+  const [lateReturnEnabled, setLateReturnEnabled] = useState(
+    handoverData?.late_return || false
+  );
+  const [lateReturnFee, setLateReturnFee] = useState(() => {
+    const val = handoverData?.late_return_fee;
+    if (val === null || val === undefined) return "";
+    const num = typeof val === "string" ? parseFloat(val) : Number(val);
+    return !isNaN(num) && num > 0 ? String(val) : "";
+  });
+  const [lateReturnReason, setLateReturnReason] = useState(
+    handoverData?.late_return_fee_description || ""
+  );
 
   useEffect(() => {
     // Kiểm tra xem đã có ảnh được xác nhận chưa
@@ -132,6 +155,17 @@ const ImageUploadViewer = ({
         formData.append("images", image.file);
       });
 
+      // Gửi kèm ghi chú tình trạng xe khi nhận lại xe (post-rental)
+      if (imageType === "post-rental") {
+        formData.append("damage_reported", damageReported ? "true" : "false");
+        formData.append("damage_description", damageDescription || "");
+        formData.append("compensation_amount", String(compensationAmount || 0));
+        // Trả xe trễ
+        formData.append("late_return", lateReturnEnabled ? "true" : "false");
+        formData.append("late_return_fee", String(lateReturnFee || ""));
+        formData.append("late_return_fee_description", lateReturnReason || "");
+      }
+
       // Sử dụng endpoint đúng cho từng loại handover
       const endpoint =
         imageType === "pre-rental"
@@ -148,6 +182,23 @@ const ImageUploadViewer = ({
         setConfirmedImages(data.data.uploadedImages.map((url) => ({ url })));
         setLocalImages([]); // Clear local images
         setIsConfirmed(true);
+
+        // Đồng bộ thông tin tình trạng xe sau khi server lưu
+        if (imageType === "post-rental") {
+          setDamageReported(Boolean(data.data.damage_reported));
+          setDamageDescription(data.data.damage_description || "");
+          setCompensationAmount(Number(data.data.compensation_amount || 0));
+          setLateReturnEnabled(Boolean(data.data.late_return));
+          setLateReturnFee(
+            data.data.late_return_fee !== undefined &&
+              data.data.late_return_fee !== null
+              ? String(data.data.late_return_fee)
+              : lateReturnFee
+          );
+          setLateReturnReason(
+            data.data.late_return_fee_description || lateReturnReason
+          );
+        }
 
         const successMessage =
           imageType === "pre-rental"
@@ -454,6 +505,172 @@ const ImageUploadViewer = ({
                   </>
                 )}
               </div>
+            </div>
+
+            {/* Ghi chú tình trạng xe/hư hỏng khi trả xe - chỉ hiển thị cho post-rental */}
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-3">
+                Ghi chú tình trạng xe khi trả
+              </h4>
+              {!isConfirmed ? (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={damageReported}
+                      onChange={(e) => setDamageReported(e.target.checked)}
+                    />
+                    <span className="text-sm text-gray-700">
+                      Có hư hỏng cần ghi nhận
+                    </span>
+                  </label>
+                  {damageReported && (
+                    <>
+                      <textarea
+                        value={damageDescription}
+                        onChange={(e) => setDamageDescription(e.target.value)}
+                        placeholder="Mô tả tình trạng xe/hư hỏng, vị trí, mức độ..."
+                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                        rows={3}
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">
+                          Bồi thường:
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={compensationAmount === 0 ? "" : String(compensationAmount)}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "");
+                            setCompensationAmount(Number(digits || 0));
+                          }}
+                          placeholder="Ví dụ: 150000"
+                          className="border border-gray-300 rounded-lg p-2 text-sm w-40"
+                        />
+                        <span className="text-sm text-gray-500">VND</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Chỉ nhập số cho bồi thường.</p>
+                    </>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Ghi chú này sẽ hiển thị cho người thuê để xác nhận tình
+                    trạng xe.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-700">Hư hỏng:</span>
+                    <span
+                      className={`text-sm font-medium ${
+                        damageReported ? "text-red-600" : "text-green-600"
+                      }`}
+                    >
+                      {damageReported ? "Có" : "Không"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-700">Mô tả:</span>
+                    <p className="text-sm text-gray-800 mt-1">
+                      {damageDescription || "Không có"}
+                    </p>
+                  </div>
+                  {damageReported && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">Bồi thường:</span>
+                      <span className="text-sm text-gray-800">
+                        {Number(compensationAmount || 0).toLocaleString(
+                          "vi-VN"
+                        )}{" "}
+                        VND
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Trả xe trễ */}
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-3">Trả xe trễ</h4>
+              {!isConfirmed ? (
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={lateReturnEnabled}
+                      onChange={(e) => setLateReturnEnabled(e.target.checked)}
+                    />
+                    <span className="text-sm text-gray-700">Có trả trễ</span>
+                  </label>
+                  {lateReturnEnabled && (
+                    <>
+                      <textarea
+                        value={lateReturnReason}
+                        onChange={(e) => setLateReturnReason(e.target.value)}
+                        placeholder="Mô tả/ghi chú lý do trả xe trễ..."
+                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                        rows={2}
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">
+                          Phí trả trễ:
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={lateReturnFee && Number(lateReturnFee) === 0 ? "" : lateReturnFee}
+                          onChange={(e) =>
+                            setLateReturnFee(e.target.value.replace(/\D/g, ""))
+                          }
+                          placeholder="Ví dụ: 200000"
+                          className="border border-gray-300 rounded-lg p-2 text-sm w-40"
+                        />
+                        <span className="text-sm text-gray-500">VND</span>
+                      </div>
+
+                      <p className="text-xs text-gray-500">
+                        Chỉ nhập số cho phí trả trễ.
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-700">Có trả trễ:</span>
+                    <span
+                      className={`text-sm font-medium ${
+                        lateReturnEnabled ? "text-red-600" : "text-green-600"
+                      }`}
+                    >
+                      {lateReturnEnabled ? "Có" : "Không"}
+                    </span>
+                  </div>
+                  {lateReturnEnabled && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">
+                          Phí trả trễ:
+                        </span>
+                        <span className="text-sm text-gray-800">
+                          {Number(lateReturnFee || 0).toLocaleString("vi-VN")}{" "}
+                          VND
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-700">Lý do:</span>
+                        <p className="text-sm text-gray-800 mt-1">
+                          {lateReturnReason || "Không có"}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

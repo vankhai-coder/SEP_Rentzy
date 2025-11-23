@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useContractBooking } from "./hooks/useContractBooking";
 import "./ContractBooking.scss";
 import axiosInstance from "@/config/axiosInstance";
@@ -10,9 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+
 const ContractBooking = () => {
   const { bookingId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { booking, loading, error, refreshBooking } =
     useContractBooking(bookingId);
@@ -21,6 +23,12 @@ const ContractBooking = () => {
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
+  // OTP state
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
   // Contract PDF state
   const [contractPdfUrl, setContractPdfUrl] = useState("");
@@ -39,7 +47,8 @@ const ContractBooking = () => {
       booking.status === "completed");
   const hasEnvelope = !!booking?.contract?.contract_number;
   const renterHasSigned = Boolean(booking?.contract?.renter_signed_at);
-  const renterNeedsSign = !!booking?.contract && hasEnvelope && !renterHasSigned;
+  const renterNeedsSign =
+    !!booking?.contract && hasEnvelope && !renterHasSigned;
 
   // ===== Actions =====
   // handlePrint removed (unused after removing buttons)
@@ -56,27 +65,62 @@ const ContractBooking = () => {
     }
   };
 
-  const handleSignContract = async () => {
+  const sendOtp = async () => {
     try {
+      setOtpError("");
+      setOtpSent(false);
+      setOtpSending(true);
+      const envelopeId = booking?.contract?.contract_number;
+      if (!envelopeId) {
+        alert("Không có thông tin hợp đồng để ký.");
+        return;
+      }
+      await axiosInstance.post(`/api/docusign/sign/send-otp`, {
+        envelopeId,
+        role: "renter",
+      });
+      setOtpSent(true);
+    } catch (err) {
+      console.error("Error sending OTP:", err);
+      setOtpError(err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtpAndOpenSigning = async () => {
+    try {
+      setOtpError("");
+      setOtpVerifying(true);
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
       const fePublic =
         import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       const returnUrl = `${fePublic}/contract/${booking.booking_id}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter", returnUrl },
+        params: { role: "renter", returnUrl, otp },
       });
       const url = resp.data?.url;
       if (url) {
         setSignUrl(url);
-        setShowSignModal(true);
       } else {
-        alert("Không thể tạo URL ký hợp đồng.");
+        setOtpError("OTP không chính xác hoặc đã hết hạn.");
       }
     } catch (err) {
-      console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+      console.error("Error verifying OTP / creating recipient view:", err);
+      setOtpError(err.response?.data?.error || "OTP không chính xác hoặc đã hết hạn.");
+    } finally {
+      setOtpVerifying(false);
     }
+  };
+
+  const handleSignContract = async () => {
+    setSignUrl("");
+    setOtp("");
+    setOtpError("");
+    setOtpSent(false);
+    setShowSignModal(true);
+    await sendOtp();
   };
 
   const initContractIfNeeded = async () => {
@@ -169,7 +213,8 @@ const ContractBooking = () => {
   // Khi có event trong URL và booking đã tải xong, đảm bảo gọi getStatus
   useEffect(() => {
     const params = new URLSearchParams(location.search || "");
-    const event = params.get("event") || params.get("source") || params.get("eventType");
+    const event =
+      params.get("event") || params.get("source") || params.get("eventType");
     if (event && booking?.contract?.contract_number) {
       handleRefreshStatus();
     }
@@ -232,22 +277,7 @@ const ContractBooking = () => {
     );
   }
 
-  const renderActionButtons = () => {
-    return (
-      <div className="actions-row">
-        <button
-          className="btn btn-primary"
-          onClick={handleSignContract}
-          disabled={!hasEnvelope || !renterNeedsSign}
-          title={
-            renterNeedsSign ? "Mở giao diện ký DocuSign" : "Bạn đã ký hợp đồng"
-          }
-        >
-          {renterNeedsSign ? "Ký hợp đồng" : "Đã ký"}
-        </button>
-      </div>
-    );
-  };
+  // Đã bỏ renderActionButtons để tránh trùng nút, chỉ hiển thị nút trong banner
 
   const handleIFrameLoad = () => {
     try {
@@ -266,6 +296,106 @@ const ContractBooking = () => {
 
   return (
     <div className="contract-booking">
+      {/* Header + Back button */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-gray-900">
+          Hợp đồng thuê xe
+        </h1>
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+        >
+          Quay về
+        </button>
+      </div>
+
+      {/* Thông tin hợp đồng */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Thông tin hợp đồng
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Mã hợp đồng DocuSign</p>
+            <p className="font-medium">
+              {booking.contract?.contract_number || "Chưa có"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái hợp đồng</p>
+            <p className="font-medium">
+              {(() => {
+                const raw =
+                  booking.contract?.contract_status ||
+                  booking.contract?.status ||
+                  "unknown";
+                const map = {
+                  pending_signatures: "Đang chờ ký",
+                  completed: "Hoàn tất",
+                  sent: "Đã gửi",
+                  created: "Đã tạo",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-gray-600">Chủ xe đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.owner_signed ||
+              booking.contract?.owner_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.owner_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.owner_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Người thuê đã ký</p>
+            <p className="font-medium">
+              {booking.contract?.renter_signed ||
+              booking.contract?.renter_signed_at
+                ? "Đã ký"
+                : "Chưa ký"}
+            </p>
+            {booking.contract?.renter_signed_at && (
+              <p className="text-sm text-gray-500">
+                Thời gian ký:{" "}
+                {new Date(booking.contract.renter_signed_at).toLocaleString(
+                  "vi-VN"
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Trạng thái đơn thuê</p>
+            <p className="font-medium">
+              {(() => {
+                const raw = booking.status || "unknown";
+                const map = {
+                  pending: "Chờ xác nhận",
+                  deposit_paid: "Đã đặt cọc",
+                  fully_paid: "Đã thanh toán toàn bộ",
+                  in_progress: "Đang thuê",
+                  completed: "Hoàn thành",
+                  cancel_requested: "Yêu cầu hủy",
+                  canceled: "Đã hủy",
+                  unknown: "Không xác định",
+                };
+                return map[raw] || raw;
+              })()}
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Banner */}
       {(!hasEnvelope || renterNeedsSign) && (
         <div className="banner">
@@ -320,17 +450,7 @@ const ContractBooking = () => {
         </div>
       )}
 
-      <div className="contract-actions">
-        {renderActionButtons()}
-        <div className="action-hint">
-          {!isPaidEnough && (
-            <span>Hãy thanh toán cọc để khởi tạo hợp đồng.</span>
-          )}
-          {isPaidEnough && !hasEnvelope && (
-            <span>Sau khi khởi tạo, bạn sẽ có thể ký hợp đồng.</span>
-          )}
-        </div>
-      </div>
+      {/* Bỏ khu vực contract-actions để tránh hiển thị trùng nút ký */}
 
       <div className="contract-viewer">
         {initLoading && (
@@ -444,7 +564,38 @@ const ContractBooking = () => {
               style={{ width: "100%", height: "80vh", border: "none" }}
             />
           ) : (
-            <div style={{ padding: 16 }}>Đang chuẩn bị URL ký...</div>
+            <div className="space-y-4">
+              <p className="text-gray-700">Nhập mã OTP đã gửi tới email của bạn để mở trang ký.</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Nhập mã OTP"
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button
+                  onClick={verifyOtpAndOpenSigning}
+                  disabled={otpVerifying || !otp}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+                >
+                  {otpVerifying ? "Đang xác thực..." : "Xác nhận"}
+                </button>
+              </div>
+              {otpError && <p className="text-red-600 text-sm">{otpError}</p>}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={sendOtp}
+                  disabled={otpSending}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                >
+                  {otpSending ? "Đang gửi OTP..." : "Gửi lại OTP"}
+                </button>
+                {otpSent && (
+                  <span className="text-green-600 text-sm">Đã gửi OTP tới email của bạn.</span>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

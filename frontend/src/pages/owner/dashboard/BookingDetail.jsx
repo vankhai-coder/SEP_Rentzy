@@ -13,7 +13,12 @@ import {
   MdAdd,
   MdEdit,
 } from "react-icons/md";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog.jsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog.jsx";
 import { toast } from "sonner";
 
 const BookingDetail = () => {
@@ -152,19 +157,13 @@ const BookingDetail = () => {
     }
   };
 
-  const handleViewContractPdf = async () => {
+  const handleViewContractPdf = () => {
     try {
-      const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có hợp đồng để xem.");
-      const resp = await axiosInstance.get(`/api/docusign/documents/${envelopeId}/combined`, {
-        responseType: "blob",
-      });
-      const blob = new Blob([resp.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      if (!booking?.booking_id) return alert("Không có hợp đồng để xem.");
+      navigate(`/owner/contract/${booking.booking_id}`);
     } catch (err) {
-      console.error("Error fetching contract PDF:", err);
-      alert(err.response?.data?.error || "Không thể tải hợp đồng PDF.");
+      console.error("Error navigating to contract page:", err);
+      alert("Không thể mở trang hợp đồng.");
     }
   };
 
@@ -608,45 +607,91 @@ const BookingDetail = () => {
                 </div>
               </div>
             </div>
-            {/* Status remaining paid by cash  */}
-            {booking.remaining_paid_by_cash_status == "pending" && (
+            {/* Tiền mặt trả sau (70%) - tách riêng và rõ ràng */}
+            {(booking.remaining_paid_by_cash_status === "pending" ||
+              booking.remaining_paid_by_cash_status === "approved" ||
+              booking.remaining_paid_by_cash_status === "rejected") && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  Thông tin chuyển tiền trả sau ( 70%)
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  Thông tin chuyển tiền trả sau (70%)
                 </h2>
-
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-600">Số tiền đã chuyển </p>
-                    <p className="text-sm text-gray-600">Vui lòng xác nhận </p>
-
-                    <p className="font-medium">
-                      {formatCurrency(
-                        booking.total_amount - booking.total_paid
-                      )}
-                    </p>
-                  </div>
+                <div className="mb-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      booking.remaining_paid_by_cash_status === "approved"
+                        ? "bg-green-100 text-green-700"
+                        : booking.remaining_paid_by_cash_status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {booking.remaining_paid_by_cash_status === "approved"
+                      ? "Chủ xe đã xác nhận khoản tiền"
+                      : booking.remaining_paid_by_cash_status === "pending"
+                      ? "Đang chờ chủ xe xác nhận"
+                      : "Chủ xe đã từ chối khoản tiền"}
+                  </span>
                 </div>
-                <button
-                  onClick={() => {
-                    approveRemainingByOwner();
-                  }}
-                >
-                  Xác nhận
-                </button>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    {booking.remaining_paid_by_cash_status === "approved"
+                      ? "Số tiền đã xác nhận"
+                      : "Số tiền cần xác nhận"}
+                  </p>
+                  <p className="text-2xl font-extrabold text-gray-900">
+                    {formatCurrency(
+                      booking.remaining_paid_by_cash_status === "approved"
+                        ? booking.total_amount * 0.7
+                        : booking.total_amount - booking.total_paid
+                    )}
+                  </p>
+                </div>
+                {booking.remaining_paid_by_cash_status === "pending" && (
+                  <>
+                    <div className="mt-4">
+                      <button
+                        onClick={approveRemainingByOwner}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                      >
+                        Xác nhận
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             {/* Contract Section */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Hợp đồng thuê xe</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Hợp đồng thuê xe
+              </h2>
               {booking.contract ? (
                 <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Trạng thái:</span>
-                    <span className="font-medium">{booking.contract.status}</span>
-                  </div>
+                  {(() => {
+                    const statusValue =
+                      booking.contract.contract_status ||
+                      booking.contract.status;
+                    const badgeClass =
+                      statusValue === "completed"
+                        ? "bg-green-100 text-green-700"
+                        : statusValue === "pending_signatures"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-blue-100 text-blue-700";
+                    return (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Trạng thái:</span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}`}
+                        >
+                          {statusValue}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex gap-3">
-                    {booking.contract.status === "pending_signatures" &&
+                    {(booking.contract.contract_status ||
+                      booking.contract.status) === "pending_signatures" &&
                       booking.contract.renter_signed === true &&
                       booking.contract.owner_signed === false && (
                         <button
@@ -656,12 +701,13 @@ const BookingDetail = () => {
                           Ký hợp đồng
                         </button>
                       )}
-                    {booking.contract.status === "completed" && (
+                    {(booking.contract.contract_status ||
+                      booking.contract.status) === "completed" && (
                       <button
                         onClick={handleViewContractPdf}
                         className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
                       >
-                        Xem hợp đồng PDF
+                        Xem hợp đồng
                       </button>
                     )}
                   </div>
@@ -675,35 +721,37 @@ const BookingDetail = () => {
 
         {/* Quản lý hình ảnh xe */}
         <div className="mt-8 space-y-8">
-          {((booking.status === "fully_paid" ||
+          {(booking.status === "fully_paid" ||
             booking.status === "in_progress" ||
-            booking.status === "completed") && (booking.contract?.contract_status === "completed" || booking.contract?.status === "completed")) && (
-            <>
-              <div className="flex items-center mb-4">
-                <span className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
-                  1
-                </span>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Hình ảnh xe trước khi bàn giao
-                </h2>
-              </div>
-              <ImageUploadViewer
-                bookingId={booking.booking_id}
-                imageType="pre-rental"
-                minImages={5}
-                onUploadSuccess={fetchBookingDetail}
-                userRole="owner"
-                onConfirmSuccess={fetchBookingDetail}
-                handoverData={booking.handover || {}}
-              />
-            </>
-          )}
-
-          {((booking.status === "in_progress" ||
             booking.status === "completed") &&
             (booking.contract?.contract_status === "completed" ||
-            booking.contract?.status === "completed") &&
-            booking.handover?.renter_handover_confirmed === true) && (
+              booking.contract?.status === "completed") && (
+              <>
+                <div className="flex items-center mb-4">
+                  <span className="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
+                    1
+                  </span>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Hình ảnh xe trước khi bàn giao
+                  </h2>
+                </div>
+                <ImageUploadViewer
+                  bookingId={booking.booking_id}
+                  imageType="pre-rental"
+                  minImages={5}
+                  onUploadSuccess={fetchBookingDetail}
+                  userRole="owner"
+                  onConfirmSuccess={fetchBookingDetail}
+                  handoverData={booking.handover || {}}
+                />
+              </>
+            )}
+
+          {(booking.status === "in_progress" ||
+            booking.status === "completed") &&
+            (booking.contract?.contract_status === "completed" ||
+              booking.contract?.status === "completed") &&
+            booking.handover?.renter_handover_confirmed === true && (
               <>
                 <div className="flex items-center mb-4">
                   <span className="bg-red-100 text-red-800 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">

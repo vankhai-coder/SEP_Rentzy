@@ -37,6 +37,8 @@ import OwnerBrandRoute from "./routes/owner/ownerBrandRoute.js";
 import OwnerDashboardRoute from "./routes/owner/ownerDashboardRoute.js";
 import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
+import RenterSystemSettingRoute from "./routes/renter/systemSettingPublicRoute.js";
+import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
@@ -56,6 +58,7 @@ import AdminRoute from "./routes/admin/adminCancelRoute.js";
 import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
 import AdminVoucherRoute from "./routes/admin/adminVoucherRoute.js";
 import AdminTrafficFineRoute from "./routes/admin/adminTrafficFineRoute.js";
+import AdminSystemSettingRoute from "./routes/admin/adminSystemSettingRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
@@ -101,8 +104,10 @@ app.use("/api/renter/reviews", BookingReviewRoute);
 app.use("/api/renter/booking-history", BookingHistoryRoute);
 app.use("/api/renter/reports", VehicleReportRoute);
 app.use("/api/renter/info", RenterInfoRoute);
+app.use("/api/renter/system-settings", RenterSystemSettingRoute);
 app.use("/api/renter/transactions", TransactionRoute);
 app.use("/api/renter", RecommendationRoute);
+app.use("/api/renter/notifications", RenterNotificationRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
@@ -128,6 +133,7 @@ app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/voucher-management", AdminVoucherRoute);
 app.use("/api/admin/traffic-fine-requests", AdminTrafficFineRoute);
+app.use("/api/admin/system-settings", AdminSystemSettingRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

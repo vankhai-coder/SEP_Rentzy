@@ -147,9 +147,9 @@ const CancelBookingModal = ({
           ) : cancellationInfo ? (
             <div className="cancellation-content">
               {/* Cancellation Details */}
-              <div className={`fee-card ${cancellationInfo.cancellationFeePercent === 0 ? 'free-cancellation' : ''}`}>
+              <div className={`fee-card ${cancellationInfo.cancellation_fee_percent === 0 ? 'free-cancellation' : ''}`}>
                 <div className="card-header">
-                  {cancellationInfo.cancellationFeePercent === 0 ? (
+                  {cancellationInfo.cancellation_fee_percent === 0 ? (
                     <>
                       <FaCheckCircle className="success-icon" />
                       <h3>Hủy miễn phí</h3>

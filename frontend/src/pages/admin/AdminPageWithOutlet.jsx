@@ -116,7 +116,7 @@ const AdminPage = () => {
               >
                 <User2 className="w-5 h-5 "
                 />
-                Tổng Quan 
+                Tổng Quan
               </NavLink>
             </li>
             <li>
@@ -301,6 +301,21 @@ const AdminPage = () => {
                 
                 " />
                 Duyệt Phạt Nguội
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/admin/systemSettings"
+                onClick={() => {
+                  setIsOpenMenuSideBar(false)
+                }}
+                className={({ isActive }) =>
+                  isActive ?
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium"
+                    :
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800"}
+              >
+                <CardSimIcon className="w-5 h-5" />
+                Quản Lý Hệ Thống
               </NavLink>
             </li>
             <li>
