@@ -42,6 +42,7 @@ import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
 import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
 import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
+import WaitingOwnerApproval from "./pages/renter/booking/WaitingOwnerApproval.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
@@ -139,6 +140,12 @@ const App = () => {
           <Route
             path="/payment-deposit/:bookingId"
             element={<PaymentDeposit />}
+          />
+
+          {/* Waiting Owner Approval */}
+          <Route
+            path="/booking-waiting/:bookingId"
+            element={<WaitingOwnerApproval />}
           />
 
           {/* Home Xe Máy */}

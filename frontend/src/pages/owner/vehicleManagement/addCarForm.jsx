@@ -22,6 +22,7 @@ const AddCarForm = () => {
     fuel_type: "",
     fuel_consumption: "",
     description: "",
+    require_owner_confirmation: false,
   });
 
   const [selectedFeatures, setSelectedFeatures] = useState([]);
@@ -258,6 +259,8 @@ const AddCarForm = () => {
       submitData.append('description', formData.description);
       submitData.append('body_type', formData.body_type);
       submitData.append('features', JSON.stringify(selectedFeatures));
+      // Owner confirmation requirement
+      submitData.append('require_owner_confirmation', formData.require_owner_confirmation ? 'true' : 'false');
 
       // Add images
       if (mainImage) {
@@ -556,6 +559,25 @@ const AddCarForm = () => {
                   placeholder="VD: 6.5 L/100km hoặc 15 kWh/100km"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+              {/* Require Owner Confirmation Toggle */}
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.require_owner_confirmation}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        require_owner_confirmation: e.target.checked,
+                      }))
+                    }
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Yêu cầu xác nhận của chủ xe trước khi duyệt đơn
+                  </span>
+                </label>
               </div>
             </div>
           </div>

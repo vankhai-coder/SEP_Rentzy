@@ -238,10 +238,17 @@ function BookingForm({ vehicle }) {
       console.log("Booking payload:", payload);
       console.log("Booking response:", response.data);
 
-      // Chuyển hướng đến trang xác nhận đơn hàng với booking ID
+      // Điều hướng theo yêu cầu xác nhận của chủ xe
       const bookingId = response.data.data?.booking_id;
       if (bookingId) {
-        navigate(`/payment-deposit/${bookingId}`);
+        const requiresOwnerConfirm = Boolean(vehicle?.require_owner_confirmation);
+        if (requiresOwnerConfirm) {
+          // Nếu xe yêu cầu xác nhận chủ xe, chuyển sang trang chờ duyệt
+          navigate(`/booking-waiting/${bookingId}`);
+        } else {
+          // Không yêu cầu, chuyển thẳng tới trang đặt cọc
+          navigate(`/payment-deposit/${bookingId}`);
+        }
       } else {
         alert("Đặt xe thành công!");
       }

@@ -261,6 +261,7 @@ export const createVehicle = async (req, res) => {
       latitude,
       longitude,
       features,
+      require_owner_confirmation,
     } = req.body;
 
     // Handle image uploads
@@ -303,7 +304,10 @@ export const createVehicle = async (req, res) => {
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
       extra_images: JSON.stringify(additional_images),
-      features: features ? JSON.parse(features) : null
+      features: features ? JSON.parse(features) : null,
+      require_owner_confirmation: require_owner_confirmation === undefined
+        ? false
+        : String(require_owner_confirmation).toLowerCase() === 'true'
     };
 
     // Xử lý brand: nếu gửi tên brand thì tìm brand_id
@@ -419,6 +423,7 @@ export const updateVehicle = async (req, res) => {
       latitude,
       longitude,
       features,
+      require_owner_confirmation,
     } = req.body;
 
     // Handle image uploads
@@ -467,7 +472,13 @@ export const updateVehicle = async (req, res) => {
       extra_images: JSON.stringify(additional_images),
       latitude: latitude ? parseFloat(latitude) : vehicle.latitude,
       longitude: longitude ? parseFloat(longitude) : vehicle.longitude,
-      features: features ? JSON.parse(features) : vehicle.features
+      features: features ? JSON.parse(features) : vehicle.features,
+      ...(require_owner_confirmation !== undefined
+        ? {
+            require_owner_confirmation:
+              String(require_owner_confirmation).toLowerCase() === 'true'
+          }
+        : {})
     };
 
     // Xử lý brand: nếu gửi tên brand thì tìm brand_id
@@ -614,6 +625,51 @@ export const updateVehicleStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi khi cập nhật trạng thái xe",
+      error: error.message,
+    });
+  }
+};
+
+// PATCH /api/owner/vehicles/:id/confirmation - Bật/tắt yêu cầu chủ xe xác nhận đơn thuê
+export const updateRequireOwnerConfirmation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { require_owner_confirmation } = req.body || {};
+    const ownerId = req.user.userId;
+
+    const vehicle = await Vehicle.findOne({
+      where: { vehicle_id: id, owner_id: ownerId },
+    });
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe",
+      });
+    }
+
+    if (require_owner_confirmation === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu trường require_owner_confirmation",
+      });
+    }
+
+    const value = String(require_owner_confirmation).toLowerCase() === 'true';
+    await vehicle.update({ require_owner_confirmation: value });
+
+    return res.json({
+      success: true,
+      message: value
+        ? "Đã bật yêu cầu chủ xe xác nhận đơn thuê"
+        : "Đã tắt yêu cầu chủ xe xác nhận đơn thuê",
+      data: { vehicle_id: id, require_owner_confirmation: value },
+    });
+  } catch (error) {
+    console.error("Error updating require_owner_confirmation:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi cập nhật xác nhận chủ xe",
       error: error.message,
     });
   }

@@ -101,53 +101,77 @@ const BookingDetailsPage = () => {
   };
 
   // Xử lý thanh toán PayOS
-  const handlePayOSPayment = async (amount, isRemaining = false) => {
-    // Hiển thị dialog xác nhận
-    const paymentType = isRemaining ? "phần còn lại" : "đặt cọc";
-    const confirmMessage = `Bạn có muốn thanh toán ${paymentType} với số tiền ${formatCurrency(
-      amount
-    )} không?`;
-
-    const userConfirmed = window.confirm(confirmMessage);
-
-    if (!userConfirmed) {
-      return; // Người dùng hủy, không thực hiện thanh toán
-    }
-
+  // Tạo link PayOS cho ĐẶT CỌC (30%) khi status = confirmed
+  const handlePayOSDepositPayment = async () => {
     try {
-      setPaymentLoading(true);
+      if (booking.status !== "confirmed") return;
+      const userConfirmed = window.confirm(
+        "Bạn có muốn thanh toán tiền cọc (30%) để giữ lịch không?"
+      );
+      if (!userConfirmed) return;
 
+      setPaymentLoading(true);
       const currentUrl = window.location.origin;
       const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
       const cancelUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
 
-      const endpoint = "/api/payment/payos/remaining-link";
-
-      const response = await axiosInstance.post(endpoint, {
+      const response = await axiosInstance.post("/api/payment/payos/link", {
         bookingId: booking.booking_id,
         returnUrl,
         cancelUrl,
       });
 
       if (response.data.payUrl) {
-        // Chuyển hướng đến trang thanh toán PayOS
         window.location.href = response.data.payUrl;
       } else {
-        throw new Error("Không thể tạo link thanh toán");
+        throw new Error("Không thể tạo link thanh toán đặt cọc");
       }
     } catch (error) {
-      console.error("PayOS payment error:", error);
-
-      let errorMessage = "Có lỗi xảy ra khi tạo link thanh toán";
-
+      console.error("PayOS deposit payment error:", error);
+      let errorMessage = "Có lỗi xảy ra khi tạo link thanh toán đặt cọc";
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
-      } else if (error.response?.status === 400) {
-        errorMessage = "Thông tin thanh toán không hợp lệ. Vui lòng thử lại.";
-      } else if (error.response?.status === 500) {
-        errorMessage = "Lỗi hệ thống. Vui lòng thử lại sau ít phút.";
       }
+      alert(errorMessage);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
+  // Tạo link PayOS cho PHẦN CÒN LẠI (70%) khi status = deposit_paid
+  const handlePayOSRemainingPayment = async () => {
+    try {
+      if (booking.status !== "deposit_paid") return;
+      const userConfirmed = window.confirm(
+        "Bạn có muốn thanh toán phần còn lại (70%) không?"
+      );
+      if (!userConfirmed) return;
+
+      setPaymentLoading(true);
+      const currentUrl = window.location.origin;
+      const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
+      const cancelUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
+
+      const response = await axiosInstance.post(
+        "/api/payment/payos/remaining-link",
+        {
+          bookingId: booking.booking_id,
+          returnUrl,
+          cancelUrl,
+        }
+      );
+
+      if (response.data.payUrl) {
+        window.location.href = response.data.payUrl;
+      } else {
+        throw new Error("Không thể tạo link thanh toán phần còn lại");
+      }
+    } catch (error) {
+      console.error("PayOS remaining payment error:", error);
+      let errorMessage = "Có lỗi xảy ra khi tạo link thanh toán phần còn lại";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
       alert(errorMessage);
     } finally {
       setPaymentLoading(false);
@@ -219,26 +243,31 @@ const BookingDetailsPage = () => {
   // Tính toán số tiền đã thanh toán và còn lại
   const calculatePaymentDetails = () => {
     if (!booking)
-      return { totalPaid: 0, remaining: 0, showPaymentButton: false };
+      return {
+        totalPaid: 0,
+        remaining: 0,
+        showDepositButton: false,
+        showRemainingButton: false,
+        nextPaymentAmount: 0,
+      };
 
     const totalPaid = parseFloat(booking.totalPaid) || 0;
     const totalAmount = parseFloat(booking.totalAmount) || 0;
     const remaining = totalAmount - totalPaid;
 
-    // Hiển thị nút thanh toán nếu còn tiền phải trả và trạng thái phù hợp
-    const showPaymentButton =
-      remaining > 0 &&
-      (booking.status === "deposit_paid" || booking.status === "pending");
+    const showDepositButton = booking.status === "confirmed"; // Thanh toán 30%
+    const showRemainingButton = booking.status === "deposit_paid" && remaining > 0; // Thanh toán 70%
 
     return {
       totalPaid,
       remaining,
-      showPaymentButton,
+      showDepositButton,
+      showRemainingButton,
       nextPaymentAmount: remaining,
     };
   };
 
-  const { totalPaid, remaining, showPaymentButton, nextPaymentAmount } =
+  const { totalPaid, remaining, showDepositButton, showRemainingButton, nextPaymentAmount } =
     calculatePaymentDetails();
 
   if (loading) {
@@ -522,37 +551,55 @@ const BookingDetailsPage = () => {
             </div>
           </div>
 
-          {showPaymentButton &&
-            booking.remaining_paid_by_cash_status === "none" && (
-              <div className="payment-action">
-                <div className="payment-actions-grid">
-                  <button
-                    className="payment-button primary"
-                    onClick={() => {
-                      const isRemaining = booking.status === "deposit_paid";
-                      handlePayOSPayment(nextPaymentAmount, isRemaining);
-                    }}
-                    disabled={paymentLoading}
-                  >
-                    {paymentLoading
-                      ? "Đang tạo link thanh toán..."
-                      : "Thanh toán qua hệ thống"}
-                  </button>
-                  <button
-                    className="payment-button secondary"
-                    onClick={() => {
-                      handlePaymentRemainingByCash();
-                    }}
-                    disabled={
-                      booking.remaining_paid_by_cash_status === "pending" ||
-                      booking.remaining_paid_by_cash_status === "approved"
-                    }
-                  >
-                    Thanh toán tiền mặt cho chủ xe
-                  </button>
-                </div>
+          {/* Trạng thái pending: ẩn nút thanh toán */}
+          {booking.status === "pending" && (
+            <div className="payment-action">
+              <p>Đơn đang chờ chủ xe xác nhận. Vui lòng đợi.</p>
+            </div>
+          )}
+
+          {/* Trạng thái confirmed: hiển thị nút thanh toán đặt cọc 30% */}
+          {showDepositButton && (
+            <div className="payment-action">
+              <div className="payment-actions-grid">
+                <button
+                  className="payment-button primary"
+                  onClick={handlePayOSDepositPayment}
+                  disabled={paymentLoading}
+                >
+                  {paymentLoading ? "Đang tạo link thanh toán..." : "Thanh toán cọc 30%"}
+                </button>
               </div>
-            )}
+              <p className="mt-2 text-sm text-gray-600">Vui lòng thanh toán 30% để giữ lịch thuê.</p>
+            </div>
+          )}
+
+          {/* Trạng thái deposit_paid: hiển thị nút thanh toán phần còn lại 70% */}
+          {showRemainingButton && booking.remaining_paid_by_cash_status === "none" && (
+            <div className="payment-action">
+              <div className="payment-actions-grid">
+                <button
+                  className="payment-button primary"
+                  onClick={handlePayOSRemainingPayment}
+                  disabled={paymentLoading}
+                >
+                  {paymentLoading ? "Đang tạo link thanh toán..." : "Thanh toán 70% còn lại"}
+                </button>
+                <button
+                  className="payment-button secondary"
+                  onClick={() => {
+                    handlePaymentRemainingByCash();
+                  }}
+                  disabled={
+                    booking.remaining_paid_by_cash_status === "pending" ||
+                    booking.remaining_paid_by_cash_status === "approved"
+                  }
+                >
+                  Thanh toán tiền mặt cho chủ xe
+                </button>
+              </div>
+            </div>
+          )}
 
           {booking.remaining_paid_by_cash_status === "pending" && (
             <div className="payment-action">
