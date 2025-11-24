@@ -226,8 +226,8 @@ export const approveTrafficFineRequest = async (req, res) => {
     await Notification.create(
       {
         user_id: request.booking.renter_id,
-        title: "Phí phạt nguội đã được duyệt",
-        content: `Phí phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ. ${request.description ? `Lý do: ${request.description}` : ''}`,
+        title: "Phí phạt nguội",
+        content: `Phí phạt nguội cho đơn thuê #${request.booking.booking_id}. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ. ${request.description ? `Lý do: ${request.description}` : ''}`,
         type: "alert",
       },
       { transaction }

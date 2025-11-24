@@ -537,6 +537,144 @@
   }
 
   // Transaction Section
+  .traffic-fine-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .traffic-fine-details {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .traffic-fine-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+
+      .traffic-fine-label {
+        font-weight: 500;
+        color: #64748b;
+        font-size: 15px;
+      }
+
+      .traffic-fine-value {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 16px;
+
+        &.paid {
+          color: #059669;
+        }
+
+        &.remaining {
+          color: #dc2626;
+        }
+      }
+    }
+
+    .traffic-fine-description {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 0;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 8px;
+
+      .traffic-fine-label {
+        font-weight: 500;
+        color: #64748b;
+        font-size: 15px;
+        margin-bottom: 4px;
+      }
+
+      .traffic-fine-value {
+        color: #1e293b;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+    }
+
+    .traffic-fine-images {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 8px;
+
+      .traffic-fine-label {
+        font-weight: 500;
+        color: #64748b;
+        font-size: 15px;
+      }
+
+      .traffic-fine-images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+
+        .traffic-fine-image {
+          width: 100%;
+          height: 120px;
+          object-fit: cover;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+          border: 2px solid #e2e8f0;
+
+          &:hover {
+            transform: scale(1.05);
+            border-color: #3b82f6;
+          }
+        }
+      }
+    }
+
+    @media (max-width: 768px) {
+      padding: 16px;
+      margin: 16px 0;
+
+      h3 {
+        font-size: 18px;
+      }
+
+      .traffic-fine-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .traffic-fine-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+
+        .traffic-fine-image {
+          height: 100px;
+        }
+      }
+    }
+  }
+
   .transaction-section {
     padding: 24px;
     

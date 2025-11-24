@@ -244,6 +244,12 @@ export const getBookingById = async (req, res) => {
       totalPaid: booking.total_paid || 0,
       remaining_paid_by_cash_status:
         booking.remaining_paid_by_cash_status || "none",
+      
+      // Thông tin phạt nguội
+      traffic_fine_amount: booking.traffic_fine_amount || 0,
+      traffic_fine_paid: booking.traffic_fine_paid || 0,
+      traffic_fine_description: booking.traffic_fine_description || null,
+      traffic_fine_images: booking.traffic_fine_images ? (typeof booking.traffic_fine_images === 'string' ? JSON.parse(booking.traffic_fine_images) : booking.traffic_fine_images) : [],
 
       // Thông tin khác
       voucherCode: booking.voucher_code,
