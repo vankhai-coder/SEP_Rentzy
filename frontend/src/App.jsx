@@ -180,6 +180,11 @@ const App = () => {
               element={<SystemSettingManagement />}
             />
 
+            <Route
+              path="systemSettings"
+              element={<SystemSettingManagement />}
+            />
+
             {/* catch all route start with /admin  */}
             <Route path="*" element={<ApprovalVehicle />} />
           </Route>
