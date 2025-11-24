@@ -180,27 +180,10 @@ const Header = () => {
                         </SheetClose>
                       </div>
                     )}
-                  </div>
-                  {/* second */}
-                  <div className="flex flex-col items-center justify-center rounded-2xl overflow-hidden w-full">
                     <div className="py-4 sm:py-6 w-full text-center bg-[#fff] border-b-1">
                       <SheetClose asChild>
                         <Link to="/about" className="hover:text-green-500 block w-full py-2">
                           Về Rentzy
-                        </Link>
-                      </SheetClose>
-                    </div>
-                    <div className="py-4 sm:py-6 w-full text-center bg-[#fff] border-b-1">
-                      <SheetClose asChild>
-                        <Link to="/cars" className="hover:text-green-500 block w-full py-2">
-                          Xe Ô Tô
-                        </Link>
-                      </SheetClose>
-                    </div>
-                    <div className="py-4 sm:py-6 w-full text-center bg-[#fff] border-b-1">
-                      <SheetClose asChild>
-                        <Link to="/motorbikes" className="hover:text-green-500 block w-full py-2">
-                          Xe Máy
                         </Link>
                       </SheetClose>
                     </div>
@@ -254,12 +237,6 @@ const Header = () => {
             </Link>
             <Link to={"/register_owner"} className="text-gray-900 hover:text-gray-600 transition-colors font-normal text-sm">
               Trở thành chủ xe
-            </Link>
-            <Link to={"/cars"} className="text-gray-900 hover:text-gray-600 transition-colors font-normal text-sm">
-              Xe Ô Tô
-            </Link>
-            <Link to={"/motorbikes"} className="text-gray-900 hover:text-gray-600 transition-colors font-normal text-sm">
-              Xe Máy
             </Link>
             {userId && (
               <Link to="/" className="text-gray-900 hover:text-gray-600 transition-colors font-normal text-sm">

@@ -31,6 +31,7 @@ const BookingManagement = () => {
 
   const statusLabels = {
     pending: "Chờ xác nhận",
+    confirmed: "Đã xác nhận đặt xe",
     deposit_paid: "Đã đặt cọc",
     fully_paid: "Đã thanh toán",
     in_progress: "Đang thuê",

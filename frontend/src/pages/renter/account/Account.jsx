@@ -63,7 +63,7 @@ const Account = () => {
   }
 
   return (
-    <div className="p-2 xs:px-8 sm:px-12 md:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16">
+    <div className="p-2 xs:px-4 sm:px-8 md:px-12 lg:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16 w-full max-w-full overflow-x-hidden box-border">
       {/* mobile: nav list */}
       <Select onValueChange={(value) => navigate(value)}>
         <SelectTrigger className="lg:hidden w-full text-md font-medium py-4 bg-[#ffffff] mb-6 md:mb-10">

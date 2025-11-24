@@ -192,26 +192,26 @@ const UserInformation = () => {
   }
 
   return (
-    <div className="flex flex-col gap-9 ">
+    <div className="flex flex-col gap-9 w-full max-w-full overflow-x-hidden box-border">
       {/* basic detail : avatar , name , email , phone .... */}
-      <div className="bg-[#ffffff] rounded-2xl p-4 md:p-6">
+      <div className="bg-[#ffffff] rounded-2xl p-3 sm:p-4 md:p-6 w-full max-w-full box-border overflow-x-hidden">
 
         {/* thong tin tai khoan :  */}
-        <div className="flex items-center justify-between rounded-t-2xl py-4">
+        <div className="flex items-center justify-between rounded-t-2xl py-3 sm:py-4 w-full max-w-full overflow-x-hidden">
           {/* thong tin tai khoan : */}
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xl font-semibold">Thông tin tài khoản</span>
-            <Pen size={16} className="hover:cursor-pointer" />
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <span className="text-base sm:text-lg md:text-xl font-semibold truncate">Thông tin tài khoản</span>
+            <Pen size={14} className="sm:w-4 sm:h-4 hover:cursor-pointer flex-shrink-0" />
           </div>
           {/* so chuyen xe : */}
-          <div className="hidden sm:flex items-end justify-between gap-2 border p-4 rounded-xl">
-            <CarIcon size={38} className="text-green-400" />
-            <span className="text-green-400 font-bold text-4xl">0</span>
-            <span>chuyến</span>
+          <div className="hidden sm:flex items-end justify-between gap-2 border p-3 sm:p-4 rounded-xl flex-shrink-0">
+            <CarIcon size={32} className="sm:w-[38px] sm:h-[38px] text-green-400" />
+            <span className="text-green-400 font-bold text-2xl sm:text-4xl">0</span>
+            <span className="text-sm sm:text-base">chuyến</span>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between gap-4" >
+        <div className="flex flex-col md:flex-row md:justify-between gap-4 w-full max-w-full overflow-x-hidden" >
 
           {/* avatar va thong tin ca nhan :  */}
           {/* avatar :  */}
@@ -288,9 +288,9 @@ const UserInformation = () => {
               </DialogContent>
             </Dialog>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 w-full max-w-full">
               {/* name : */}
-              <span className="font-semibold text-lg">{full_name || email}</span>
+              <span className="font-semibold text-sm sm:text-base md:text-lg truncate min-w-0 flex-1">{full_name || email}</span>
 
               {/* update pen : */}
               <Dialog onOpenChange={setUpdateNewNameOpen} open={updateNewNameOpen} >
@@ -355,65 +355,65 @@ const UserInformation = () => {
           {/* thong tin ca nhan : */}
           <div className="">
             {/* ngay sinh gioi tinh :  */}
-            <div className="bg-[#f6f6f6] rounded-2xl p-4 px-6 flex flex-col gap-4">
-              <div className="flex justify-between">
-                <span className="font-light text-sm">Ngày sinh</span>
-                <span className="font-semibold">{driver_license_dob}</span>
+            <div className="bg-[#f6f6f6] rounded-2xl p-3 sm:p-4 px-4 sm:px-6 flex flex-col gap-3 sm:gap-4 w-full max-w-full box-border">
+              <div className="flex justify-between gap-2 w-full">
+                <span className="font-light text-xs sm:text-sm flex-shrink-0">Ngày sinh</span>
+                <span className="font-semibold text-xs sm:text-sm truncate text-right">{driver_license_dob}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-light text-sm">Hạng GPLX</span>
-                <span className="font-semibold">{driver_class}</span>
+              <div className="flex justify-between gap-2 w-full">
+                <span className="font-light text-xs sm:text-sm flex-shrink-0">Hạng GPLX</span>
+                <span className="font-semibold text-xs sm:text-sm truncate text-right">{driver_class}</span>
               </div>
             </div>
 
             {/* sdt :  */}
-            <div className="flex justify-between py-4 border-b ">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-3 sm:py-4 border-b gap-2 sm:gap-0 w-full max-w-full overflow-x-hidden">
               {/* div ben trai  */}
-              <div className="flex gap-2">
-                <span className="font-light text-sm">Số điện thoại</span>
+              <div className="flex gap-1.5 sm:gap-2 items-center min-w-0 flex-1">
+                <span className="font-light text-xs sm:text-sm flex-shrink-0">Số điện thoại</span>
                 {phone_number ?
-                  <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
-                    <CheckCheck className="text-green-500" size={12} />
-                    <span className="text-xs font-normal">Đã xác thực</span>
+                  <div className="flex items-center gap-1 sm:gap-2 bg-green-200 rounded-xl p-0.5 sm:p-1 px-1.5 sm:px-2 flex-shrink-0">
+                    <CheckCheck className="text-green-500" size={10} />
+                    <span className="text-[10px] sm:text-xs font-normal whitespace-nowrap">Đã xác thực</span>
                   </div>
                   :
-                  <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                    <BiError />
-                    <span className="hidden sm:block">Chưa xác thực</span>
+                  <div className="p-0.5 sm:p-1 rounded-xl text-[10px] sm:text-xs font-light bg-yellow-200 flex items-center gap-0.5 flex-shrink-0">
+                    <BiError className="w-3 h-3" />
+                    <span className="hidden sm:block whitespace-nowrap">Chưa xác thực</span>
                   </div>
                 }
               </div>
               {/* div ben phai  */}
-              <div className="flex items-center gap-2 ">
-                <span className="text-xs xs:text-base font-semibold">{phone_number ? phone_number : 'Thêm số điện thoại'}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <span className="text-xs sm:text-sm md:text-base font-semibold truncate">{phone_number ? phone_number : 'Thêm số điện thoại'}</span>
                 <UpdatePhone />
               </div>
             </div>
 
             {/* email : */}
-            <div className="flex justify-between py-4 border-b gap-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-3 sm:py-4 border-b gap-2 sm:gap-4 w-full max-w-full overflow-x-hidden">
               {/* div ben trai  */}
-              <div className="flex gap-2 items-center">
-                <span className="font-light text-sm">Email</span>
+              <div className="flex gap-1.5 sm:gap-2 items-center min-w-0 flex-1">
+                <span className="font-light text-xs sm:text-sm flex-shrink-0">Email</span>
                 {email ?
-                  <div className="flex items-center  gap-2 bg-green-200 rounded-xl p-1 px-2">
-                    <CheckCheck className="text-green-500" size={12} />
-                    <span className="text-xs font-normal">Đã xác thực</span>
+                  <div className="flex items-center gap-1 sm:gap-2 bg-green-200 rounded-xl p-0.5 sm:p-1 px-1.5 sm:px-2 flex-shrink-0">
+                    <CheckCheck className="text-green-500" size={10} />
+                    <span className="text-[10px] sm:text-xs font-normal whitespace-nowrap">Đã xác thực</span>
                   </div>
                   :
-                  <div className="p-1 rounded-xl text-xs font-light bg-yellow-200 flex  items-center gap-0.5">
-                    <BiError />
-                    <span className="hidden sm:block">Chưa xác thực</span>
+                  <div className="p-0.5 sm:p-1 rounded-xl text-[10px] sm:text-xs font-light bg-yellow-200 flex items-center gap-0.5 flex-shrink-0">
+                    <BiError className="w-3 h-3" />
+                    <span className="hidden sm:block whitespace-nowrap">Chưa xác thực</span>
                   </div>
                 }
               </div>
               {/* div ben phai  */}
-              <div className="flex items-center gap-2 ">
-                <span className="text-xs xs:text-base font-semibold">{email}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <span className="text-xs sm:text-sm md:text-base font-semibold truncate">{email}</span>
                 {/* pop up update email form : */}
                 <Dialog open={open} onOpenChange={setOpen}>
                   <DialogTrigger asChild>
-                    <Pen className="hover:cursor-pointer" size={16} />
+                    <Pen className="hover:cursor-pointer flex-shrink-0" size={14} />
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
