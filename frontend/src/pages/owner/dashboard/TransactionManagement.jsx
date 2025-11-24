@@ -3,6 +3,8 @@ import axiosInstance from "../../../config/axiosInstance.js";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import "./TransactionManagement.scss";
+import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
+import { createThemeUtils } from "@/utils/themeUtils";
 import {
   CreditCard,
   Wallet,
@@ -26,6 +28,8 @@ import {
 import "./TransactionManagement.scss";
 
 const TransactionManagement = () => {
+  const theme = useOwnerTheme();
+  const themeUtils = createThemeUtils(theme);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -216,65 +220,67 @@ const TransactionManagement = () => {
     );
 
   return (
-    <div className="transaction-history">
+    <div className={`transaction-history min-h-screen ${themeUtils.bgMain}`}>
       {/* Header */}
-      <div className="page-header">
-        <h1>
+      <div className={`page-header ${themeUtils.textPrimary}`}>
+        <h1 className={themeUtils.textPrimary}>
           <Wallet size={28} /> Quản lý giao dịch
         </h1>
-        <p>Theo dõi và quản lý tất cả giao dịch của bạn</p>
+        <p className={themeUtils.textSecondary}>Theo dõi và quản lý tất cả giao dịch của bạn</p>
       </div>
 
       {/* Statistics */}
       <div className="stats-grid">
-        <div className="stat-card">
-          <CreditCard size={24} />
+        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
+          <CreditCard size={24} className="dark:text-white" />
           <div>
-            <h3>Tổng giao dịch</h3>
-            <p>{statistics.totalTransactions}</p>
+            <h3 className="dark:text-gray-300">Tổng giao dịch</h3>
+            <p className="dark:text-white">{statistics.totalTransactions}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <DollarSign size={24} />
+        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
+          <DollarSign size={24} className="dark:text-white" />
           <div>
-            <h3>Tổng tiền</h3>
-            <p>{formatCurrency(statistics.totalAmount)}</p>
+            <h3 className="dark:text-gray-300">Tổng tiền</h3>
+            <p className="dark:text-white">{formatCurrency(statistics.totalAmount)}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <TrendingUp size={24} />
+        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
+          <TrendingUp size={24} className="dark:text-green-400" />
           <div>
-            <h3>Tiền vào</h3>
-            <p className="income">{formatCurrency(statistics.moneyIn)}</p>
+            <h3 className="dark:text-gray-300">Tiền vào</h3>
+            <p className="income dark:text-green-400">{formatCurrency(statistics.moneyIn)}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <TrendingDown size={24} />
+        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
+          <TrendingDown size={24} className="dark:text-red-400" />
           <div>
-            <h3>Tiền ra</h3>
-            <p className="expense">{formatCurrency(statistics.moneyOut)}</p>
+            <h3 className="dark:text-gray-300">Tiền ra</h3>
+            <p className="expense dark:text-red-400">{formatCurrency(statistics.moneyOut)}</p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="filters-section">
-        <div className="filters-header">
+      <div className="filters-section dark:bg-secondary-800 dark:border-secondary-700">
+        <div className="filters-header dark:text-white">
           <Filter size={20} /> Bộ lọc
         </div>
         <div className="filters-content">
           <div className="search-box">
-            <Search size={18} />
+            <Search size={18} className="dark:text-gray-400" />
             <input
               type="text"
               placeholder="Tìm kiếm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
           >
             <option value="all">Tất cả trạng thái</option>
             {Object.keys(transactionStatusLabels).map((k) => (
@@ -286,6 +292,7 @@ const TransactionManagement = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
+            className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
           >
             <option value="all">Tất cả loại</option>
             {Object.keys(transactionTypeLabels).map((k) => (
@@ -298,11 +305,11 @@ const TransactionManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="table-scroll">
-        <table>
-          <thead>
+      <div className="table-scroll dark:bg-secondary-800">
+        <table className="dark:text-white">
+          <thead className="dark:bg-secondary-900">
             <tr>
-              <th onClick={() => handleSort("id")}>
+              <th onClick={() => handleSort("id")} className="dark:text-gray-300">
                 ID{" "}
                 {sortBy === "id" ? (
                   sortOrder === "asc" ? (
@@ -312,10 +319,10 @@ const TransactionManagement = () => {
                   )
                 ) : null}
               </th>
-              <th>Mã đặt xe</th>
-              <th>Người thuê</th>
-              <th>Xe</th>
-              <th onClick={() => handleSort("amount")}>
+              <th className="dark:text-gray-300">Mã đặt xe</th>
+              <th className="dark:text-gray-300">Người thuê</th>
+              <th className="dark:text-gray-300">Xe</th>
+              <th onClick={() => handleSort("amount")} className="dark:text-gray-300">
                 Số tiền{" "}
                 {sortBy === "amount" ? (
                   sortOrder === "asc" ? (
@@ -326,8 +333,8 @@ const TransactionManagement = () => {
                 ) : null}
               </th>
               {/* <th>Loại</th> */}
-              <th>Trạng thái</th>
-              <th onClick={() => handleSort("createdAt")}>
+              <th className="dark:text-gray-300">Trạng thái</th>
+              <th onClick={() => handleSort("createdAt")} className="dark:text-gray-300">
                 Ngày{" "}
                 {sortBy === "createdAt" ? (
                   sortOrder === "asc" ? (
@@ -339,15 +346,15 @@ const TransactionManagement = () => {
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="dark:bg-secondary-800">
             {filteredTransactions.map((tx) => {
               const status = statusInfo(tx.paymentStatus);
               // const type = typeInfo(tx.type);
               return (
-                <tr key={tx.id}>
-                  <td>{tx.id}</td>
-                  <td>{tx.bookingCode}</td>
-                  <td>{tx.renter?.name || "-"}</td>
+                <tr key={tx.id} className="dark:hover:bg-secondary-700">
+                  <td className="dark:text-white">{tx.id}</td>
+                  <td className="dark:text-white">{tx.bookingCode}</td>
+                  <td className="dark:text-white">{tx.renter?.name || "-"}</td>
                   <td>{tx.vehicle?.licensePlate || "-"}</td>
                   <td>{formatCurrency(tx.amount)}</td>
                   {/* <td className={`type-badge ${type.color}`}>

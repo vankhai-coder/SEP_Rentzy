@@ -46,6 +46,14 @@ const Booking = sequelize.define(
     discount_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
     // Phí giao xe
     delivery_fee: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
+    // Phí phạt nguội (traffic fine)
+    traffic_fine_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
+    // Số tiền phạt nguội đã thanh toán
+    traffic_fine_paid: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0 },
+    // Mô tả phạt nguội (lưu thông tin vi phạm)
+    traffic_fine_description: { type: DataTypes.TEXT, allowNull: true },
+    // Hình ảnh phạt nguội (lưu dưới dạng JSON array)
+    traffic_fine_images: { type: DataTypes.TEXT, allowNull: true },
     // Tổng số tiền phải trả (sau khi tính giảm giá và phí)
     total_amount: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     // Tổng số tiền đã thanh toán

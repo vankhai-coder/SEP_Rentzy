@@ -1,17 +1,18 @@
-import { useEffect, useCallback } from "react";
+// src/pages/renter/vehicles/HomeMotorbike.jsx (hoặc tương tự)
+import { useEffect, useCallback, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchVehicles } from "../../../redux/features/renter/vehicles/vehicleSlice";
 import { fetchBrands } from "../../../redux/features/renter/brand/brandSlice";
+import { fetchFavorites } from "../../../redux/features/renter/favorite/favoriteSlice";
 import MotorbikeList from "../../../components/renter/vehicles/motorbike/MotorbikeList";
 import BrandList from "../../../components/renter/brand/BrandList";
-import { fetchFavorites } from "../../../redux/features/renter/favorite/favoriteSlice";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import SearchForm from "../../../components/renter/search/SearchForm";
-import CompareModal from "../../../components/renter/vehicles/compare/CompareModal"; // Mới: Import modal
-import { compareVehicles } from "../../../redux/features/renter/compare/compareSlice"; // Mới: Import action
-import { Scale } from "lucide-react"; // Mới: Icon cho nút so sánh
-import { toast } from "react-toastify"; // Mới: Toast cho warn
-import { useState } from "react"; // Đã có, nhưng dùng cho modal
+import Pagination from "../../../components/common/Pagination";
+import CompareModal from "../../../components/renter/vehicles/compare/CompareModal";
+import { compareVehicles } from "../../../redux/features/renter/compare/compareSlice";
+import { Scale } from "lucide-react";
+import { toast } from "react-toastify";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const HomeMotorbike = () => {
   const dispatch = useDispatch();
@@ -19,46 +20,47 @@ const HomeMotorbike = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = Object.fromEntries(searchParams.entries());
 
-  const { vehicles, loading: vehicleLoading } = useSelector(
-    (state) => state.vehicleStore
-  );
+  const {
+    vehicles,
+    loading: vehicleLoading,
+    currentPage,
+    totalPages,
+  } = useSelector((state) => state.vehicleStore);
+
   const {
     brands,
     loading: brandLoading,
     error: brandError,
   } = useSelector((state) => state.brandStore);
-  const { userId } = useSelector((state) => state.userStore);
-  const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy danh sách so sánh
 
-  const [showModal, setShowModal] = useState(false); // Mới: State điều khiển modal
+  const { userId } = useSelector((state) => state.userStore);
+  const { compareList } = useSelector((state) => state.compareStore);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchVehicles("motorbike"));
+    dispatch(fetchVehicles({ type: "motorbike", page: 1, limit: 8 }));
     dispatch(fetchBrands("motorbike"));
-    if (userId) {
-      console.log("Fetching favorites for user:", userId);
-      dispatch(fetchFavorites());
-    }
+    if (userId) dispatch(fetchFavorites());
   }, [dispatch, userId]);
 
   const handleSearch = useCallback(
     (formData) => {
       if (!formData.location?.trim()) {
-        alert("Vui lòng chọn địa điểm!");
+        toast.error("Vui lòng chọn địa điểm!");
         return;
       }
-
       const newParams = { ...params, ...formData };
-      const queryString = new URLSearchParams(newParams).toString();
-      console.log("🔍 HOME MOTO SEARCH PARAMS:", newParams);
-
       setSearchParams(newParams);
-      navigate(`/motorbikes/search?${queryString}`);
+      navigate(`/motorbikes/search?${new URLSearchParams(newParams)}`);
     },
     [params, navigate, setSearchParams]
   );
 
-  // Mới: Function xử lý mở so sánh (tương tự HomeCar)
+  const handlePageChange = (page) => {
+    dispatch(fetchVehicles({ type: "motorbike", page, limit: 8 }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleOpenCompare = () => {
     if (compareList.length < 2) {
       toast.warn("Chọn ít nhất 2 xe để so sánh!");
@@ -80,12 +82,11 @@ const HomeMotorbike = () => {
         />
       </section>
 
-      {/* Mới: Nút So Sánh - Đặt ở top right sau SearchForm */}
       <div className="flex justify-end mb-4">
         {compareList.length > 0 && (
           <button
             onClick={handleOpenCompare}
-            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             disabled={compareList.length < 2}
           >
             <Scale size={20} />
@@ -94,7 +95,6 @@ const HomeMotorbike = () => {
         )}
       </div>
 
-      {/* Phần BrandList - Đưa lên đầu tiên (sau nút so sánh) */}
       <section className="mb-8">
         <h2 className="text-2xl font-bold mb-4">Hãng Xe Nổi Bật</h2>
         {brandLoading ? (
@@ -106,20 +106,25 @@ const HomeMotorbike = () => {
         )}
       </section>
 
-      {/* Phần Danh Sách Xe - Đưa xuống sau BrandList */}
       <h2 className="text-2xl font-bold mb-4">Danh Sách Xe Máy</h2>
+
       {vehicleLoading ? (
-        <p>Đang tải xe...</p>
+        <p className="text-center py-10">Đang tải xe máy...</p>
       ) : (
         <MotorbikeList bikes={vehicles} />
       )}
 
-      {/* Hiển thị modal so sánh khi showModal = true */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
+
       {showModal && (
         <CompareModal
-          compareList={compareList}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
+          compareList={compareList}
         />
       )}
     </div>

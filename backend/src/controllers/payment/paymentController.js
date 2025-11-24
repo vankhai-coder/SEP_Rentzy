@@ -106,8 +106,8 @@ const handlePayOSWebhook = async (req, res) => {
       data &&
       data.orderCode
     ) {
-      // Tìm booking theo order_code hoặc order_code_remaining
-      const booking = await Booking.findOne({
+      // Tìm booking theo order_code, order_code_remaining, hoặc traffic fine transaction
+      let booking = await Booking.findOne({
         where: {
           [Op.or]: [
             { order_code: data.orderCode },
@@ -115,6 +115,22 @@ const handlePayOSWebhook = async (req, res) => {
           ],
         },
       });
+
+      // Nếu không tìm thấy, có thể là thanh toán phí phạt nguội
+      if (!booking) {
+        const trafficFineTx = await Transaction.findOne({
+          where: {
+            type: "TRAFFIC_FINE",
+            status: "PENDING",
+            payment_method: "PAYOS",
+            note: { [Op.like]: `%TRAFFIC_FINE_ORDERCODE:${data.orderCode}%` },
+          },
+        });
+        
+        if (trafficFineTx && trafficFineTx.booking_id) {
+          booking = await Booking.findByPk(trafficFineTx.booking_id);
+        }
+      }
 
       if (!booking) {
         return res.json({
@@ -213,8 +229,55 @@ const handlePayOSWebhook = async (req, res) => {
       }
 
       // Kiểm tra xem đã có transaction COMPLETED cho orderCode này chưa
-      const transactionType =
-        booking.order_code === data.orderCode ? "DEPOSIT" : "RENTAL";
+      // Kiểm tra xem có phải thanh toán phí phạt nguội không
+      const trafficFineTransaction = await Transaction.findOne({
+        where: {
+          booking_id: booking.booking_id,
+          type: "TRAFFIC_FINE",
+          status: "PENDING",
+          payment_method: "PAYOS",
+          note: { [Op.like]: `%TRAFFIC_FINE_ORDERCODE:${data.orderCode}%` },
+        },
+      });
+
+      let transactionType;
+      if (trafficFineTransaction) {
+        // Đây là thanh toán phí phạt nguội
+        transactionType = "TRAFFIC_FINE";
+        
+        // Cập nhật traffic_fine_paid
+        const currentPaid = parseFloat(booking.traffic_fine_paid || 0);
+        const newPaid = currentPaid + Number(data.amount);
+        await booking.update({
+          traffic_fine_paid: newPaid,
+        });
+
+        // Cập nhật transaction
+        await trafficFineTransaction.update({
+          status: "COMPLETED",
+          processed_at: new Date(),
+        });
+
+        // Tạo notification cho owner
+        const vehicle = await db.Vehicle.findByPk(booking.vehicle_id);
+        if (vehicle) {
+          await db.Notification.create({
+            user_id: vehicle.owner_id,
+            title: "Thanh toán phí phạt nguội",
+            content: `Người thuê đã thanh toán phí phạt nguội cho đơn thuê #${booking.booking_id}. Số tiền: ${Number(data.amount).toLocaleString('vi-VN')} VNĐ.`,
+            type: "rental",
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: "Thanh toán phí phạt nguội thành công",
+        });
+      } else {
+        // Thanh toán bình thường (deposit hoặc rental)
+        transactionType =
+          booking.order_code === data.orderCode ? "DEPOSIT" : "RENTAL";
+      }
 
       const existingTransaction = await Transaction.findOne({
         where: {
@@ -619,6 +682,92 @@ const approveRemainingByOwner = async (req, res) => {
     return res.status(500).json("lỗi sever");
   }
 };
+// PAYOS: Tạo link thanh toán cho phí phạt nguội
+const createPayOSLinkForTrafficFine = async (req, res) => {
+  try {
+    const { bookingId, returnUrl, cancelUrl } = req.body;
+    const renterId = req.user.userId;
+
+    if (!bookingId || !returnUrl || !cancelUrl) {
+      return res.status(400).json({ error: "Thiếu thông tin." });
+    }
+
+    const booking = await Booking.findByPk(bookingId, {
+      include: [{ model: User, as: "renter" }],
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng." });
+    }
+
+    // Kiểm tra quyền sở hữu
+    if (booking.renter_id !== renterId) {
+      return res.status(403).json({ error: "Bạn không có quyền thanh toán đơn này." });
+    }
+
+    // Kiểm tra có phí phạt nguội chưa
+    const trafficFineAmount = parseFloat(booking.traffic_fine_amount || 0);
+    const trafficFinePaid = parseFloat(booking.traffic_fine_paid || 0);
+    const remainingFine = trafficFineAmount - trafficFinePaid;
+
+    if (remainingFine <= 0) {
+      return res.status(400).json({ 
+        error: "Không có phí phạt nguội cần thanh toán." 
+      });
+    }
+
+    if (remainingFine < 1000) {
+      return res.status(400).json({ 
+        error: "Số tiền thanh toán phải từ 1.000đ trở lên." 
+      });
+    }
+
+    // Tạo order code cho phí phạt nguội (sử dụng booking_id + timestamp để unique)
+    const orderCode = Number(String(bookingId) + String(Date.now()).slice(-8));
+
+    // Tạo transaction với status PENDING để track, lưu orderCode trong note
+    const pendingTransaction = await Transaction.create({
+      booking_id: bookingId,
+      from_user_id: renterId,
+      amount: remainingFine,
+      type: "TRAFFIC_FINE",
+      status: "PENDING",
+      payment_method: "PAYOS",
+      note: `TRAFFIC_FINE_ORDERCODE:${orderCode}`,
+    });
+
+    const description = `Phí phạt nguội đơn #${bookingId}`;
+    const body = {
+      orderCode,
+      amount: Math.floor(remainingFine),
+      description,
+      returnUrl,
+      cancelUrl,
+    };
+
+    const paymentLinkResponse = await payOS.paymentRequests.create(body);
+
+    if (paymentLinkResponse && paymentLinkResponse.checkoutUrl) {
+      return res.json({ 
+        payUrl: paymentLinkResponse.checkoutUrl,
+        orderCode,
+        amount: remainingFine 
+      });
+    } else {
+      return res.status(500).json({
+        error: "Không lấy được link thanh toán từ PayOS.",
+        payos: paymentLinkResponse,
+      });
+    }
+  } catch (error) {
+    console.error("PayOS traffic fine payment error:", error);
+    return res.status(500).json({
+      error: "Tạo link thanh toán phí phạt nguội thất bại",
+      detail: error.message,
+    });
+  }
+};
+
 export {
   createPayOSLink,
   handlePayOSWebhook,
@@ -626,4 +775,5 @@ export {
   cancelPayOSTransaction,
   paymentByCash,
   approveRemainingByOwner,
+  createPayOSLinkForTrafficFine,
 };

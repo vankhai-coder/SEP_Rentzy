@@ -35,6 +35,26 @@ const ApprovalVehicle = () => {
   const [rejectModal, setRejectModal] = useState({ open: false, vehicleId: null, vehicleModel: '' });
   const [rejectReason, setRejectReason] = useState('');
 
+  const buildAutoRejectReason = (vehicleId, vehicleModel) => {
+    const result = checkResults[vehicleId];
+    if (!result || !Array.isArray(result.checks)) return '';
+    const items = (result.checks || []).filter((c) => c && (c.status === 'fail' || c.status === 'warn'));
+    if (items.length === 0) return '';
+    const lines = [];
+    lines.push(`Xe ${vehicleModel} có vấn đề cần chỉnh sửa.`);
+    const failCount = items.filter((c) => c.status === 'fail').length;
+    const warnCount = items.filter((c) => c.status === 'warn').length;
+    if (failCount > 0) lines.push(`Lỗi nghiêm trọng: ${failCount}`);
+    if (warnCount > 0) lines.push(`Cảnh báo: ${warnCount}`);
+    items.forEach((c, idx) => {
+      const label = String(c.label || '').trim();
+      const detail = String(c.detail || '').trim();
+      const statusText = c.status === 'fail' ? 'Lỗi' : 'Cảnh báo';
+      lines.push(`- ${statusText} ${label}: ${detail}. Gợi ý: vui lòng kiểm tra và cập nhật thông tin "${label}" cho chính xác.`);
+    });
+    return lines.join('\n');
+  };
+
   // Fetch pending vehicles
   const fetchVehicles = useCallback(async (page = 1) => {
     try {
@@ -105,8 +125,17 @@ const ApprovalVehicle = () => {
 
   const handleReject = (vehicleId, vehicleModel) => {
     setRejectModal({ open: true, vehicleId, vehicleModel });
-    setRejectReason('');
+    const autoText = buildAutoRejectReason(vehicleId, vehicleModel);
+    setRejectReason(autoText);
   };
+
+  useEffect(() => {
+    if (rejectModal.open) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prevOverflow; };
+    }
+  }, [rejectModal.open]);
 
   const confirmReject = async () => {
     if (!rejectModal.vehicleId) return;
@@ -647,24 +676,24 @@ const ApprovalVehicle = () => {
         </div>
       )}
       {rejectModal.open && (
-        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-lg shadow-lg">
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-4xl min-w-[768px] rounded-lg shadow-lg">
             <div className="px-5 py-4 border-b flex items-center justify-between">
               <div className="text-lg font-semibold text-gray-900">Nhập lí do từ chối</div>
               <button onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })} className="text-gray-500 hover:text-gray-700">
                 <MdClose className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-5 py-4 space-y-3">
+            <div className="px-6 py-5 space-y-4">
               <div className="text-sm text-gray-700">Xe: {rejectModal.vehicleModel}</div>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full min-h-28 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full min-h-60 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                 placeholder="Nhập lí do từ chối gửi tới chủ xe"
               />
             </div>
-            <div className="px-5 py-4 border-t flex items-center justify-end gap-2">
+            <div className="px-6 py-4 border-t flex items-center justify-end gap-3">
               <button
                 onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })}
                 className="px-4 py-2 border rounded hover:bg-gray-50"
@@ -673,7 +702,7 @@ const ApprovalVehicle = () => {
               </button>
               <button
                 onClick={confirmReject}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Xác nhận
               </button>

@@ -9,6 +9,9 @@ import {
   MdDirectionsCar,
   MdLocationOn,
   MdAttachMoney,
+  MdWarning,
+  MdAdd,
+  MdEdit,
 } from "react-icons/md";
 import {
   Dialog,
@@ -16,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../components/ui/dialog.jsx";
+import { toast } from "sonner";
 
 const BookingDetail = () => {
   const { id } = useParams();
@@ -25,6 +29,11 @@ const BookingDetail = () => {
   const [error, setError] = useState(null);
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
+  const [showTrafficFineModal, setShowTrafficFineModal] = useState(false);
+  const [trafficFineAmount, setTrafficFineAmount] = useState("");
+  const [trafficFineDescription, setTrafficFineDescription] = useState("");
+  const [trafficFineImages, setTrafficFineImages] = useState([]);
+  const [submittingTrafficFine, setSubmittingTrafficFine] = useState(false);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -156,6 +165,100 @@ const BookingDetail = () => {
       console.error("Error navigating to contract page:", err);
       alert("Không thể mở trang hợp đồng.");
     }
+  };
+
+  const handleAddTrafficFine = async () => {
+    if (!trafficFineAmount || parseFloat(trafficFineAmount) <= 0) {
+      toast.error("Vui lòng nhập số tiền phạt nguội hợp lệ");
+      return;
+    }
+
+    if (trafficFineImages.length === 0) {
+      toast.error("Vui lòng thêm ít nhất một hình ảnh phạt nguội");
+      return;
+    }
+
+    try {
+      setSubmittingTrafficFine(true);
+      const formData = new FormData();
+      formData.append("amount", parseFloat(trafficFineAmount));
+      if (trafficFineDescription) {
+        formData.append("description", trafficFineDescription);
+      }
+      trafficFineImages.forEach((image) => {
+        formData.append("images", image.file);
+      });
+
+      const response = await axiosInstance.post(
+        `/api/owner/dashboard/bookings/${id}/traffic-fine`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Đã thêm phí phạt nguội thành công");
+        setShowTrafficFineModal(false);
+        setTrafficFineAmount("");
+        setTrafficFineDescription("");
+        setTrafficFineImages([]);
+        await fetchBookingDetail();
+      } else {
+        toast.error(response.data.message || "Không thể thêm phí phạt nguội");
+      }
+    } catch (error) {
+      console.error("Error adding traffic fine:", error);
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi thêm phí phạt nguội"
+      );
+    } finally {
+      setSubmittingTrafficFine(false);
+    }
+  };
+
+  const handleTrafficFineImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File ${file.name} không phải là ảnh`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File ${file.name} quá lớn (tối đa 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (trafficFineImages.length + validFiles.length > 10) {
+      toast.error("Chỉ được upload tối đa 10 ảnh");
+      return;
+    }
+
+    const newImages = validFiles.map((file) => {
+      const preview = URL.createObjectURL(file);
+      return {
+        id: Date.now() + Math.random(),
+        file,
+        preview,
+        name: file.name,
+      };
+    });
+
+    setTrafficFineImages((prev) => [...prev, ...newImages]);
+  };
+
+  const removeTrafficFineImage = (imageId) => {
+    setTrafficFineImages((prev) => {
+      const imageToRemove = prev.find((img) => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter((img) => img.id !== imageId);
+    });
   };
 
   if (loading) {
@@ -318,6 +421,100 @@ const BookingDetail = () => {
                 )}
               </div>
             </div>
+            {/* Traffic Fine Section - Riêng biệt với thanh toán */}
+            {(booking.traffic_fine_amount > 0 || (booking.status === "in_progress" || booking.status === "completed")) && (
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <MdWarning className="mr-2 text-orange-600" />
+                    Phí phạt nguội
+                  </h2>
+                  {(booking.status === "in_progress" || booking.status === "completed") && (
+                    <button
+                      onClick={() => {
+                        setTrafficFineAmount(booking.traffic_fine_amount || "");
+                        setTrafficFineDescription(booking.traffic_fine_description || "");
+                        setTrafficFineImages([]);
+                        setShowTrafficFineModal(true);
+                      }}
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                      title={booking.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
+                    >
+                      {booking.traffic_fine_amount > 0 ? (
+                        <>
+                          <MdEdit className="mr-1" />
+                          Sửa
+                        </>
+                      ) : (
+                        <>
+                          <MdAdd className="mr-1" />
+                          Thêm phí phạt
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {booking.traffic_fine_amount > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 font-medium">Tổng phí phạt nguội:</span>
+                      <span className="font-bold text-lg text-orange-600">
+                        {formatCurrency(booking.traffic_fine_amount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Đã thanh toán:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(booking.traffic_fine_paid || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Còn lại:</span>
+                      <span className="font-medium text-red-600">
+                        {formatCurrency((booking.traffic_fine_amount || 0) - (booking.traffic_fine_paid || 0))}
+                      </span>
+                    </div>
+                    {booking.traffic_fine_description && (
+                      <div className="mt-3 p-3 bg-white rounded border border-orange-200">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Lý do phạt nguội:</p>
+                        <p className="text-sm text-gray-600">{booking.traffic_fine_description}</p>
+                      </div>
+                    )}
+                    {booking.traffic_fine_images && booking.traffic_fine_images.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Hình ảnh phạt nguội:</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {booking.traffic_fine_images.map((imageUrl, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={imageUrl}
+                                alt={`Phạt nguội ${index + 1}`}
+                                className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(imageUrl, "_blank")}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-3 pt-3 border-t border-orange-200">
+                      <p className="text-xs text-gray-500 italic">
+                        * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-2">Chưa có phí phạt nguội</p>
+                    <p className="text-xs text-gray-500 italic">
+                      * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Booking Timeline */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -590,6 +787,163 @@ const BookingDetail = () => {
             ) : (
               <div className="text-gray-600">Đang chuẩn bị URL ký...</div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Traffic Fine Modal */}
+        <Dialog open={showTrafficFineModal} onOpenChange={setShowTrafficFineModal}>
+          <DialogContent className="max-w-2xl w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MdWarning className="text-orange-600" />
+                {booking?.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={trafficFineAmount}
+                  onChange={(e) => setTrafficFineAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập số tiền phạt nguội"
+                />
+                {trafficFineAmount && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    {formatCurrency(parseFloat(trafficFineAmount) || 0)}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mô tả / Lý do phạt nguội
+                </label>
+                <textarea
+                  value={trafficFineDescription}
+                  onChange={(e) => setTrafficFineDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="4"
+                  placeholder="Ví dụ: Vi phạm tốc độ tại đường ABC, ngày DD/MM/YYYY..."
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Mô tả chi tiết về vi phạm giao thông (tùy chọn)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hình ảnh phạt nguội <span className="text-red-500">*</span>
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <label className="cursor-pointer">
+                    <div className="text-center">
+                      <svg
+                        className="mx-auto h-10 w-10 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Nhấp để chọn ảnh hoặc kéo thả ảnh vào đây
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, GIF tối đa 5MB mỗi file. Tối đa 10 ảnh.
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleTrafficFineImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {trafficFineImages.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {trafficFineImages.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <img
+                          src={image.preview}
+                          alt={image.name}
+                          className="w-full h-32 object-cover rounded border border-gray-300"
+                        />
+                        <button
+                          onClick={() => removeTrafficFineImage(image.id)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Xóa ảnh"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {trafficFineImages.length === 0 && (
+                  <p className="mt-2 text-xs text-red-500">
+                    * Vui lòng thêm ít nhất một hình ảnh phạt nguội
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Lưu ý:</strong> Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
+                  {booking?.traffic_fine_paid > 0 && (
+                    <span className="block mt-1">
+                      Người thuê đã thanh toán: {formatCurrency(booking.traffic_fine_paid)}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowTrafficFineModal(false);
+                    setTrafficFineAmount("");
+                    setTrafficFineDescription("");
+                    setTrafficFineImages([]);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={submittingTrafficFine}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddTrafficFine}
+                  disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0 || trafficFineImages.length === 0}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
+                </button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

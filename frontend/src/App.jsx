@@ -58,6 +58,7 @@ import DisburseOwner from "./pages/admin/SideBarComponents/DisburseOwner.jsx";
 import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement.jsx";
 import SystemSettingManagement from "./pages/admin/SideBarComponents/SystemSettingManagement.jsx";
 import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
+import TrafficFineApproval from "./pages/admin/SideBarComponents/TrafficFineApproval.jsx";
 
 // Test pages
 
@@ -170,6 +171,12 @@ const App = () => {
             <Route path="disburseOwner" element={<DisburseOwner />} />
 
             <Route path="voucherManagement" element={<VoucherManagement />} />
+            <Route path="trafficFineApproval" element={<TrafficFineApproval />} />
+
+            <Route
+              path="systemSettings"
+              element={<SystemSettingManagement />}
+            />
 
             <Route
               path="systemSettings"

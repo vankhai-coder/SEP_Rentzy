@@ -23,7 +23,7 @@ import {
 import axiosInstance from "@/config/axiosInstance";
 
 
-const SidebarOwner = ({ handleLogout }) => {
+const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -74,7 +74,15 @@ const SidebarOwner = ({ handleLogout }) => {
     return () => { try { ws && ws.close(); } catch (err) { console.error(err); } };
   }, []);
   return (
-    <div className="w-[250px] bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen fixed top-0 left-0 overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000]">
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/40 z-[999] md:hidden" onClick={onClose} />
+      )}
+      <div
+        className={`bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] w-[80vw] md:w-[250px] fixed top-0 left-0 transform transition-transform duration-200 md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
       {/* Back icon at top-left */}
       <NavLink
         to="/account"
@@ -245,6 +253,7 @@ const SidebarOwner = ({ handleLogout }) => {
         </ul>
       </nav>
     </div>
+    </>
   );
 };
 

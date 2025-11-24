@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X } from "lucide-react"
+import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Lock, LockKeyholeOpen, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -26,14 +26,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { PopoverClose } from "@radix-ui/react-popover"
 import axiosInstance from "@/config/axiosInstance"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
+import { toast } from "sonner"
 
 const UserManagement = () => {
+
+  const queryClient = useQueryClient();
+
+  // selected user for view details or ban/unban , view booking history : 
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  // states for ban/unban dialog :
+  const [isBanUnbanUserDialogOpen, setIsBanUnbanUserDialogOpen] = useState(false);
+  const [isBanAction, setIsBanAction] = useState(true);
+  const [selectedUserFieldsForDisplayInBanUnban, setSelectedUserFieldsForDisplayInBanUnban] = useState({
+    fullName: '',
+    email: '',
+    role: ''
+  });
+  // state for loading when ban/unban user
+  const [isLoadingBanUnbanUser, setIsLoadingBanUnbanUser] = useState(false);
 
 
   // use tankstack query to fetch stats from backend api /api/admin/user-management/stats using axiosInstance: 
@@ -69,7 +85,7 @@ const UserManagement = () => {
   const fetchUsersWithSearchFilter = async () => {
     const response = await axiosInstance.get('/api/admin/user-management/users', {
       params: {
-        nameOrEmail: searchFilter.nameOrEmail,
+        nameOrEmail: searchFilter.nameOrEmail.trim(),
         role: searchFilter.role,
         isActive: searchFilter.isActive,
         page: currentPage,
@@ -116,6 +132,29 @@ const UserManagement = () => {
     const date = new Date(dateTimeString);
     return date.toLocaleString('vi-VN', options);
   }
+
+  // function to ban or unban user account to api : /api/admin/user-management/users/19/ban-unban using Patch method
+  const toggleUserActiveStatus = async (userId) => {
+    try {
+      setIsLoadingBanUnbanUser(true);
+      await axiosInstance.patch(`/api/admin/user-management/users/${userId}/ban-unban`);
+      // revalidate : 
+      queryClient.invalidateQueries(['users']);
+      toast.info(`Đã ${isBanAction ? 'khóa' : 'mở khóa'} tài khoản người dùng thành công.`);
+      setIsBanUnbanUserDialogOpen(false);
+
+    } catch (error) {
+      setIsBanUnbanUserDialogOpen(false);
+      console.error("Error toggling user active status:", error);
+      toast.error(`Có lỗi xảy ra khi ${isBanAction ? 'khóa' : 'mở khóa'} tài khoản người dùng.`);
+
+    } finally {
+      setIsLoadingBanUnbanUser(false);
+      setSelectedUserId(null);
+      setSelectedUserFieldsForDisplayInBanUnban(null);
+      setIsBanAction(null);
+    }
+  };
 
 
   return (
@@ -402,31 +441,46 @@ const UserManagement = () => {
 
                                 {/* view details */}
                                 <PopoverClose>
-                                  <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                  <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white  hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700 ">
                                     <span className="flex-shrink-0">
                                       <Eye className="lucide lucide-eye h-4 w-4" />
                                     </span>
-                                    <span>View Details</span>
+                                    <span>Xem chi tiết</span>
                                   </button>
                                 </PopoverClose>
 
                                 {/* ban account */}
                                 <PopoverClose>
-                                  <button onClick={() => { }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                  <button onClick={() => {
+                                    setSelectedUserId(user.user_id);
+                                    setIsBanAction(user.is_active); // if active, then ban action
+                                    setSelectedUserFieldsForDisplayInBanUnban({
+                                      fullName: user.full_name,
+                                      email: user.email,
+                                      role: user.role
+                                    });
+                                    setIsBanUnbanUserDialogOpen(true);
+                                  }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700 ">
                                     <span className="flex-shrink-0">
-                                      <Trash2 className="lucide h-4 w-4" />
+                                      {user.is_active ? <Lock className="lucide lucide-ban h-4 w-4" /> : <LockKeyholeOpen className="lucide lucide-shield-check h-4 w-4" />}
                                     </span>
-                                    <span>Delete User</span>
+                                    <span>{user.is_active ?
+                                      'Khóa tài khoản'
+                                      :
+                                      'Mở khóa tài khoản'
+                                    }</span>
                                   </button>
                                 </PopoverClose>
 
                                 {/* view booking history */}
                                 <PopoverClose>
-                                  <button className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white">
+                                  <button className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700 ">
                                     <span className="flex-shrink-0">
                                       <DollarSign className="lucide lucide-dollar-sign h-4 w-4" />
                                     </span>
-                                    <span onClick={() => { }}>View Booking History</span>
+                                    <span onClick={() => {
+
+                                    }}>Xem lịch sử đặt xe</span>
                                   </button>
                                 </PopoverClose>
 
@@ -491,7 +545,7 @@ const UserManagement = () => {
                         variant={p === currentPage ? "default" : "outline"}
                         onClick={() => setCurrentPage(p)}
                       >
-                        {p}
+                        {p} 
                       </Button>
                     ))}
 
@@ -507,6 +561,48 @@ const UserManagement = () => {
                   </div>
                 </div>
               }
+
+              {/* dialog for ban/unban user */}
+              <Dialog open={isBanUnbanUserDialogOpen} onOpenChange={(open) => {
+                setIsBanUnbanUserDialogOpen(open);
+              }}>
+                <DialogTrigger>
+                  {/* <Button variant={'outline'} className={'hover:cursor-pointer'}>Xem lý do</Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Xác nhận {isBanAction ? 'khóa' : 'mở khóa'}</DialogTitle>
+                    <DialogDescription className={'py-8'}>
+                      Bạn có chắc chắn muốn {isBanAction ? 'khóa' : 'mở khóa'} người dùng này không?
+                      {/* display some info of this user : */}
+                      <div className="mt-4 space-y-2">
+                        <p><span className="font-bold">Họ và tên:</span> {selectedUserFieldsForDisplayInBanUnban?.fullName}</p>
+                        <p><span className="font-bold">Email:</span> {selectedUserFieldsForDisplayInBanUnban?.email}</p>
+                        <p><span className="font-bold">Vai trò:</span> {selectedUserFieldsForDisplayInBanUnban?.role}</p>
+                      </div>
+                      {/* BUTTONS */}
+                      <div className="mt-4 flex justify-end gap-4">
+                        <Button variant="outline" onClick={() => {
+                          setIsBanUnbanUserDialogOpen(false)
+                        }}>Hủy</Button>
+                        <Button
+                          onClick={() => {
+                            // call api to ban or unban user :
+                            toggleUserActiveStatus(selectedUserId);
+                            setSelectedUserFieldsForDisplayInBanUnban({
+                              fullName: '',
+                              email: '',
+                              role: ''
+                            });
+                          }}
+                        >
+                          {isLoadingBanUnbanUser ? <Loader className="animate-spin mx-auto" /> : 'Xác nhận'}
+                        </Button>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
 
 
             </div>

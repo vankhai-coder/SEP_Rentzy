@@ -547,3 +547,61 @@ export const ownerRejectionNotificationTemplate = (reasonRejected) => {
   </html>
   `;
 };
+
+// template for ban/unban notification email : 
+export const banUnbanNotificationTemplate = (isBanned) => {
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Account Status Notification</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f9f9f9;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background: #ffffff;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          padding: 30px;
+        }
+        h2 {
+          color: #333333;
+        }
+        p {
+          color: #555555;
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 12px;
+          color: #888888;
+        } 
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Thông báo trạng thái tài khoản</h2>
+        <p>Xin chào,</p>
+        <p>
+          Tài khoản của bạn đã bị ${isBanned ? "khóa" : "mở khóa"} bởi quản trị viên.
+        </p>
+        <p>
+          Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.
+        </p>
+        <p>Cảm ơn bạn đã sử dụng dịch vụ của Rentzy.</p>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</p>
+        </div>
+      </div>
+    </body>
+  </html>
+  `;
+}

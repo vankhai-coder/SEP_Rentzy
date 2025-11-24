@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance.js";
+import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
+import { createThemeUtils } from "@/utils/themeUtils";
 import {
   MdCalendarToday,
   MdPerson,
@@ -12,6 +14,8 @@ import {
 
 const BookingManagement = () => {
   const navigate = useNavigate();
+  const theme = useOwnerTheme();
+  const themeUtils = createThemeUtils(theme);
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,28 +121,28 @@ const BookingManagement = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className={`p-4 lg:p-6 min-h-screen ${themeUtils.bgMain}`}>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+        <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>
           Quản lý đơn thuê
         </h1>
-        <p className="text-gray-600">
+        <p className={themeUtils.textSecondary}>
           Theo dõi và quản lý các đơn thuê xe của bạn
         </p>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 mb-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
-            <MdFilterList className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Bộ lọc:</span>
+            <MdFilterList className="text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Bộ lọc:</span>
           </div>
 
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange("status", e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Tất cả trạng thái</option>
             {Object.entries(statusLabels).map(([key, label]) => (
@@ -151,7 +155,7 @@ const BookingManagement = () => {
           <select
             value={filters.sortBy}
             onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="created_at">Ngày tạo</option>
             <option value="start_date">Ngày bắt đầu</option>
@@ -161,7 +165,7 @@ const BookingManagement = () => {
           <select
             value={filters.sortOrder}
             onChange={(e) => handleFilterChange("sortOrder", e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="DESC">Mới nhất</option>
             <option value="ASC">Cũ nhất</option>
@@ -172,7 +176,7 @@ const BookingManagement = () => {
             onChange={(e) =>
               handleFilterChange("limit", parseInt(e.target.value))
             }
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={5}>5 đơn/trang</option>
             <option value={10}>10 đơn/trang</option>
@@ -183,58 +187,58 @@ const BookingManagement = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MdCalendarToday className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <MdCalendarToday className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Tổng đơn</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng đơn</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {pagination.totalItems || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <MdAttachMoney className="h-6 w-6 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <MdAttachMoney className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Đơn hoàn thành
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {bookings.filter((b) => b.status === "completed").length}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <MdPerson className="h-6 w-6 text-yellow-600" />
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+              <MdPerson className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Đang chờ</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Đang chờ</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {bookings.filter((b) => b.status === "pending").length}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <MdDirectionsCar className="h-6 w-6 text-red-600" />
+            <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+              <MdDirectionsCar className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Đang thuê</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Đang thuê</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {bookings.filter((b) => b.status === "in_progress").length}
               </p>
             </div>
@@ -243,66 +247,66 @@ const BookingManagement = () => {
       </div>
 
       {/* Bookings Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-secondary-700">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Danh sách đơn thuê
           </h3>
         </div>
 
         {error && (
-          <div className="px-6 py-4 bg-red-50 border-b border-red-200">
-            <p className="text-red-600">{error}</p>
+          <div className="px-6 py-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
         {bookings.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <MdCalendarToday className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <MdCalendarToday className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
               Không có đơn thuê nào
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Chưa có đơn thuê nào được tạo.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-secondary-700">
+              <thead className="bg-gray-50 dark:bg-secondary-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Mã đơn
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Khách hàng
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Xe
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Thời gian
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Ngày tạo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tổng tiền
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Trạng thái
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Thao tác
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-700">
                 {bookings.map((booking) => (
-                  <tr key={booking.booking_id} className="hover:bg-gray-50">
+                  <tr key={booking.booking_id} className="hover:bg-gray-50 dark:hover:bg-secondary-700">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           #{booking.booking_id}
                         </div>
                       </div>
@@ -310,10 +314,10 @@ const BookingManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {booking.renter?.full_name || "N/A"}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {booking.renter?.email || "N/A"}
                           </div>
                         </div>
@@ -322,33 +326,33 @@ const BookingManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {booking.vehicle?.model || "N/A"}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {booking.vehicle?.license_plate || "N/A"}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-gray-900 dark:text-white">
                         {formatDateTime(booking.start_date, booking.start_time)}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {formatDateTime(booking.end_date, booking.end_time)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-gray-900 dark:text-white">
                         {formatDate(booking.created_at)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {formatCurrency(booking.total_amount)}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {booking.total_days} ngày
                       </div>
                     </td>
@@ -356,7 +360,7 @@ const BookingManagement = () => {
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           statusColors[booking.status] ||
-                          "bg-gray-100 text-gray-800"
+                          "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                         }`}
                       >
                         {statusLabels[booking.status] || booking.status}
@@ -368,7 +372,7 @@ const BookingManagement = () => {
                           e.stopPropagation();
                           handleRowClick(booking.booking_id);
                         }}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                       >
                         Chi tiết
                       </button>

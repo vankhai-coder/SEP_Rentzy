@@ -43,9 +43,9 @@ import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
-import AdminOverviewRoute from './routes/admin/adminOverviewRoute.js'
-import AdminUserManagementRoute from './routes/admin/adminUserManagementRoute.js'
-import AdminApproveOwnerRoute from './routes/admin/adminApproveOwnerRoute.js'
+import AdminOverviewRoute from "./routes/admin/adminOverviewRoute.js";
+import AdminUserManagementRoute from "./routes/admin/adminUserManagementRoute.js";
+import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -57,6 +57,7 @@ import BankAccountRoute from "./routes/bank/bankAccountRoute.js";
 import AdminRoute from "./routes/admin/adminCancelRoute.js";
 import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
 import AdminVoucherRoute from "./routes/admin/adminVoucherRoute.js";
+import AdminTrafficFineRoute from "./routes/admin/adminTrafficFineRoute.js";
 import AdminSystemSettingRoute from "./routes/admin/adminSystemSettingRoute.js";
 
 // cron jobs
@@ -131,6 +132,7 @@ app.use("/api/admin/user-management", AdminUserManagementRoute);
 app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/voucher-management", AdminVoucherRoute);
+app.use("/api/admin/traffic-fine-requests", AdminTrafficFineRoute);
 app.use("/api/admin/system-settings", AdminSystemSettingRoute);
 
 // voucher route
@@ -153,6 +155,9 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
+    // Use alter: false to avoid "Too many keys" error
+    // Only use alter: true when you need to modify table structure
+    // For production, use migrations instead of sync with alter
     await db.sequelize.sync({alter: false});
     console.log("✅ All models synced!");
 

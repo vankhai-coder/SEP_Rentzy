@@ -8,7 +8,10 @@ import {
   MdLockOpen,
   MdDirectionsCar,
   MdTwoWheeler,
-  MdFilterList
+  MdFilterList,
+  MdClose,
+  MdChevronLeft,
+  MdChevronRight
 } from 'react-icons/md';
 
 const ManagementVehicles = () => {
@@ -24,6 +27,8 @@ const ManagementVehicles = () => {
     totalItems: 0,
     itemsPerPage: 10
   });
+    const [expandedVehicleId, setExpandedVehicleId] = useState(null);
+    const [imageModal, setImageModal] = useState(null);
 
   // Fetch all vehicles
   const fetchVehicles = useCallback(async (page = 1, isSearch = false) => {
@@ -145,6 +150,8 @@ const ManagementVehicles = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       fetchVehicles(newPage);
+      setExpandedVehicleId(null);
+      setImageModal(null);
     }
   };
 
@@ -187,6 +194,31 @@ const ManagementVehicles = () => {
       </span>
     );
   };
+  
+  const normalizeImages = (vehicle) => {
+    const extras = typeof vehicle?.extra_images === 'string'
+      ? (() => { try { return JSON.parse(vehicle.extra_images); } catch { return []; } })()
+      : Array.isArray(vehicle?.extra_images) ? vehicle.extra_images : [];
+    const all = [vehicle?.main_image_url].filter(Boolean).concat(extras.filter(Boolean));
+    return { main: vehicle?.main_image_url || null, extras, all };
+  };
+
+  const toggleExpand = (vehicle) => {
+    if (expandedVehicleId === vehicle.vehicle_id) {
+      setExpandedVehicleId(null);
+    } else {
+      setExpandedVehicleId(vehicle.vehicle_id);
+    }
+  };
+
+  const openImageModal = (vehicle, idx) => {
+    const imgs = normalizeImages(vehicle).all;
+    if (imgs.length === 0) return;
+    setImageModal({ images: imgs, index: Math.max(0, Math.min(idx, imgs.length - 1)) });
+  };
+  const closeImageModal = () => setImageModal(null);
+  const prevImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index - 1 + m.images.length) % m.images.length }));
+  const nextImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index + 1) % m.images.length }));
 
   return (
     <div className="p-6 space-y-6">
@@ -297,7 +329,8 @@ const ManagementVehicles = () => {
                 </tr>
               ) : (
                 vehicles.map((vehicle) => (
-                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50">
+                  <>
+                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpand(vehicle)}>
                     <td className="px-4 py-3">
                       <div className="w-16 h-12 bg-gray-200 rounded overflow-hidden">
                         {vehicle.main_image_url ? (
@@ -351,7 +384,7 @@ const ManagementVehicles = () => {
                       <div className="flex items-center gap-2">
                         {vehicle.status === 'available' ? (
                           <button
-                            onClick={() => handleLockVehicle(vehicle.vehicle_id, vehicle.model)}
+                            onClick={(e) => { e.stopPropagation(); handleLockVehicle(vehicle.vehicle_id, vehicle.model); }}
                             className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
                           >
                             <MdLock className="w-4 h-4" />
@@ -359,7 +392,7 @@ const ManagementVehicles = () => {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleUnlockVehicle(vehicle.vehicle_id, vehicle.model)}
+                            onClick={(e) => { e.stopPropagation(); handleUnlockVehicle(vehicle.vehicle_id, vehicle.model); }}
                             className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
                           >
                             <MdLockOpen className="w-4 h-4" />
@@ -369,6 +402,100 @@ const ManagementVehicles = () => {
                       </div>
                     </td>
                   </tr>
+                  {expandedVehicleId === vehicle.vehicle_id && (
+                    <tr>
+                      <td colSpan="8" className="px-4 py-4 bg-gray-50">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            {(() => { const imgs = normalizeImages(vehicle); return (
+                              <div className="space-y-3">
+                                {imgs.main && (
+                                  <div className="w-full h-56 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, 0); }}>
+                                    <img src={imgs.main} alt={vehicle.model} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                {imgs.extras.length > 0 && (
+                                  <div className="grid grid-cols-3 gap-3">
+                                    {imgs.extras.map((url, idx) => (
+                                      <div key={idx} className="w-full h-24 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, idx + (imgs.main ? 1 : 0)); }}>
+                                        <img src={url} alt={`${vehicle.model}-${idx}`} className="w-full h-full object-cover" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ); })()}
+                          </div>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                              <div className="p-3 bg-white rounded border space-y-2">
+                                <div className="text-sm font-semibold text-gray-700">Thông tin xe</div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-500">Năm sản xuất</span>
+                                  <span className="text-gray-900">{vehicle.year}</span>
+                                </div>
+                                {vehicle.vehicle_type === 'car' && vehicle.seats && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Số chỗ ngồi</span>
+                                    <span className="text-gray-900">{vehicle.seats}</span>
+                                  </div>
+                                )}
+                                {vehicle.vehicle_type === 'car' && vehicle.transmission && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Hộp số</span>
+                                    <span className="text-gray-900">{vehicle.transmission}</span>
+                                  </div>
+                                )}
+                                {vehicle.vehicle_type === 'car' && vehicle.body_type && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Dáng xe</span>
+                                    <span className="text-gray-900">{vehicle.body_type}</span>
+                                  </div>
+                                )}
+                                {vehicle.engine_capacity && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Dung tích</span>
+                                    <span className="text-gray-900">{vehicle.engine_capacity} cc</span>
+                                  </div>
+                                )}
+                                {vehicle.fuel_type && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Nhiên liệu</span>
+                                    <span className="text-gray-900">{vehicle.fuel_type}</span>
+                                  </div>
+                                )}
+                                {vehicle.fuel_consumption && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Mức tiêu thụ</span>
+                                    <span className="text-gray-900">{vehicle.fuel_consumption}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-3 bg-white rounded border">
+                                <div className="text-sm font-semibold text-gray-700 mb-2">Tính năng</div>
+                                {vehicle.features && Array.isArray(vehicle.features) && vehicle.features.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {vehicle.features.map((f, idx) => (
+                                      <span key={idx} className="text-xs px-2 py-1 bg-gray-100 rounded">{String(f)}</span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500">Không có tính năng</div>
+                                )}
+                              </div>
+                            </div>
+                            {vehicle.description && (
+                              <div className="p-3 bg-white rounded border">
+                                <div className="text-sm font-semibold text-gray-700 mb-1">Mô tả</div>
+                                <div className="text-sm text-gray-900 whitespace-pre-line">{vehicle.description}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </>
                 ))
               )}
             </tbody>
@@ -432,7 +559,38 @@ const ManagementVehicles = () => {
         )}
       </div>
 
-    </div>
+      {imageModal && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+          <button
+            onClick={closeImageModal}
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
+          >
+            <MdClose className="w-5 h-5" />
+          </button>
+          <button
+            onClick={prevImage}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+          >
+            <MdChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={nextImage}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+          >
+            <MdChevronRight className="w-6 h-6" />
+          </button>
+          <div className="max-w-5xl w-full max-h-[85vh]">
+            <img
+              src={imageModal.images[imageModal.index]}
+              alt={`Ảnh ${imageModal.index + 1}`}
+              className="w-full h-full object-contain"
+            />
+            <div className="mt-2 text-center text-white text-sm">
+              Ảnh {imageModal.index + 1} / {imageModal.images.length}
+            </div>
+          </div>
+        </div>
+      )}</div>
   );
 };
 

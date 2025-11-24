@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { MdAttachMoney, MdTrendingUp, MdCalendarToday, MdDirectionsCar } from 'react-icons/md';
+import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
+import { createThemeUtils } from "@/utils/themeUtils";
 import {
   LineChart,
   Line,
@@ -17,6 +19,8 @@ import {
 } from 'recharts';
 
 const Revenue = () => {
+  const theme = useOwnerTheme();
+  const themeUtils = createThemeUtils(theme);
   const [revenueData, setRevenueData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,22 +29,32 @@ const Revenue = () => {
   const fetchRevenueData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('Revenue: Fetching data with period:', selectedPeriod);
       const response = await axiosInstance.get('/api/owner/dashboard/revenue', {
         params: { period: selectedPeriod }
       });
 
+      console.log('Revenue: API response:', response.data);
       if (response.data.success) {
         setRevenueData(response.data.data);
+      } else {
+        setError('Không thể tải dữ liệu doanh thu');
+        setRevenueData(null);
       }
     } catch (error) {
       setError('Không thể tải dữ liệu doanh thu');
-      console.error('Error fetching revenue data:', error);
+      console.error('Revenue: Error fetching revenue data:', error);
+      // Đảm bảo set revenueData về null nếu có lỗi
+      setRevenueData(null);
     } finally {
       setLoading(false);
+      console.log('Revenue: Loading finished');
     }
   };
 
   useEffect(() => {
+    console.log('Revenue: Component mounted, fetching data');
     fetchRevenueData();
   }, [selectedPeriod]);
 
@@ -64,49 +78,68 @@ const Revenue = () => {
 
   // Prepare chart data
   const prepareChartData = () => {
-    if (!revenueData?.monthlyRevenue) return [];
+    try {
+      if (!revenueData?.monthlyRevenue || !Array.isArray(revenueData.monthlyRevenue)) {
+        return [];
+      }
 
-    return revenueData.monthlyRevenue.map(item => ({
-      month: `${item.month}/${item.year}`,
-      revenue: parseFloat(item.revenue || 0),
-      bookings: parseInt(item.booking_count || 0)
-    })).reverse(); // Show oldest to newest
+      return revenueData.monthlyRevenue.map(item => ({
+        month: `${item.month}/${item.year}`,
+        revenue: parseFloat(item.revenue || 0),
+        bookings: parseInt(item.booking_count || 0)
+      })).reverse(); // Show oldest to newest
+    } catch (error) {
+      console.error('Error preparing chart data:', error);
+      return [];
+    }
   };
 
   const prepareVehicleStats = () => {
-    if (!revenueData?.vehicleStats) return [];
+    try {
+      if (!revenueData?.vehicleStats || !Array.isArray(revenueData.vehicleStats)) {
+        return [];
+      }
 
-    return revenueData.vehicleStats.map(stat => ({
-      name: `${stat.vehicle.model} (${stat.vehicle.license_plate})`,
-      revenue: parseFloat(stat.dataValues.totalRevenue || 0),
-      bookings: parseInt(stat.dataValues.bookingCount || 0)
-    }));
+      return revenueData.vehicleStats.map(stat => ({
+        name: `${stat.vehicle?.model || 'N/A'} (${stat.vehicle?.license_plate || 'N/A'})`,
+        revenue: parseFloat(stat.dataValues?.totalRevenue || 0),
+        bookings: parseInt(stat.dataValues?.bookingCount || 0)
+      }));
+    } catch (error) {
+      console.error('Error preparing vehicle stats:', error);
+      return [];
+    }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  console.log('Revenue: Rendering, loading:', loading, 'error:', error, 'revenueData:', revenueData);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <p className="ml-4 text-gray-600">Đang tải dữ liệu doanh thu...</p>
       </div>
     );
   }
 
-  return (
-    <div className="p-6">
+  // Đảm bảo component luôn render được, ngay cả khi không có data
+  try {
+    return (
+      <div className={`p-4 lg:p-6 min-h-screen ${themeUtils.bgMain}`}>
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Doanh thu</h1>
-            <p className="text-gray-600">Theo dõi doanh thu và hiệu suất kinh doanh</p>
+            <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Doanh thu</h1>
+            <p className={themeUtils.textSecondary}>Theo dõi doanh thu và hiệu suất kinh doanh</p>
           </div>
           
           <div className="flex space-x-2">
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="month">12 tháng gần nhất</option>
               <option value="year">Theo năm</option>
@@ -116,49 +149,49 @@ const Revenue = () => {
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-600">{error}</p>
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <MdAttachMoney className="h-6 w-6 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <MdAttachMoney className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Tổng doanh thu</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng doanh thu</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatCompactCurrency(revenueData?.totalRevenue || 0)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MdTrendingUp className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <MdTrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Đơn hoàn thành</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Đơn hoàn thành</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {revenueData?.completedBookings || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <MdCalendarToday className="h-6 w-6 text-purple-600" />
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+              <MdCalendarToday className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Doanh thu TB/tháng</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Doanh thu TB/tháng</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatCompactCurrency(
                   revenueData?.monthlyRevenue?.length > 0
                     ? revenueData.monthlyRevenue.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0) / revenueData.monthlyRevenue.length
@@ -169,14 +202,14 @@ const Revenue = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <MdDirectionsCar className="h-6 w-6 text-orange-600" />
+            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+              <MdDirectionsCar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Xe có doanh thu</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Xe có doanh thu</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {revenueData?.vehicleStats?.length || 0}
               </p>
             </div>
@@ -187,8 +220,8 @@ const Revenue = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Revenue Trend Chart */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Xu hướng doanh thu</h3>
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Xu hướng doanh thu</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={prepareChartData()}>
@@ -214,8 +247,8 @@ const Revenue = () => {
         </div>
 
         {/* Bookings Chart */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Số đơn thuê theo tháng</h3>
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Số đơn thuê theo tháng</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={prepareChartData()}>
@@ -233,8 +266,8 @@ const Revenue = () => {
       {/* Vehicle Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Vehicle Revenue Chart */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Doanh thu theo xe</h3>
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Doanh thu theo xe</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={prepareVehicleStats()} layout="horizontal">
@@ -249,35 +282,35 @@ const Revenue = () => {
         </div>
 
         {/* Vehicle Stats Table */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Thống kê xe</h3>
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Thống kê xe</h3>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-secondary-700">
+              <thead className="bg-gray-50 dark:bg-secondary-900">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Xe
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Đơn
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Doanh thu
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-700">
                 {prepareVehicleStats().map((stat, index) => (
-                  <tr key={index}>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-secondary-700">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       <div className="truncate max-w-32" title={stat.name}>
                         {stat.name}
                       </div>
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {stat.bookings}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {formatCurrency(stat.revenue)}
                     </td>
                   </tr>
@@ -296,7 +329,24 @@ const Revenue = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (renderError) {
+    console.error('Revenue: Error rendering component:', renderError);
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <h2 className="text-xl font-bold text-red-800 mb-2">Lỗi hiển thị trang doanh thu</h2>
+          <p className="text-red-600">{renderError.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Tải lại trang
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default Revenue;

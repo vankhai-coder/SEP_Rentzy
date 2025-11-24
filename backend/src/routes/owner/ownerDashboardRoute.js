@@ -11,10 +11,12 @@ import {
   markAllNotificationsAsRead,
   searchTrafficFine,
   getTrafficFineCaptcha,
+  addTrafficFine,
 } from "../../controllers/owner/ownerDashboardController.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
+import upload from "../../middlewares/multerConfig.js";
 
 const router = express.Router();
 
@@ -57,5 +59,8 @@ router.patch("/notifications/mark-all-read", markAllNotificationsAsRead);
 // 6. Tra cứu phạt nguội
 router.get("/traffic-fine-search/captcha", getTrafficFineCaptcha);
 router.post("/traffic-fine-search", searchTrafficFine);
+
+// 7. Quản lý phí phạt nguội
+router.post("/bookings/:id/traffic-fine", upload.array("images", 10), addTrafficFine);
 
 export default router;

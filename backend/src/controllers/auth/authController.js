@@ -284,6 +284,13 @@ export const login = async (req, res) => {
             return res.status(400).json({ message: 'Email này đã được dùng để đăng nhập với Số điện thoại!' })
         }
 
+        // 1.3 check is band : 
+        if (!existUser.is_active) {
+            return res.status(400).json({
+                success: false, message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên!"
+            });
+        }
+
         // 2. Check if email is verified
         if (existUser.email_verified !== true) {
             return res
@@ -834,6 +841,7 @@ export const loginWithPhoneNumber = async (req, res) => {
             }
         }
     );
+
     let foundUser = null;
     // decrypt and compare phone number :
     for (const user of users) {
@@ -847,6 +855,13 @@ export const loginWithPhoneNumber = async (req, res) => {
     }
     if (!foundUser) {
         return res.status(404).json({ message: "Không tìm thấy người dùng với số điện thoại này!" });
+    }
+
+    // check if user is baned : 
+    if (!foundUser.is_active) {
+        return res.status(400).json({
+            success: false, message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên!"
+        });
     }
 
     // 5. verify otp using twilio :

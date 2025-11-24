@@ -4,6 +4,7 @@ import {
   calculateCancellationFeeLogic,
   createCancellationInfo,
 } from "../../utils/cancellationUtils.js";
+import cloudinary from "../../config/cloudinary.js";
 
 const {
   Booking,
@@ -16,6 +17,7 @@ const {
   BookingCancellation,
   Transaction,
   BookingContract,
+  TrafficFineRequest,
 } = db;
 
 // 1. GET /api/owner/bookings - Quản lý đơn thuê
@@ -785,9 +787,22 @@ export const getBookingDetail = async (req, res) => {
       });
     }
 
+    // Parse traffic_fine_images từ JSON string thành array
+    const bookingData = booking.toJSON();
+    if (bookingData.traffic_fine_images) {
+      try {
+        bookingData.traffic_fine_images = JSON.parse(bookingData.traffic_fine_images);
+      } catch (e) {
+        // Nếu không parse được, giữ nguyên hoặc set thành array rỗng
+        bookingData.traffic_fine_images = [];
+      }
+    } else {
+      bookingData.traffic_fine_images = [];
+    }
+
     res.json({
       success: true,
-      data: booking,
+      data: bookingData,
     });
   } catch (error) {
     console.error("Error getting booking detail:", error);
@@ -1236,6 +1251,129 @@ export const searchTrafficFine = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi khi tra cứu phạt nguội",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+// POST /api/owner/dashboard/bookings/:id/traffic-fine - Thêm/cập nhật phí phạt nguội
+export const addTrafficFine = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+    const { amount, description } = req.body;
+
+    // Validate input
+    if (!amount || amount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số tiền phạt nguội không hợp lệ",
+      });
+    }
+
+    // Validate images - bắt buộc phải có ít nhất 1 ảnh
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng thêm ít nhất một hình ảnh phạt nguội",
+      });
+    }
+
+    // Tìm booking
+    const booking = await Booking.findOne({
+      where: { booking_id: id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          where: { owner_id: ownerId },
+          attributes: ["vehicle_id", "license_plate"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê",
+      });
+    }
+
+    // Chỉ cho phép thêm phí phạt nguội khi booking đang trong quá trình hoặc đã hoàn thành
+    if (!["in_progress", "completed"].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+      });
+    }
+
+    const trafficFineAmount = parseFloat(amount);
+
+    // Upload images to Cloudinary
+    const uploadPromises = req.files.map((file) => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: `traffic-fines/${booking.booking_id}`,
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result.secure_url);
+              }
+            }
+          )
+          .end(file.buffer);
+      });
+    });
+
+    const imageUrls = await Promise.all(uploadPromises);
+
+    // Tạo yêu cầu phạt nguội chờ duyệt thay vì cập nhật trực tiếp
+    const trafficFineRequest = await TrafficFineRequest.create({
+      booking_id: booking.booking_id,
+      owner_id: ownerId,
+      amount: trafficFineAmount,
+      description: description || null,
+      images: JSON.stringify(imageUrls),
+      status: "pending",
+    });
+
+    // Tìm tất cả admin users để gửi notification
+    const adminUsers = await User.findAll({
+      where: { role: "admin" },
+      attributes: ["user_id"],
+    });
+
+    // Tạo notification cho tất cả admin
+    if (adminUsers.length > 0) {
+      const notifications = adminUsers.map((admin) => ({
+        user_id: admin.user_id,
+        title: "Yêu cầu duyệt phạt nguội mới",
+        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${booking.booking_id}. Số tiền: ${trafficFineAmount.toLocaleString('vi-VN')} VNĐ.`,
+        type: "alert",
+      }));
+      await Notification.bulkCreate(notifications);
+    }
+
+    return res.json({
+      success: true,
+      message: "Đã gửi yêu cầu phạt nguội chờ duyệt",
+      data: {
+        request_id: trafficFineRequest.request_id,
+        booking_id: booking.booking_id,
+        status: "pending",
+        message: "Yêu cầu của bạn đang chờ admin duyệt",
+      },
+    });
+  } catch (error) {
+    console.error("Error adding traffic fine:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi thêm phí phạt nguội",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

@@ -8,7 +8,7 @@ import db from "../../models/index.js";
 // Lấy tất cả vehicles (filter theo type: car/motorbike, chỉ approved)
 export const getAllVehicles = async (req, res) => {
   try {
-    const { type } = req.query; // Ví dụ: /api/renter/vehicles?type=car
+    const { type, page = 1, limit = 8 } = req.query; // **SỬA: limit default = 16**
     if (type && !["car", "motorbike"].includes(type)) {
       return res
         .status(400)
@@ -23,11 +23,9 @@ export const getAllVehicles = async (req, res) => {
     Object.keys(where).forEach(
       (key) => where[key] === undefined && delete where[key]
     );
-
-    // SỬA: Query với attributes include literal để tính average rating từ reviews (chỉ completed bookings)
-    // COALESCE(AVG, 5.0) mặc định 5.0 nếu không có review; ROUND để 1 chữ số thập phân
-    // SỬA: Dùng db.sequelize.literal thay vì sequelize.literal
-    const vehicles = await Vehicle.findAll({
+    // Sử dụng findAndCountAll để lấy data + total count cho pagination
+    // Giữ nguyên: Attributes include literal để tính average rating
+    const { count: total, rows: vehicles } = await Vehicle.findAndCountAll({
       where,
       attributes: {
         include: [
@@ -36,13 +34,13 @@ export const getAllVehicles = async (req, res) => {
             db.sequelize.literal(`(
               COALESCE(
                 ROUND(
-                  (SELECT AVG(br.rating * 1.0) 
-                   FROM booking_reviews br 
-                   JOIN bookings b ON br.booking_id = b.booking_id 
-                   WHERE b.vehicle_id = Vehicle.vehicle_id 
-                   AND b.status = 'completed'), 
+                  (SELECT AVG(br.rating * 1.0)
+                   FROM booking_reviews br
+                   JOIN bookings b ON br.booking_id = b.booking_id
+                   WHERE b.vehicle_id = Vehicle.vehicle_id
+                   AND b.status = 'completed'),
                   1
-                ), 
+                ),
                 5.0
               )
             )`),
@@ -50,9 +48,11 @@ export const getAllVehicles = async (req, res) => {
           ],
         ],
       },
+      limit: parseInt(limit), // Giới hạn số lượng
+      offset: (parseInt(page) - 1) * parseInt(limit), // Offset cho page
+      order: [["created_at", "DESC"]], // Thêm order để sort mới nhất trước (tùy chọn)
     });
-
-    // SỬA: Parse JSON strings to arrays cho mỗi vehicle (optional, thêm để nhất quán)
+    // Parse JSON strings và tính rating cho mỗi vehicle (giữ nguyên logic cũ)
     const vehicleData = vehicles.map((vehicle) => {
       const data = vehicle.toJSON();
       if (data.extra_images && typeof data.extra_images === "string") {
@@ -69,12 +69,23 @@ export const getAllVehicles = async (req, res) => {
           data.features = [];
         }
       }
-      // SỬA: Đảm bảo rating là number, fallback 5.0
+      // Đảm bảo rating là number, fallback 5.0
       data.rating = parseFloat(data.rating) || 5.0;
       return data;
     });
-
-    res.json({ success: true, data: vehicleData });
+    // Trả về cấu trúc mới với pagination
+    res.json({
+      success: true,
+      data: {
+        vehicles: vehicleData,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: total, // Tổng số xe matching where
+          totalPages: Math.ceil(total / parseInt(limit)), // **ĐÃ CÓ: Tự tính số trang**
+        },
+      },
+    });
   } catch (error) {
     console.error("Error fetching vehicles:", error);
     res.status(500).json({ success: false, message: "Server error" });
