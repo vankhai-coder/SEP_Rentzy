@@ -9,47 +9,66 @@ import "./SearchForm.css";
 const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
-
-  // Dùng ref để biết đã khởi tạo lần đầu chưa
-  const isFirstRender = useRef(true);
-
-  // Flag để biết user đã tương tác chưa (để tránh search ngay với default)
   const [hasUserInteraction, setHasUserInteraction] = useState(false);
 
+  const isFirstRender = useRef(true);
+
   const [formData, setFormData] = useState({
-    location: initialValues.location || "",
-    startDate: initialValues.startDate || "",
-    endDate: initialValues.endDate || "",
+    location: "",
+    startDate: "",
+    endDate: "",
   });
 
-  // CHỈ sync từ URL khi component mount lần đầu và set default nếu chưa có
+  // ✅ FIX: Parse cả ngày VÀ giờ từ URL params
   useEffect(() => {
+    const today = new Date();
+    today.setHours(9, 0, 0, 0);
+    const tomorrow = addDays(today, 1);
+    tomorrow.setHours(8, 0, 0, 0);
+
+    let parsedStart = null;
+    let parsedEnd = null;
+
+    // Parse start_date và start_time từ URL
+    if (initialValues.start_date) {
+      const [year, month, day] = initialValues.start_date
+        .split("-")
+        .map(Number);
+      const startTime = initialValues.start_time || "09:00"; // Lấy giờ từ URL hoặc mặc định 09:00
+      const [hours, minutes] = startTime.split(":").map(Number);
+      parsedStart = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    }
+
+    // Parse end_date và end_time từ URL
+    if (initialValues.end_date) {
+      const [year, month, day] = initialValues.end_date.split("-").map(Number);
+      const endTime = initialValues.end_time || "08:00"; // Lấy giờ từ URL hoặc mặc định 09:00
+      const [hours, minutes] = endTime.split(":").map(Number);
+      parsedEnd = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    }
+
+    setFormData({
+      location: initialValues.location || "Đà Nẵng",
+      startDate: parsedStart ? parsedStart.toISOString() : today.toISOString(),
+      endDate: parsedEnd ? parsedEnd.toISOString() : tomorrow.toISOString(),
+    });
+
     if (isFirstRender.current) {
-      const today = new Date();
-      today.setHours(9, 0, 0, 0); // 9h hôm nay
-
-      const tomorrow = addDays(today, 1);
-      tomorrow.setHours(9, 0, 0, 0); // 9h ngày mai
-
-      const defaultStart = today.toISOString();
-      const defaultEnd = tomorrow.toISOString();
-
-      setFormData({
-        location: initialValues.location || "Đà Nẵng",
-        startDate: initialValues.startDate || defaultStart,
-        endDate: initialValues.endDate || defaultEnd,
-      });
       isFirstRender.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Chỉ chạy 1 lần khi mount
+  }, [
+    initialValues.location,
+    initialValues.start_date,
+    initialValues.end_date,
+    initialValues.start_time, // ✅ Thêm dependency để sync giờ
+    initialValues.end_time, // ✅ Thêm dependency để sync giờ
+  ]);
 
-  // Realtime search - chỉ trigger nếu user đã tương tác
+  // Realtime search với cả ngày và giờ
   const triggerSearch = useCallback(() => {
-    if (!hasUserInteraction) return; // Skip nếu chưa có user interaction
+    if (!hasUserInteraction) return;
 
     if (formData.location || (formData.startDate && formData.endDate)) {
-      // Lấy ngày từ chuỗi an toàn
       const getDateOnly = (dateStr) => {
         if (!dateStr || dateStr === "undefined") return undefined;
         try {
@@ -60,10 +79,23 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
         }
       };
 
+      const getTimeOnly = (dateStr) => {
+        if (!dateStr || dateStr === "undefined") return undefined;
+        try {
+          const date = new Date(dateStr);
+          return isNaN(date.getTime()) ? undefined : format(date, "HH:mm");
+        } catch {
+          return undefined;
+        }
+      };
+
+      // ✅ GỬI CẢ NGÀY VÀ GIỜ vào URL params
       onSubmit({
         location: formData.location || undefined,
         start_date: getDateOnly(formData.startDate),
         end_date: getDateOnly(formData.endDate),
+        start_time: getTimeOnly(formData.startDate), // ✅ Thêm giờ bắt đầu
+        end_time: getTimeOnly(formData.endDate), // ✅ Thêm giờ kết thúc
       });
     }
   }, [formData, onSubmit, hasUserInteraction]);
@@ -73,7 +105,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     return () => clearTimeout(timer);
   }, [triggerSearch]);
 
-  // HIỂN THỊ THỜI GIAN - SIÊU ỔN ĐỊNH
+  // Format hiển thị thời gian
   const formatTimeDisplay = () => {
     if (!formData.startDate || !formData.endDate) return "Chọn thời gian";
 
@@ -106,14 +138,13 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
   const timeDisplay = formatTimeDisplay();
 
   const handleLocationSelect = (location) => {
-    setHasUserInteraction(true); // Đánh dấu user đã tương tác
+    setHasUserInteraction(true);
     setFormData((prev) => ({ ...prev, location }));
     setShowLocationModal(false);
   };
 
-  // LƯU DỮ LIỆU AN TOÀN - DÙNG ISO STRING (vẫn ổn nếu xử lý đúng)
   const handleDateSave = (start, end) => {
-    setHasUserInteraction(true); // Đánh dấu user đã tương tác
+    setHasUserInteraction(true);
     setFormData((prev) => ({
       ...prev,
       startDate: start.toISOString(),
@@ -128,7 +159,6 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     <>
       <div className="search-form-container">
         <div className={`search-form ${themeClass}`}>
-          {/* Địa điểm */}
           <div
             className="search-form-section location-section"
             onClick={() => setShowLocationModal(true)}
@@ -143,7 +173,6 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
             <ChevronDown className="search-form-chevron" />
           </div>
 
-          {/* Thời gian thuê */}
           <div
             className="search-form-section datetime-section"
             onClick={() => setShowDateModal(true)}
@@ -160,7 +189,6 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
         </div>
       </div>
 
-      {/* Modals */}
       {showLocationModal && (
         <LocationModal
           onClose={() => setShowLocationModal(false)}
