@@ -1,5 +1,4 @@
 import { Download, Loader, UserPlus } from "lucide-react"
-import NewRegisterUserChartComponent from "@/components/admin/chart/NewRegisterUserChartComponent"
 import axiosInstance from "@/config/axiosInstance";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,10 +9,9 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useState } from "react";
-// NumberOfUserByRoleChartComponent
-import NumberOfUserByRoleChartComponent from "@/components/admin/chart/NumberOfUserByRoleChartComponent";
-// NumberOfStatusOfRegisterOwnerChartComponent
-import NumberOfStatusOfRegisterOwnerChartComponent from "@/components/admin/chart/NumberOfStatusOfRegisterOwnerChartComponent";
+import DoughnutChart from "@/components/admin/chart/DoughnutChart";
+import LineChartComponent from "@/components/admin/chart/LineChart";
+
 const UserManagement = () => {
 
     // FIST CHART : New Register User Data by Month
@@ -60,8 +58,8 @@ const UserManagement = () => {
 
     return (
 
-        <div className="p-4 py-18 lg:p-6 dark:bg-[#020617] min-h-screen ">
-            <div className="space-y-6">
+        <div className="p-4  bg-red-400 lg:p-6 dark:bg-[#020617] min-h-screen ">
+            <div className="space-y-6 pb-40">
 
                 <div className="flex items-center justify-between" >
                     {/* User Management Title */}
@@ -92,7 +90,7 @@ const UserManagement = () => {
                             {/* loading :  */}
                             {isLoadingUserCountByRoleData && <Loader className="animate-spin mx-auto" />}
                             {errorUserCountByRoleData && <p className="text-red-500 mx-auto">Lỗi khi tải dữ liệu biểu đồ người dùng theo vai trò.</p>}
-                            <NumberOfUserByRoleChartComponent data={userCountByRoleData?.data} labels={userCountByRoleData?.labels} />
+                            <DoughnutChart data={userCountByRoleData?.data} labels={userCountByRoleData?.labels} title={"Người dùng theo vai trò"} />
                         </div>
                         {/* new owner registrations */}
                         <div>
@@ -101,7 +99,7 @@ const UserManagement = () => {
                             {/* error */}
                             {errorOwnerCountByStatusData && <p className="text-red-500 mx-auto">Lỗi khi tải dữ liệu biểu đồ chủ xe theo trạng thái.</p>}
                             {/* chart component here */}
-                            <NumberOfStatusOfRegisterOwnerChartComponent data={ownerCountByStatusData?.data} labels={ownerCountByStatusData?.labels} />
+                            <DoughnutChart data={ownerCountByStatusData?.data} labels={ownerCountByStatusData?.labels} title={"Yêu cầu duyệt chủ xe"} />
                         </div>
                         {errorOwnerCountByStatusData && <p className="text-red-500 mx-auto">Lỗi khi tải dữ liệu biểu đồ chủ xe theo trạng thái.</p>}
 
@@ -113,7 +111,7 @@ const UserManagement = () => {
                         {isLoadingNewRegisterUserData && <Loader className="animate-spin mx-auto" />}
                         {/* select months */}
                         <div className="mx-auto flex justify-center sm:justify-end">
-                            <Select onValueChange={(value) => {
+                            <Select defaultValue="6" onValueChange={(value) => {
                                 // set selected months
                                 setSelectedMonths(Number(value));
                             }}>
@@ -130,13 +128,9 @@ const UserManagement = () => {
                         </div>
                         {errorNewRegisterUserData && <p className="text-red-500 mx-auto">Lỗi khi tải dữ liệu biểu đồ người dùng.</p>}
                         {/* chart: */}
-                        <NewRegisterUserChartComponent data={newRegisterUserData?.data} labels={newRegisterUserData?.labels} />
+                        <LineChartComponent data={newRegisterUserData?.data} labels={newRegisterUserData?.labels} title={'Các lượt đăng ký mới'} label={'Người dùng đã đăng ký'} />
                     </div>
 
-
-
-                    <div>chart 3</div>
-                    <div>chart 4</div>
                 </div>
 
             </div>

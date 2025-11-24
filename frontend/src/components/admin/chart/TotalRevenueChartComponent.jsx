@@ -21,12 +21,12 @@ ChartJS.register(
   Legend
 );
 
-const NewRegisterUserChartComponent = ({ data, labels }) => {
+const TotalRevenueChartComponent = ({ data, labels }) => {
   const chartData = {
     labels,
     datasets: [
       {
-        label: 'Người dùng đã đăng ký',
+        label: 'Tổng doanh thu',
         data,
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -42,7 +42,7 @@ const NewRegisterUserChartComponent = ({ data, labels }) => {
     plugins: {
       title: {
         display: true,
-        text: 'Biểu đồ người dùng đăng ký hàng tháng',
+        text: 'Biểu đồ Tổng doanh thu theo tháng',
         font: { size: 18 },
       },
     },
@@ -55,4 +55,4 @@ const NewRegisterUserChartComponent = ({ data, labels }) => {
   );
 };
 
-export default NewRegisterUserChartComponent;
+export default TotalRevenueChartComponent;

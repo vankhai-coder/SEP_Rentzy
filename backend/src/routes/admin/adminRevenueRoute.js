@@ -1,7 +1,7 @@
 
 import express from 'express';
-import { getApprovedOwnerStatus, getNewRegisterUserDataByMonth, getUserCountByRole } from '../../controllers/admin/adminUserChartController.js';
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js';
+import { getBookingStatusStats, getPayoutStatusStats, getRevenueStatsForCompletedBookingInNumberOfMonths } from '../../controllers/admin/adminRevenueController.js';
 
 const router = express.Router();
 
@@ -20,13 +20,14 @@ const router = express.Router();
 // all routes below are protected and only accessible by admin users :
 
 
-// GET /api/admin/user-chart/new-registrations?months=6
-router.get('/new-registrations', getNewRegisterUserDataByMonth);
+// GET /api/admin/revenue/revenue-stats?months=6
+router.get('/revenue-stats', getRevenueStatsForCompletedBookingInNumberOfMonths);
 
-// GET /api/admin/user-chart/user-count-by-role
-router.get('/user-count-by-role', getUserCountByRole);
+// GET /api/admin/revenue/booking-status-count
+router.get('/booking-status-count', getBookingStatusStats);
 
-// GET /api/admin/user-chart/owner-count-by-status
-router.get('/owner-count-by-status', getApprovedOwnerStatus);
+// GET /api/admin/revenue/booking-payouts
+router.get('/booking-payouts', getPayoutStatusStats);
+
 
 export default router;
