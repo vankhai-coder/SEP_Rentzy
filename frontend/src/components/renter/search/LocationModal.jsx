@@ -43,9 +43,6 @@ const LocationModal = ({
       let queryWithCountry = query.includes("việt nam")
         ? query
         : `${query}, Việt Nam`;
-      if (query.includes("da nang")) {
-        queryWithCountry = `${query}, Đà Nẵng`;
-      }
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -64,25 +61,21 @@ const LocationModal = ({
       const addr = location.address || {};
       const displayName = location.display_name || "";
 
-      // FIX: Tương tự, ưu tiên ward + city cho manual search
       const ward =
         addr.suburb || addr.village || addr.town || addr.quarter || "";
       let city =
         addr.state || addr.province || addr.city || addr.municipality || "";
 
-      // FIX: Fallback từ display_name nếu city rỗng
       if (!city.trim()) {
-        const nameParts = displayName.split(", ");
-        if (nameParts.length >= 2) {
-          city = nameParts.slice(-1)[0];
-          if (nameParts.length >= 3) {
-            city = `${nameParts[nameParts.length - 2]}, ${city}`;
-          }
+        const parts = displayName.split(", ");
+        if (parts.length >= 2) {
+          city = parts.slice(-2).join(", ");
         }
       }
 
       let result = [ward, city].filter(Boolean).join(", ");
-      if (!result.trim()) result = displayName;
+      if (!result.trim())
+        result = displayName.split(", ").slice(0, 2).join(", ");
 
       setSelectedLocation(result);
       setSearchQuery(result);
@@ -96,110 +89,117 @@ const LocationModal = ({
   };
 
   const handleCityClick = (city) => {
-    setSearchQuery(city.name);
-    setSelectedLocation(city.name);
-    toast.success(`Đã chọn ${city.name}`);
+    const name = city.name;
+    setSearchQuery(name);
+    setSelectedLocation(name);
+    toast.success(`Đã chọn ${name}`);
   };
 
-  // FIX: Cập nhật selectedLocation theo searchQuery khi user nhập tay (cho phép lưu trực tiếp mà không cần search)
   const handleInputChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setSelectedLocation(value); // Sync trực tiếp để save được ngay khi typing
+    setSelectedLocation(value);
   };
 
   const handleSaveLocation = () => {
-    if (selectedLocation.trim() === "") {
-      toast.error("Vui lòng nhập hoặc chọn địa điểm.");
+    if (!selectedLocation.trim()) {
+      toast.error("Vui lòng chọn hoặc nhập địa điểm!");
       return;
     }
-    onLocationSelect(selectedLocation);
+    onLocationSelect(selectedLocation.trim());
     toast.success("Đã lưu địa điểm!");
     onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.15)" }}
-    >
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-transparent">
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl 
+                   animate-in fade-in slide-in-from-top-4 duration-300 
+                   sm:animate-none motion-reduce:animate-none"
+      >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Chọn địa điểm</h3>
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+            Chọn địa điểm
+          </h3>
           <button
-            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Đóng modal"
           >
-            <X size={24} />
+            <X size={20} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Ô nhập địa điểm */}
-        <div className="p-4 border-b border-gray-200">
+        {/* Search Input */}
+        <div className="p-4 sm:p-5 border-b border-gray-200">
           <div className="relative">
             <SearchIcon
-              size={20}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400"
             />
             <input
               type="text"
-              placeholder="Nhập địa điểm (VD: 304 Phan Bội Châu, Huế)"
+              placeholder="Tìm địa điểm (VD: 304 Phan Bội Châu, Huế)"
               value={searchQuery}
-              onChange={handleInputChange} // FIX: Sử dụng handler mới để sync selectedLocation
-              className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={handleInputChange}
+              onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
+              className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3.5 sm:py-4 text-sm sm:text-base border border-gray-300 rounded-xl 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
             <button
-              type="button"
               onClick={handleManualSearch}
               disabled={isLoadingLocation}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 disabled:opacity-50"
-              title="Tìm địa điểm"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 
+                         disabled:opacity-50 transition-colors"
+              aria-label="Tìm kiếm"
             >
-              <SearchIcon size={18} />
+              <SearchIcon
+                size={18}
+                className={isLoadingLocation ? "animate-spin" : ""}
+              />
             </button>
           </div>
-          {isLoadingLocation && (
-            <p className="text-xs text-gray-500 mt-1 text-right">
-              Đang xử lý...
-            </p>
-          )}
         </div>
 
-        {/* Thành phố phổ biến */}
-        <div className="p-4">
-          <h4 className="text-sm font-medium text-gray-600 mb-3">
+        {/* Quick Cities */}
+        <div className="p-4 sm:p-5 overflow-y-auto max-h-48 sm:max-h-60">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-600 mb-3 sm:mb-4">
             Địa điểm phổ biến
           </h4>
-          <div className="grid grid-cols-2 gap-3">
-            {quickCities.map((city) => (
-              <button
-                key={city.id}
-                type="button"
-                onClick={() => handleCityClick(city)}
-                className={`flex items-center justify-center p-3 rounded-xl border transition-colors ${
-                  selectedLocation
-                    .toLowerCase()
-                    .includes(city.name.toLowerCase().replace("tp.", "").trim())
-                    ? "bg-blue-50 border-blue-300 text-blue-600 font-medium"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <MapPin size={18} className="mr-2 text-gray-500" />
-                {city.name}
-              </button>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            {quickCities.map((city) => {
+              const isActive = selectedLocation
+                .toLowerCase()
+                .includes(city.name.toLowerCase().replace("tp.", "").trim());
+
+              return (
+                <button
+                  key={city.id}
+                  onClick={() => handleCityClick(city)}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-4 px-3 sm:px-4 rounded-xl border text-xs sm:text-sm font-medium transition-all min-h-[44px]
+                    ${
+                      isActive
+                        ? "bg-blue-50 border-blue-400 text-blue-700 shadow-sm"
+                        : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                    }`}
+                >
+                  <MapPin size={16} className="sm:w-4.5 sm:h-4.5" />
+                  {city.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 sm:p-5 border-t border-gray-200">
           <button
-            type="button"
             onClick={handleSaveLocation}
-            className="w-full bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition-colors disabled:opacity-50"
             disabled={isLoadingLocation || !selectedLocation.trim()}
+            className="w-full py-3.5 sm:py-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 
+                       text-white font-medium rounded-xl transition-colors shadow-md text-sm sm:text-base min-h-[44px]"
           >
             Lưu địa điểm
           </button>

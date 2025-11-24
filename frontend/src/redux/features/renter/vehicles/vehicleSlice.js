@@ -1,19 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
-// **SỬA: fetchVehicles - Nhận {type, page, limit}, gọi API với query params**
-// **Giữ nguyên**: Error handling**
+// THAY ĐỔI: fetchVehicles - Nhận {type, page, limit=12}, gọi API với query params
+// Giữ nguyên: Error handling
 export const fetchVehicles = createAsyncThunk(
   "vehicles/fetchVehicles",
-  async ({ type, page = 1, limit = 12 }, { rejectWithValue }) => {
-    // **SỬA: Nhận object params, default page/limit**
+  async ({ type, page = 1, limit = 4 }, { rejectWithValue }) => {
+    // **THAY ĐỔI: default limit=12**
     try {
-      const query = new URLSearchParams({ type, page, limit }).toString(); // **SỬA: Build query string**
+      const query = new URLSearchParams({ type, page, limit }).toString(); // Build query string
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?${query}`, // **SỬA: Thêm ?${query}**
+        `${import.meta.env.VITE_API_URL}/api/renter/vehicles?${query}`,
         { withCredentials: true }
       );
-      // **SỬA: Trả về full response.data.data (bao gồm vehicles + pagination)**
+      // Trả về full response.data.data (bao gồm vehicles + pagination)
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -22,8 +21,7 @@ export const fetchVehicles = createAsyncThunk(
     }
   }
 );
-
-// **Giữ nguyên 100%**: fetchVehicleById
+// GIỮ NGUYÊN 100%: fetchVehicleById
 export const fetchVehicleById = createAsyncThunk(
   "vehicles/fetchVehicleById",
   async (id, { rejectWithValue }) => {
@@ -40,8 +38,7 @@ export const fetchVehicleById = createAsyncThunk(
     }
   }
 );
-
-// **Giữ nguyên 100%**: searchVehicles (không liên quan đến infinite scroll ở home)
+// ĐỔI: searchVehicles - Return full response.data (bao gồm data, pagination, filterOptions)
 export const searchVehicles = createAsyncThunk(
   "vehicles/searchVehicles",
   async ({ type, params }, { rejectWithValue }) => {
@@ -52,8 +49,8 @@ export const searchVehicles = createAsyncThunk(
         `${import.meta.env.VITE_API_URL}/api/renter/vehicles/search?${query}`,
         { withCredentials: true }
       );
-      // FIX: Trả về response.data.data (như fetchVehicles) để match reducer
-      return response.data.data;
+      // ĐỔI: Return full response.data (không chỉ .data)
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Error searching vehicles"
@@ -61,7 +58,6 @@ export const searchVehicles = createAsyncThunk(
     }
   }
 );
-
 const vehicleSlice = createSlice({
   name: "vehicles",
   initialState: {
@@ -71,40 +67,38 @@ const vehicleSlice = createSlice({
     detailLoading: false,
     error: null,
     detailError: null,
-    // thêm state cho kết quả tìm kiếm
-    searchVehicles: [],
+    // ĐỔI: State cho kết quả tìm kiếm full (bao gồm data, pagination, filterOptions)
+    searchResults: null, // Object full { data: vehicles, pagination, filterOptions }
     searchLoading: false,
     searchError: null,
-    // **SỬA: Thêm state cho pagination/infinite scroll**
+    // GIỮ NGUYÊN: State cho pagination (bỏ infinite scroll state)
     totalCount: 0,
     currentPage: 1,
+    totalPages: 0, // **GIỮ NGUYÊN: Lấy từ BE**
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // **SỬA: fetchVehicles.pending - Giữ nguyên**
+      // GIỮ NGUYÊN: fetchVehicles.pending
       .addCase(fetchVehicles.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      // **SỬA: fetchVehicles.fulfilled - Merge vehicles (nếu page >1), set totalCount và currentPage**
+      // GIỮ NGUYÊN: fetchVehicles.fulfilled - Luôn REPLACE vehicles (không merge), set pagination
       .addCase(fetchVehicles.fulfilled, (state, action) => {
         state.loading = false;
-        const { vehicles, pagination } = action.payload; // **SỬA: Destructure từ response mới**
-        if (pagination.page > 1) {
-          state.vehicles = [...state.vehicles, ...vehicles]; // **SỬA: Merge cho load more**
-        } else {
-          state.vehicles = vehicles; // **SỬA: Replace nếu page=1 (initial load)**
-        }
-        state.totalCount = pagination.total; // **SỬA: Set total từ BE**
-        state.currentPage = pagination.page; // **SỬA: Update current page**
+        const { vehicles, pagination } = action.payload; // Destructure từ response mới
+        state.vehicles = vehicles; // **GIỮ NGUYÊN: Luôn replace (không merge nữa)**
+        state.totalCount = pagination.total; // Set total từ BE
+        state.currentPage = pagination.page; // Update current page
+        state.totalPages = pagination.totalPages; // **GIỮ NGUYÊN: Set totalPages từ BE**
       })
-      // **Giữ nguyên**: fetchVehicles.rejected
+      // GIỮ NGUYÊN: fetchVehicles.rejected
       .addCase(fetchVehicles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // **Giữ nguyên 100%**: Các case cho fetchVehicleById và searchVehicles
+      // GIỮ NGUYÊN 100%: Các case cho fetchVehicleById
       .addCase(fetchVehicleById.pending, (state) => {
         state.detailLoading = true;
         state.detailError = null;
@@ -117,13 +111,14 @@ const vehicleSlice = createSlice({
         state.detailLoading = false;
         state.detailError = action.payload;
       })
+      // ĐỔI: searchVehicles - Set full searchResults
       .addCase(searchVehicles.pending, (state) => {
         state.searchLoading = true;
         state.searchError = null;
       })
       .addCase(searchVehicles.fulfilled, (state, action) => {
         state.searchLoading = false;
-        state.searchVehicles = action.payload;
+        state.searchResults = action.payload; // Full { success, data, pagination, filterOptions }
       })
       .addCase(searchVehicles.rejected, (state, action) => {
         state.searchLoading = false;
@@ -131,5 +126,4 @@ const vehicleSlice = createSlice({
       });
   },
 });
-
 export default vehicleSlice.reducer;

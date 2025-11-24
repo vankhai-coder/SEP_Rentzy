@@ -43,9 +43,9 @@ import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
-import AdminOverviewRoute from './routes/admin/adminOverviewRoute.js'
-import AdminUserManagementRoute from './routes/admin/adminUserManagementRoute.js'
-import AdminApproveOwnerRoute from './routes/admin/adminApproveOwnerRoute.js'
+import AdminOverviewRoute from "./routes/admin/adminOverviewRoute.js";
+import AdminUserManagementRoute from "./routes/admin/adminUserManagementRoute.js";
+import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";

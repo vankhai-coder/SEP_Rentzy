@@ -363,3 +363,12 @@
 .smooth-scroll {
   scroll-behavior: smooth;
 }
+html,
+body {
+  overflow-x: hidden; /* Ngăn scroll ngang toàn cục */
+  width: 100%;
+  max-width: 100%;
+}
+* {
+  box-sizing: border-box; /* Đảm bảo padding/margin không vỡ width */
+}

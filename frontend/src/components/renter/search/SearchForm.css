@@ -1,135 +1,182 @@
+/* src/components/SearchForm.css */
+
 .search-form-container {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 2.5rem; /* ↑ tăng cách header lên */
+  padding: 2.5rem 1rem 1.5rem;
+  background: transparent;
 }
 
 .search-form {
   background: white;
-  border-radius: 2rem; /* ↓ bớt tròn (từ 9999px) */
-  box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.1),
-    0 3px 6px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 2rem;
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1),
+    0 4px 10px -3px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
   padding: 0.75rem 1.5rem;
-  width: 50%; /* ↓ ngắn hơn (từ 60%) */
-  max-width: 48rem; /* ↓ max-width nhỏ hơn */
+  width: 52%;
+  max-width: 54rem;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .search-form:hover {
-  box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.1),
-    0 8px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+  border-color: #d1d5db;
 }
 
+/* Section chung */
 .search-form-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.875rem;
   flex: 1;
+  min-width: 0;
   cursor: pointer;
-  border-right: 1px solid #e5e7eb;
-  padding-right: 1rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 1.5rem;
   transition: background-color 0.2s ease;
-  border-radius: 1rem; /* ↓ nhẹ hơn */
-  padding: 0.5rem;
 }
 
 .search-form-section:hover {
   background-color: #f9fafb;
 }
 
+.search-form-section:active {
+  background-color: #f3f4f6;
+}
+
+/* Chia tỷ lệ hợp lý */
+.location-section {
+  flex: 1.1;
+}
+.datetime-section {
+  flex: 1.8;
+}
+
+/* Icon */
+.search-form-icon {
+  color: #6b7280;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* Label */
 .search-form-label {
+  flex: 1;
+  min-width: 0; /* BẮT BUỘC để ellipsis hoạt động */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  text-align: left;
 }
 
 .search-form-label-text {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.125rem;
 }
 
 .search-form-label-value {
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   color: #1f2937;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 10rem;
+  line-height: 1.4;
 }
 
+/* Đặc biệt cho thời gian - nhỏ hơn, gọn hơn */
 .search-form-time-value {
-  max-width: 14rem;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.search-form-icon {
-  color: #6b7280;
-  width: 1.375rem;
-  height: 1.375rem;
-}
-
+/* Mũi tên */
 .search-form-chevron {
   margin-left: auto;
   color: #9ca3af;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
-.search-form-submit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background-color: #10b981;
-  color: white;
-  padding: 0.75rem 2rem;
-  border-radius: 2rem; /* ↓ bớt tròn */
-  transition: background-color 0.2s ease;
-  opacity: 1;
-  cursor: pointer;
+.search-form-section:hover .search-form-chevron {
+  transform: translateY(2px);
 }
 
-.search-form-submit:hover:not(:disabled) {
-  background-color: #059669;
+/* Theme */
+.search-form.border-green-200 {
+  border-color: #d1fae5;
 }
-
-.search-form-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.search-form.border-green-200:hover {
+  border-color: #a7f3d0;
 }
-
-.search-form-submit-icon {
-  width: 1.125rem;
-  height: 1.125rem;
+.search-form.border-blue-200 {
+  border-color: #bfdbfe;
+}
+.search-form.border-blue-200:hover {
+  border-color: #93c5fd;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .search-form {
-    width: 95%;
-    padding: 0.5rem 1rem;
-    gap: 0.5rem;
+    width: 70%;
   }
+}
 
+@media (max-width: 768px) {
+  .search-form-container {
+    padding: 2rem 1rem 1rem;
+  }
+  .search-form {
+    width: 96%;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.75rem;
+    border-radius: 1.75rem;
+  }
   .search-form-section {
-    padding-right: 0.5rem;
-    gap: 0.5rem;
+    width: 100%;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
   }
-
-  .search-form-label-value {
-    max-width: 7rem;
+  .search-form-section:last-child {
+    border-bottom: none;
   }
-
+  .location-section,
+  .datetime-section {
+    flex: none;
+  }
+  .search-form-label-value,
   .search-form-time-value {
-    max-width: 9rem;
+    font-size: 1.05rem;
   }
+}
 
-  .search-form-submit {
-    padding: 0.75rem 1.5rem;
+@media (max-width: 480px) {
+  .search-form {
+    width: 100%;
+    margin: 0 0.5rem;
+  }
+  .search-form-label-value,
+  .search-form-time-value {
+    font-size: 0.975rem;
   }
 }
