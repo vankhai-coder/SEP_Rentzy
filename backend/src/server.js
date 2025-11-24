@@ -46,6 +46,7 @@ import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRo
 import AdminOverviewRoute from "./routes/admin/adminOverviewRoute.js";
 import AdminUserManagementRoute from "./routes/admin/adminUserManagementRoute.js";
 import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
+import AdminUserChartRoute from "./routes/admin/userChartRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -134,6 +135,7 @@ app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/voucher-management", AdminVoucherRoute);
 app.use("/api/admin/traffic-fine-requests", AdminTrafficFineRoute);
 app.use("/api/admin/system-settings", AdminSystemSettingRoute);
+app.use("/api/admin/user-chart", AdminUserChartRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);
