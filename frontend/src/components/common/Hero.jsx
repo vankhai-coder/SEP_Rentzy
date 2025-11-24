@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const Hero = () => (
   <section
-    className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-900"
+    className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-gray-900 px-4"
     data-aos="fade-down" // [THÊM AOS: Fade từ trên xuống cho toàn section]
     data-aos-duration="1000" // Thời gian dài hơn cho hero
     data-aos-delay="0"
@@ -17,9 +17,9 @@ const Hero = () => (
       }}
     />
     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
-    <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+    <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
       <h1
-        className="text-6xl md:text-8xl lg:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent leading-none tracking-tight"
+        className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent leading-none tracking-tight"
         data-aos="zoom-in" // [THÊM AOS: Zoom cho title]
         data-aos-delay="200"
       >
@@ -27,7 +27,7 @@ const Hero = () => (
       </h1>
       {/* [SỬA: Giảm text, thêm typewriter cho slogan */}
       <p
-        className="text-2xl md:text-3xl font-light mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed typewriter"
+        className="text-xl sm:text-2xl md:text-3xl font-light mb-6 sm:mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed typewriter"
         data-aos="fade-up" // [THÊM AOS: Fade cho slogan]
         data-aos-delay="400"
       >
@@ -35,7 +35,7 @@ const Hero = () => (
         đi của bạn.
       </p>
       <p
-        className="text-lg md:text-xl mb-12 text-white/70 max-w-2xl mx-auto leading-relaxed hidden md:block"
+        className="text-base sm:text-lg md:text-xl mb-8 sm:mb-12 text-white/70 max-w-2xl mx-auto leading-relaxed hidden xs:block" // [SỬA: Sử dụng xs: thay vì md: để hiển thị sớm hơn trên tablet nhỏ, nhưng vẫn ẩn trên mobile nhỏ]
         data-aos="fade-up" // [THÊM AOS: Fade cho subtext]
         data-aos-delay="600"
       >
@@ -44,25 +44,26 @@ const Hero = () => (
         Nhanh chóng, dễ dàng và giá tốt nhất.
       </p>
       <div
-        className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+        className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center w-full max-w-md sm:max-w-none mx-auto"
         data-aos="fade-up" // [THÊM AOS: Fade cho buttons]
         data-aos-delay="800"
       >
         <Link
           to="/cars"
-          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none pulse-cta"
+          className="inline-flex items-center justify-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 min-w-0 pulse-cta text-sm sm:text-base" // [SỬA: Responsive padding, gap, text size; justify-center cho button trên mobile]
           aria-label="Khám phá xe ô tô"
         >
           Khám Phá Xe Ô Tô
-          <ArrowRight size={20} />
+          <ArrowRight size={16} className="sm:w-5 sm:h-5" />{" "}
+          {/* [SỬA: Giảm icon size trên mobile */}
         </Link>
         <Link
           to="/motorbikes"
-          className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 sm:flex-none pulse-cta"
+          className="inline-flex items-center justify-center gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-medium border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 shadow-2xl flex-1 min-w-0 pulse-cta text-sm sm:text-base" // [SỬA: Tương tự cho button thứ 2]
           aria-label="Khám phá xe máy"
         >
           Khám Phá Xe Máy
-          <ArrowRight size={20} />
+          <ArrowRight size={16} className="sm:w-5 sm:h-5" />
         </Link>
       </div>
     </div>
@@ -114,6 +115,12 @@ const Hero = () => (
       @media (max-width: 768px) {
         .parallax-bg {
           background-attachment: scroll; /* Tắt parallax trên mobile để tránh lag */
+        }
+      }
+
+      @media (max-width: 640px) {
+        .typewriter {
+          animation: typewriter 2.5s steps(30) forwards; /* Tăng steps/time cho mobile text ngắn hơn */
         }
       }
     `}</style>

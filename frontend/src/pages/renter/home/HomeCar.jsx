@@ -103,7 +103,7 @@ const HomeCar = () => {
         ) : brandError ? (
           <p>{brandError}</p>
         ) : (
-          <BrandList brands={brands.slice(0, 8)} />
+          <BrandList brands={brands.slice(0, 8)} vehicleType="car" />
         )}
       </section>
 
