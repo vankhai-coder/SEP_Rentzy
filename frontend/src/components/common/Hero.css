@@ -1,0 +1,82 @@
+/* Hero Section Styles */
+
+/* Typewriter Animation */
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.hero-slogan.typewriter {
+  overflow: hidden;
+  border-right: 2px solid #14b8a6;
+  white-space: nowrap;
+  animation: typewriter 2s steps(40) forwards,
+    blink 0.75s step-end infinite;
+  width: 0;
+}
+
+@keyframes blink {
+  from,
+  to {
+    border-color: transparent;
+  }
+  50% {
+    border-color: #14b8a6;
+  }
+}
+
+/* Pulse Animation for CTA Buttons */
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+  }
+}
+
+.hero-button.pulse-cta {
+  animation: pulse 2s infinite;
+}
+
+/* Parallax Background */
+.parallax-bg {
+  background-attachment: fixed;
+  background-position: center top;
+  background-size: cover;
+}
+
+/* Disable parallax on mobile for better performance */
+@media (max-width: 768px) {
+  .parallax-bg {
+    background-attachment: scroll;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .hero-section {
+    min-height: 90vh;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+    line-height: 1.1;
+  }
+
+  .hero-slogan {
+    font-size: 1.125rem;
+    line-height: 1.6;
+  }
+}
+
+/* Smooth transitions */
+.hero-section * {
+  transition: all 0.3s ease;
+}
+

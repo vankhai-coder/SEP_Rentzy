@@ -81,12 +81,12 @@ const BookingHistory = () => {
     );
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
+    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
           Lịch sử đặt xe
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Theo dõi và quản lý các chuyến đi của bạn
         </p>
       </div>
@@ -101,13 +101,15 @@ const BookingHistory = () => {
         onStatusChange={setSelectedStatus}
       />
 
-      {/* Table Component */}
-      <BookingHistoryTable
-        bookings={bookings}
-        statusMap={statusMap}
-        formatVND={formatVND}
-        onBookingUpdate={handleBookingUpdate}
-      />
+      {/* Table Component - Wrapper để đảm bảo scroll hoạt động */}
+      <div className="w-full overflow-visible -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+        <BookingHistoryTable
+          bookings={bookings}
+          statusMap={statusMap}
+          formatVND={formatVND}
+          onBookingUpdate={handleBookingUpdate}
+        />
+      </div>
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (

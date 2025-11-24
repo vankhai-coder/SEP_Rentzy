@@ -70,12 +70,12 @@ const Home = () => {
       {/* RecommendationSection - Giữ nguyên thứ tự */}
       <RecommendationSection limit={8} />
       {/* Phần BrandList - Giữ nguyên, nhưng limit 6 để gọn - KHÔNG ÁP DỤNG AOS */}
-      <section className="mb-8 container mx-auto p-6 pt-1">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">
+      <section className="mb-6 sm:mb-8 container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+        <div className="text-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">
             Đối Tác Thương Hiệu Nổi Bật
           </h2>
-          <p className="text-gray-500 text-lg">Khám phá các hãng xe hàng đầu</p>
+          <p className="text-gray-500 text-base sm:text-lg">Khám phá các hãng xe hàng đầu</p>
         </div>
         {brandLoading ? (
           <p className="text-center">Đang tải hãng xe...</p>
