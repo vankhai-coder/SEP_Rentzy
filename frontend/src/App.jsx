@@ -21,6 +21,7 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import BankAccountPage from "./pages/renter/account/BankAccountPage.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 import About from "./components/common/About.jsx";
+import BrandVehicles from "./components/renter/brand/BrandVehicles.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
@@ -122,6 +123,10 @@ const App = () => {
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
           <Route path="/cars/search" element={<SearchResults type="car" />} />
+          <Route
+            path="/brands/:brand_id/vehicles"
+            element={<BrandVehicles />}
+          />
           {/* Vehicle Detail */}
           <Route path="/detail/:id" element={<VehicleDetail />} />
 
@@ -173,7 +178,10 @@ const App = () => {
             <Route path="disburseOwner" element={<DisburseOwner />} />
 
             <Route path="voucherManagement" element={<VoucherManagement />} />
-            <Route path="trafficFineApproval" element={<TrafficFineApproval />} />
+            <Route
+              path="trafficFineApproval"
+              element={<TrafficFineApproval />}
+            />
 
             <Route
               path="systemSettings"
