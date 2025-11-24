@@ -49,11 +49,12 @@ const Layout = ({ children }) => {
       {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Header />}
       {/* Main Content */}
-      <main className="flex-1 bg-[#f6f6f6]">{children}</main>
+      <main className="flex-1 bg-[#f6f6f6] w-full max-w-full overflow-x-hidden box-border">{children}</main>
       {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
       {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
-      <ChatBox />
+      {/* appear only when role !== owner or admin */}
+      {role !== 'owner' && role !== 'admin' && <ChatBox />}
     </div>
   );
 };

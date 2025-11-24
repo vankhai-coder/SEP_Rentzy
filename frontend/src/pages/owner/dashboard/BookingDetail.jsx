@@ -101,6 +101,8 @@ const BookingDetail = () => {
     switch (status) {
       case "pending":
         return "text-yellow-600 bg-yellow-100";
+      case "confirmed":
+        return "text-purple-600 bg-purple-100";
       case "canceled":
         return "text-red-600 bg-red-100";
       case "deposit_paid":
@@ -120,6 +122,8 @@ const BookingDetail = () => {
     switch (status) {
       case "pending":
         return "Chờ xác nhận";
+      case "confirmed":
+        return "Đã xác nhận đặt xe";
       case "deposit_paid":
         return "Đã thanh toán đặt cọc";
       case "fully_paid":
@@ -134,6 +138,36 @@ const BookingDetail = () => {
         return "Hoàn thành";
       default:
         return status;
+    }
+  };
+
+  // Owner accept booking (chuyển từ pending -> confirmed)
+  const handleAcceptBooking = async () => {
+    const isConfirmed = window.confirm(
+      "Bạn có chắc chắn muốn chấp nhận đơn đặt xe này? Sau khi chấp nhận, người thuê sẽ có thể tiếp tục thanh toán đặt cọc 30%."
+    );
+
+    if (!isConfirmed) return;
+
+    try {
+      setLoading(true);
+      const response = await axiosInstance.patch(
+        `/api/owner/dashboard/bookings/${id}/accept`
+      );
+
+      if (response.data.success) {
+        toast.success("Đã chấp nhận đơn đặt xe thành công!");
+        await fetchBookingDetail();
+      } else {
+        toast.error(response.data.message || "Không thể chấp nhận đơn đặt xe");
+      }
+    } catch (err) {
+      console.error("Error accepting booking:", err);
+      toast.error(
+        err.response?.data?.message || "Có lỗi xảy ra khi chấp nhận đơn đặt xe"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -363,6 +397,21 @@ const BookingDetail = () => {
                     {getStatusText(booking.status)}
                   </span>
                 </div>
+                {/* Nút chấp nhận booking khi status là pending */}
+                {booking.status === "pending" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={handleAcceptBooking}
+                      disabled={loading}
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    >
+                      {loading ? "Đang xử lý..." : "Chấp nhận đơn đặt xe"}
+                    </button>
+                    <p className="mt-2 text-xs text-gray-500 text-center">
+                      Sau khi chấp nhận, người thuê sẽ có thể tiếp tục thanh toán đặt cọc 30%
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

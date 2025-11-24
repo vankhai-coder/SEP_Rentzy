@@ -71,32 +71,33 @@ const HomeMotorbike = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 pt-1">
-      <section className="mb-4">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
+      <section className="mb-3 sm:mb-4">
         <SearchForm
           type="motorbike"
           brands={brands}
           initialValues={params}
           onSubmit={handleSearch}
-          className="bg-blue-100 p-10 rounded-lg"
+          className="bg-blue-100 p-4 sm:p-6 md:p-8 lg:p-10 rounded-lg"
         />
       </section>
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-3 sm:mb-4">
         {compareList.length > 0 && (
           <button
             onClick={handleOpenCompare}
-            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="flex items-center gap-1 sm:gap-2 bg-blue-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition text-sm sm:text-base"
             disabled={compareList.length < 2}
           >
-            <Scale size={20} />
-            So Sánh ({compareList.length} xe)
+            <Scale size={16} className="sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">So Sánh ({compareList.length} xe)</span>
+            <span className="sm:hidden">So Sánh</span>
           </button>
         )}
       </div>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Hãng Xe Nổi Bật</h2>
+      <section className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Hãng Xe Nổi Bật</h2>
         {brandLoading ? (
           <p>Đang tải hãng xe...</p>
         ) : brandError ? (
@@ -106,7 +107,7 @@ const HomeMotorbike = () => {
         )}
       </section>
 
-      <h2 className="text-2xl font-bold mb-4">Danh Sách Xe Máy</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Danh Sách Xe Máy</h2>
 
       {vehicleLoading ? (
         <p className="text-center py-10">Đang tải xe máy...</p>

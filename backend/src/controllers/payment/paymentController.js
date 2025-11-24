@@ -33,10 +33,13 @@ const createPayOSLink = async (req, res) => {
       return res.status(404).json({ error: "Không tìm thấy đơn hàng." });
     }
 
-    if (booking.status !== "pending") {
+    // Chỉ cho phép thanh toán khi booking đã được owner xác nhận (confirmed)
+    if (booking.status !== "confirmed") {
       return res
         .status(400)
-        .json({ error: "Đơn hàng không hợp lệ để thanh toán." });
+        .json({ 
+          error: "Đơn hàng chưa được chủ xe xác nhận. Vui lòng chờ chủ xe chấp nhận đơn đặt xe trước khi thanh toán." 
+        });
     }
 
     // Đặt cọc là 30% của tổng thanh toán thực tế (total_amount)
@@ -139,10 +142,10 @@ const handlePayOSWebhook = async (req, res) => {
         });
       }
 
-      // Nếu là thanh toán đặt cọc
+      // Nếu là thanh toán đặt cọc (chỉ cho phép khi status là confirmed)
       if (
         booking.order_code === data.orderCode &&
-        booking.status === "pending"
+        booking.status === "confirmed"
       ) {
         await booking.update({
           status: "deposit_paid",

@@ -581,6 +581,61 @@ const BookingDetailsPage = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Thông tin phạt nguội */}
+        {booking.traffic_fine_amount > 0 && (
+          <div className="traffic-fine-section">
+            <h3>Phí phạt nguội</h3>
+            <div className="traffic-fine-details">
+              <div className="traffic-fine-row">
+                <span className="traffic-fine-label">Số tiền phạt:</span>
+                <span className="traffic-fine-value">
+                  {formatCurrency(booking.traffic_fine_amount)}
+                </span>
+              </div>
+              {booking.traffic_fine_paid > 0 && (
+                <div className="traffic-fine-row">
+                  <span className="traffic-fine-label">Đã thanh toán:</span>
+                  <span className="traffic-fine-value paid">
+                    {formatCurrency(booking.traffic_fine_paid)}
+                  </span>
+                </div>
+              )}
+              {booking.traffic_fine_amount - (booking.traffic_fine_paid || 0) > 0 && (
+                <div className="traffic-fine-row">
+                  <span className="traffic-fine-label">Còn lại:</span>
+                  <span className="traffic-fine-value remaining">
+                    {formatCurrency(booking.traffic_fine_amount - (booking.traffic_fine_paid || 0))}
+                  </span>
+                </div>
+              )}
+              {booking.traffic_fine_description && (
+                <div className="traffic-fine-description">
+                  <span className="traffic-fine-label">Lý do:</span>
+                  <span className="traffic-fine-value">
+                    {booking.traffic_fine_description}
+                  </span>
+                </div>
+              )}
+              {booking.traffic_fine_images && booking.traffic_fine_images.length > 0 && (
+                <div className="traffic-fine-images">
+                  <span className="traffic-fine-label">Hình ảnh phạt nguội:</span>
+                  <div className="traffic-fine-images-grid">
+                    {booking.traffic_fine_images.map((imageUrl, index) => (
+                      <img
+                        key={index}
+                        src={imageUrl}
+                        alt={`Phạt nguội ${index + 1}`}
+                        className="traffic-fine-image"
+                        onClick={() => window.open(imageUrl, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Lịch sử giao dịch */}
         <div className="transaction-section">
           <h3>Lịch sử giao dịch</h3>
@@ -597,6 +652,8 @@ const BookingDetailsPage = () => {
                         ? "Thanh toán cọc"
                         : transaction.transaction_type === "RENTAL"
                         ? "Thanh toán còn lại"
+                        : transaction.transaction_type === "TRAFFIC_FINE"
+                        ? "Thanh toán phí phạt nguội"
                         : transaction.transaction_type}
                     </span>
                     <span className="transaction-amount">

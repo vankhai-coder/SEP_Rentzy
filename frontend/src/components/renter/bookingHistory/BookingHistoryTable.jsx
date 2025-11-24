@@ -57,6 +57,8 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
         return `${base} bg-gradient-to-r from-green-400 to-emerald-500 text-white`;
       case "pending":
         return `${base} bg-gradient-to-r from-yellow-400 to-orange-500 text-white`;
+      case "confirmed":
+        return `${base} bg-gradient-to-r from-purple-400 to-purple-500 text-white`;
       case "canceled":
         return `${base} bg-gradient-to-r from-red-400 to-pink-500 text-white`;
       case "in_progress":
@@ -67,9 +69,80 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
   };
 
   return (
-    <div className="overflow-hidden bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl ring-1 ring-teal-100/50">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm whitespace-nowrap">
+    <div className="w-full overflow-visible">
+      <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl ring-1 ring-teal-100/50 overflow-visible">
+        <div 
+          className="booking-table-scroll overflow-x-scroll overflow-y-visible"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#14b8a6 #f3f4f6',
+            width: '100%',
+            position: 'relative',
+            display: 'block',
+            minHeight: '1px'
+          }}
+        >
+        <style>{`
+          .booking-table-scroll {
+            -webkit-overflow-scrolling: touch !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            overscroll-behavior-x: contain;
+            will-change: scroll-position;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .booking-table-scroll::-webkit-scrollbar {
+            height: 14px !important;
+            display: block !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            background: #f3f4f6 !important;
+          }
+          .booking-table-scroll::-webkit-scrollbar-track {
+            background: #e5e7eb !important;
+            border-radius: 7px;
+            margin: 2px;
+          }
+          .booking-table-scroll::-webkit-scrollbar-thumb {
+            background: #14b8a6 !important;
+            border-radius: 7px;
+            border: 1px solid #e5e7eb;
+          }
+          .booking-table-scroll::-webkit-scrollbar-thumb:hover {
+            background: #0d9488 !important;
+          }
+          @media (max-width: 768px) {
+            .booking-table-scroll {
+              -webkit-overflow-scrolling: touch !important;
+              overflow-x: auto !important;
+              overflow-y: visible !important;
+              touch-action: pan-x pan-y !important;
+              overscroll-behavior-x: contain;
+              display: block !important;
+              width: 100% !important;
+              max-width: 100vw !important;
+            }
+            .booking-table-scroll::-webkit-scrollbar {
+              height: 20px !important;
+              display: block !important;
+              -webkit-appearance: none !important;
+              background: #e5e7eb !important;
+            }
+            .booking-table-scroll::-webkit-scrollbar-thumb {
+              background: #14b8a6 !important;
+              min-height: 20px;
+              border-radius: 10px;
+            }
+            .booking-table-scroll::-webkit-scrollbar-track {
+              background: #d1d5db !important;
+              border-radius: 10px;
+            }
+          }
+        `}</style>
+        <table className="text-sm whitespace-nowrap" style={{ minWidth: '1400px', width: 'auto' }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 text-white">
             <tr>
               {[
@@ -86,7 +159,7 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
               ].map((title) => (
                 <th
                   key={title}
-                  className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide transform rotate-1"
+                  className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-bold uppercase tracking-wide"
                 >
                   {title}
                 </th>
@@ -98,89 +171,89 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
             {bookings.map((booking) => (
               <tr key={booking.booking_id} className="hover:bg-gray-50">
                 {/* Mã đơn */}
-                <td className="px-4 py-4">
-                  <div className="text-sm font-mono text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-mono text-gray-900">
                     #{booking.booking_id}
                   </div>
                 </td>
 
                 {/* Xe */}
-                <td className="px-4 py-4">
-                  <div className="flex items-center space-x-3">
-                    <h1 className="font-medium text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <h1 className="text-xs sm:text-sm font-medium text-gray-900">
                       {booking.vehicle?.model || "N/A"}
                     </h1>
                   </div>
                 </td>
 
                 {/* Ngày tạo đơn */}
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm text-gray-900">
                     {formatDateTime(booking.created_at)}
                   </div>
                 </td>
 
                 {/* Ngày nhận */}
-                <td className="px-4 py-4">
-                  <div className="text-sm font-medium text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900">
                     {formatDateTime(booking.start_date)}
                   </div>
                 </td>
 
                 {/* Ngày trả */}
-                <td className="px-4 py-4">
-                  <div className="text-sm font-medium text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900">
                     {formatDateTime(booking.end_date)}
                   </div>
                 </td>
 
                 {/* Tổng tiền */}
-                <td className="px-4 py-4">
-                  <div className="font-medium text-gray-900">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900">
                     {formatVND(booking.total_amount)}
                   </div>
                 </td>
 
                 {/* Đã thanh toán */}
-                <td className="px-4 py-4">
-                  <div className="text-sm font-medium text-green-600">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-medium text-green-600">
                     {formatVND(booking.total_paid || 0)}
                   </div>
                 </td>
 
                 {/* Còn lại */}
-                <td className="px-4 py-4">
-                  <div className="text-sm font-medium text-red-600">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="text-xs sm:text-sm font-medium text-red-600">
                     {formatVND(booking.remaining_amount || 0)}
                   </div>
                 </td>
 
                 {/* Trạng thái */}
-                <td className="px-4 py-4">
-                  <span className={getStatusBadgeClass(booking.status)}>
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <span className={`${getStatusBadgeClass(booking.status)} text-xs`}>
                     {statusMap[booking.status] || booking.status}
                   </span>
                 </td>
 
                 {/* Hành động */}
-                <td className="px-4 py-4">
-                  <div className="flex items-center space-x-2">
+                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
                     <Link
                       to={`/booking-history/booking-detail/${booking.booking_id}`}
-                      className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                      className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Chi tiết
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      <span className="whitespace-nowrap">Chi tiết</span>
                     </Link>
                     
                     {/* Nút Hợp đồng - hiện khi đã đặt cọc, thanh toán toàn bộ hoặc hoàn thành */}
                     {(booking.status === "deposit_paid" || booking.status === "fully_paid" || booking.status === "completed") && (
                       <Link
                         to={`/contract/${booking.booking_id}`}
-                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-600 hover:text-green-800"
+                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
                       >
-                        <FileText className="w-4 h-4 mr-1" />
-                        Hợp đồng
+                        <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="whitespace-nowrap">Hợp đồng</span>
                       </Link>
                     )}
                     
@@ -191,10 +264,10 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                       booking.status === "fully_paid") && (
                       <button
                         onClick={() => handleCancelClick(booking.booking_id)}
-                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-red-600 hover:text-red-800"
+                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-red-600 hover:text-red-800"
                       >
-                        <X className="w-4 h-4 mr-1" />
-                        Hủy
+                        <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="whitespace-nowrap">Hủy</span>
                       </button>
                     )}
                     
@@ -202,17 +275,17 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                       booking.review == null && (
                         <Link
                           to={`/booking-review/${booking.booking_id}`}
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-600 hover:text-yellow-800"
+                          className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600 hover:text-yellow-800"
                         >
-                          <Star className="w-4 h-4 mr-1" />
-                          Đánh giá
+                          <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="whitespace-nowrap">Đánh giá</span>
                         </Link>
                       )}
                     {booking.status === "completed" &&
                       booking.review != null && (
-                        <h3 className="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-600 hover:text-yellow-800">
-                          Đánh giá đã gửi
-                        </h3>
+                        <span className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600">
+                          Đã đánh giá
+                        </span>
                       )}
                   </div>
                 </td>
@@ -220,6 +293,7 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       
       {/* Modal hủy booking */}

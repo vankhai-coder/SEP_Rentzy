@@ -79,6 +79,7 @@ const Booking = sequelize.define(
     status: {
       type: DataTypes.ENUM(
         "pending", // Chờ xác nhận
+        "confirmed", // Đã xác nhận đặt xe (owner đã chấp nhận)
         "deposit_paid", // Đã đặt cọc
         "fully_paid", // Đã thanh toán toàn bộ
         "in_progress", // Đang thuê

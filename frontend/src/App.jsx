@@ -60,6 +60,7 @@ import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement
 import SystemSettingManagement from "./pages/admin/SideBarComponents/SystemSettingManagement.jsx";
 import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
 import TrafficFineApproval from "./pages/admin/SideBarComponents/TrafficFineApproval.jsx";
+import UserChart from "./pages/admin/SideBarComponents/UserChart.jsx";
 
 // Test pages
 
@@ -164,7 +165,8 @@ const App = () => {
             <Route path="approvalvehicle" element={<ApprovalVehicle />} />
             <Route path="managementvehicle" element={<ManagementVehicles />} />
             <Route path="userManagement" element={<UserManagement />} />
-
+            {/* userchart */}
+            <Route path="userchart" element={<UserChart />} />
             <Route path="approveOwner" element={<ApproveOwner />} />
 
             <Route path="messages" element={<Messages />} />
