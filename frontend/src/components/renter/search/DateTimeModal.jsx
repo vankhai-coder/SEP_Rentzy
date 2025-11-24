@@ -1,7 +1,8 @@
+// DateTimeModal.jsx
 import { useState, useEffect } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import "./DateTimeModal.css"; // Thêm import CSS mới
+import "./DateTimeModal.css";
 import vi from "date-fns/locale/vi";
 import { X, Calendar, Clock, AlertCircle } from "lucide-react";
 import { addDays, format, isAfter } from "date-fns";
@@ -65,113 +66,101 @@ const DateTimeModal = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-    >
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <Calendar size={20} />
-            <span>Chọn thời gian thuê xe</span>
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 rounded p-1"
-          >
-            <X size={24} />
-          </button>
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
+      <div className="bg-white rounded-2xl w-full max-w-lg md:max-w-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+        {/* Calendar Section */}
+        <div className="md:w-1/2 p-4 md:p-6 flex flex-col items-center">
+          <div className="flex justify-between items-center w-full mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <Calendar size={20} />
+              <span>Chọn ngày thuê</span>
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 rounded p-1"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <DatePicker
+            locale="vi"
+            selectsRange
+            startDate={startDate}
+            endDate={endDate}
+            onChange={handleDateChange}
+            minDate={today}
+            monthsShown={1}
+            inline
+            calendarClassName="custom-calendar w-full"
+          />
         </div>
 
-        {/* Calendar */}
-        <div className="p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Chọn khoảng thời gian
-          </label>
-          <div className="flex justify-center">
-            <DatePicker
-              locale="vi"
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={handleDateChange}
-              minDate={today}
-              monthsShown={2}
-              inline
-              calendarClassName="custom-calendar"
-            />
-          </div>
-        </div>
-
-        {/* Time Picker */}
-        <div className="p-6 border-t border-gray-200 bg-green-50">
-          <h4 className="text-sm font-medium text-green-700 mb-4 flex items-center gap-2">
-            <Clock size={16} />
-            <span>Chọn giờ nhận / trả</span>
-          </h4>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                Giờ nhận
-              </label>
-              <select
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full p-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 bg-white"
-              >
-                {timeOptions.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
+        {/* Time Section */}
+        <div className="md:w-1/2 p-4 md:p-6 flex flex-col justify-between bg-green-50">
+          <div>
+            <h4 className="text-sm font-medium text-green-700 mb-4 flex items-center gap-2">
+              <Clock size={16} />
+              <span>Chọn giờ nhận / trả</span>
+            </h4>
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
+                  Giờ nhận
+                </label>
+                <select
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full p-2 md:p-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 bg-white"
+                >
+                  {timeOptions.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-600 mb-2">
+                  Giờ trả
+                </label>
+                <select
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full p-2 md:p-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 bg-white"
+                >
+                  {timeOptions.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                Giờ trả
-              </label>
-              <select
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full p-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 bg-white"
-              >
-                {timeOptions.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div className="p-3 bg-white rounded-xl border border-green-300">
-            <span className="text-sm text-gray-700 block">
+            <div className="p-3 bg-white rounded-xl border border-green-300 text-sm text-gray-700">
               {`${startTime} ngày ${format(
                 startDate,
                 "dd/MM/yyyy"
               )} - ${endTime} ngày ${format(endDate, "dd/MM/yyyy")}`}
-            </span>
-            {!isValid && (
-              <div className="flex items-center gap-1 text-red-500 text-xs mt-1">
-                <AlertCircle size={14} />
-                <span>Kết thúc phải sau bắt đầu</span>
-              </div>
-            )}
+              {!isValid && (
+                <div className="flex items-center gap-1 text-red-500 text-xs mt-1">
+                  <AlertCircle size={14} />
+                  <span>Kết thúc phải sau bắt đầu</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <button
-            onClick={handleSaveTime}
-            disabled={!isValid}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Clock size={18} />
-            <span>Lưu thời gian</span>
-          </button>
+          {/* Footer */}
+          <div className="mt-4">
+            <button
+              onClick={handleSaveTime}
+              disabled={!isValid}
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Clock size={18} />
+              <span>Lưu thời gian</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
