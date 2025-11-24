@@ -8,7 +8,7 @@ import db from "../../models/index.js";
 // Lấy tất cả vehicles (filter theo type: car/motorbike, chỉ approved)
 export const getAllVehicles = async (req, res) => {
   try {
-    const { type, page = 1, limit = 20 } = req.query; // **SỬA: Thêm page (default 1), limit (default 20)**
+    const { type, page = 1, limit = 8 } = req.query; // **SỬA: limit default = 16**
     if (type && !["car", "motorbike"].includes(type)) {
       return res
         .status(400)
@@ -23,9 +23,8 @@ export const getAllVehicles = async (req, res) => {
     Object.keys(where).forEach(
       (key) => where[key] === undefined && delete where[key]
     );
-
-    // **SỬA: Sử dụng findAndCountAll để lấy data + total count cho pagination**
-    // **Giữ nguyên**: Attributes include literal để tính average rating**
+    // Sử dụng findAndCountAll để lấy data + total count cho pagination
+    // Giữ nguyên: Attributes include literal để tính average rating
     const { count: total, rows: vehicles } = await Vehicle.findAndCountAll({
       where,
       attributes: {
@@ -49,12 +48,11 @@ export const getAllVehicles = async (req, res) => {
           ],
         ],
       },
-      limit: parseInt(limit), // **SỬA: Giới hạn số lượng**
-      offset: (parseInt(page) - 1) * parseInt(limit), // **SỬA: Offset cho page**
-      order: [["created_at", "DESC"]], // **SỬA: Thêm order để sort mới nhất trước (tùy chọn)**
+      limit: parseInt(limit), // Giới hạn số lượng
+      offset: (parseInt(page) - 1) * parseInt(limit), // Offset cho page
+      order: [["created_at", "DESC"]], // Thêm order để sort mới nhất trước (tùy chọn)
     });
-
-    // **SỬA: Parse JSON strings và tính rating cho mỗi vehicle (giữ nguyên logic cũ)**
+    // Parse JSON strings và tính rating cho mỗi vehicle (giữ nguyên logic cũ)
     const vehicleData = vehicles.map((vehicle) => {
       const data = vehicle.toJSON();
       if (data.extra_images && typeof data.extra_images === "string") {
@@ -71,12 +69,11 @@ export const getAllVehicles = async (req, res) => {
           data.features = [];
         }
       }
-      // SỬA: Đảm bảo rating là number, fallback 5.0
+      // Đảm bảo rating là number, fallback 5.0
       data.rating = parseFloat(data.rating) || 5.0;
       return data;
     });
-
-    // **SỬA: Trả về cấu trúc mới với pagination**
+    // Trả về cấu trúc mới với pagination
     res.json({
       success: true,
       data: {
@@ -85,7 +82,7 @@ export const getAllVehicles = async (req, res) => {
           page: parseInt(page),
           limit: parseInt(limit),
           total: total, // Tổng số xe matching where
-          totalPages: Math.ceil(total / parseInt(limit)),
+          totalPages: Math.ceil(total / parseInt(limit)), // **ĐÃ CÓ: Tự tính số trang**
         },
       },
     });

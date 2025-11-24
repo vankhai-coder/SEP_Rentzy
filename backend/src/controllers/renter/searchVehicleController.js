@@ -1,52 +1,85 @@
 // controllers/renter/searchVehicleController.js
 import { Op } from "sequelize";
-import db from "../../models/index.js"; // Import db để lấy sequelize
+import db from "../../models/index.js";
 import Vehicle from "../../models/Vehicle.js";
 import Brand from "../../models/Brand.js";
 import SearchHistory from "../../models/SearchHistory.js";
+
 export const searchVehicles = async (req, res) => {
   try {
     const {
       type, // "car" hoặc "motorbike" - required
-      location, // string, optional
-      brand_id, // integer, optional
-      start_date, // YYYY-MM-DD, optional
-      end_date, // YYYY-MM-DD, optional
-      min_price, // decimal, optional
-      max_price, // decimal, optional
-      year_min, // integer, optional
-      year_max, // integer, optional
-      // New filters based on slide filters
-      transmission, // "manual" or "automatic" for cars
-      fuel_type, // "petrol", "diesel", "electric", "hybrid" for cars
-      min_seats, // integer, optional for cars (FIX: Đổi từ seats sang min_seats để match frontend)
-      max_seats, // integer, optional for cars
-      bike_type, // "scooter", "manual", "clutch", "electric" for motorbikes
-      min_engine_capacity, // integer, optional for motorbikes
-      max_engine_capacity, // integer, optional for motorbikes
+      location,
+      brand_id,
+      start_date,
+      end_date,
+      min_price,
+      max_price,
+      year_min,
+      year_max,
+      transmission,
+      fuel_type,
+      seats, // Exact match
+      bike_type,
+      engine_capacity, // Exact match
+      body_type, // Exact match cho car
       page = 1,
-      limit = 12,
-      sort_by = "price_per_day", // "price_per_day" hoặc "year"
-      sort_order = "ASC", // "ASC" hoặc "DESC"
+      limit = 8, // SỬA: Default limit=8 thống nhất
+      sort_by = "price_per_day",
+      sort_order = "ASC",
     } = req.query;
 
-    // Validation (giữ nguyên và thêm mới)
+    // ==================== VALIDATION CƠ BẢN ====================
     if (!type || !["car", "motorbike"].includes(type)) {
       return res.status(400).json({
         success: false,
         message: "Loại xe không hợp lệ (car hoặc motorbike)",
       });
     }
+
+    // Kiểm tra ngày hợp lệ
+    let hasValidDateRange = false;
+    let searchStartDate = null;
+    let searchEndDate = null;
     if (start_date && end_date) {
-      const start = new Date(start_date + "T00:00:00");
-      const end = new Date(end_date + "T23:59:59");
-      if (end <= start) {
-        return res.status(400).json({
-          success: false,
-          message: "Ngày kết thúc phải sau ngày bắt đầu",
-        });
+      if (
+        !start_date ||
+        !end_date ||
+        start_date === "null" ||
+        start_date === "undefined" ||
+        end_date === "null" ||
+        end_date === "undefined"
+      ) {
+        // Bỏ qua nếu frontend gửi rác
+      } else {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(start_date) || !dateRegex.test(end_date)) {
+          return res.status(400).json({
+            success: false,
+            message: "Định dạng ngày không hợp lệ (YYYY-MM-DD)",
+          });
+        }
+        const start = new Date(start_date);
+        const end = new Date(end_date);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Ngày không hợp lệ",
+          });
+        }
+        if (end < start) {
+          return res.status(400).json({
+            success: false,
+            message: "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu",
+          });
+        }
+        hasValidDateRange = true;
+        searchStartDate = start_date;
+        searchEndDate = end_date;
       }
     }
+
+    // Các validation khác
     if (min_price && (isNaN(min_price) || parseFloat(min_price) < 0)) {
       return res
         .status(400)
@@ -57,23 +90,26 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Giá tối đa không hợp lệ" });
     }
-    if (year_min && (isNaN(year_min) || parseInt(year_min) < 1900)) {
+    if (
+      year_min &&
+      (isNaN(year_min) ||
+        parseInt(year_min) < 1900 ||
+        parseInt(year_min) > 2030)
+    ) {
       return res
         .status(400)
         .json({ success: false, message: "Năm tối thiểu không hợp lệ" });
     }
-    if (year_max && (isNaN(year_max) || parseInt(year_max) > 2030)) {
+    if (
+      year_max &&
+      (isNaN(year_max) ||
+        parseInt(year_max) < 1900 ||
+        parseInt(year_max) > 2030)
+    ) {
       return res
         .status(400)
         .json({ success: false, message: "Năm tối đa không hợp lệ" });
     }
-    // FIX: Thêm check cho "undefined" string từ frontend (an toàn, dù frontend đã fix)
-    if (transmission === "undefined") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid transmission param" });
-    }
-    // New validations
     if (
       transmission &&
       type === "car" &&
@@ -92,17 +128,12 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Loại nhiên liệu không hợp lệ" });
     }
-    if (min_seats && (isNaN(min_seats) || parseInt(min_seats) < 1)) {
-      // FIX: Đổi từ seats sang min_seats
+    // Validation cho seats (exact, >=1)
+    if (seats && (isNaN(seats) || parseInt(seats) < 1)) {
       return res.status(400).json({
         success: false,
-        message: "Số chỗ ngồi tối thiểu không hợp lệ",
+        message: "Số chỗ ngồi không hợp lệ",
       });
-    }
-    if (max_seats && (isNaN(max_seats) || parseInt(max_seats) < 1)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Số chỗ ngồi tối đa không hợp lệ" });
     }
     if (
       bike_type &&
@@ -113,22 +144,14 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Loại xe máy không hợp lệ" });
     }
+    // Validation cho engine_capacity (exact, >=50)
     if (
-      min_engine_capacity &&
-      (isNaN(min_engine_capacity) || parseInt(min_engine_capacity) < 50)
+      engine_capacity &&
+      (isNaN(engine_capacity) || parseInt(engine_capacity) < 50)
     ) {
       return res.status(400).json({
         success: false,
-        message: "Dung tích động cơ tối thiểu không hợp lệ",
-      });
-    }
-    if (
-      max_engine_capacity &&
-      (isNaN(max_engine_capacity) || parseInt(max_engine_capacity) < 50)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Dung tích động cơ tối đa không hợp lệ",
+        message: "Dung tích động cơ không hợp lệ",
       });
     }
     if (brand_id && (isNaN(brand_id) || parseInt(brand_id) < 1)) {
@@ -136,19 +159,33 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "ID hãng xe không hợp lệ" });
     }
-    // Thêm validation cho pagination và sort
+    // Validation cho body_type (chỉ cho car)
+    if (
+      body_type &&
+      type === "car" &&
+      ![
+        "sedan",
+        "suv",
+        "hatchback",
+        "convertible",
+        "coupe",
+        "minivan",
+        "pickup",
+        "van",
+        "mpv",
+      ].includes(body_type)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Kiểu dáng thân xe không hợp lệ" });
+    }
+
     const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const limitNum = Math.min(parseInt(limit) || 8, 100); // SỬA: Default=8, max 100
     if (isNaN(pageNum) || pageNum < 1) {
       return res
         .status(400)
         .json({ success: false, message: "Số trang không hợp lệ" });
-    }
-    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-      // Giới hạn max 100 để tránh overload
-      return res
-        .status(400)
-        .json({ success: false, message: "Giới hạn trang không hợp lệ" });
     }
     if (!["price_per_day", "year"].includes(sort_by)) {
       return res
@@ -161,116 +198,100 @@ export const searchVehicles = async (req, res) => {
         .json({ success: false, message: "Thứ tự sắp xếp không hợp lệ" });
     }
 
-    // Build where clause cơ bản cho Vehicle
-    const vehicleWhere = {
+    // ==================== BUILD WHERE CLAUSE ====================
+    const baseVehicleWhere = {
       vehicle_type: type,
       status: "available",
       approvalStatus: "approved",
     };
 
-    const andConditions = [];
-
+    // Base conditions cho filter options (FULL, CHỈ location + price/year - KHÔNG brand/transmission/fuel/exact)
+    const baseConditions = [];
     if (location) {
-      andConditions.push(
+      baseConditions.push(
         db.sequelize.where(
           db.sequelize.fn("LOWER", db.sequelize.col("location")),
           "LIKE",
-          db.sequelize.fn("LOWER", `%${location}%`)
+          `%${location.toLowerCase()}%`
         )
       );
     }
-    if (brand_id && !isNaN(brand_id)) {
-      vehicleWhere.brand_id = parseInt(brand_id);
-    }
-    if (min_price) {
-      andConditions.push({
+    if (min_price)
+      baseConditions.push({
         price_per_day: { [Op.gte]: parseFloat(min_price) },
       });
-    }
-    if (max_price) {
-      andConditions.push({
+    if (max_price)
+      baseConditions.push({
         price_per_day: { [Op.lte]: parseFloat(max_price) },
       });
-    }
-    if (year_min) {
-      andConditions.push({ year: { [Op.gte]: parseInt(year_min) } });
-    }
-    if (year_max) {
-      andConditions.push({ year: { [Op.lte]: parseInt(year_max) } });
+    if (year_min)
+      baseConditions.push({ year: { [Op.gte]: parseInt(year_min) } });
+    if (year_max)
+      baseConditions.push({ year: { [Op.lte]: parseInt(year_max) } });
+    // KHÔNG add transmission/fuel_type/brand_id vào baseConditions → options luôn full
+
+    // Options where (FULL, chỉ base)
+    const optionsWhere = { ...baseVehicleWhere };
+    if (baseConditions.length > 0) {
+      optionsWhere[Op.and] = baseConditions;
     }
 
-    // New filter conditions
+    // Full conditions cho vehicles (base + brand + transmission/fuel + exact)
+    const fullConditions = [...baseConditions];
+    if (brand_id && !isNaN(brand_id)) {
+      fullConditions.push({ brand_id: parseInt(brand_id) });
+    }
     if (type === "car") {
-      if (transmission) {
-        andConditions.push({ transmission });
-      }
-      if (fuel_type) {
-        andConditions.push({ fuel_type });
-      }
-      if (min_seats) {
-        // FIX: Sử dụng min_seats cho filter >= (không còn seats)
-        andConditions.push({ seats: { [Op.gte]: parseInt(min_seats) } });
-      }
-      if (max_seats) {
-        andConditions.push({ seats: { [Op.lte]: parseInt(max_seats) } });
-      }
+      if (transmission) fullConditions.push({ transmission });
+      if (fuel_type) fullConditions.push({ fuel_type });
+      if (seats) fullConditions.push({ seats: parseInt(seats) });
+      if (body_type) fullConditions.push({ body_type });
     } else if (type === "motorbike") {
-      if (bike_type) {
-        andConditions.push({ bike_type });
-      }
-      if (min_engine_capacity) {
-        andConditions.push({
-          engine_capacity: { [Op.gte]: parseInt(min_engine_capacity) },
+      if (bike_type) fullConditions.push({ bike_type });
+      if (engine_capacity)
+        fullConditions.push({
+          engine_capacity: parseInt(engine_capacity),
         });
-      }
-      if (max_engine_capacity) {
-        andConditions.push({
-          engine_capacity: { [Op.lte]: parseInt(max_engine_capacity) },
-        });
-      }
+    }
+    let finalWhere = { ...baseVehicleWhere };
+    if (fullConditions.length > 0) {
+      finalWhere[Op.and] = fullConditions;
     }
 
-    if (andConditions.length > 0) {
-      vehicleWhere[Op.and] = andConditions;
+    // ==================== BLOCK XE ĐÃ CÓ BOOKING (ÁP DỤNG CHO VEHICLES, KHÔNG CHO OPTIONS) ====================
+    if (hasValidDateRange) {
+      const blockBookedVehicles = db.sequelize.literal(`
+        Vehicle.vehicle_id NOT IN (
+          SELECT b.vehicle_id
+          FROM bookings b
+          WHERE b.status IN ('pending', 'confirmed', 'in_progress', 'deposit_paid')
+            AND b.start_date <= '${searchEndDate}'
+            AND b.end_date >= '${searchStartDate}'
+        )
+      `);
+      finalWhere[Op.and] = finalWhere[Op.and] || [];
+      finalWhere[Op.and].push(blockBookedVehicles);
     }
 
-    // Xử lý availability nếu có thời gian
-    let finalWhere = vehicleWhere;
-    if (start_date && end_date) {
-      // Fix: Dùng alias Sequelize 'Vehicle.vehicle_id' cho correlated subquery
-      const availabilityCondition = db.sequelize.where(
-        db.sequelize.literal(`(
-          SELECT COUNT(*) 
-          FROM bookings b 
-          WHERE b.vehicle_id = Vehicle.vehicle_id 
-          AND b.status IN ('confirmed', 'in_progress', 'deposit_paid')
-          AND NOT (b.end_date < '${start_date}' OR b.start_date > '${end_date}')
-        )`),
-        0 // Count phải = 0
-      );
-      finalWhere[Op.and] = [
-        ...(finalWhere[Op.and] || []),
-        availabilityCondition,
-      ];
-    }
-
-    // Pagination
+    // ==================== QUERY DATA ====================
     const offset = (pageNum - 1) * limitNum;
-
-    // Count total - FIX: Thêm as: 'brand' vào include để khớp alias
     const total = await Vehicle.count({
       where: finalWhere,
-      include: [{ model: Brand, as: "brand" }], // SỬA: Thêm as: 'brand'
+      include: [
+        {
+          model: Brand,
+          as: "brand",
+          attributes: ["name", "logo_url", "category"],
+        },
+      ],
     });
-
-    // Fetch data - FIX: Thêm as: 'brand' vào include
     const vehicles = await Vehicle.findAll({
       where: finalWhere,
       include: [
         {
           model: Brand,
+          as: "brand",
           attributes: ["name", "logo_url", "category"],
-          as: "brand", // SỬA: Thêm as: 'brand'
         },
       ],
       order: [[sort_by, sort_order]],
@@ -278,54 +299,151 @@ export const searchVehicles = async (req, res) => {
       offset,
     });
 
-    // Log search (nếu user logged in)
-    const userId = req.user ? req.user.userId : null;
+    // ==================== FETCH FILTER OPTIONS (FULL: DỘNG TỪ DB, CHỈ BASE - KHÔNG EXACT/BRAND/TRANSMISSION/FUEL) ====================
+    let filterOptions = { brands: [] };
+    if (type === "car") {
+      // Unique seats (full available sau base, sorted ASC)
+      const seatsRes = await Vehicle.findAll({
+        where: optionsWhere,
+        attributes: [
+          [db.sequelize.fn("DISTINCT", db.sequelize.col("seats")), "seats"],
+        ],
+        order: [[db.sequelize.col("seats"), "ASC"]],
+        raw: true,
+      });
+      filterOptions.availableSeats = seatsRes
+        .map((r) => r.seats)
+        .filter((s) => s != null && s > 0);
+
+      // Unique body_types (full sau base)
+      const bodyRes = await Vehicle.findAll({
+        where: optionsWhere,
+        attributes: [
+          [
+            db.sequelize.fn("DISTINCT", db.sequelize.col("body_type")),
+            "body_type",
+          ],
+        ],
+        order: [[db.sequelize.col("body_type"), "ASC"]],
+        raw: true,
+      });
+      filterOptions.availableBodyTypes = bodyRes
+        .map((r) => r.body_type)
+        .filter((b) => b != null);
+
+      // Unique brands (full sau base, KHÔNG brand_id → tất cả hãng available)
+      const brandsRes = await Vehicle.findAll({
+        where: optionsWhere,
+        include: [
+          {
+            model: Brand,
+            as: "brand",
+            attributes: ["brand_id", "name", "logo_url"],
+          },
+        ],
+        group: [
+          db.sequelize.col("brand.brand_id"),
+          db.sequelize.col("brand.name"),
+          db.sequelize.col("brand.logo_url"),
+        ],
+        raw: true,
+      });
+      filterOptions.brands = brandsRes.map((r) => ({
+        brand_id: r["brand.brand_id"],
+        name: r["brand.name"],
+        logo_url: r["brand.logo_url"],
+      }));
+    } else if (type === "motorbike") {
+      // Unique bike_types (full sau base)
+      const bikeRes = await Vehicle.findAll({
+        where: optionsWhere,
+        attributes: [
+          [
+            db.sequelize.fn("DISTINCT", db.sequelize.col("bike_type")),
+            "bike_type",
+          ],
+        ],
+        order: [[db.sequelize.col("bike_type"), "ASC"]],
+        raw: true,
+      });
+      filterOptions.availableBikeTypes = bikeRes
+        .map((r) => r.bike_type)
+        .filter((b) => b != null);
+
+      // Unique engine_capacities (full sau base, sorted ASC)
+      const engineRes = await Vehicle.findAll({
+        where: optionsWhere,
+        attributes: [
+          [
+            db.sequelize.fn("DISTINCT", db.sequelize.col("engine_capacity")),
+            "engine_capacity",
+          ],
+        ],
+        order: [[db.sequelize.col("engine_capacity"), "ASC"]],
+        raw: true,
+      });
+      filterOptions.availableEngineCapacities = engineRes
+        .map((r) => r.engine_capacity)
+        .filter((e) => e != null);
+
+      // Unique brands (full sau base)
+      const brandsRes = await Vehicle.findAll({
+        where: optionsWhere,
+        include: [
+          {
+            model: Brand,
+            as: "brand",
+            attributes: ["brand_id", "name", "logo_url"],
+          },
+        ],
+        group: [
+          db.sequelize.col("brand.brand_id"),
+          db.sequelize.col("brand.name"),
+          db.sequelize.col("brand.logo_url"),
+        ],
+        raw: true,
+      });
+      filterOptions.brands = brandsRes.map((r) => ({
+        brand_id: r["brand.brand_id"],
+        name: r["brand.name"],
+        logo_url: r["brand.logo_url"],
+      }));
+    }
+
+    // ==================== LƯU SEARCH HISTORY ====================
+    const userId = req.user?.userId || null;
     try {
       const searchParams = {
         type,
-        location,
+        location: location || null,
         brand_id: brand_id ? parseInt(brand_id) : null,
-        start_date,
-        end_date,
+        start_date: searchStartDate,
+        end_date: searchEndDate,
         min_price: min_price ? parseFloat(min_price) : null,
         max_price: max_price ? parseFloat(max_price) : null,
         year_min: year_min ? parseInt(year_min) : null,
         year_max: year_max ? parseInt(year_max) : null,
-        transmission,
-        fuel_type,
-        min_seats: min_seats ? parseInt(min_seats) : null,
-        max_seats: max_seats ? parseInt(max_seats) : null,
-        bike_type,
-        min_engine_capacity: min_engine_capacity
-          ? parseInt(min_engine_capacity)
-          : null,
-        max_engine_capacity: max_engine_capacity
-          ? parseInt(max_engine_capacity)
-          : null,
+        transmission: transmission || null,
+        fuel_type: fuel_type || null,
+        seats: seats ? parseInt(seats) : null,
+        bike_type: bike_type || null,
+        engine_capacity: engine_capacity ? parseInt(engine_capacity) : null,
+        body_type: body_type || null,
         page: pageNum,
         limit: limitNum,
         sort_by,
         sort_order,
       };
-      console.log(
-        `[DEBUG] Creating SearchHistory: user_id=${userId}, params=${JSON.stringify(
-          searchParams
-        )}`
-      );
       await SearchHistory.create({
-        user_id: userId, // Có thể null cho guest
+        user_id: userId,
         search_params: searchParams,
         results_count: total,
       });
-      console.log(`[DEBUG] SearchHistory created successfully`);
     } catch (searchError) {
-      console.error(
-        `[ERROR] Failed to create SearchHistory for user ${userId}:`,
-        searchError
-      );
-      // Không throw error để tránh break API
+      console.error("[ERROR] Failed to save SearchHistory:", searchError);
     }
 
+    // ==================== RESPONSE ====================
     res.json({
       success: true,
       data: vehicles,
@@ -333,13 +451,15 @@ export const searchVehicles = async (req, res) => {
         page: pageNum,
         limit: limitNum,
         total,
-        total_pages: Math.ceil(total / limitNum),
+        total_pages: Math.ceil(total / limitNum) || 1,
       },
+      filterOptions, // FULL options động, independent
     });
   } catch (error) {
     console.error("Lỗi khi tìm kiếm xe:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Lỗi server khi tìm kiếm xe" });
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi tìm kiếm xe",
+    });
   }
 };

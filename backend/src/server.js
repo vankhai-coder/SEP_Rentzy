@@ -41,9 +41,9 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
 import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRoute.js";
-import AdminOverviewRoute from './routes/admin/adminOverviewRoute.js'
-import AdminUserManagementRoute from './routes/admin/adminUserManagementRoute.js'
-import AdminApproveOwnerRoute from './routes/admin/adminApproveOwnerRoute.js'
+import AdminOverviewRoute from "./routes/admin/adminOverviewRoute.js";
+import AdminUserManagementRoute from "./routes/admin/adminUserManagementRoute.js";
+import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -147,7 +147,7 @@ app.get("/", (req, res) => {
 // sync database models
 (async () => {
   try {
-    await db.sequelize.sync({alter: true});
+    await db.sequelize.sync({});
     console.log("✅ All models synced!");
 
     // Initialize cron jobs after database sync
