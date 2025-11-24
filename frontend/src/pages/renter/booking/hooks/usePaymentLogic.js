@@ -185,10 +185,11 @@ export const usePaymentLogic = (bookingId) => {
    * Effect: Xác định step dựa trên booking status
    * 
    * MAPPING:
-   * - pending → step 1 + khởi tạo countdown 15 phút
+   * - pending → step 0 (chờ owner chấp nhận)
+   * - confirmed → step 1 + khởi tạo countdown 15 phút (sẵn sàng thanh toán đặt cọc)
    * - deposit_paid → step 2
    * - contract_signed → step 3  
-   * - confirmed/in_progress/fully_paid/completed → step 4
+   * - in_progress/fully_paid/completed → step 4
    * - canceled/refunded/rejected → step 0
    * 
    * Dependency: [booking] để chạy lại khi booking thay đổi
@@ -201,14 +202,22 @@ export const usePaymentLogic = (bookingId) => {
 
     switch (status) {
        case "pending": {
-         setStep(1);
-         // Khởi tạo countdown 15 phút cho thời gian giữ chỗ
-         const fifteenMinutes = 15 * 60; // 900 giây
-         setCountdown(fifteenMinutes);
+         setStep(0); // Chờ owner chấp nhận
+         setCountdown(0);
          setIsTimeUp(false);
-         console.log("⏱️ Started countdown for pending booking");
+         console.log("⏳ Waiting for owner to accept booking");
          break;
        }
+        
+      case "confirmed": {
+        setStep(1);
+        // Khởi tạo countdown 15 phút cho thời gian thanh toán đặt cọc
+        const fifteenMinutes = 15 * 60; // 900 giây
+        setCountdown(fifteenMinutes);
+        setIsTimeUp(false);
+        console.log("⏱️ Started countdown for confirmed booking - ready to pay deposit");
+        break;
+      }
         
       case "deposit_paid":
         setStep(2);
@@ -224,7 +233,6 @@ export const usePaymentLogic = (bookingId) => {
         console.log("📝 Contract signed, moved to step 3");
         break;
         
-      case "confirmed":
       case "in_progress":
       case "fully_paid":
       case "completed":

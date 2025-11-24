@@ -57,6 +57,8 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
         return `${base} bg-gradient-to-r from-green-400 to-emerald-500 text-white`;
       case "pending":
         return `${base} bg-gradient-to-r from-yellow-400 to-orange-500 text-white`;
+      case "confirmed":
+        return `${base} bg-gradient-to-r from-purple-400 to-purple-500 text-white`;
       case "canceled":
         return `${base} bg-gradient-to-r from-red-400 to-pink-500 text-white`;
       case "in_progress":

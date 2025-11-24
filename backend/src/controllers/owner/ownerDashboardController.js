@@ -1256,6 +1256,95 @@ export const searchTrafficFine = async (req, res) => {
   }
 };
 
+// PATCH /api/owner/dashboard/bookings/:id/accept - Owner chấp nhận booking (chuyển từ pending -> confirmed)
+export const acceptBooking = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+
+    // Lấy danh sách xe của owner để kiểm tra quyền truy cập
+    const ownerVehicles = await Vehicle.findAll({
+      where: { owner_id: ownerId },
+      attributes: ["vehicle_id"],
+    });
+
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
+
+    if (vehicleIds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe nào của bạn",
+      });
+    }
+
+    // Tìm booking
+    const booking = await Booking.findOne({
+      where: {
+        booking_id: id,
+        vehicle_id: { [Op.in]: vehicleIds },
+      },
+      include: [
+        {
+          model: User,
+          as: "renter",
+          attributes: ["user_id", "full_name", "email"],
+        },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["vehicle_id", "model", "owner_id"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê hoặc bạn không có quyền truy cập",
+      });
+    }
+
+    // Kiểm tra trạng thái booking - chỉ cho phép accept khi status là pending
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Chỉ có thể chấp nhận booking ở trạng thái "Chờ xác nhận". Trạng thái hiện tại: ${booking.status}`,
+      });
+    }
+
+    // Cập nhật trạng thái booking thành "confirmed"
+    await booking.update({
+      status: "confirmed",
+      updated_at: new Date(),
+    });
+
+    // Tạo thông báo cho renter
+    await Notification.create({
+      user_id: booking.renter_id,
+      title: "Đơn đặt xe đã được chấp nhận",
+      content: `Chủ xe đã chấp nhận đơn đặt xe #${booking.booking_id}. Bạn có thể tiếp tục thanh toán đặt cọc 30%.`,
+      type: "booking",
+      is_read: false,
+    });
+
+    res.json({
+      success: true,
+      message: "Đã chấp nhận đơn đặt xe thành công",
+      data: {
+        booking_id: booking.booking_id,
+        status: "confirmed",
+      },
+    });
+  } catch (error) {
+    console.error("Error accepting booking:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi chấp nhận đơn đặt xe",
+      error: error.message,
+    });
+  }
+};
+
 // POST /api/owner/dashboard/bookings/:id/traffic-fine - Thêm/cập nhật phí phạt nguội
 export const addTrafficFine = async (req, res) => {
   try {
