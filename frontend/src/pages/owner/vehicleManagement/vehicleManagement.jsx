@@ -372,25 +372,13 @@ const fetchVehicles = useCallback(async () => {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleOwnerConfirmationToggle(
-                            vehicle.vehicle_id,
-                            Boolean(vehicle.require_owner_confirmation)
-                          )}
-                          className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
-                            vehicle.require_owner_confirmation
-                              ? 'border-purple-600 text-purple-700 bg-white hover:bg-purple-50'
-                              : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                          }`}
-                        >
-                          {vehicle.require_owner_confirmation ? 'Yêu cầu xác nhận' : 'Không yêu cầu'}
-                        </button>
-                        <button
                           onClick={() => navigate(`/owner/vehicles/${vehicle.vehicle_id}`)}
                           className="px-3 py-1.5 border border-blue-600 text-blue-700 bg-white rounded-md text-sm font-medium hover:bg-blue-50 transition-colors"
                         >
                           Chi tiết
                         </button>
-                        <button
+                        {vehicle.approvalStatus === 'approved' && (
+                          <button
                           onClick={() => {
                             const editPath = vehicle.vehicle_type === 'car' 
                               ? `/owner/edit-car/${vehicle.vehicle_id}`
@@ -401,7 +389,9 @@ const fetchVehicles = useCallback(async () => {
                         >
                           Sửa
                         </button>
-                        <button
+                        )}
+                        {vehicle.approvalStatus === 'approved' &&(
+                          <button
                           onClick={() => handleStatusToggle(vehicle.vehicle_id, vehicle.status)}
                           className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
                             vehicle.status === 'available'
@@ -411,6 +401,33 @@ const fetchVehicles = useCallback(async () => {
                         >
                           {vehicle.status === 'available' ? 'Khóa' : 'Mở khóa'}
                         </button>
+                        )}
+                        {/* <button
+                          onClick={() => handleStatusToggle(vehicle.vehicle_id, vehicle.status)}
+                          className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                            vehicle.status === 'available'
+                              ? 'border-red-600 text-red-700 bg-white hover:bg-red-50'
+                              : 'border-green-600 text-green-700 bg-white hover:bg-green-50'
+                          }`}
+                        >
+                          {vehicle.status === 'available' ? 'Khóa' : 'Mở khóa'}
+                        </button> */}
+                        {vehicle.approvalStatus === 'approved' && (
+                          <button
+                            onClick={() => handleOwnerConfirmationToggle(
+                              vehicle.vehicle_id,
+                              Boolean(vehicle.require_owner_confirmation)
+                            )}
+                            className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                              vehicle.require_owner_confirmation
+                                ? 'border-purple-600 text-purple-700 bg-white hover:bg-purple-50'
+                                : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                            }`}
+                          >
+                            {vehicle.require_owner_confirmation ? 'Yêu cầu xác nhận' : 'Không yêu cầu'}
+                          </button>
+                        )}
+                        
                         {/* <button
                           onClick={() => handleDelete(vehicle.vehicle_id, vehicle.model)}
                           className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
