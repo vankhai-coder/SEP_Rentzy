@@ -29,6 +29,27 @@ const DateTimeModal = ({
   const [showEndOptions, setShowEndOptions] = useState(false);
   const [startDate, endDate] = dateRange;
 
+  const now = new Date();
+  const roundToNextHalfHour = (date) => {
+    const d = new Date(date);
+    const mins = d.getMinutes();
+    const add = mins === 0 ? 0 : mins <= 30 ? 30 - mins : 60 - mins;
+    d.setMinutes(mins + add, 0, 0);
+    return d;
+  };
+  const timeToMinutes = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const minutesToTime = (mins) => {
+    const h = Math.floor(mins / 60)
+      .toString()
+      .padStart(2, "0");
+    const m = (mins % 60).toString().padStart(2, "0");
+    return `${h}:${m}`;
+  };
+  const nextSlotAfter = (mins) => minutesToTime(mins + 30);
+
   // Chỉ chạy 1 lần khi modal mount (lần đầu mở)
   useEffect(() => {
     if (initialStart) {
@@ -75,6 +96,47 @@ const DateTimeModal = ({
       );
     }
   }
+
+  // Build filtered options based on current day and selected start/end
+  const isSameDay = (a, b) =>
+    a && b && new Date(a).toDateString() === new Date(b).toDateString();
+
+  const minStartTimeStr = isSameDay(startDate, now)
+    ? format(roundToNextHalfHour(now), "HH:mm")
+    : "00:00";
+  const minStartMins = timeToMinutes(minStartTimeStr);
+
+  const startTimeOptions = timeOptions.filter((t) => {
+    if (isSameDay(startDate, now)) {
+      return timeToMinutes(t) >= minStartMins;
+    }
+    return true;
+  });
+
+  let minEndMins = 0;
+  if (isSameDay(endDate, now)) {
+    minEndMins = Math.max(minEndMins, minStartMins);
+  }
+  if (isSameDay(startDate, endDate)) {
+    minEndMins = Math.max(minEndMins, timeToMinutes(startTime));
+  }
+  const endTimeOptions = timeOptions.filter(
+    (t) => timeToMinutes(t) > minEndMins
+  );
+
+  // Auto-adjust selected times if they become invalid
+  useEffect(() => {
+    if (isSameDay(startDate, now) && timeToMinutes(startTime) < minStartMins) {
+      setStartTime(minStartTimeStr);
+    }
+
+    let requiredMinEnd = minEndMins;
+    if (timeToMinutes(endTime) <= requiredMinEnd) {
+      const adjusted = nextSlotAfter(requiredMinEnd);
+      setEndTime(adjusted);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate, startTime]);
 
   const toggleStartOptions = () => setShowStartOptions(!showStartOptions);
   const toggleEndOptions = () => setShowEndOptions(!showEndOptions);
@@ -147,12 +209,18 @@ const DateTimeModal = ({
                   </div>
                   {showStartOptions && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {timeOptions.map((time) => (
-                        <div
-                          key={time}
-                          className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          onClick={() => selectStartTime(time)}
-                        >
+                      {startTimeOptions.map((time) => {
+                        const isSelected = startTime === time;
+                        return (
+                          <div
+                            key={time}
+                            className={`flex items-center p-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                              isSelected
+                                ? "bg-green-50 text-green-700"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => selectStartTime(time)}
+                          >
                           <div className="flex items-center mr-3">
                             <div
                               className={`w-4 h-4 rounded-full border-2 transition-colors ${
@@ -162,9 +230,10 @@ const DateTimeModal = ({
                               }`}
                             />
                           </div>
-                          <span className="text-sm text-gray-700">{time}</span>
+                          <span className={`text-sm ${isSelected ? "text-green-700" : "text-gray-700"}`}>{time}</span>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -189,12 +258,18 @@ const DateTimeModal = ({
                   </div>
                   {showEndOptions && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {timeOptions.map((time) => (
-                        <div
-                          key={time}
-                          className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          onClick={() => selectEndTime(time)}
-                        >
+                      {endTimeOptions.map((time) => {
+                        const isSelected = endTime === time;
+                        return (
+                          <div
+                            key={time}
+                            className={`flex items-center p-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                              isSelected
+                                ? "bg-green-50 text-green-700"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => selectEndTime(time)}
+                          >
                           <div className="flex items-center mr-3">
                             <div
                               className={`w-4 h-4 rounded-full border-2 transition-colors ${
@@ -204,9 +279,10 @@ const DateTimeModal = ({
                               }`}
                             />
                           </div>
-                          <span className="text-sm text-gray-700">{time}</span>
+                          <span className={`text-sm ${isSelected ? "text-green-700" : "text-gray-700"}`}>{time}</span>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useMemo } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVehicleById } from "../../../redux/features/renter/vehicles/vehicleSlice";
 import {
@@ -12,6 +12,7 @@ import {
 
 const VehicleDetail = () => {
   const { id } = useParams();
+  const location = useLocation();
 
   const dispatch = useDispatch();
   const { currentVehicle: vehicle, detailLoading: loading, detailError: error } = useSelector(state => state.vehicleStore);
@@ -25,6 +26,22 @@ const VehicleDetail = () => {
 
   // Debug log để kiểm tra state
   console.log('Redux state:', { vehicle, loading, error });
+
+  // Lấy prefill thời gian thuê từ query params nếu có
+  const prefillParams = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const startDate = params.get('start_date');
+    const endDate = params.get('end_date');
+    const startTime = params.get('start_time');
+    const endTime = params.get('end_time');
+
+    return {
+      start_date: startDate || undefined,
+      end_date: endDate || undefined,
+      start_time: startTime || undefined,
+      end_time: endTime || undefined,
+    };
+  }, [location.search]);
 
   if (loading) {
     return (
@@ -86,7 +103,7 @@ const VehicleDetail = () => {
           {/* Right Column - 3 parts */}
           <div className="lg:col-span-4">
             <div className="sticky top-5">
-              <BookingForm vehicle={vehicle} />
+              <BookingForm vehicle={vehicle} prefillParams={prefillParams} />
             </div>
           </div>
         </div>
