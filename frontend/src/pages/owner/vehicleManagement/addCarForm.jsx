@@ -638,7 +638,7 @@ const AddCarForm = () => {
         {/* File Upload Sections */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">
-            Hình ảnh và giấy tờ
+            Hình ảnh
           </h2>
 
           <div className="space-y-6">
