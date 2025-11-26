@@ -12,71 +12,145 @@ const client = new OpenAI({
     baseURL,
 });
 const { Vehicle, Brand, User } = db;
+const validateCarWithAI = async (brand, model, year) => {
+  try {
+    const validationPrompt = `
+      Bạn là một chuyên gia về xe hơi. Hãy kiểm tra thông tin sau:
+      - Thương hiệu: ${brand}
+      - Dòng xe: ${model}
+      ${year ? `- Năm sản xuất: ${year}` : ''}
 
+      Nhiệm vụ:
+      1. Kiểm tra xem "${model}" có phải là dòng xe thực sự của thương hiệu "${brand}" không?
+      2. Nếu có năm sản xuất, kiểm tra năm ${year} có hợp lý với dòng xe này không?
+
+      Trả lời CHÍNH XÁC theo định dạng JSON sau (không thêm markdown, không thêm text ngoài JSON):
+      {
+        "isValid": true/false,
+        "message": "Lý do cụ thể nếu không hợp lệ, hoặc 'OK' nếu hợp lệ",
+        "suggestion": "Gợi ý dòng xe đúng nếu người dùng nhập sai (hoặc null nếu đúng)"
+      }
+
+      Ví dụ:
+      - Kia Morning → valid
+      - Kia VF8 → invalid, gợi ý "VF8 là dòng xe của VinFast, không phải Kia"
+      - Toyota Vios 2030 → invalid, gợi ý "Năm 2030 chưa tồn tại"
+      `;
+
+    const response = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "Bạn là chuyên gia kiểm tra thông tin xe hơi. Luôn trả về JSON thuần túy, không thêm markdown hay text khác."
+        },
+        {
+          role: "user",
+          content: validationPrompt,
+        },
+      ],
+      temperature: 0.3, // Giảm temperature để kết quả chính xác hơn
+    });
+
+    const aiResponse = response.choices[0].message.content.trim();
+    
+    // Loại bỏ markdown code blocks nếu có
+    const jsonString = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const validation = JSON.parse(jsonString);
+    
+    return validation;
+  } catch (error) {
+    console.error("AI validation error:", error);
+    // Nếu AI lỗi, cho phép tiếp tục (fallback)
+    return {
+      isValid: true,
+      message: "Không thể xác thực bằng AI, tiếp tục xử lý",
+      suggestion: null
+    };
+  }
+};
 export const generateCarDescription = async (req, res) => {
-    try {
-        const {
-            brand,
-            model,
-            year,
-            
-        } = req.body;
+  try {
+    const { brand, model, year } = req.body;
 
-        if (!brand || !model){
-            return res.status(400).json({
-                success: false,
-                message: "Thiếu thông tin xe (brand, model)",
-            });
-        }
-
-        const prompt = `
-            Hãy viết một đoạn mô tả **ngắn gọn, chuyên nghiệp, tự nhiên** để đăng xe cho thuê.
-
-            Thông tin xe:
-            - Thương hiệu: ${brand}
-            - Dòng xe: ${model}
-            - Năm sản xuất: ${year}
-            
-
-            Yêu cầu:
-            - Viết giọng văn thân thiện, chuyên nghiệp như các website cho thuê xe.
-            - Nhấn mạnh ưu điểm, sự thoải mái & trải nghiệm khi thuê.
-            - hãy mô tả thêm các thông tin xe thuộc thương hiệu, dòng xe, năm sản xuất trên
-            - Không dài dòng, tối đa 5–8 câu.
-            - Không lặp lại dữ liệu thừa.
-
-            Bắt đầu viết:
-            `;
-
-                const response = await client.chat.completions.create({
-                model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-                messages: [
-                    {
-                    role: "user",
-                    content: prompt,
-                    },
-                ],
-                temperature: 0.7,
-                });
-
-                const description = response.choices[0].message.content;
-
-                return res.json({
-                success: true,
-                description,
-                });
-    } catch (error) {
-        console.error("generateCarDescription error:", error?.response?.data || error?.message || error);
-        const status = error?.response?.status || 500;
-        const message =
-            error?.response?.data?.error?.message ||
-            error?.response?.data?.message ||
-            (apiKey ? "Đã xảy ra lỗi khi tạo mô tả xe." : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
-        return res.status(status).json({
-            success: false,
-            message,
-        });
+    // Kiểm tra thiếu thông tin
+    if (!brand || !model) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin xe (brand, model)",
+      });
     }
+
+    // ===== KIỂM TRA BẰNG AI TRƯỚC KHI TẠO MÔ TẢ =====
+    console.log(`🔍 Đang kiểm tra: ${brand} ${model} ${year || ''}`);
+    
+    const aiValidation = await validateCarWithAI(brand, model, year);
+    
+    if (!aiValidation.isValid) {
+      console.log(`❌ Validation failed: ${aiValidation.message}`);
+      return res.status(400).json({
+        success: false,
+        message: `${brand} không có dòng xe "${model}". ${aiValidation.message}`,
+        suggestion: aiValidation.suggestion
+      });
+    }
+
+    console.log(`✅ Validation passed: ${aiValidation.message}`);
+
+    // ===== TẠO MÔ TẢ SAU KHI ĐÃ VALIDATE =====
+    const prompt = `
+Hãy viết một đoạn mô tả **ngắn gọn, chuyên nghiệp, tự nhiên** để đăng xe cho thuê.
+
+Thông tin xe:
+- Thương hiệu: ${brand}
+- Dòng xe: ${model}
+${year ? `- Năm sản xuất: ${year}` : ''}
+
+Yêu cầu:
+- Viết giọng văn thân thiện, chuyên nghiệp như các website cho thuê xe.
+- Nhấn mạnh ưu điểm, sự thoải mái & trải nghiệm khi thuê.
+- Hãy mô tả thêm các thông tin xe thuộc thương hiệu, dòng xe, năm sản xuất trên.
+- Không dài dòng, tối đa 5–8 câu.
+- Không lặp lại dữ liệu thừa.
+
+Bắt đầu viết:
+`;
+
+    const response = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const description = response.choices[0].message.content;
+
+    return res.json({
+      success: true,
+      description,
+      validation: aiValidation.message
+    });
+
+  } catch (error) {
+    console.error("generateCarDescription error:", error?.response?.data || error?.message || error);
+    
+    const status = error?.response?.status || 500;
+    const message = error?.response?.data?.error?.message || 
+                    error?.response?.data?.message || 
+                    (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
+                      ? "Đã xảy ra lỗi khi tạo mô tả xe." 
+                      : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
+
+    return res.status(status).json({
+      success: false,
+      message,
+    });
+  }
 };
 
 
@@ -95,6 +169,21 @@ export const generateMotoBikeDescription = async (req, res) => {
                 message: "Thiếu thông tin xe máy (brand, model)",
             });
         }
+        // ===== KIỂM TRA BẰNG AI TRƯỚC KHI TẠO MÔ TẢ =====
+        console.log(`🔍 Đang kiểm tra: ${brand} ${model} ${year || ''}`);
+        
+        const aiValidation = await validateCarWithAI(brand, model, year);
+        
+        if (!aiValidation.isValid) {
+          console.log(`❌ Validation failed: ${aiValidation.message}`);
+          return res.status(400).json({
+            success: false,
+            message: `${brand} không có dòng xe "${model}". ${aiValidation.message}`,
+            suggestion: aiValidation.suggestion
+          });
+        }
+
+        console.log(`✅ Validation passed: ${aiValidation.message}`);
 
         const prompt = `
             Hãy viết một đoạn mô tả ngắn gọn, chuyên nghiệp, tự nhiên để đăng xe máy cho thuê.
@@ -129,11 +218,16 @@ export const generateMotoBikeDescription = async (req, res) => {
     } catch (error) {
         console.error("generateMotoBikeDescription error:", error?.response?.data || error?.message || error);
         const status = error?.response?.status || 500;
-        const message =
-            error?.response?.data?.error?.message ||
-            error?.response?.data?.message ||
-            (apiKey ? "Đã xảy ra lỗi khi tạo mô tả xe máy." : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
-        return res.status(status).json({ success: false, message });
+        const message = error?.response?.data?.error?.message || 
+                        error?.response?.data?.message || 
+                        (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
+                          ? "Đã xảy ra lỗi khi tạo mô tả xe." 
+                          : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
+
+        return res.status(status).json({
+          success: false,
+          message,
+        });
     }
 };
 
