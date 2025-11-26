@@ -605,3 +605,73 @@ export const banUnbanNotificationTemplate = (isBanned) => {
   </html>
   `;
 }
+
+// template for change password success notification email :
+export const changePasswordSuccessTemplate = () => {
+  return `
+  <!DOCTYPE html>
+  <html lang="vi">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Thông báo đổi mật khẩu</title>
+      <style>
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+          background-color: #f2f2f2;
+          margin: 0;
+          padding: 20px;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 30px;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        h2 {
+          color: #111827;
+          margin-bottom: 16px;
+        }
+        p {
+          color: #374151;
+          font-size: 15px;
+          line-height: 1.6;
+          margin: 8px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #e5e7eb;
+          font-size: 12px;
+          color: #6b7280;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>🔐 Xác nhận thay đổi mật khẩu</h2>
+
+        <p>Xin chào,</p>
+
+        <p>
+          Mật khẩu tài khoản Rentzy của bạn đã được thay đổi thành công.
+        </p>
+
+        <p>
+          Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ ngay với đội ngũ hỗ trợ của chúng tôi để đảm bảo an toàn cho tài khoản.
+        </p>
+
+        <p>
+          Cảm ơn bạn đã tin tưởng và sử dụng Rentzy.
+        </p>
+
+        <div class="footer">
+          © ${new Date().getFullYear()} Rentzy — Tất cả các quyền được bảo lưu.
+        </div>
+      </div>
+    </body>
+  </html>
+  `;
+};

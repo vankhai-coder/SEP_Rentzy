@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
 import { sendEmail } from '../../utils/email/sendEmail.js';
-import { resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
+import { changePasswordSuccessTemplate, resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { decryptWithSecret, encryptWithSecret } from '../../utils/cryptoUtil.js';
@@ -973,4 +973,85 @@ export const requestLoginWithPhoneNumber = async (req, res) => {
         success: true,
         message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
     });
+}
+
+// function to check if user auth method is email : 
+export const checkUserAuthMethodIsEmail = async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        if (!user_id) {
+            console.log('Can not get user_id from req.user')
+            return res.status(400).json({ message: 'Không thể tìm thấy user!' })
+        }
+        const user = await db.User.findOne({ where: { user_id } });
+        if (!user) {
+            console.log("User not found for user_id:", user_id);
+            return res.status(404).json({ message: "User not found for user_id: " + user_id });
+        }
+        const isEmailAuth = user.authMethod === 'email';
+        return res.status(200).json({ isEmailAuth });
+    } catch (error) {
+        console.error("Error checking user auth method:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+// function to change new password for email auth user :
+export const changeNewPasswordForEmailAuthUser = async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const { oldPassword, newPassword } = req.body || {};
+
+        if (!user_id) {
+            console.log('Can not get user_id from req.user')
+            return res.status(400).json({ message: 'Không thể tìm thấy user!' })
+        }
+        if (!newPassword) {
+            return res.status(400).json({ message: 'Vui lòng nhập mật khẩu mới!' })
+        }
+
+        if (!oldPassword) {
+            return res.status(400).json({ message: 'Vui lòng nhập mật khẩu cũ!' })
+        }
+
+        // find user :
+        const user = await db.User.findOne({ where: { user_id } });
+        if (!user) {
+            console.log("User not found for user_id:", user_id);
+            return res.status(404).json({ message: "User not found for user_id: " + user_id });
+        }
+        if (user.authMethod !== 'email') {
+            return res.status(400).json({ message: 'Chỉ người dùng đăng ký bằng email mới có thể thay đổi mật khẩu tại đây!' })
+        }
+        // check old password :
+        const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false, message: "Mật khẩu cũ không đúng!"
+            });
+        }
+        // hash new password : 
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        // update password : 
+        user.password_hash = hashedPassword;
+        await user.save();
+
+        // send email notification about password change :
+        await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: user.email,
+            subject: "Bạn đã đổi mật khẩu thành công!",
+            html: changePasswordSuccessTemplate(),
+        });
+
+        // respond success :
+        return res.status(200).json({
+            success: true,
+            message: "Thay đổi mật khẩu thành công!"
+        });
+    } catch (error) {
+        console.error("Error changing password for email auth user:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 }

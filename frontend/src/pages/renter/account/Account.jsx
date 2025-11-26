@@ -28,10 +28,33 @@ import {
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
+import axiosInstance from "@/config/axiosInstance";
+import { useQuery } from "@tanstack/react-query";
 
 const Account = () => {
   // check if user if logged in
   const { userId, role } = useSelector((state) => state.userStore);
+  // use useQuery from tank stack to check if user auth method is email : /api/auth/is-auth-method-email using axiosInstance
+  const checkIfUserAuthMethodIsEmail = async () => {
+
+    try {
+      const response = await axiosInstance.get("/api/auth/is-auth-method-email");
+      return response.data.isEmailAuth;
+    } catch (error) {
+      console.error("Error checking user auth method:", error);
+      return false;
+    }
+  };
+  const { data: isEmailAuth, isLoading: isLoadingCheckIfUserAuthMethodIsEmail,
+    isError: isErrorCheckIfUserAuthMethodIsEmail } = useQuery({
+      queryKey: ["isUserAuthMethodEmail", userId],
+      queryFn: checkIfUserAuthMethodIsEmail,
+      enabled: !!userId, // only run this query if userId exists
+    });
+
+    console.log("isEmailAuth:", isEmailAuth);
+    console.log("isLoadingCheckIfUserAuthMethodIsEmail:", isLoadingCheckIfUserAuthMethodIsEmail);
+    console.log("isErrorCheckIfUserAuthMethodIsEmail:", isErrorCheckIfUserAuthMethodIsEmail);
 
   const navigate = useNavigate();
 
@@ -59,6 +82,7 @@ const Account = () => {
   }
 
   if (role === "admin") {
+    navigate("/admin", { replace: true });
     return null;
   }
 
@@ -151,12 +175,14 @@ const Account = () => {
             >
               <CreditCard /> Tài khoản ngân hàng
             </SelectItem>
-            <SelectItem
-              className={"border-b-1 py-2 text-md font-medium"}
-              value="/resetpw"
-            >
-              <LockIcon /> Đổi mật khẩu
-            </SelectItem>
+            {isEmailAuth &&
+              <SelectItem
+                className={"border-b-1 py-2 text-md font-medium"}
+                value="/resetpw"
+              >
+                <LockIcon /> Đổi mật khẩu
+              </SelectItem>
+            }
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
               value="/deleteaccount"
@@ -270,14 +296,17 @@ const Account = () => {
               <CreditCard /> Tài khoản ngân hàng
             </NavLink>
 
-            <NavLink
-              to="/resetpw"
-              className={({ isActive }) =>
-                isActive ? `${baseClass} ${activeClass}` : baseClass
-              }
-            >
-              <LockIcon /> Đổi mật khẩu
-            </NavLink>
+            {
+              isEmailAuth &&
+              <NavLink
+                to="/resetpw"
+                className={({ isActive }) =>
+                  isActive ? `${baseClass} ${activeClass}` : baseClass
+                }
+              >
+                <LockIcon /> Đổi mật khẩu
+              </NavLink>
+            }
 
             <NavLink
               to="/deleteaccount"

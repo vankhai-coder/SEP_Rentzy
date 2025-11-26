@@ -20,7 +20,7 @@ const ForgotPassword = () => {
   // check validate password : 
   const [hasUppercase, setHasUppercase] = useState(false);
   const [hasLowercase, setHasLowercase] = useState(false);
-  const [hasNumber, setHasNumber] = useState(true);
+  const [hasNumber, setHasNumber] = useState(false);
   const [hasMinLength, setHasMinLength] = useState(false);
 
   // get query param : 
@@ -85,7 +85,7 @@ const ForgotPassword = () => {
                 <input
                   type={isEyeOpen ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.trim())}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
@@ -135,7 +135,7 @@ const ForgotPassword = () => {
                 <input
                   type={isEyeOpen2 ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => setConfirmPassword(e.target.value.trim())}
                   className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />

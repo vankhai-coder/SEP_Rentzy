@@ -74,7 +74,7 @@ const Register = ({ setRegisterOpen, setLoginOpen, setIsRegisterWithPhoneOpen })
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.trim())}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder=""
               required
@@ -89,7 +89,7 @@ const Register = ({ setRegisterOpen, setLoginOpen, setIsRegisterWithPhoneOpen })
               <input
                 type={isEyeOpen ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value.trim())}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
@@ -139,7 +139,7 @@ const Register = ({ setRegisterOpen, setLoginOpen, setIsRegisterWithPhoneOpen })
               <input
                 type={isEyeOpen2 ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value.trim())}
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
