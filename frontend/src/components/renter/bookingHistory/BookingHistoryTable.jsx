@@ -245,6 +245,15 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                       <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       <span className="whitespace-nowrap">Chi tiết</span>
                     </Link>
+                    {/* Nút Thanh toán tiền cọc - hiện khi trạng thái là confirmed */}
+                    {booking.status === "confirmed" && (
+                      <Link
+                        to={`/payment-deposit/${booking.booking_id}`}
+                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
+                      >
+                        <span className="whitespace-nowrap">Thanh toán tiền cọc</span>
+                      </Link>
+                    )}
                     
                     {/* Nút Hợp đồng - hiện khi đã đặt cọc, thanh toán toàn bộ hoặc hoàn thành */}
                     {(booking.status === "deposit_paid" || booking.status === "fully_paid" || booking.status === "completed") && (
