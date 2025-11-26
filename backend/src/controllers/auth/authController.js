@@ -1055,3 +1055,44 @@ export const changeNewPasswordForEmailAuthUser = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
+// delete account :
+export const deleteAccount = async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+
+        if (!user_id) {
+            console.log('Can not get user_id from req.user')
+            return res.status(400).json({ message: 'Không thể tìm thấy user!' })
+        }
+
+        // find user :
+        const user = await db.User.findOne({ where: { user_id } });
+        if (!user) {
+            console.log("User not found for user_id:", user_id);
+            return res.status(404).json({ message: "User not found for user_id: " + user_id });
+        }
+
+        // delete user :
+        await user.destroy();
+
+        // clear cookie
+        res.clearCookie('token',
+            {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 10 * 365 * 24 * 60 * 60 * 1000
+            }
+        )
+
+        // respond success :
+        return res.status(200).json({
+            success: true,
+            message: "Xóa tài khoản thành công!"
+        });
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}

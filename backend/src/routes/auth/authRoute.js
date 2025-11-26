@@ -1,6 +1,6 @@
 import express from 'express'
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { changeNewPasswordForEmailAuthUser, checkUserAuthMethodIsEmail, googleCallback, googleLogin, login, loginWithPhoneNumber, logout, register, registerWithPhoneNumber, requestCreateVerifyEmail, requestLoginWithPhoneNumber, requestResetPassword, requestUpdateEmail, resetPassword, verifyEmail, verifyPhoneNumberForRegistration, verifyUpdatedEmail } from '../../controllers/auth/authController.js'
+import { changeNewPasswordForEmailAuthUser, checkUserAuthMethodIsEmail, deleteAccount, googleCallback, googleLogin, login, loginWithPhoneNumber, logout, register, registerWithPhoneNumber, requestCreateVerifyEmail, requestLoginWithPhoneNumber, requestResetPassword, requestUpdateEmail, resetPassword, verifyEmail, verifyPhoneNumberForRegistration, verifyUpdatedEmail } from '../../controllers/auth/authController.js'
 const router = express.Router()
 
 // check auth :
@@ -56,5 +56,7 @@ router.get('/is-auth-method-email', verifyJWTToken, checkUserAuthMethodIsEmail)
 // route for change new password for user that login wiht email : 
 router.post('/change-password-for-email-auth-user', verifyJWTToken, changeNewPasswordForEmailAuthUser)
 
+// route for request to delete account :
+router.delete('/delete-account', verifyJWTToken, deleteAccount)
 
 export default router 
