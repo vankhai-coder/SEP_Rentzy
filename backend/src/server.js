@@ -59,6 +59,7 @@ import AdminPayoutRoute from "./routes/admin/adminPayoutRoute.js";
 import AdminVoucherRoute from "./routes/admin/adminVoucherRoute.js";
 import AdminTrafficFineRoute from "./routes/admin/adminTrafficFineRoute.js";
 import AdminSystemSettingRoute from "./routes/admin/adminSystemSettingRoute.js";
+import AdminNotificationRoute from "./routes/admin/adminNotificationRoute.js";
 
 // cron jobs
 import { initializeCronJobs, stopCronJobs } from "./services/cronService.js";
@@ -134,6 +135,7 @@ app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/voucher-management", AdminVoucherRoute);
 app.use("/api/admin/traffic-fine-requests", AdminTrafficFineRoute);
 app.use("/api/admin/system-settings", AdminSystemSettingRoute);
+app.use("/api/admin/notifications", AdminNotificationRoute);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

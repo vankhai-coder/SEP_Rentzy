@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { MdNotifications, MdNotificationsActive, MdMarkEmailRead, MdFilterList } from 'react-icons/md';
 import Pagination from '@/components/common/Pagination.jsx';
 
 const RenterNotifications = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -88,6 +90,144 @@ const RenterNotifications = () => {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`;
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
     return date.toLocaleDateString('vi-VN');
+  };
+
+  // Extract booking_id từ notification content và title
+  const extractBookingId = (content, title = '') => {
+    const searchText = `${title} ${content}`;
+    const patterns = [
+      /đơn thuê #(\d+)/i,
+      /đơn #(\d+)/i,
+      /booking #(\d+)/i,
+      /cho đơn thuê #(\d+)/i,
+      /cho đơn #(\d+)/i,
+      /cho booking #(\d+)/i,
+      /#(\d+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = searchText.match(pattern);
+      if (match) {
+        const id = parseInt(match[1]);
+        if (id && id > 0 && id < 1000000) {
+          return String(id);
+        }
+      }
+    }
+    return null;
+  };
+
+  // Xác định route điều hướng dựa trên loại thông báo
+  const getNotificationRoute = (notification) => {
+    const { title, content, type } = notification;
+    const titleLower = title?.toLowerCase() || '';
+    const contentLower = content?.toLowerCase() || '';
+
+    // Tìm booking_id trong cả title và content
+    const bookingId = extractBookingId(content, title);
+
+    // Thông báo về phạt nguội
+    if (
+      titleLower.includes('phạt nguội') ||
+      titleLower.includes('traffic fine') ||
+      contentLower.includes('phạt nguội') ||
+      contentLower.includes('traffic fine')
+    ) {
+      if (bookingId) {
+        return `/booking-history/booking-detail/${bookingId}`;
+      }
+      return '/booking-history';
+    }
+
+    // Thông báo về booking (hủy, hết hạn, xác nhận, v.v.)
+    if (
+      titleLower.includes('booking') ||
+      titleLower.includes('đơn') ||
+      titleLower.includes('đặt xe') ||
+      titleLower.includes('thuê xe') ||
+      titleLower.includes('hủy') ||
+      titleLower.includes('hết hạn') ||
+      titleLower.includes('xác nhận') ||
+      titleLower.includes('chấp nhận') ||
+      type === 'rental' ||
+      contentLower.includes('đơn thuê') ||
+      contentLower.includes('booking') ||
+      contentLower.includes('đặt xe')
+    ) {
+      if (bookingId) {
+        return `/booking-history/booking-detail/${bookingId}`;
+      }
+      return '/booking-history';
+    }
+
+    // Thông báo về thanh toán
+    if (
+      titleLower.includes('thanh toán') ||
+      titleLower.includes('payment') ||
+      type === 'payout'
+    ) {
+      if (bookingId) {
+        return `/booking-history/booking-detail/${bookingId}`;
+      }
+      return '/transaction-history';
+    }
+
+    // Thông báo về transaction
+    if (
+      titleLower.includes('giao dịch') ||
+      titleLower.includes('transaction') ||
+      contentLower.includes('giao dịch')
+    ) {
+      return '/transaction-history';
+    }
+
+    // Thông báo về điểm thưởng
+    if (
+      titleLower.includes('điểm') ||
+      titleLower.includes('points') ||
+      contentLower.includes('điểm')
+    ) {
+      return '/points';
+    }
+
+    // Mặc định: điều hướng đến booking history nếu có booking_id
+    if (bookingId) {
+      return `/booking-history/booking-detail/${bookingId}`;
+    }
+
+    // Nếu là thông báo hệ thống/alert, điều hướng đến booking history
+    if (type === 'alert' || type === 'system') {
+      return '/booking-history';
+    }
+
+    // Mặc định: điều hướng đến booking history
+    return '/booking-history';
+  };
+
+  // Xử lý khi click vào thông báo
+  const handleNotificationClick = (notification, e) => {
+    // Nếu click vào button "Đánh dấu đã đọc", chỉ đánh dấu không điều hướng
+    if (e && (e.target.closest('button') || e.target.tagName === 'BUTTON')) {
+      return;
+    }
+
+    // Ngăn event bubbling và default behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Đánh dấu đã đọc nếu chưa đọc (không chờ async)
+    if (!notification.is_read) {
+      handleMarkAsRead(notification.notification_id).catch(error => {
+        console.error('Error marking notification as read:', error);
+      });
+    }
+
+    // Xác định route điều hướng và điều hướng ngay lập tức
+    const route = getNotificationRoute(notification);
+    
+    // Luôn điều hướng (route luôn có giá trị vì đã có fallback)
+    navigate(route || '/booking-history');
   };
 
   if (loading) {
@@ -208,8 +348,8 @@ const RenterNotifications = () => {
             {notifications.map((notification) => (
               <div
                 key={notification.notification_id}
-                className={`p-6 hover:bg-gray-50 cursor-pointer ${!notification.is_read ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
-                onClick={() => !notification.is_read && handleMarkAsRead(notification.notification_id)}
+                className={`p-6 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.is_read ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                onClick={(e) => handleNotificationClick(notification, e)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

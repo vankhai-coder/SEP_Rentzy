@@ -9,8 +9,98 @@ import {
   MdClose,
   MdChevronLeft,
   MdChevronRight,
-  MdImage
+  MdImage,
+  MdErrorOutline
 } from 'react-icons/md';
+
+// Component để hiển thị thumbnail hình ảnh với error handling
+const ImageThumbnail = ({ imageUrl, index, onImageClick }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Đảm bảo imageUrl là string hợp lệ
+  const validImageUrl = imageUrl && typeof imageUrl === 'string' ? imageUrl.trim() : '';
+
+  useEffect(() => {
+    // Reset state khi imageUrl thay đổi
+    setImageError(false);
+    setImageLoaded(false);
+    console.log(`ImageThumbnail #${index} initialized with URL:`, validImageUrl);
+  }, [imageUrl, index]);
+
+  if (!validImageUrl) {
+    console.warn(`ImageThumbnail #${index}: Invalid URL`, imageUrl);
+    return (
+      <div className="w-full h-32 bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center">
+        <div className="text-center">
+          <MdErrorOutline className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+          <p className="text-xs text-gray-500 dark:text-gray-400">URL không hợp lệ</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative cursor-pointer group overflow-hidden rounded-lg bg-gray-100 dark:bg-secondary-700"
+      onClick={onImageClick}
+      style={{ height: '128px', width: '100%' }}
+    >
+      {/* Loading placeholder - chỉ hiện khi chưa load và chưa có lỗi */}
+      {!imageLoaded && !imageError && (
+        <div className="absolute inset-0 w-full h-full bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center animate-pulse z-0">
+          <MdImage className="w-8 h-8 text-gray-400" />
+        </div>
+      )}
+      
+      {/* Error state */}
+      {imageError && (
+        <div className="absolute inset-0 w-full h-full bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center z-20">
+          <div className="text-center">
+            <MdErrorOutline className="w-6 h-6 text-red-400 mx-auto mb-1" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">Lỗi tải ảnh</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]" title={validImageUrl}>
+              {validImageUrl.substring(0, 20)}...
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Actual image - luôn render */}
+      {!imageError && (
+        <img
+          src={validImageUrl}
+          alt={`Phạt nguội ${index + 1}`}
+          className={`absolute inset-0 w-full h-full object-cover rounded-lg border border-gray-200 dark:border-secondary-700 transition-opacity duration-300 ${
+            imageLoaded ? 'opacity-100 z-10' : 'opacity-0 z-0'
+          } group-hover:opacity-90`}
+          onLoad={() => {
+            console.log(`✅ Image #${index} loaded successfully:`, validImageUrl);
+            setImageLoaded(true);
+            setImageError(false);
+          }}
+          onError={(e) => {
+            console.error(`❌ Image #${index} load error:`, {
+              url: validImageUrl,
+              error: e,
+              target: e.target?.src
+            });
+            setImageError(true);
+            setImageLoaded(false);
+          }}
+          loading="lazy"
+        />
+      )}
+      
+      {/* Hover overlay - chỉ hiện khi image đã load */}
+      {imageLoaded && !imageError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg pointer-events-none z-30">
+          <MdImage className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TrafficFineApproval = () => {
   const [requests, setRequests] = useState([]);
@@ -47,7 +137,52 @@ const TrafficFineApproval = () => {
       });
 
       if (response.data.success) {
-        setRequests(response.data.data.requests);
+        console.log('Raw response data:', response.data.data.requests);
+        
+        // Đảm bảo images được parse đúng
+        const requestsWithParsedImages = response.data.data.requests.map(request => {
+          // Log raw request để debug
+          console.log(`Raw Request #${request.request_id}:`, {
+            request_id: request.request_id,
+            images_raw: request.images,
+            images_type: typeof request.images,
+            request_type: request.request_type
+          });
+          
+          // Backend đã parse images rồi, nhưng đảm bảo nó là array
+          if (request.images) {
+            if (typeof request.images === 'string') {
+              try {
+                const parsed = JSON.parse(request.images);
+                request.images = Array.isArray(parsed) ? parsed : [];
+              } catch (e) {
+                console.error('Error parsing images string:', e, 'Raw images:', request.images);
+                request.images = [];
+              }
+            } else if (Array.isArray(request.images)) {
+              // Đã là array, giữ nguyên
+              request.images = request.images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
+            } else {
+              // Nếu không phải string và không phải array, chuyển thành array
+              console.warn(`Request #${request.request_id}: images is not string or array:`, typeof request.images, request.images);
+              request.images = [];
+            }
+          } else {
+            request.images = [];
+          }
+          
+          // Debug: log để kiểm tra
+          console.log(`Request #${request.request_id} processed:`, {
+            hasImages: request.images && request.images.length > 0,
+            imageCount: request.images?.length || 0,
+            images: request.images,
+            requestType: request.request_type,
+            firstImageUrl: request.images?.[0] || 'none'
+          });
+          
+          return request;
+        });
+        setRequests(requestsWithParsedImages);
         setTotalPages(response.data.data.pagination.totalPages);
       }
     } catch (error) {
@@ -247,13 +382,18 @@ const TrafficFineApproval = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <MdWarning className="w-5 h-5 text-orange-600" />
+                    <MdWarning className={`w-5 h-5 ${request.request_type === 'delete' ? 'text-red-600' : 'text-orange-600'}`} />
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Yêu cầu #{request.request_id}
+                      {request.request_type === 'delete' ? 'Yêu cầu xóa phạt nguội' : 'Yêu cầu phạt nguội'} #{request.request_id}
                     </h3>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(request.status)}`}>
                       {getStatusText(request.status)}
                     </span>
+                    {request.request_type === 'delete' && (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
+                        Xóa
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Đơn thuê: #{request.booking?.booking_id} | 
@@ -267,41 +407,65 @@ const TrafficFineApproval = () => {
                     Ngày tạo: {formatDate(request.created_at)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(request.amount)}
-                  </p>
-                </div>
+                {request.request_type !== 'delete' && request.amount && (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-orange-600">
+                      {formatCurrency(request.amount)}
+                    </p>
+                  </div>
+                )}
+                {request.request_type === 'delete' && (
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-red-600">
+                      Yêu cầu xóa phạt nguội
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {request.description && (
+              {request.request_type === 'delete' && request.deletion_reason && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">Lý do xóa:</p>
+                  <p className="text-sm text-red-600 dark:text-red-300">{request.deletion_reason}</p>
+                </div>
+              )}
+
+              {request.request_type !== 'delete' && request.description && (
                 <div className="mb-4 p-3 bg-gray-50 dark:bg-secondary-900 rounded-lg">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lý do:</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{request.description}</p>
                 </div>
               )}
 
-              {request.images && request.images.length > 0 && (
+              {request.request_type !== 'delete' && (
                 <div className="mb-4">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hình ảnh:</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {request.images.map((imageUrl, index) => (
-                      <div
-                        key={index}
-                        className="relative cursor-pointer group"
-                        onClick={() => setImageModal(imageUrl)}
-                      >
-                        <img
-                          src={imageUrl}
-                          alt={`Phạt nguội ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-secondary-700 group-hover:opacity-80"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg">
-                          <MdImage className="w-8 h-8 text-white opacity-0 group-hover:opacity-100" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {request.images && Array.isArray(request.images) && request.images.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {request.images
+                        .filter(img => {
+                          const isValid = img && typeof img === 'string' && img.trim().length > 0;
+                          if (!isValid) {
+                            console.warn(`Invalid image URL in request #${request.request_id}:`, img);
+                          }
+                          return isValid;
+                        })
+                        .map((imageUrl, index) => (
+                          <ImageThumbnail 
+                            key={index}
+                            imageUrl={imageUrl.trim()}
+                            index={index}
+                            onImageClick={() => setImageModal(imageUrl.trim())}
+                          />
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      {!request.images ? 'Không có hình ảnh' : 
+                       !Array.isArray(request.images) ? `Hình ảnh không hợp lệ (type: ${typeof request.images})` :
+                       'Không có hình ảnh'}
+                    </p>
+                  )}
                 </div>
               )}
 

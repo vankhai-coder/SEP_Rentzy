@@ -12,6 +12,7 @@ import {
   MdWarning,
   MdAdd,
   MdEdit,
+  MdDelete,
 } from "react-icons/md";
 import {
   Dialog,
@@ -34,6 +35,9 @@ const BookingDetail = () => {
   const [trafficFineDescription, setTrafficFineDescription] = useState("");
   const [trafficFineImages, setTrafficFineImages] = useState([]);
   const [submittingTrafficFine, setSubmittingTrafficFine] = useState(false);
+  const [showDeleteTrafficFineModal, setShowDeleteTrafficFineModal] = useState(false);
+  const [deleteTrafficFineReason, setDeleteTrafficFineReason] = useState("");
+  const [submittingDeleteTrafficFine, setSubmittingDeleteTrafficFine] = useState(false);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -250,6 +254,44 @@ const BookingDetail = () => {
       );
     } finally {
       setSubmittingTrafficFine(false);
+    }
+  };
+
+  const handleDeleteTrafficFine = async () => {
+    if (!deleteTrafficFineReason || deleteTrafficFineReason.trim().length === 0) {
+      toast.error("Vui lòng nhập lý do xóa phạt nguội");
+      return;
+    }
+
+    if (deleteTrafficFineReason.trim().length < 10) {
+      toast.error("Lý do xóa phải có ít nhất 10 ký tự");
+      return;
+    }
+
+    try {
+      setSubmittingDeleteTrafficFine(true);
+      const response = await axiosInstance.post(
+        `/api/owner/dashboard/bookings/${id}/traffic-fine/delete-request`,
+        {
+          deletion_reason: deleteTrafficFineReason.trim(),
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Đã gửi yêu cầu xóa phạt nguội. Vui lòng chờ admin duyệt.");
+        setShowDeleteTrafficFineModal(false);
+        setDeleteTrafficFineReason("");
+        await fetchBookingDetail();
+      } else {
+        toast.error(response.data.message || "Không thể gửi yêu cầu xóa phạt nguội");
+      }
+    } catch (error) {
+      console.error("Error requesting traffic fine deletion:", error);
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi gửi yêu cầu xóa phạt nguội"
+      );
+    } finally {
+      setSubmittingDeleteTrafficFine(false);
     }
   };
 
@@ -479,28 +521,43 @@ const BookingDetail = () => {
                     Phí phạt nguội
                   </h2>
                   {(booking.status === "in_progress" || booking.status === "completed") && (
-                    <button
-                      onClick={() => {
-                        setTrafficFineAmount(booking.traffic_fine_amount || "");
-                        setTrafficFineDescription(booking.traffic_fine_description || "");
-                        setTrafficFineImages([]);
-                        setShowTrafficFineModal(true);
-                      }}
-                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                      title={booking.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
-                    >
-                      {booking.traffic_fine_amount > 0 ? (
-                        <>
-                          <MdEdit className="mr-1" />
-                          Sửa
-                        </>
-                      ) : (
-                        <>
-                          <MdAdd className="mr-1" />
-                          Thêm phí phạt
-                        </>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setTrafficFineAmount(booking.traffic_fine_amount || "");
+                          setTrafficFineDescription(booking.traffic_fine_description || "");
+                          setTrafficFineImages([]);
+                          setShowTrafficFineModal(true);
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        title={booking.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
+                      >
+                        {booking.traffic_fine_amount > 0 ? (
+                          <>
+                            <MdEdit className="mr-1" />
+                            Sửa
+                          </>
+                        ) : (
+                          <>
+                            <MdAdd className="mr-1" />
+                            Thêm phí phạt
+                          </>
+                        )}
+                      </button>
+                      {booking.traffic_fine_amount > 0 && (
+                        <button
+                          onClick={() => {
+                            setDeleteTrafficFineReason("");
+                            setShowDeleteTrafficFineModal(true);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          title="Xóa phí phạt nguội"
+                        >
+                          <MdDelete className="mr-1" />
+                          Xóa
+                        </button>
                       )}
-                    </button>
+                    </div>
                   )}
                 </div>
 
@@ -990,6 +1047,76 @@ const BookingDetail = () => {
                   className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Traffic Fine Modal */}
+        <Dialog open={showDeleteTrafficFineModal} onOpenChange={setShowDeleteTrafficFineModal}>
+          <DialogContent className="max-w-2xl w-full">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MdDelete className="text-red-600" />
+                Xóa phí phạt nguội
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>Lưu ý:</strong> Yêu cầu xóa phạt nguội của bạn sẽ được gửi đến admin để duyệt. 
+                  Phạt nguội chỉ được xóa sau khi admin chấp thuận.
+                </p>
+              </div>
+
+              {booking?.traffic_fine_paid > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-800">
+                    <strong>Cảnh báo:</strong> Người thuê đã thanh toán {formatCurrency(booking.traffic_fine_paid)} 
+                    cho phí phạt nguội này. Việc xóa có thể ảnh hưởng đến thanh toán.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lý do xóa phạt nguội <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={deleteTrafficFineReason}
+                  onChange={(e) => setDeleteTrafficFineReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  rows="6"
+                  placeholder="Vui lòng giải thích chi tiết lý do muốn xóa phạt nguội này (tối thiểu 10 ký tự)..."
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Lý do xóa sẽ được gửi đến admin để xem xét và duyệt
+                </p>
+                {deleteTrafficFineReason.length > 0 && deleteTrafficFineReason.trim().length < 10 && (
+                  <p className="mt-1 text-xs text-red-500">
+                    Lý do xóa phải có ít nhất 10 ký tự (hiện tại: {deleteTrafficFineReason.trim().length})
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowDeleteTrafficFineModal(false);
+                    setDeleteTrafficFineReason("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={submittingDeleteTrafficFine}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleDeleteTrafficFine}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={submittingDeleteTrafficFine || !deleteTrafficFineReason.trim() || deleteTrafficFineReason.trim().length < 10}
+                >
+                  {submittingDeleteTrafficFine ? "Đang gửi..." : "Gửi yêu cầu xóa"}
                 </button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { MdNotifications, MdNotificationsActive, MdMarkEmailRead, MdMarkEmailUnread, MdFilterList } from 'react-icons/md';
 import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
@@ -7,6 +8,7 @@ import { createThemeUtils } from "@/utils/themeUtils";
 const Notifications = () => {
   const theme = useOwnerTheme();
   const themeUtils = createThemeUtils(theme);
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -109,6 +111,167 @@ const Notifications = () => {
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} ngày trước`;
     
     return date.toLocaleDateString('vi-VN');
+  };
+
+  // Extract booking_id từ notification content và title
+  const extractBookingId = (content, title = '') => {
+    // Tìm pattern trong cả content và title: "đơn thuê #123" hoặc "đơn #123" hoặc "booking #123"
+    const searchText = `${title} ${content}`;
+    
+    // Các patterns ưu tiên từ cụ thể đến tổng quát
+    const patterns = [
+      /cho đơn thuê #(\d+)/i,
+      /cho đơn #(\d+)/i,
+      /cho booking #(\d+)/i,
+      /đơn thuê #(\d+)/i,
+      /đơn #(\d+)/i,
+      /booking #(\d+)/i,
+      // Pattern tổng quát hơn - tìm số sau dấu # (nhưng tránh số quá lớn)
+      /#(\d+)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = searchText.matchAll(new RegExp(pattern.source, 'gi'));
+      for (const match of matches) {
+        const id = parseInt(match[1]);
+        // Đảm bảo là số hợp lệ (booking_id thường > 0 và < 1000000)
+        if (id && id > 0 && id < 1000000) {
+          return String(id);
+        }
+      }
+    }
+    return null;
+  };
+
+  // Xác định route điều hướng dựa trên loại thông báo
+  const getNotificationRoute = (notification) => {
+    const { title, content, type } = notification;
+    const titleLower = title?.toLowerCase() || '';
+    const contentLower = content?.toLowerCase() || '';
+
+    // Tìm booking_id trong cả title và content
+    const bookingId = extractBookingId(content, title);
+
+    // Thông báo về phạt nguội (ưu tiên cao nhất) - bao gồm cả yêu cầu xóa phạt nguội và yêu cầu duyệt
+    if (
+      titleLower.includes('phạt nguội') ||
+      titleLower.includes('traffic fine') ||
+      titleLower.includes('yêu cầu xóa') ||
+      titleLower.includes('yêu cầu phạt') ||
+      titleLower.includes('yêu cầu đã được duyệt') ||
+      titleLower.includes('xóa phạt') ||
+      contentLower.includes('phạt nguội') ||
+      contentLower.includes('traffic fine')
+    ) {
+      // Luôn điều hướng đến booking detail nếu có booking_id
+      if (bookingId) {
+        return `/owner/booking-management/detail/${bookingId}`;
+      }
+      // Nếu có từ khóa về phạt nguội nhưng không có booking_id, vẫn điều hướng đến booking management
+      return '/owner/booking-management';
+    }
+
+    // Thông báo về booking (hủy, hết hạn, xác nhận, v.v.)
+    if (
+      titleLower.includes('booking') ||
+      titleLower.includes('đơn') ||
+      titleLower.includes('đặt xe') ||
+      titleLower.includes('thuê xe') ||
+      titleLower.includes('hủy') ||
+      titleLower.includes('hết hạn') ||
+      titleLower.includes('xác nhận') ||
+      titleLower.includes('chấp nhận') ||
+      type === 'rental' ||
+      contentLower.includes('đơn thuê') ||
+      contentLower.includes('booking') ||
+      contentLower.includes('đặt xe')
+    ) {
+      if (bookingId) {
+        return `/owner/booking-management/detail/${bookingId}`;
+      }
+      // Nếu không tìm thấy booking_id, điều hướng đến danh sách booking
+      return '/owner/booking-management';
+    }
+
+    // Thông báo về yêu cầu duyệt phạt nguội
+    if (
+      titleLower.includes('yêu cầu duyệt') ||
+      titleLower.includes('duyệt phạt')
+    ) {
+      if (bookingId) {
+        return `/owner/booking-management/detail/${bookingId}`;
+      }
+      // Điều hướng đến trang booking management nếu không có booking_id
+      return '/owner/booking-management';
+    }
+
+    // Thông báo về thanh toán
+    if (
+      titleLower.includes('thanh toán') ||
+      titleLower.includes('payment')
+    ) {
+      if (bookingId) {
+        return `/owner/booking-management/detail/${bookingId}`;
+      }
+      return '/owner/transaction-management';
+    }
+
+    // Thông báo về transaction/revenue
+    if (
+      titleLower.includes('giao dịch') ||
+      titleLower.includes('transaction') ||
+      contentLower.includes('giao dịch')
+    ) {
+      return '/owner/transaction-management';
+    }
+
+    // Thông báo về revenue
+    if (
+      titleLower.includes('doanh thu') ||
+      titleLower.includes('revenue')
+    ) {
+      return '/owner/revenue';
+    }
+
+    // Mặc định: điều hướng đến booking management nếu có booking_id
+    if (bookingId) {
+      return `/owner/booking-management/detail/${bookingId}`;
+    }
+
+    // Nếu là thông báo hệ thống/alert nhưng không có booking_id, điều hướng đến booking management
+    if (type === 'alert' || type === 'system') {
+      return '/owner/booking-management';
+    }
+
+    // Mặc định: điều hướng đến booking management thay vì ở lại trang notifications
+    return '/owner/booking-management';
+  };
+
+  // Xử lý khi click vào thông báo
+  const handleNotificationClick = (notification, e) => {
+    // Nếu click vào button "Đánh dấu đã đọc", chỉ đánh dấu không điều hướng
+    if (e && (e.target.closest('button') || e.target.tagName === 'BUTTON')) {
+      return;
+    }
+
+    // Ngăn event bubbling và default behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Đánh dấu đã đọc nếu chưa đọc (không chờ async)
+    if (!notification.is_read) {
+      handleMarkAsRead(notification.notification_id).catch(error => {
+        console.error('Error marking notification as read:', error);
+      });
+    }
+
+    // Xác định route điều hướng và điều hướng ngay lập tức
+    const route = getNotificationRoute(notification);
+    
+    // Luôn điều hướng (route luôn có giá trị vì đã có fallback)
+    navigate(route || '/owner/booking-management');
   };
 
   if (loading) {
@@ -234,10 +397,10 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <div 
                 key={notification.notification_id} 
-                className={`p-6 hover:bg-gray-50 dark:hover:bg-secondary-700 cursor-pointer ${
+                className={`p-6 hover:bg-gray-50 dark:hover:bg-secondary-700 cursor-pointer transition-colors ${
                   !notification.is_read ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400' : ''
                 }`}
-                onClick={() => !notification.is_read && handleMarkAsRead(notification.notification_id)}
+                onClick={(e) => handleNotificationClick(notification, e)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -275,6 +438,7 @@ const Notifications = () => {
                             handleMarkAsRead(notification.notification_id);
                           }}
                           className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          title="Chỉ đánh dấu đã đọc, không điều hướng"
                         >
                           <MdMarkEmailRead className="h-3 w-3 mr-1" />
                           Đánh dấu đã đọc
