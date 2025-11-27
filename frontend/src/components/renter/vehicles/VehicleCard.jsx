@@ -94,7 +94,13 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         toast.success("Đã xóa khỏi so sánh!");
       } else {
         // Thêm vào so sánh
-        await dispatch(addToCompare({ id: vehicle.vehicle_id, type })).unwrap();
+        await dispatch(
+          addToCompare({
+            id: vehicle.vehicle_id,
+            type,
+            model: `${vehicle.model} ${vehicle.year}`,
+          })
+        ).unwrap();
         toast.success("Đã thêm vào so sánh!");
       }
     } catch (error) {
