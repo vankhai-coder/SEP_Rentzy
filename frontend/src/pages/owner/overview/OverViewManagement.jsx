@@ -353,7 +353,7 @@ const OverViewManagement = () => {
           </a>
           <div className="flex items-center gap-2">
             <ChevronRight />
-            <span className="text-black font-medium">Tổng Quan</span>
+            <span className="text-black font-medium">Tổng Quan Hệ Thống</span>
           </div>
         </nav>
         {/* title */}
@@ -402,28 +402,17 @@ const OverViewManagement = () => {
         </div>
 
         {/*2 chart  */}
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-          {/* Revenue Chart */}
-          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
-            <div className='flex flex-col space-y-1.5 mb-4'>
-              <h2 className="text-lg font-semibold flex items-center text-black">
-                <TrendingUp className="mr-2" />
-                Biểu đồ doanh thu
-              </h2>
-              <p className="text-sm text-gray-700">
-                <Calendar className="inline mr-1" />
-                {getPeriodDisplayText()}
-              </p>
-            </div>
-            {/* Bộ lọc hiển thị theo yêu cầu: chuyển nhóm nút thành dropdown */}
-            <div className="flex flex-wrap gap-4 items-end w-full lg:w-auto lg:ml-auto lg:justify-end">
+        {/* Bộ lọc chung cho cả 2 biểu đồ */}
+        <div className="mb-6">
+          <div className="card p-4 transition-all duration-200 border border-gray-200 shadow-md">
+            <div className="flex flex-wrap gap-3 items-center">
               {/* Dropdown chọn năm (10 năm) */}
               <div className="flex flex-col">
                 <label className="text-xs text-gray-600 mb-1">Chọn năm</label>
                 <select
                   value={selectedYear ?? ''}
                   onChange={(e) => { const y = parseInt(e.target.value); setSelectedYear(y); setSelectedPeriod('month'); setSelectedQuarter(null); }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[120px]"
+                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[110px]"
                 >
                   <option value="">-- Chọn năm --</option>
                   {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -438,7 +427,7 @@ const OverViewManagement = () => {
                 <select
                   value={selectedQuarter ?? ''}
                   onChange={(e) => { const q = parseInt(e.target.value); if (!isNaN(q)) { setSelectedQuarter(q); setSelectedPeriod('quarter'); } else { setSelectedQuarter(null); } }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[120px]"
+                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[110px]"
                 >
                   <option value="">-- Chọn quý --</option>
                   <option value={1}>Quý 1</option>
@@ -454,7 +443,7 @@ const OverViewManagement = () => {
                 <select
                   value={selectedMonth ?? ''}
                   onChange={(e) => { const m = parseInt(e.target.value); setSelectedMonth(m); setSelectedPeriod('day'); }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[140px]"
+                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black text-sm min-w-[130px]"
                 >
                   <option value="">-- Chọn tháng --</option>
                   {(() => {
@@ -467,6 +456,22 @@ const OverViewManagement = () => {
                   })()}
                 </select>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          {/* Revenue Chart */}
+          <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
+            <div className='flex flex-col space-y-1.5 mb-4'>
+              <h2 className="text-lg font-semibold flex items-center text-black">
+                <TrendingUp className="mr-2" />
+                Biểu đồ doanh thu
+              </h2>
+              <p className="text-sm text-gray-700">
+                <Calendar className="inline mr-1" />
+                {getPeriodDisplayText()}
+              </p>
             </div>
             <div className="h-80">
               {formatChartData(revenueChart).length > 0 ? (

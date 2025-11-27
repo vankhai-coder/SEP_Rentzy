@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/features/auth/authSlice";
 import VehicleManagement from "./vehicleManagement/vehicleManagement.jsx";
@@ -20,8 +20,29 @@ import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
 import TrafficFineSearch from "./dashboard/TrafficFineSearch.jsx";
 import ContractOwner from "./dashboard/ContractOwner.jsx";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MdOutlineDashboard,
+  MdDirectionsCar,
+  MdCalendarMonth,
+  MdNotifications,
+  MdShowChart,
+  MdTransform,
+  MdReceipt,
+} from "react-icons/md";
+import { FaClipboardList } from "react-icons/fa";
+
 const OwnerPage = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -31,19 +52,123 @@ const OwnerPage = () => {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Map pathname to page name
+  const getPageName = (pathname) => {
+    if (pathname.startsWith("/owner/vehicles/")) {
+      return "Chi tiết xe";
+    }
+    if (pathname.startsWith("/owner/booking-management/detail/")) {
+      return "Chi tiết đơn thuê";
+    }
+    if (pathname.startsWith("/owner/edit-car/") || pathname.startsWith("/owner/edit-motorbike/")) {
+      return "Chỉnh sửa xe";
+    }
+    if (pathname.startsWith("/owner/add-car") || pathname.startsWith("/owner/add-motorbike")) {
+      return "Thêm xe";
+    }
+    if (pathname.startsWith("/owner/contract/")) {
+      return "Hợp đồng";
+    }
+    
+    const pageMap = {
+      "/owner": "Tổng Quan Hệ Thống",
+      "/owner/": "Tổng Quan Hệ Thống",
+      "/owner/overview": "Tổng Quan Hệ Thống",
+      "/owner/vehicle-management": "Quản lý xe",
+      "/owner/booking-management": "Quản lý đơn thuê",
+      "/owner/transaction-management": "Quản lí giao dịch",
+      "/owner/revenue": "Doanh thu",
+      "/owner/traffic-fine-search": "Tra Cứu Phạt Nguội",
+      "/owner/vehicle-reviews": "Đánh giá về xe của tôi",
+      "/owner/notifications": "Thông báo",
+    };
+    return pageMap[pathname] || "Tổng Quan Hệ Thống";
+  };
+
+  const currentPageName = getPageName(location.pathname);
+
   return (
     <div className="min-h-screen">
       <SidebarOwner handleLogout={handleLogout} isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
       <div className="p-5 bg-gray-50 min-h-screen md:ml-[250px] ml-0">
-        <div className="md:hidden mb-4 flex items-center">
-          <button
-            aria-label="Mở menu"
-            className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white border border-gray-200 shadow-sm text-gray-700"
-            onClick={() => setMobileSidebarOpen(true)}
+        <div className="md:hidden mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              aria-label="Mở menu"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-white border border-gray-200 shadow-sm text-gray-700"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <MdMenu className="text-xl" />
+            </button>
+            <span className="text-lg font-semibold text-gray-800 whitespace-nowrap">Khu vực chủ xe</span>
+          </div>
+          {/* Navigation dropdown for mobile */}
+          <Select 
+            onValueChange={(value) => navigate(value)} 
+            value={location.pathname.startsWith("/owner/vehicles/") || 
+                   location.pathname.startsWith("/owner/booking-management/detail/") ||
+                   location.pathname.startsWith("/owner/edit-") ||
+                   location.pathname.startsWith("/owner/add-") ||
+                   location.pathname.startsWith("/owner/contract/") 
+                   ? undefined 
+                   : location.pathname}
           >
-            <MdMenu className="text-xl" />
-          </button>
-          <span className="ml-3 text-lg font-semibold text-gray-800 whitespace-nowrap">Khu vực chủ xe</span>
+            <SelectTrigger className="w-full text-md font-medium py-4 bg-[#ffffff]">
+              <SelectValue placeholder={currentPageName} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/overview"
+                >
+                  <MdOutlineDashboard className="inline mr-2" /> Tổng quan
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/vehicle-management"
+                >
+                  <MdDirectionsCar className="inline mr-2" /> Quản lý xe
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/booking-management"
+                >
+                  <MdCalendarMonth className="inline mr-2" /> Quản lý đơn thuê
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/transaction-management"
+                >
+                  <MdTransform className="inline mr-2" /> Quản lí giao dịch
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/revenue"
+                >
+                  <MdShowChart className="inline mr-2" /> Doanh thu
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/traffic-fine-search"
+                >
+                  <MdReceipt className="inline mr-2" /> Tra Cứu Phạt Nguội
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/vehicle-reviews"
+                >
+                  <FaClipboardList className="inline mr-2" /> Đánh giá về xe của tôi
+                </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/notifications"
+                >
+                  <MdNotifications className="inline mr-2" /> Thông báo
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <Routes>
           <Route path="/" element={<OverViewManagement />} />
