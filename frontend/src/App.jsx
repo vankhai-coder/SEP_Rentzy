@@ -37,6 +37,7 @@ import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 import RegisterOwner from "./pages/owner/RegisterOwner.jsx";
 import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
+import ManagementBrand from "./pages/admin/SideBarComponents/ManagementBrand.jsx";
 
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
@@ -171,6 +172,7 @@ const App = () => {
             <Route index element={<OverViewAdminDashboard />} />
             <Route path="approvalvehicle" element={<ApprovalVehicle />} />
             <Route path="managementvehicle" element={<ManagementVehicles />} />
+            <Route path="managementBrand" element={<ManagementBrand />} />
             <Route path="userManagement" element={<UserManagement />} />
             {/* userchart */}
             <Route path="userchart" element={<UserChart />} />

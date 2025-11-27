@@ -382,22 +382,26 @@ const ManagementVehicles = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {vehicle.status === 'available' ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleLockVehicle(vehicle.vehicle_id, vehicle.model); }}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
-                          >
-                            <MdLock className="w-4 h-4" />
-                            Khóa
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleUnlockVehicle(vehicle.vehicle_id, vehicle.model); }}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
-                          >
-                            <MdLockOpen className="w-4 h-4" />
-                            Mở khóa
-                          </button>
+                        {vehicle.approvalStatus === 'approved' && (
+                          <>
+                            {vehicle.status === 'available' ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleLockVehicle(vehicle.vehicle_id, vehicle.model); }}
+                                className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
+                              >
+                                <MdLock className="w-4 h-4" />
+                                Khóa
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleUnlockVehicle(vehicle.vehicle_id, vehicle.model); }}
+                                className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
+                              >
+                                <MdLockOpen className="w-4 h-4" />
+                                Mở khóa
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
