@@ -834,6 +834,74 @@ export const checkStatusForRequestToBecomeOwner = async (req, res) => {
     }
 }
 
+// check if user is is_agree_to_terms :
+export const checkIfUserIsAgreeToTerms = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        // check user_id and get is_agree_to_terms :
+        const registerOwnerRequest = await RegisterOwner.findOne({
+            where: {
+                user_id: user.user_id,
+            }
+        });
+
+        const isAgreeToTerms = registerOwnerRequest ? registerOwnerRequest.is_agree_to_terms : false;
+
+        return res.status(200).json({ isAgreeToTerms: isAgreeToTerms });
+
+    } catch (error) {
+        console.error("Error checking if user is agree to terms :", error.message);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+// agreeToTerms
+export const agreeToTerms = async (req, res) => {
+    try {
+        // check if user exist :
+        const user = await User.findOne({
+            where: { user_id: req.user?.userId }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng!' })
+        }
+
+        // check user_id and update is_agree_to_terms :
+        let registerOwnerRequest = await RegisterOwner.findOne({
+            where: {
+                user_id: user.user_id,
+            }
+        });
+
+        if (!registerOwnerRequest) {
+            // create new request if not exist
+            registerOwnerRequest = await RegisterOwner.create({
+                user_id: user.user_id,
+                is_agree_to_terms: true,
+                status: 'pending'
+            });
+        } else {
+            registerOwnerRequest.is_agree_to_terms = true;
+            await registerOwnerRequest.save();
+        }
+
+        return res.status(200).json({ message: 'Đã đồng ý với các điều khoản.' });
+
+    } catch (error) {
+        console.error("Error agreeing to terms :", error.message);
+        return res.status(500).json({ message: error.message });
+    }
+}
+
 // send request to become owner :
 export const sendRequestToBecomeOwner = async (req, res) => {
     try {

@@ -25,7 +25,12 @@ const RegisterOwner = sequelize.define(
     },
     reason_rejected: {
       type: DataTypes.STRING(255),
-    }
+    },
+    is_agree_to_terms: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     tableName: "register_owners",
