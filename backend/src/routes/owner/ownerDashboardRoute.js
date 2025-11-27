@@ -12,6 +12,7 @@ import {
   searchTrafficFine,
   getTrafficFineCaptcha,
   addTrafficFine,
+  requestDeleteTrafficFine,
   acceptBooking,
   rejectBooking,
 } from "../../controllers/owner/ownerDashboardController.js";
@@ -68,5 +69,6 @@ router.post("/traffic-fine-search", searchTrafficFine);
 
 // 7. Quản lý phí phạt nguội
 router.post("/bookings/:id/traffic-fine", upload.array("images", 10), addTrafficFine);
+router.post("/bookings/:id/traffic-fine/delete-request", requestDeleteTrafficFine);
 
 export default router;

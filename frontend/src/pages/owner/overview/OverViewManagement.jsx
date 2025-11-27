@@ -247,7 +247,7 @@ const OverViewManagement = () => {
         ...item,
         label,
         revenue: parseFloat(String(item.revenue).replace(/,/g, '')) || 0,
-        bookingCount: parseInt(item.bookingCount) || 0
+        bookingCount: Math.floor(parseInt(String(item.bookingCount).replace(/,/g, '')) || 0)
       };
     });
 
@@ -522,15 +522,76 @@ const OverViewManagement = () => {
               )}
             </div>
           </div>
-          {/* Placeholder for second chart */}
+          {/* Booking Statistics Chart */}
           <div className='card p-6 transition-all duration-200 border border-gray-200 shadow-md'>
             <div className='flex flex-col space-y-1.5 mb-4'>
-              <h2 className="text-lg font-semibold text-black">
-                Biểu đồ thống kê
+              <h2 className="text-lg font-semibold flex items-center text-black">
+                <ShoppingCart className="mr-2" />
+                Số đơn đặt xe
               </h2>
+              <p className="text-sm text-gray-700">
+                <Calendar className="inline mr-1" />
+                {getPeriodDisplayText()}
+              </p>
             </div>
-            <div className="h-80 flex items-center justify-center">
-              <p className="text-gray-700">Chart 2</p>
+            <div className="h-80">
+              {formatChartData(revenueChart).length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  {selectedPeriod === 'day' ? (
+                    <BarChart data={formatChartData(revenueChart)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="label" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        fontSize={12}
+                      />
+                      <YAxis 
+                        allowDecimals={false}
+                        tickFormatter={(value) => Math.round(value).toString()}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [Math.round(value), 'Số đơn']}
+                        labelFormatter={(label) => `Ngày: ${label}`}
+                      />
+                      <Bar 
+                        dataKey="bookingCount" 
+                        fill="#10B981"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  ) : (
+                    <LineChart data={formatChartData(revenueChart)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="label" />
+                      <YAxis 
+                        allowDecimals={false}
+                        tickFormatter={(value) => Math.round(value).toString()}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [Math.round(value), 'Số đơn']}
+                        labelFormatter={(label) => `Thời gian: ${label}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="bookingCount" 
+                        stroke="#10B981" 
+                        strokeWidth={2}
+                        dot={{ fill: '#10B981' }}
+                      />
+                    </LineChart>
+                  )}
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-700">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <p className="text-lg font-medium">Chưa có dữ liệu đơn đặt</p>
+                    <p className="text-sm">Dữ liệu sẽ hiển thị khi có đơn đặt xe</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

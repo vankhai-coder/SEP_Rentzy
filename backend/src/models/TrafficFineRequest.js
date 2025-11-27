@@ -21,10 +21,16 @@ const TrafficFineRequest = sequelize.define(
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
     },
-    // Số tiền phạt nguội
+    // Loại yêu cầu: add (thêm/sửa) hoặc delete (xóa)
+    request_type: {
+      type: DataTypes.ENUM("add", "delete"),
+      defaultValue: "add",
+      allowNull: false,
+    },
+    // Số tiền phạt nguội (không bắt buộc cho request xóa)
     amount: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false,
+      allowNull: true,
     },
     // Mô tả / Lý do phạt nguội
     description: {
@@ -43,6 +49,11 @@ const TrafficFineRequest = sequelize.define(
     },
     // Lý do từ chối (nếu bị reject)
     rejection_reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    // Lý do xóa (cho request_type = 'delete')
+    deletion_reason: {
       type: DataTypes.TEXT,
       allowNull: true,
     },

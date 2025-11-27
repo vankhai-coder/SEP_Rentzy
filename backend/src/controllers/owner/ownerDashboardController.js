@@ -1545,3 +1545,130 @@ export const addTrafficFine = async (req, res) => {
     });
   }
 };
+
+// POST /api/owner/dashboard/bookings/:id/traffic-fine/delete-request - Yêu cầu xóa phí phạt nguội
+export const requestDeleteTrafficFine = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+    const { deletion_reason } = req.body;
+
+    // Validate input
+    if (!deletion_reason || deletion_reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Lý do xóa phải có ít nhất 10 ký tự",
+      });
+    }
+
+    // Tìm booking
+    const booking = await Booking.findOne({
+      where: { booking_id: id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          where: { owner_id: ownerId },
+          attributes: ["vehicle_id", "license_plate"],
+        },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê",
+      });
+    }
+
+    // Kiểm tra booking có phạt nguội không
+    if (!booking.traffic_fine_amount || booking.traffic_fine_amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Đơn thuê này không có phí phạt nguội để xóa",
+      });
+    }
+
+    // Chỉ cho phép yêu cầu xóa khi booking đang trong quá trình hoặc đã hoàn thành
+    if (!["in_progress", "completed"].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể yêu cầu xóa phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+      });
+    }
+
+    // Kiểm tra xem đã có yêu cầu xóa đang chờ duyệt chưa
+    const existingDeleteRequest = await TrafficFineRequest.findOne({
+      where: {
+        booking_id: booking.booking_id,
+        owner_id: ownerId,
+        request_type: "delete",
+        status: "pending",
+      },
+    });
+
+    if (existingDeleteRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã có yêu cầu xóa phạt nguội đang chờ duyệt. Vui lòng chờ admin xử lý.",
+      });
+    }
+
+    // Tạo yêu cầu xóa phạt nguội chờ duyệt
+    // Sử dụng amount = 0 thay vì null để tránh lỗi NOT NULL constraint nếu migration chưa chạy
+    const deleteRequest = await TrafficFineRequest.create({
+      booking_id: booking.booking_id,
+      owner_id: ownerId,
+      request_type: "delete",
+      amount: 0, // Sử dụng 0 thay vì null để tương thích với schema cũ
+      description: null,
+      images: null,
+      deletion_reason: deletion_reason.trim(),
+      status: "pending",
+    });
+
+    // Tìm tất cả admin users để gửi notification
+    const adminUsers = await User.findAll({
+      where: { role: "admin" },
+      attributes: ["user_id"],
+    });
+
+    // Tạo notification cho tất cả admin
+    if (adminUsers.length > 0) {
+      const notifications = adminUsers.map((admin) => ({
+        user_id: admin.user_id,
+        title: "Yêu cầu xóa phạt nguội mới",
+        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${booking.booking_id}. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
+        type: "alert",
+      }));
+      await Notification.bulkCreate(notifications);
+    }
+
+    return res.json({
+      success: true,
+      message: "Đã gửi yêu cầu xóa phạt nguội chờ duyệt",
+      data: {
+        request_id: deleteRequest.request_id,
+        booking_id: booking.booking_id,
+        status: "pending",
+        message: "Yêu cầu của bạn đang chờ admin duyệt",
+      },
+    });
+  } catch (error) {
+    console.error("Error requesting traffic fine deletion:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi gửi yêu cầu xóa phạt nguội",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details: process.env.NODE_ENV === "development" ? {
+        name: error.name,
+        stack: error.stack,
+      } : undefined,
+    });
+  }
+};

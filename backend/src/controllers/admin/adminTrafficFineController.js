@@ -86,15 +86,40 @@ export const getTrafficFineRequests = async (req, res) => {
     // Parse images từ JSON string
     const requestsData = requests.map((request) => {
       const requestData = request.toJSON();
+      
+      // Debug log
+      console.log(`Processing request #${requestData.request_id}:`, {
+        images_raw: requestData.images,
+        images_type: typeof requestData.images,
+        request_type: requestData.request_type
+      });
+      
       if (requestData.images) {
         try {
-          requestData.images = JSON.parse(requestData.images);
+          // Nếu đã là array, giữ nguyên
+          if (Array.isArray(requestData.images)) {
+            requestData.images = requestData.images;
+          } else if (typeof requestData.images === 'string') {
+            // Parse từ JSON string
+            const parsed = JSON.parse(requestData.images);
+            requestData.images = Array.isArray(parsed) ? parsed : [];
+          } else {
+            requestData.images = [];
+          }
         } catch (e) {
+          console.error(`Error parsing images for request #${requestData.request_id}:`, e);
           requestData.images = [];
         }
       } else {
         requestData.images = [];
       }
+      
+      // Log kết quả
+      console.log(`Request #${requestData.request_id} processed:`, {
+        images_count: requestData.images?.length || 0,
+        images: requestData.images
+      });
+      
       return requestData;
     });
 
@@ -201,43 +226,100 @@ export const approveTrafficFineRequest = async (req, res) => {
       { transaction }
     );
 
-    // Parse images
-    let imageUrls = [];
-    if (request.images) {
-      try {
-        imageUrls = JSON.parse(request.images);
-      } catch (e) {
-        imageUrls = [];
+    // Xử lý theo loại yêu cầu
+    if (request.request_type === "delete") {
+      // Xóa phạt nguội khỏi booking
+      await request.booking.update(
+        {
+          traffic_fine_amount: 0,
+          traffic_fine_paid: 0, // Reset tiền đã thanh toán nếu có
+          traffic_fine_description: null,
+          traffic_fine_images: null,
+          updated_at: now,
+        },
+        { transaction }
+      );
+
+      // Tạo notification cho owner
+      await Notification.create(
+        {
+          user_id: request.owner_id,
+          title: "Yêu cầu xóa phạt nguội đã được duyệt",
+          content: `Yêu cầu xóa phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt. Phạt nguội đã được xóa khỏi đơn thuê.`,
+          type: "alert",
+        },
+        { transaction }
+      );
+
+      // Tạo notification cho renter nếu có
+      if (request.booking.renter_id) {
+        await Notification.create(
+          {
+            user_id: request.booking.renter_id,
+            title: "Phạt nguội đã được xóa",
+            content: `Phạt nguội cho đơn thuê #${request.booking.booking_id} đã được xóa bởi chủ xe và được admin duyệt.`,
+            type: "alert",
+          },
+          { transaction }
+        );
+      }
+    } else {
+      // Xử lý request thêm/sửa phạt nguội (logic cũ)
+      // Parse images
+      let imageUrls = [];
+      if (request.images) {
+        try {
+          imageUrls = JSON.parse(request.images);
+        } catch (e) {
+          imageUrls = [];
+        }
+      }
+
+      // Cập nhật booking với thông tin phạt nguội
+      await request.booking.update(
+        {
+          traffic_fine_amount: parseFloat(request.amount),
+          traffic_fine_description: request.description,
+          traffic_fine_images: JSON.stringify(imageUrls),
+          updated_at: now,
+        },
+        { transaction }
+      );
+
+      // Tạo notification cho owner
+      await Notification.create(
+        {
+          user_id: request.owner_id,
+          title: "Yêu cầu phạt nguội đã được duyệt",
+          content: `Yêu cầu ${request.description ? 'thêm/sửa' : 'thêm'} phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ.`,
+          type: "alert",
+        },
+        { transaction }
+      );
+
+      // Tạo notification cho renter
+      if (request.booking.renter_id) {
+        await Notification.create(
+          {
+            user_id: request.booking.renter_id,
+            title: "Phí phạt nguội",
+            content: `Phí phạt nguội cho đơn thuê #${request.booking.booking_id}. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ. ${request.description ? `Lý do: ${request.description}` : ''}`,
+            type: "alert",
+          },
+          { transaction }
+        );
       }
     }
 
-    // Cập nhật booking với thông tin phạt nguội
-    await request.booking.update(
-      {
-        traffic_fine_amount: parseFloat(request.amount),
-        traffic_fine_description: request.description,
-        traffic_fine_images: JSON.stringify(imageUrls),
-        updated_at: now,
-      },
-      { transaction }
-    );
-
-    // Tạo notification cho renter
-    await Notification.create(
-      {
-        user_id: request.booking.renter_id,
-        title: "Phí phạt nguội",
-        content: `Phí phạt nguội cho đơn thuê #${request.booking.booking_id}. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ. ${request.description ? `Lý do: ${request.description}` : ''}`,
-        type: "alert",
-      },
-      { transaction }
-    );
-
     await transaction.commit();
+
+    const message = request.request_type === "delete" 
+      ? "Đã duyệt yêu cầu xóa phạt nguội thành công"
+      : "Đã duyệt yêu cầu phạt nguội thành công";
 
     return res.json({
       success: true,
-      message: "Đã duyệt yêu cầu phạt nguội thành công",
+      message,
       data: {
         request_id: request.request_id,
         booking_id: request.booking_id,
@@ -323,11 +405,12 @@ export const rejectTrafficFineRequest = async (req, res) => {
     );
 
     // Tạo notification cho owner
+    const requestTypeLabel = request.request_type === "delete" ? "xóa phạt nguội" : "phạt nguội";
     await Notification.create(
       {
         user_id: request.owner_id,
-        title: "Yêu cầu phạt nguội bị từ chối",
-        content: `Yêu cầu phạt nguội cho đơn thuê #${request.booking_id} đã bị từ chối. ${rejection_reason ? `Lý do: ${rejection_reason}` : ''}`,
+        title: `Yêu cầu ${requestTypeLabel} bị từ chối`,
+        content: `Yêu cầu ${requestTypeLabel} cho đơn thuê #${request.booking_id} đã bị từ chối. ${rejection_reason ? `Lý do: ${rejection_reason}` : ''}`,
         type: "alert",
       },
       { transaction }
