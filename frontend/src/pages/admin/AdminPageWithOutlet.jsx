@@ -12,14 +12,17 @@ import {
   Bell,
   User2,
   LogOut,
+  Hexagon,
   Moon,
   SearchCheck,
   CardSimIcon,
   AlertTriangle,
+  ChartArea,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useEffect, useRef, useState } from "react";
 import { MdAnalytics } from "react-icons/md";
+import { BiMoneyWithdraw } from "react-icons/bi";
 import axiosInstance from "@/config/axiosInstance";
 
 const AdminPage = () => {
@@ -272,6 +275,26 @@ const AdminPage = () => {
                 Quản Lý Người Dùng
               </NavLink>
             </li>
+
+            <li>
+              <NavLink to="/admin/userchart"
+                onClick={() => {
+                  setIsOpenMenuSideBar(false)
+                }}
+                className={({ isActive }) =>
+                  isActive ?
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium"
+                    :
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+                }
+              >
+                <ChartArea className="w-5 h-5 "
+                />
+                Biểu Đồ Người Dùng
+              </NavLink>
+            </li>
+
+
             <li>
               <NavLink to="/admin/approvalvehicle"
                 onClick={() => {
@@ -309,6 +332,27 @@ const AdminPage = () => {
                 Quản Lý Phương Tiện
               </NavLink>
             </li>
+            
+            <li>
+              <NavLink to="/admin/managementBrand"
+              onClick={() => {
+                setIsOpenMenuSideBar(false)
+              }}
+              className={({ isActive }) =>
+                isActive ?
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium"
+                  :
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800"
+              }
+              >
+                <Hexagon className="w-5 h-5 
+                
+                " />
+                Quản Lý Thương Hiệu
+              </NavLink>
+            </li>
+
+
             <li>
               <NavLink to="/admin/approveOwner"
                 onClick={() => {
@@ -369,7 +413,7 @@ const AdminPage = () => {
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 hover:bg-secondary-100 dark:hover:bg-secondary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium"
                     :
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-800"}>
-                <Gift className="w-5 h-5 
+                <BiMoneyWithdraw className="w-5 h-5 
                 
                 " />
                 Thống Kê Doanh Thu

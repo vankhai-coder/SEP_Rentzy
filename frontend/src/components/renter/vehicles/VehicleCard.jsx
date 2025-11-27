@@ -8,7 +8,7 @@ import {
   addToCompare,
   removeFromCompare,
 } from "../../../redux/features/renter/compare/compareSlice"; // Thêm removeFromCompare
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState } from "react";
 
@@ -20,6 +20,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
   // **Giữ nguyên 100%**: Tất cả logic (dispatch, state, handlers)
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId } = useSelector((state) => state.userStore);
   const { favorites } = useSelector((state) => state.favoriteStore);
   const { compareList } = useSelector((state) => state.compareStore); // Mới: Lấy compare list
@@ -93,7 +94,13 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         toast.success("Đã xóa khỏi so sánh!");
       } else {
         // Thêm vào so sánh
-        await dispatch(addToCompare({ id: vehicle.vehicle_id, type })).unwrap();
+        await dispatch(
+          addToCompare({
+            id: vehicle.vehicle_id,
+            type,
+            model: `${vehicle.model} ${vehicle.year}`,
+          })
+        ).unwrap();
         toast.success("Đã thêm vào so sánh!");
       }
     } catch (error) {
@@ -103,7 +110,9 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
 
   // ✨ Thêm function để navigate đến trang detail
   const handleCardClick = () => {
-    navigate(`/detail/${vehicle.vehicle_id}`);
+    const query = location.search || "";
+    // Giữ nguyên các tham số tìm kiếm (start_date, end_date, start_time, end_time)
+    navigate(`/detail/${vehicle.vehicle_id}${query}`);
   };
 
   return (

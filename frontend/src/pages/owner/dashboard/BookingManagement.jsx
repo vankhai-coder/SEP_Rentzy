@@ -28,6 +28,10 @@ const BookingManagement = () => {
     sortBy: "created_at",
     sortOrder: "DESC",
   });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const statusLabels = {
     pending: "Chờ xác nhận",
@@ -111,6 +115,65 @@ const BookingManagement = () => {
 
   const handleRowClick = (bookingId) => {
     navigate(`/owner/booking-management/detail/${bookingId}`);
+  };
+
+  const approveBooking = async (bookingId) => {
+    try {
+      const isConfirmed = window.confirm(
+        "Bạn có chắc chắn muốn duyệt đơn này?"
+      );
+      if (!isConfirmed) return;
+      setActionLoading(true);
+      const res = await axiosInstance.patch(
+        `/api/owner/dashboard/bookings/${bookingId}/accept`
+      );
+      if (res?.data?.success) {
+        await fetchBookings();
+      } else {
+        alert(res?.data?.message || "Không thể duyệt đơn. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error("Error approving booking:", err);
+      alert("Có lỗi xảy ra khi duyệt đơn.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openRejectModal = (bookingId) => {
+    setSelectedBookingId(bookingId);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const submitReject = async () => {
+    if (!selectedBookingId) return;
+    try {
+      if (!rejectReason.trim()) {
+        const proceed = window.confirm(
+          "Bạn chưa nhập lý do. Bạn có muốn tiếp tục từ chối mà không có lý do?"
+        );
+        if (!proceed) return;
+      }
+      setActionLoading(true);
+      const res = await axiosInstance.patch(
+        `/api/owner/dashboard/bookings/${selectedBookingId}/reject`,
+        { reason: rejectReason.trim() }
+      );
+      if (res?.data?.success) {
+        setShowRejectModal(false);
+        setSelectedBookingId(null);
+        setRejectReason("");
+        await fetchBookings();
+      } else {
+        alert(res?.data?.message || "Không thể từ chối đơn. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error("Error rejecting booking:", err);
+      alert("Có lỗi xảy ra khi từ chối đơn.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -377,6 +440,29 @@ const BookingManagement = () => {
                       >
                         Chi tiết
                       </button>
+                      {booking.status === "pending" && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveBooking(booking.booking_id);
+                            }}
+                            className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 disabled:opacity-50"
+                            disabled={actionLoading}
+                          >
+                            Duyệt
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRejectModal(booking.booking_id);
+                            }}
+                            className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                          >
+                            Từ chối
+                          </button>
+                        </>
+                      )}
                       {(booking.status === "deposit_paid" ||
                         booking.status === "fully_paid" ||
                         booking.status === "completed") && (
@@ -451,6 +537,40 @@ const BookingManagement = () => {
           </div>
         )}
       </div>
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Từ chối đơn đặt xe</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Vui lòng nhập lý do (tuỳ chọn) cho việc từ chối đơn.</p>
+            <textarea
+              className="w-full p-3 border border-gray-300 dark:border-secondary-600 rounded-md bg-white dark:bg-secondary-700 text-gray-900 dark:text-white"
+              rows={4}
+              placeholder="Nhập lý do từ chối..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setSelectedBookingId(null);
+                }}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 dark:border-secondary-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={submitReject}
+                disabled={actionLoading}
+                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {actionLoading ? "Đang xử lý..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

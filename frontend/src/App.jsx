@@ -21,6 +21,7 @@ import LongTermRenting from "./pages/renter/account/LongTermRenting.jsx";
 import BankAccountPage from "./pages/renter/account/BankAccountPage.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 import About from "./components/common/About.jsx";
+import BrandVehicles from "./components/renter/brand/BrandVehicles.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
@@ -30,17 +31,20 @@ import TransactionHistory from "./pages/renter/transaction/TransactionHistory.js
 import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 import MyReportedVehicles from "./pages/renter/account/MyReportedVehicles";
 import NotificationsRenter from "./pages/renter/account/Notifications.jsx";
+import TrafficFineSearch from "./pages/renter/account/TrafficFineSearch.jsx";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import OwnerPage from "./pages/owner/ownerPage.jsx";
 import RegisterOwner from "./pages/owner/RegisterOwner.jsx";
 import AdminPage from "./pages/admin/AdminPageWithOutlet.jsx";
+import ManagementBrand from "./pages/admin/SideBarComponents/ManagementBrand.jsx";
 
 // booking
 import OrderConfirmation from "./pages/renter/booking/OrderConfirmation.jsx";
 import PaymentDeposit from "./pages/renter/booking/PaymentDeposit.jsx";
 import ContractPage from "./pages/renter/booking/ContractBooking.jsx";
+import WaitingOwnerApproval from "./pages/renter/booking/WaitingOwnerApproval.jsx";
 
 import SearchResults from "./pages/renter/search/SearchResults.jsx";
 import VerifyUpdatedEmail from "./pages/renter/auth/VerifyUpdatedEmail.jsx";
@@ -59,6 +63,7 @@ import VoucherManagement from "./pages/admin/SideBarComponents/VoucherManagement
 import SystemSettingManagement from "./pages/admin/SideBarComponents/SystemSettingManagement.jsx";
 import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
 import TrafficFineApproval from "./pages/admin/SideBarComponents/TrafficFineApproval.jsx";
+import UserChart from "./pages/admin/SideBarComponents/UserChart.jsx";
 
 // Test pages
 
@@ -108,6 +113,7 @@ const App = () => {
             <Route path="/bank-accounts" element={<BankAccountPage />} />
             <Route path="/resetpw" element={<ResetPassword />} />
             <Route path="/deleteaccount" element={<DeleteAccount />} />
+            <Route path="/traffic-fine-search" element={<TrafficFineSearch />} />
             <Route
               path="/booking-review/:bookingId"
               element={
@@ -121,6 +127,10 @@ const App = () => {
           {/* Home Xe Ô Tô */}
           <Route path="/cars" element={<HomeCar />} />
           <Route path="/cars/search" element={<SearchResults type="car" />} />
+          <Route
+            path="/brands/:brand_id/vehicles"
+            element={<BrandVehicles />}
+          />
           {/* Vehicle Detail */}
           <Route path="/detail/:id" element={<VehicleDetail />} />
 
@@ -133,6 +143,12 @@ const App = () => {
           <Route
             path="/payment-deposit/:bookingId"
             element={<PaymentDeposit />}
+          />
+
+          {/* Waiting Owner Approval */}
+          <Route
+            path="/booking-waiting/:bookingId"
+            element={<WaitingOwnerApproval />}
           />
 
           {/* Home Xe Máy */}
@@ -158,8 +174,10 @@ const App = () => {
             <Route index element={<OverViewAdminDashboard />} />
             <Route path="approvalvehicle" element={<ApprovalVehicle />} />
             <Route path="managementvehicle" element={<ManagementVehicles />} />
+            <Route path="managementBrand" element={<ManagementBrand />} />
             <Route path="userManagement" element={<UserManagement />} />
-
+            {/* userchart */}
+            <Route path="userchart" element={<UserChart />} />
             <Route path="approveOwner" element={<ApproveOwner />} />
 
             <Route path="messages" element={<Messages />} />
@@ -171,7 +189,15 @@ const App = () => {
             <Route path="disburseOwner" element={<DisburseOwner />} />
 
             <Route path="voucherManagement" element={<VoucherManagement />} />
-            <Route path="trafficFineApproval" element={<TrafficFineApproval />} />
+            <Route
+              path="trafficFineApproval"
+              element={<TrafficFineApproval />}
+            />
+
+            <Route
+              path="systemSettings"
+              element={<SystemSettingManagement />}
+            />
 
             <Route
               path="systemSettings"

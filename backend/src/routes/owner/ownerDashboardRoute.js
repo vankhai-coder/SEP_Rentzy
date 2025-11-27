@@ -14,6 +14,7 @@ import {
   addTrafficFine,
   requestDeleteTrafficFine,
   acceptBooking,
+  rejectBooking,
 } from "../../controllers/owner/ownerDashboardController.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
@@ -42,6 +43,8 @@ router.get("/bookings", getOwnerBookings);
 router.get("/bookings/detail/:id", getBookingDetail);
 // Owner chấp nhận booking (chuyển từ pending -> confirmed)
 router.patch("/bookings/:id/accept", acceptBooking);
+// Owner từ chối booking (pending -> canceled) kèm lý do
+router.patch("/bookings/:id/reject", rejectBooking);
 
 // 2.1. Xem danh sách booking đã hủy với thông tin tiền hoàn
 router.get("/cancelled-bookings", getCancelledBookings);

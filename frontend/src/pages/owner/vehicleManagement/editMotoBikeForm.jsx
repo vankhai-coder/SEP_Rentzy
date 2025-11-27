@@ -21,7 +21,8 @@ const EditMotoBikeForm = () => {
     engine_capacity: "",
     fuel_type: "",
     fuel_consumption: "",
-    description: ""
+    description: "",
+    require_owner_confirmation: false
   });
 
   const [selectedFeatures, setSelectedFeatures] = useState([]);
@@ -60,7 +61,8 @@ const EditMotoBikeForm = () => {
           engine_capacity: vehicle.engine_capacity || "",
           fuel_type: vehicle.fuel_type || "",
           fuel_consumption: vehicle.fuel_consumption || "",
-          description: vehicle.description || ""
+          description: vehicle.description || "",
+          require_owner_confirmation: Boolean(vehicle.require_owner_confirmation)
         });
 
         // Set features
@@ -248,6 +250,8 @@ const EditMotoBikeForm = () => {
       submitData.append('fuel_consumption', formData.fuel_consumption);
       submitData.append('description', formData.description);
       submitData.append('features', JSON.stringify(selectedFeatures));
+      // Owner confirmation requirement
+      submitData.append('require_owner_confirmation', formData.require_owner_confirmation ? 'true' : 'false');
 
       // Add images only if new ones are selected
       if (mainImage) {
@@ -507,6 +511,25 @@ const EditMotoBikeForm = () => {
                     min="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+                {/* Require Owner Confirmation Toggle */}
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.require_owner_confirmation}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          require_owner_confirmation: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Yêu cầu xác nhận của chủ xe trước khi duyệt đơn
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

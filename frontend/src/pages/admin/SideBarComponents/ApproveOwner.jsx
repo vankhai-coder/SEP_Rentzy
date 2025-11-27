@@ -86,7 +86,7 @@ const ApproveOwner = () => {
   // use useQuery to fetch list of request from backend api /api/admin/owner-approval/requests with searchFilter using axiosInstance:
   const fetchOwnerApprovalRequestsWithFilter = async () => {
     const response = await axiosInstance.get('/api/admin/owner-approval/requests', {
-      params: {
+      params: { // this is query params
         nameOrEmail: searchFilter.nameOrEmail,
         status: searchFilter.status,
         page: currentPage,
@@ -297,12 +297,15 @@ const ApproveOwner = () => {
                       </SelectContent>
                     </Select>
                     {/* clear role that selected */}
-                    <button onClick={() => {
-                      setSearchFilter(prev => ({ ...prev, status: '' }));
-                      setCurrentPage(1);
-                    }}>
-                      <CircleX className="size-5 hover:cursor-pointer text-red-400" />
-                    </button>
+                    {
+                      searchFilter.status &&
+                      <button onClick={() => {
+                        setSearchFilter(prev => ({ ...prev, status: '' }));
+                        setCurrentPage(1);
+                      }}>
+                        <CircleX className="size-5 hover:cursor-pointer text-red-400" />
+                      </button>
+                    }
                   </div>
 
                 </div>
@@ -424,7 +427,7 @@ const ApproveOwner = () => {
 
                                   {/* accept request */}
                                   <PopoverClose>
-                                    <button  onClick={() => { setIsApproveDialogOpen(true); setSelectedUserId(user.user_id); }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
+                                    <button onClick={() => { setIsApproveDialogOpen(true); setSelectedUserId(user.user_id); }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
                                       <span className="flex-shrink-0">
                                         <Handshake className="size-4" />
                                       </span>
@@ -460,7 +463,7 @@ const ApproveOwner = () => {
 
               {/* Pagination */}
 
-              {data && data.totalPages  && (
+              {data && data.totalPages && (
                 <div className="flex items-center justify-center gap-10 pt-4">
                   {/* commment : select max page */}
                   <div className="flex items-center gap-3">

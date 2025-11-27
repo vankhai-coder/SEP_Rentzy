@@ -2,18 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance';
 import { toast } from 'react-toastify';
-import { 
-  MdSearch, 
-  MdAdd, 
-  MdVisibility, 
-  MdEdit, 
-  MdLock, 
-  MdLockOpen,
-  MdDelete,
-  MdRefresh,
-  MdDirectionsCar,
-  MdTwoWheeler
-} from 'react-icons/md';
+// Đã loại bỏ toàn bộ icon để đáp ứng yêu cầu UI
 import SidebarOwner from '@/components/SidebarOwner/SidebarOwner';
 
 // Custom debounce hook
@@ -129,6 +118,27 @@ const fetchVehicles = useCallback(async () => {
       } 
       else {
         toast.error('Lỗi khi cập nhật trạng thái xe');
+      }
+    }
+  };
+
+  // Handle owner confirmation toggle
+  const handleOwnerConfirmationToggle = async (vehicleId, currentValue) => {
+    try {
+      const response = await axiosInstance.patch(`/api/owner/vehicles/${vehicleId}/confirmation`, {
+        require_owner_confirmation: !currentValue
+      });
+
+      if (response.data?.success) {
+        toast.success(response.data.message || 'Cập nhật xác nhận chủ xe thành công');
+        fetchVehicles();
+      }
+    } catch (error) {
+      console.error('Error updating owner confirmation requirement:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Lỗi khi cập nhật yêu cầu xác nhận của chủ xe');
       }
     }
   };
@@ -251,13 +261,12 @@ const fetchVehicles = useCallback(async () => {
         <div className="flex flex-col sm:flex-row gap-4 items-center">
           <div className="flex-1 flex gap-2">
             <div className="relative flex-1">
-              <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Tìm kiếm theo tên xe, biển số"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -288,14 +297,13 @@ const fetchVehicles = useCallback(async () => {
               }}
               className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <MdRefresh className="w-5 h-5" />
+              Làm mới
             </button>
 
             <button
               onClick={() => setShowVehicleTypeModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <MdAdd className="w-5 h-5" />
               Thêm xe mới
             </button>
           </div>
@@ -309,7 +317,10 @@ const fetchVehicles = useCallback(async () => {
             <thead className="bg-blue-600 text-white">
               <tr>
                 <th className="px-4 py-3 text-left font-medium whitespace-nowrap">ẢNH</th>
-                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">XE</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">HÃNG</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">MẪU</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">LOẠI</th>
+                <th className="px-4 py-3 text-left font-medium whitespace-nowrap">NĂM</th>
                 <th className="px-4 py-3 text-left font-medium whitespace-nowrap">BIỂN SỐ</th>
                 <th className="px-4 py-3 text-left font-medium whitespace-nowrap">GIÁ/NGÀY</th>
                 <th className="px-4 py-3 text-left font-medium whitespace-nowrap">LƯỢT THUÊ</th>
@@ -335,16 +346,10 @@ const fetchVehicles = useCallback(async () => {
                         className="w-16 h-12 object-cover rounded"
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <div className="font-medium text-gray-900 whitespace-nowrap">
-                          {vehicle.brand?.name} {vehicle.model}
-                        </div>
-                        <div className="text-sm text-gray-500 whitespace-nowrap">
-                          {vehicle.year} • {vehicle.vehicle_type}
-                        </div>
-                      </div>
-                    </td>
+                    <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{vehicle.brand?.name}</td>
+                    <td className="px-4 py-3 text-gray-900 whitespace-nowrap">{vehicle.model}</td>
+                    <td className="px-4 py-3 text-gray-900 whitespace-nowrap">{vehicle.vehicle_type}</td>
+                    <td className="px-4 py-3 text-gray-900 whitespace-nowrap">{vehicle.year}</td>
                     <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                       {vehicle.license_plate}
                     </td>
@@ -368,48 +373,65 @@ const fetchVehicles = useCallback(async () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/owner/vehicles/${vehicle.vehicle_id}`)}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 border border-blue-600 text-blue-700 bg-white rounded-md text-sm font-medium hover:bg-blue-50 transition-colors"
                         >
-                          <MdVisibility className="w-4 h-4" />
                           Chi tiết
                         </button>
-                        <button
+                        {vehicle.approvalStatus === 'approved' && (
+                          <button
                           onClick={() => {
                             const editPath = vehicle.vehicle_type === 'car' 
                               ? `/owner/edit-car/${vehicle.vehicle_id}`
                               : `/owner/edit-motorbike/${vehicle.vehicle_id}`;
                             navigate(editPath);
                           }}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 border border-green-600 text-green-700 bg-white rounded-md text-sm font-medium hover:bg-green-50 transition-colors"
                         >
-                          <MdEdit className="w-4 h-4" />
                           Sửa
                         </button>
-                        <button
+                        )}
+                        {vehicle.approvalStatus === 'approved' &&(
+                          <button
                           onClick={() => handleStatusToggle(vehicle.vehicle_id, vehicle.status)}
-                          className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                          className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
                             vehicle.status === 'available'
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              ? 'border-red-600 text-red-700 bg-white hover:bg-red-50'
+                              : 'border-green-600 text-green-700 bg-white hover:bg-green-50'
                           }`}
                         >
-                          {vehicle.status === 'available' ? (
-                            <>
-                              <MdLock className="w-4 h-4" />
-                              Khóa
-                            </>
-                          ) : (
-                            <>
-                              <MdLockOpen className="w-4 h-4" />
-                              Mở khóa
-                            </>
-                          )}
+                          {vehicle.status === 'available' ? 'Khóa' : 'Mở khóa'}
                         </button>
+                        )}
+                        {/* <button
+                          onClick={() => handleStatusToggle(vehicle.vehicle_id, vehicle.status)}
+                          className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                            vehicle.status === 'available'
+                              ? 'border-red-600 text-red-700 bg-white hover:bg-red-50'
+                              : 'border-green-600 text-green-700 bg-white hover:bg-green-50'
+                          }`}
+                        >
+                          {vehicle.status === 'available' ? 'Khóa' : 'Mở khóa'}
+                        </button> */}
+                        {vehicle.approvalStatus === 'approved' && (
+                          <button
+                            onClick={() => handleOwnerConfirmationToggle(
+                              vehicle.vehicle_id,
+                              Boolean(vehicle.require_owner_confirmation)
+                            )}
+                            className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                              vehicle.require_owner_confirmation
+                                ? 'border-purple-600 text-purple-700 bg-white hover:bg-purple-50'
+                                : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                            }`}
+                          >
+                            {vehicle.require_owner_confirmation ? 'Yêu cầu xác nhận' : 'Không yêu cầu'}
+                          </button>
+                        )}
+                        
                         {/* <button
                           onClick={() => handleDelete(vehicle.vehicle_id, vehicle.model)}
                           className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
                         >
-                          <MdDelete className="w-4 h-4" />
                           Xóa
                         </button> */}
                       </div>
@@ -464,17 +486,15 @@ const fetchVehicles = useCallback(async () => {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleAddCar}
-                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <MdDirectionsCar className="w-5 h-5" />
                   Thêm ô tô
                 </button>
                 
                 <button
                   onClick={handleAddMotorbike}
-                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  <MdTwoWheeler className="w-5 h-5" />
                   Thêm xe máy
                 </button>
               </div>

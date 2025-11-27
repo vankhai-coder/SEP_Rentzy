@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard, checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingTwilioForUpdatePhoneNumber, sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import { agreeToTerms, check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsAgreeToTerms, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard, checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingTwilioForUpdatePhoneNumber, sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
 import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
 
@@ -32,6 +32,12 @@ router.get('/is-register-bank-account', verifyJWTToken, checkIfUserRegisterBankA
 
 // check status for request to become owner :
 router.get('/status-request-to-be-owner', verifyJWTToken, checkStatusForRequestToBecomeOwner);
+
+// check if user is agree to terms and conditions :
+router.get('/is-agree-terms-and-conditions', verifyJWTToken, checkIfUserIsAgreeToTerms);
+
+// axiosInstance.post('/api/renter/info/agree-terms-and-conditions')
+router.post('/agree-terms-and-conditions', verifyJWTToken, agreeToTerms);
 
 // register owner request :
 router.post('/register-owner-request', verifyJWTToken, sendRequestToBecomeOwner);

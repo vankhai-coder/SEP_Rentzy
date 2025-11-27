@@ -1,3 +1,7 @@
+// Set SSL config trước khi import bất kỳ module nào
+// Điều này cần thiết để tránh lỗi SSL handshake với csgt.vn
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -39,6 +43,7 @@ import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 import RenterSystemSettingRoute from "./routes/renter/systemSettingPublicRoute.js";
 import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
+import TrafficFineRoute from "./routes/renter/trafficFineRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
@@ -46,6 +51,9 @@ import AdminManagementVehicleRoute from "./routes/admin/adminManagemnetVehicleRo
 import AdminOverviewRoute from "./routes/admin/adminOverviewRoute.js";
 import AdminUserManagementRoute from "./routes/admin/adminUserManagementRoute.js";
 import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
+import AdminUserChartRoute from "./routes/admin/adminUserChartRoute.js";
+import AdminRevenueRoute from "./routes/admin/adminRevenueRoute.js";
+import AdminBrandRoute from "./routes/admin/adminBrandRoute.js";
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -109,6 +117,8 @@ app.use("/api/renter/system-settings", RenterSystemSettingRoute);
 app.use("/api/renter/transactions", TransactionRoute);
 app.use("/api/renter", RecommendationRoute);
 app.use("/api/renter/notifications", RenterNotificationRoute);
+// traffic fine search route (cho cả renter và owner)
+app.use("/api/traffic-fine-search", TrafficFineRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 
@@ -135,6 +145,9 @@ app.use("/api/admin/owner-approval", AdminApproveOwnerRoute);
 app.use("/api/admin/voucher-management", AdminVoucherRoute);
 app.use("/api/admin/traffic-fine-requests", AdminTrafficFineRoute);
 app.use("/api/admin/system-settings", AdminSystemSettingRoute);
+app.use("/api/admin/user-chart", AdminUserChartRoute);
+app.use("/api/admin/revenue", AdminRevenueRoute);
+app.use("/api/admin/brands", AdminBrandRoute);
 app.use("/api/admin/notifications", AdminNotificationRoute);
 
 // voucher route

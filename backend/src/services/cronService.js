@@ -6,30 +6,30 @@ import Notification from "../models/Notification.js";
 import { Op } from "sequelize";
 
 /**
- * Auto-cancel expired pending bookings
- * Chạy mỗi 2 phút để kiểm tra và hủy các booking đã hết hạn
+ * Auto-cancel confirmed bookings that haven't paid deposit within 15 minutes
+ * Chạy mỗi 2 phút để kiểm tra và hủy các booking đã hết hạn thời gian đặt cọc
  */
 const autoCancelExpiredBookings = async () => {
   const startTime = Date.now();
   const TIMEOUT_MS = 30000; // 30 giây timeout
   
   try {
-    console.log("[CRON] Checking for expired pending bookings...");
+    console.log("[CRON] Checking for confirmed bookings expired deposit window...");
 
     // Tạo timeout promise
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Cron job timeout after 30 seconds')), TIMEOUT_MS);
     });
 
-    // Tính thời gian 15 phút trước (booking timeout)
+    // Tính thời gian 15 phút trước (deposit timeout)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
-    // Tìm các booking pending đã quá 15 phút với query tối ưu
+    // Tìm các booking confirmed đã quá 15 phút (chưa thanh toán tiền cọc)
     const queryPromise = Booking.findAll({
       where: {
-        status: "pending",
-        created_at: {
-          [Op.lt]: fifteenMinutesAgo, // Tạo trước 15 phút
+        status: "confirmed",
+        updated_at: {
+          [Op.lt]: fifteenMinutesAgo, // Được xác nhận trước 15 phút
         },
       },
       include: [
@@ -41,7 +41,7 @@ const autoCancelExpiredBookings = async () => {
         },
       ],
       limit: 50, // Giới hạn số lượng để tránh overload
-      order: [['created_at', 'ASC']], // Xử lý booking cũ nhất trước
+      order: [['updated_at', 'ASC']], // Xử lý booking xác nhận sớm nhất trước
     });
 
     // Race between query và timeout
@@ -52,7 +52,7 @@ const autoCancelExpiredBookings = async () => {
       return;
     }
 
-    console.log(`📋 [CRON] Found ${expiredBookings.length} expired booking(s)`);
+    console.log(`📋 [CRON] Found ${expiredBookings.length} confirmed booking(s) past deposit window`);
 
     // Xử lý từng booking hết hạn với batch processing
     const batchSize = 5;
@@ -62,7 +62,7 @@ const autoCancelExpiredBookings = async () => {
       await Promise.allSettled(
         batch.map(async (booking) => {
           try {
-            console.log(`🗑️ [CRON] Auto-canceling booking ${booking.booking_id}`);
+            console.log(`🗑️ [CRON] Auto-canceling booking ${booking.booking_id} due to unpaid deposit`);
 
             // Cập nhật status thành canceled
             await booking.update({
@@ -85,8 +85,8 @@ const autoCancelExpiredBookings = async () => {
             if (booking.vehicle && booking.vehicle.owner_id) {
               await Notification.create({
                 user_id: booking.vehicle.owner_id,
-                title: "Booking đã hết hạn",
-                content: `Booking cho xe ${booking.vehicle.model} đã bị hủy tự động do hết thời gian thanh toán.`,
+                title: "Booking bị hủy do chưa thanh toán cọc",
+                content: `Booking cho xe ${booking.vehicle.model} đã bị hủy tự động do khách không thanh toán tiền cọc trong 15 phút sau khi xác nhận.`,
                 type: "rental",
                 is_read: false,
               });
@@ -95,8 +95,8 @@ const autoCancelExpiredBookings = async () => {
             // Tạo thông báo cho renter
             await Notification.create({
               user_id: booking.renter_id,
-              title: "Booking đã hết hạn",
-              content: `Booking của bạn đã bị hủy tự động do không thanh toán trong thời gian quy định (15 phút).`,
+              title: "Booking bị hủy do chưa thanh toán cọc",
+              content: `Booking của bạn đã bị hủy tự động do không thanh toán tiền cọc trong thời gian quy định (15 phút) sau khi chủ xe xác nhận.`,
               type: "rental",
               is_read: false,
             });
@@ -116,11 +116,11 @@ const autoCancelExpiredBookings = async () => {
 
     const duration = Date.now() - startTime;
     console.log(
-      `🎉 [CRON] Auto-cancel process completed in ${duration}ms. Processed ${expiredBookings.length} booking(s)`
+      `🎉 [CRON] Auto-cancel deposit process completed in ${duration}ms. Processed ${expiredBookings.length} booking(s)`
     );
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`💥 [CRON] Error in auto-cancel expired bookings (${duration}ms):`, error.message);
+    console.error(`💥 [CRON] Error in auto-cancel deposit window (${duration}ms):`, error.message);
     
     // Log chi tiết lỗi để debug
     if (error.name === 'SequelizeDatabaseError') {
@@ -145,6 +145,14 @@ export const initializeCronJobs = () => {
   });
 
   console.log("⏰ [CRON] Auto-cancel booking job scheduled (every 2 minutes)");
+
+  // Chạy mỗi 2 phút để hủy các booking pending quá hạn chờ chủ xe chấp nhận
+  cron.schedule("*/2 * * * *", autoCancelUnapprovedPendingBookings, {
+    scheduled: true,
+    timezone: "Asia/Ho_Chi_Minh",
+  });
+
+  console.log("⏰ [CRON] Auto-cancel pending job scheduled (every 2 minutes)");
 
   // Chạy mỗi 15 phút để thông báo thanh toán trước khi nhận xe
   cron.schedule("*/15 * * * *", notifyUnpaidBookingsBeforePickup, {
@@ -190,7 +198,7 @@ const notifyUnpaidBookingsBeforePickup = async () => {
     const queryPromise = Booking.findAll({
       where: {
         status: {
-          [Op.in]: ["deposit_paid", "pending"] // Chưa thanh toán đủ
+          [Op.in]: ["deposit_paid", "confirmed"] // Chưa thanh toán đủ
         },
         start_date: {
           [Op.between]: [now, oneHourFromNow] // Trong vòng 1 giờ tới
@@ -308,5 +316,109 @@ const notifyUnpaidBookingsBeforePickup = async () => {
   }
 };
 
+/**
+ * Auto-cancel pending bookings that wait over 15 minutes without owner approval
+ * Hủy các booking ở trạng thái pending nếu quá 15 phút mà chủ xe chưa chấp nhận
+ */
+const autoCancelUnapprovedPendingBookings = async () => {
+  const startTime = Date.now();
+  const TIMEOUT_MS = 30000; // 30 giây timeout
+
+  try {
+    console.log("[CRON] Checking for pending bookings over approval window...");
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Pending approval cron job timeout after 30 seconds')), TIMEOUT_MS);
+    });
+
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    const queryPromise = Booking.findAll({
+      where: {
+        status: "pending",
+        created_at: {
+          [Op.lt]: fifteenMinutesAgo,
+        },
+      },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["vehicle_id", "model", "owner_id"],
+          required: false,
+        },
+      ],
+      limit: 50,
+      order: [["created_at", "ASC"]],
+    });
+
+    const expiredPendings = await Promise.race([queryPromise, timeoutPromise]);
+
+    if (expiredPendings.length === 0) {
+      console.log("✅ [CRON] No pending bookings exceeded approval window");
+      return;
+    }
+
+    console.log(`📋 [CRON] Found ${expiredPendings.length} pending booking(s) exceeded approval window`);
+
+    const batchSize = 5;
+    for (let i = 0; i < expiredPendings.length; i += batchSize) {
+      const batch = expiredPendings.slice(i, i + batchSize);
+
+      await Promise.allSettled(
+        batch.map(async (booking) => {
+          try {
+            console.log(`🗑️ [CRON] Auto-canceling pending booking ${booking.booking_id} due to no owner approval`);
+
+            await booking.update({
+              status: "canceled",
+              updated_at: new Date(),
+            });
+
+            if (booking.points_used > 0) {
+              await User.increment("points", {
+                by: booking.points_used,
+                where: { user_id: booking.renter_id },
+              });
+              console.log(`💰 [CRON] Refunded ${booking.points_used} points to user ${booking.renter_id}`);
+            }
+
+            if (booking.vehicle && booking.vehicle.owner_id) {
+              await Notification.create({
+                user_id: booking.vehicle.owner_id,
+                title: "Booking bị hủy do chờ duyệt quá hạn",
+                content: `Booking cho xe ${booking.vehicle.model} đã bị hủy tự động do không được chủ xe chấp nhận trong vòng 15 phút.`,
+                type: "rental",
+                is_read: false,
+              });
+            }
+
+            await Notification.create({
+              user_id: booking.renter_id,
+              title: "Booking đã bị hủy do chờ duyệt quá lâu",
+              content: `Booking của bạn đã bị hủy tự động vì chủ xe không chấp nhận trong thời gian quy định (15 phút).`,
+              type: "rental",
+              is_read: false,
+            });
+
+            console.log(`✅ [CRON] Successfully auto-canceled pending booking ${booking.booking_id}`);
+          } catch (error) {
+            console.error(`❌ [CRON] Error canceling pending booking ${booking.booking_id}:`, error.message);
+          }
+        })
+      );
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`🎉 [CRON] Pending approval cancel process completed in ${duration}ms. Processed ${expiredPendings.length} booking(s)`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`💥 [CRON] Error in pending approval cancel job (${duration}ms):`, error.message);
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('🔍 [CRON] Database error details:', { sql: error.sql, parameters: error.parameters });
+    }
+  }
+};
+
 // Export function để test manual
-export { autoCancelExpiredBookings, notifyUnpaidBookingsBeforePickup };
+export { autoCancelExpiredBookings, notifyUnpaidBookingsBeforePickup, autoCancelUnapprovedPendingBookings };

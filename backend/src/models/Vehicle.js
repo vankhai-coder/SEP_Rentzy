@@ -129,6 +129,13 @@ const Vehicle = sequelize.define(
       allowNull: true,
       comment: 'VD: 6.5 L/100km hoặc 15 kWh/100km'
     },
+    // Owner confirmation policy
+    require_owner_confirmation: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Nếu true: chủ xe cần xác nhận đơn thuê trước khi bắt đầu'
+    },
   },
   {
     tableName: "vehicles",

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,7 +13,7 @@ import {
 } from "../../../../redux/features/renter/vehicleReport/vehicleReportSlice";
 import VehicleReportModal from "../../../../components/renter/vehicleReport/VehicleReportModal";
 
-function BookingForm({ vehicle }) {
+function BookingForm({ vehicle, prefillParams }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -65,6 +65,41 @@ function BookingForm({ vehicle }) {
     }
     return () => dispatch(resetReportState());
   }, [dispatch, vehicle?.vehicle_id]);
+
+  // Prefill từ query params (start_date, end_date, start_time, end_time)
+  const hasPrefilledRef = useRef(false);
+  useEffect(() => {
+    if (hasPrefilledRef.current) return;
+    if (!prefillParams) return;
+
+    const { start_date, end_date, start_time, end_time } = prefillParams;
+    if (!start_date || !end_date) return;
+
+    const buildISO = (dateStr, timeStr, fallbackTime) => {
+      try {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const [hh, mm] = (timeStr || fallbackTime || "00:00").split(":").map(Number);
+        const dt = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+        return dt.toISOString();
+      } catch {
+        return undefined;
+      }
+    };
+
+    const startISO = buildISO(start_date, start_time, bookingData.startTime);
+    const endISO = buildISO(end_date, end_time, bookingData.endTime);
+
+    if (startISO && endISO) {
+      setBookingData((prev) => ({
+        ...prev,
+        startDate: startISO,
+        endDate: endISO,
+        startTime: start_time || prev.startTime,
+        endTime: end_time || prev.endTime,
+      }));
+      hasPrefilledRef.current = true;
+    }
+  }, [prefillParams, bookingData.startTime, bookingData.endTime]);
 
   // Format date and time for display
   const formatDateTime = () => {
@@ -238,10 +273,17 @@ function BookingForm({ vehicle }) {
       console.log("Booking payload:", payload);
       console.log("Booking response:", response.data);
 
-      // Chuyển hướng đến trang xác nhận đơn hàng với booking ID
+      // Điều hướng theo yêu cầu xác nhận của chủ xe
       const bookingId = response.data.data?.booking_id;
       if (bookingId) {
-        navigate(`/payment-deposit/${bookingId}`);
+        const requiresOwnerConfirm = Boolean(vehicle?.require_owner_confirmation);
+        if (requiresOwnerConfirm) {
+          // Nếu xe yêu cầu xác nhận chủ xe, chuyển sang trang chờ duyệt
+          navigate(`/booking-waiting/${bookingId}`);
+        } else {
+          // Không yêu cầu, chuyển thẳng tới trang đặt cọc
+          navigate(`/payment-deposit/${bookingId}`);
+        }
       } else {
         alert("Đặt xe thành công!");
       }

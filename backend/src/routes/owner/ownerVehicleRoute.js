@@ -6,6 +6,7 @@ import {
   updateVehicle,
   deleteVehicle,
   updateVehicleStatus,
+  updateRequireOwnerConfirmation,
   getOwnerVehicleStats
 } from "../../controllers/owner/ownerController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
@@ -41,6 +42,9 @@ router.put("/vehicles/:id", verifyJWTToken, upload1.fields([
 
 // PATCH /api/owner/vehicles/:id/status - Cập nhật trạng thái xe (available/blocked)
 router.patch("/vehicles/:id/status", verifyJWTToken, updateVehicleStatus);
+
+// PATCH /api/owner/vehicles/:id/confirmation - Bật/tắt yêu cầu chủ xe xác nhận đơn thuê
+router.patch("/vehicles/:id/confirmation", verifyJWTToken, updateRequireOwnerConfirmation);
 
 // DELETE /api/owner/vehicles/:id - Xóa xe
 router.delete("/vehicles/:id", verifyJWTToken, deleteVehicle);

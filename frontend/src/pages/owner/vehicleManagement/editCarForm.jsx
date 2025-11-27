@@ -28,7 +28,8 @@ const EditCarForm = () => {
     transmission: "",
     fuel_type: "",  
     fuel_consumption: "",
-    description: ""
+    description: "",
+    require_owner_confirmation: false
   });
 
 
@@ -73,7 +74,8 @@ const EditCarForm = () => {
           transmission: vehicle.transmission || "",
           fuel_type: vehicle.fuel_type || "",
           fuel_consumption: vehicle.fuel_consumption || "",
-          description: vehicle.description || ""
+          description: vehicle.description || "",
+          require_owner_confirmation: Boolean(vehicle.require_owner_confirmation)
         });
 
         // Set features
@@ -283,6 +285,8 @@ const EditCarForm = () => {
       submitData.append('description', formData.description);
       submitData.append('body_type', formData.body_type);
       submitData.append('features', JSON.stringify(selectedFeatures));
+      // Owner confirmation requirement
+      submitData.append('require_owner_confirmation', formData.require_owner_confirmation ? 'true' : 'false');
 
       // Add images if selected
       if (mainImage) {
@@ -540,18 +544,37 @@ const EditCarForm = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tiêu hao nhiên liệu
-                  </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tiêu hao nhiên liệu
+                </label>
+                <input
+                  type="text"
+                  name="fuel_consumption"
+                  value={formData.fuel_consumption}
+                  onChange={handleInputChange}
+                  placeholder="VD: 6.5 L/100km hoặc 15 kWh/100km"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              {/* Require Owner Confirmation Toggle */}
+              <div>
+                <label className="flex items-center gap-2">
                   <input
-                    type="text"
-                    name="fuel_consumption"
-                    value={formData.fuel_consumption}
-                    onChange={handleInputChange}
-                    placeholder="VD: 6.5 L/100km hoặc 15 kWh/100km"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    type="checkbox"
+                    checked={formData.require_owner_confirmation}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        require_owner_confirmation: e.target.checked,
+                      }))
+                    }
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                </div>
+                  <span className="text-sm text-gray-700">
+                    Yêu cầu xác nhận của chủ xe trước khi duyệt đơn
+                  </span>
+                </label>
+              </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

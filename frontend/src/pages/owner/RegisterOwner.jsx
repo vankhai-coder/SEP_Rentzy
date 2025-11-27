@@ -5,12 +5,13 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import React, { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/config/axiosInstance.js";
 import { Button } from "@/components/ui/button.jsx";
@@ -29,9 +30,6 @@ import { CheckCircle2Icon } from "lucide-react";
 const RegisterOwner = () => {
   const { role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
-
-  // state for agree terms checkbox
-  const [isAgreeToTerms, setIsAgreeToTerms] = useState(false);
 
   // state for sending request loading
   const [isSendingRequest, setIsSendingRequest] = useState(false);
@@ -101,17 +99,60 @@ const RegisterOwner = () => {
 
   });
 
+  // function to check if user is agree to terms : to : /api/renter/info/verify/is-agree-terms-and-conditions
+  const checkIfUserIsAgreeToTerms = async () => {
+    try {
+      const response = await axiosInstance.get('/api/renter/info/is-agree-terms-and-conditions');
+      return response.data.isAgreeToTerms; // Assuming the response contains a field 'isAgreeToTerms'
+    } catch (error) {
+      console.error("Error checking agree to terms status:", error);
+      return false;
+    }
+  }
+
+
+
+
+  // user react query to check if user is agree to terms
+  const { data: isAgreeToTermsFromServer, isLoading: isAgreeToTermsLoading, refetch: refetchAgreeToTerms } = useQuery({
+    queryKey: ['isAgreeToTerms'],
+    queryFn: checkIfUserIsAgreeToTerms,
+  });
+
+  // funtion to set isAgreeToTerms when user agree to terms : 
+  const agreeToTerms = async () => {
+    try {
+      const response = await axiosInstance.post('/api/renter/info/agree-terms-and-conditions');
+      // refetch the isAgreeToTerms query : 
+      refetchAgreeToTerms();
+      return response.data;
+    } catch (error) {
+      console.error("Error agreeing to terms:", error);
+      throw error;
+    }
+  }
+  // state to manage is loading for agree to terms
+  const [isSendingAgreeToTerms, setIsSendingAgreeToTerms] = useState(false);
+  // state for check if user is click to agree to terms box : 
+  const [isClickAgreeToTermsBox, setIsClickAgreeToTermsBox] = useState(false);
 
   // Redirect if not renter
   useEffect(() => {
     if (role === 'owner') {
       navigate('/');
-      toast.error("Bạn đã là chủ xe, không thể đăng ký thêm!");
+      toast.info("Bạn đã là chủ xe, không thể đăng ký thêm!");
     }
   }, [role, navigate]);
 
+  // log for test :            disabled={!(isEmailVerified && isIdentityCardVerified && isLinkBankAccount && isAgreeToTerms) || isSendingRequest}
+  console.log("isEmailVerified:", isEmailVerified);
+  console.log("isIdentityCardVerified:", isIdentityCardVerified);
+  console.log("isLinkBankAccount:", isLinkBankAccount);
+  console.log("isAgreeToTerms:", isAgreeToTermsFromServer);
+  console.log("statusForRequestToBecomeOwner:", statusForRequestToBecomeOwner);
+
   // Loading state
-  if (isEmailVerifyLoading || isIdentityCardVerifyLoading || isLinkBankAccountLoading || isLoadingStatusForRequestToBecomeOwner) {
+  if (isEmailVerifyLoading || isIdentityCardVerifyLoading || isLinkBankAccountLoading || isLoadingStatusForRequestToBecomeOwner || isAgreeToTermsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
@@ -239,12 +280,12 @@ const RegisterOwner = () => {
           </div>
 
           {/* STEP 4: agree terms */}
-          {statusForRequestToBecomeOwner.status === 'pending' &&
+          {!isAgreeToTermsFromServer &&
             <div className="p-6 border-3 border-gray-200 rounded-lg w-full  ">
               <div className="flex items-center justify-between py-4 border-b-2 border-gray-200 mb-4">
                 <span className="font-bold text-xl">Bước 4 : Đồng ý với các điều khoản</span>
                 <span>
-                  {isAgreeToTerms ? (
+                  {isAgreeToTermsFromServer ? (
                     <CircleCheck className="text-green-400" />
                   ) : (
                     <CircleX className="text-red-400" />
@@ -286,17 +327,39 @@ const RegisterOwner = () => {
                         <label className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={isAgreeToTerms}
+                            checked={isAgreeToTermsFromServer}
                             onChange={(e) => {
-                              setIsAgreeToTerms(e.target.checked);
+                              setIsClickAgreeToTermsBox(e.target.checked);
                             }}
                           />
                           <span>Tôi đồng ý với các điều khoản trên</span>
                         </label>
                       </div>
+
+                      {/* agree button : */}
+                      <div className="flex justify-center mt-6">
+                        <Button
+                          variant={'outline'}
+                          onClick={async () => {
+                            try {
+                              setIsSendingAgreeToTerms(true);
+                              await agreeToTerms();
+                              toast.success("Bạn đã đồng ý với các điều khoản.");
+                            } catch (error) {
+                              console.error("Error agreeing to terms:", error);
+                              toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
+                            } finally {
+                              setIsSendingAgreeToTerms(false);
+                            }
+                          }}
+                          disabled={isAgreeToTermsFromServer || isSendingAgreeToTerms || !isClickAgreeToTermsBox}
+                        >
+                          {isSendingAgreeToTerms ? <Loader className="animate-spin text-green-400" /> : 'Đồng ý với các điều khoản'}
+                        </Button>
+                      </div>
+
                     </div>
                   </DialogContent>
-
                 </Dialog>
               </div>
             </div>
@@ -323,7 +386,7 @@ const RegisterOwner = () => {
               </span>
             </div>
             <div>
-              {statusForRequestToBecomeOwner === 'pending' ? (
+              {statusForRequestToBecomeOwner.status === 'pending' ? (
                 <span>Bạn đã gửi yêu cầu trở thành chủ xe. Vui lòng chờ quản trị viên phê duyệt.</span>
               ) :
                 <Button
@@ -341,7 +404,7 @@ const RegisterOwner = () => {
                       setIsSendingRequest(false);
                     }
                   }}
-                  disabled={!(isEmailVerified && isIdentityCardVerified && isLinkBankAccount && isAgreeToTerms) || isSendingRequest}
+                  disabled={!(isEmailVerified && isIdentityCardVerified && isLinkBankAccount && isAgreeToTermsFromServer) || isSendingRequest}
                 >
                   {isSendingRequest ? <Loader className="animate-spin text-green-400" /> : 'Gửi yêu cầu trở thành chủ xe'}
 

@@ -53,7 +53,8 @@ const Layout = ({ children }) => {
       {/* Footer - Ẩn khi role là owner/admin và đang ở trang owner/admin hoặc các trang con */}
       {!((role === 'owner' && location.pathname.startsWith('/owner')) ||
         (role === 'admin' && location.pathname.startsWith('/admin'))) && <Footer />}
-      <ChatBox />
+      {/* appear only when role !== owner or admin */}
+      {role !== 'owner' && role !== 'admin' && <ChatBox />}
     </div>
   );
 };

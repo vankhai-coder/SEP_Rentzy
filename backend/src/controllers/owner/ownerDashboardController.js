@@ -1079,6 +1079,8 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
+    console.log("[TrafficFineCaptcha] Starting to fetch captcha...");
+    
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1086,13 +1088,21 @@ export const getTrafficFineCaptcha = async (req, res) => {
       "../../utils/trafficFine/captchaSessionStore.js"
     );
 
+    console.log("[TrafficFineCaptcha] Modules imported successfully");
+
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
-    const instance = createAxiosInstance(jar);
-    const captchaImage = await getCaptchaImage(instance);
+    console.log("[TrafficFineCaptcha] CookieJar created");
+    
+    // Fetch captcha trực tiếp bằng https module để tránh lỗi SSL với axios-cookiejar-support
+    const captchaImage = await getCaptchaImage(jar);
+    console.log("[TrafficFineCaptcha] Captcha image fetched, size:", captchaImage.length);
 
     const sessionId = createSession(jar);
+    console.log("[TrafficFineCaptcha] Session created:", sessionId);
+    
     const base64Image = captchaImage.toString("base64");
+    console.log("[TrafficFineCaptcha] Base64 conversion completed");
 
     return res.json({
       success: true,
@@ -1101,10 +1111,22 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
+    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
+    
+    // Kiểm tra nếu là lỗi SSL handshake hoặc SSL protocol error
+    const isSSLError = error.message?.includes('EPROTO') || 
+                       error.message?.includes('handshake failure') ||
+                       error.message?.includes('SSL') ||
+                       error.message?.includes('TLS') ||
+                       error.code === 'EPROTO';
+    
     res.status(500).json({
       success: false,
-      message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
+      message: isSSLError 
+        ? "Server tra cứu phạt nguội (csgt.vn) đang gặp sự cố về kết nối bảo mật. Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
+        : "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      errorCode: isSSLError ? "SSL_CONNECTION_ERROR" : "UNKNOWN_ERROR",
     });
   }
 };
@@ -1340,6 +1362,84 @@ export const acceptBooking = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi khi chấp nhận đơn đặt xe",
+      error: error.message,
+    });
+  }
+};
+
+// PATCH /api/owner/dashboard/bookings/:id/reject - Owner từ chối booking (pending -> canceled) kèm lý do
+export const rejectBooking = async (req, res) => {
+  try {
+    const ownerId = req.user.userId;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    // Lấy danh sách xe của owner để kiểm tra quyền truy cập
+    const ownerVehicles = await Vehicle.findAll({
+      where: { owner_id: ownerId },
+      attributes: ["vehicle_id"],
+    });
+    const vehicleIds = ownerVehicles.map((v) => v.vehicle_id);
+
+    if (vehicleIds.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy xe nào của bạn",
+      });
+    }
+
+    // Tìm booking của owner
+    const booking = await Booking.findOne({
+      where: {
+        booking_id: id,
+        vehicle_id: { [Op.in]: vehicleIds },
+      },
+      include: [
+        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
+        { model: Vehicle, as: "vehicle", attributes: ["vehicle_id", "model", "owner_id"] },
+      ],
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê hoặc bạn không có quyền truy cập",
+      });
+    }
+
+    // Chỉ cho phép từ chối khi booking đang chờ xác nhận
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Chỉ có thể từ chối booking ở trạng thái \"Chờ xác nhận\". Trạng thái hiện tại: ${booking.status}`,
+      });
+    }
+
+    // Cập nhật trạng thái booking thành "canceled"
+    await booking.update({
+      status: "canceled",
+      updated_at: new Date(),
+    });
+
+    // Tạo thông báo cho renter, kèm lý do nếu có
+    await Notification.create({
+      user_id: booking.renter_id,
+      title: "Đơn đặt xe đã bị từ chối",
+      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${reason ? `Lý do: ${reason}` : ""}`,
+      type: "booking",
+      is_read: false,
+    });
+
+    return res.json({
+      success: true,
+      message: "Đã từ chối đơn đặt xe thành công",
+      data: { booking_id: booking.booking_id, status: "canceled" },
+    });
+  } catch (error) {
+    console.error("Error rejecting booking:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi từ chối đơn đặt xe",
       error: error.message,
     });
   }

@@ -18,7 +18,6 @@ import Notifications from "./dashboard/Notifications.jsx";
 import TransactionManagement from "./dashboard/TransactionManagement.jsx";
 import AuthRequired from "./dashboard/AuthRequired.jsx";
 import OverViewManagement from "./overview/OverViewManagement.jsx";
-import TrafficFineSearch from "./dashboard/TrafficFineSearch.jsx";
 import ContractOwner from "./dashboard/ContractOwner.jsx";
 import {
   Select,
@@ -35,7 +34,6 @@ import {
   MdNotifications,
   MdShowChart,
   MdTransform,
-  MdReceipt,
 } from "react-icons/md";
 import { FaClipboardList } from "react-icons/fa";
 
@@ -78,7 +76,6 @@ const OwnerPage = () => {
       "/owner/booking-management": "Quản lý đơn thuê",
       "/owner/transaction-management": "Quản lí giao dịch",
       "/owner/revenue": "Doanh thu",
-      "/owner/traffic-fine-search": "Tra Cứu Phạt Nguội",
       "/owner/vehicle-reviews": "Đánh giá về xe của tôi",
       "/owner/notifications": "Thông báo",
     };
@@ -150,12 +147,6 @@ const OwnerPage = () => {
                 </SelectItem>
                 <SelectItem
                   className={"border-b-1 py-2 text-md font-medium"}
-                  value="/owner/traffic-fine-search"
-                >
-                  <MdReceipt className="inline mr-2" /> Tra Cứu Phạt Nguội
-                </SelectItem>
-                <SelectItem
-                  className={"border-b-1 py-2 text-md font-medium"}
                   value="/owner/vehicle-reviews"
                 >
                   <FaClipboardList className="inline mr-2" /> Đánh giá về xe của tôi
@@ -224,14 +215,6 @@ const OwnerPage = () => {
             element={
               <AuthRequired>
                 <Notifications />
-              </AuthRequired>
-            }
-          />
-          <Route
-            path="/traffic-fine-search"
-            element={
-              <AuthRequired>
-                <TrafficFineSearch />
               </AuthRequired>
             }
           />
