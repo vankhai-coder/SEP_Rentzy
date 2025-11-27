@@ -46,9 +46,11 @@ const CompareVehicleController = {
           "seats",
           "fuel_type",
           "transmission",
+          "body_type",
           "bike_type",
           "engine_capacity",
           "rent_count",
+          "fuel_consumption",
         ],
         order: [["vehicle_id", "ASC"]],
       });
@@ -75,8 +77,10 @@ const CompareVehicleController = {
           seats: data.seats || null,
           fuel_type: data.fuel_type || null,
           transmission: data.transmission || null,
+          body_type: data.body_type || null,
           bike_type: data.bike_type || null,
           engine_capacity: data.engine_capacity || null,
+          fuel_consumption: data.fuel_consumption || "N/A",
         };
       });
 
@@ -89,6 +93,9 @@ const CompareVehicleController = {
 
         // ✅ mỗi xe có features riêng
         features: normalizedVehicles.map((v) => v.features || []),
+        fuel_consumptions: normalizedVehicles.map(
+          (v) => v.fuel_consumption || "N/A"
+        ),
       };
 
       if (type === "car") {
@@ -98,6 +105,9 @@ const CompareVehicleController = {
         );
         comparisonTable.transmissions = normalizedVehicles.map(
           (v) => v.transmission || "N/A"
+        );
+        comparisonTable.body_types = normalizedVehicles.map(
+          (v) => v.body_type || "N/A"
         );
       } else {
         comparisonTable.bike_types = normalizedVehicles.map(
