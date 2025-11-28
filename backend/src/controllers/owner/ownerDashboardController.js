@@ -1079,6 +1079,8 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
+    console.log("[TrafficFineCaptcha] Starting to fetch captcha...");
+    
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1086,13 +1088,21 @@ export const getTrafficFineCaptcha = async (req, res) => {
       "../../utils/trafficFine/captchaSessionStore.js"
     );
 
+    console.log("[TrafficFineCaptcha] Modules imported successfully");
+
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
-    const instance = createAxiosInstance(jar);
-    const captchaImage = await getCaptchaImage(instance);
+    console.log("[TrafficFineCaptcha] CookieJar created");
+    
+    // Fetch captcha trực tiếp bằng https module để tránh lỗi SSL với axios-cookiejar-support
+    const captchaImage = await getCaptchaImage(jar);
+    console.log("[TrafficFineCaptcha] Captcha image fetched, size:", captchaImage.length);
 
     const sessionId = createSession(jar);
+    console.log("[TrafficFineCaptcha] Session created:", sessionId);
+    
     const base64Image = captchaImage.toString("base64");
+    console.log("[TrafficFineCaptcha] Base64 conversion completed");
 
     return res.json({
       success: true,
@@ -1101,10 +1111,22 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
+    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
+    
+    // Kiểm tra nếu là lỗi SSL handshake hoặc SSL protocol error
+    const isSSLError = error.message?.includes('EPROTO') || 
+                       error.message?.includes('handshake failure') ||
+                       error.message?.includes('SSL') ||
+                       error.message?.includes('TLS') ||
+                       error.code === 'EPROTO';
+    
     res.status(500).json({
       success: false,
-      message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
+      message: isSSLError 
+        ? "Server tra cứu phạt nguội (csgt.vn) đang gặp sự cố về kết nối bảo mật. Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
+        : "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      errorCode: isSSLError ? "SSL_CONNECTION_ERROR" : "UNKNOWN_ERROR",
     });
   }
 };

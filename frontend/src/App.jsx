@@ -31,6 +31,7 @@ import TransactionHistory from "./pages/renter/transaction/TransactionHistory.js
 import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
 import MyReportedVehicles from "./pages/renter/account/MyReportedVehicles";
 import NotificationsRenter from "./pages/renter/account/Notifications.jsx";
+import TrafficFineSearch from "./pages/renter/account/TrafficFineSearch.jsx";
 
 import BookingReviewPage from "./pages/renter/bookingReview/BookingReviewPage.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
@@ -112,6 +113,7 @@ const App = () => {
             <Route path="/bank-accounts" element={<BankAccountPage />} />
             <Route path="/resetpw" element={<ResetPassword />} />
             <Route path="/deleteaccount" element={<DeleteAccount />} />
+            <Route path="/traffic-fine-search" element={<TrafficFineSearch />} />
             <Route
               path="/booking-review/:bookingId"
               element={
