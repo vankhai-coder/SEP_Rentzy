@@ -123,6 +123,8 @@ const TrafficFineApproval = () => {
   useEffect(() => {
     fetchRequests();
     fetchStats();
+    // Trigger refresh count in parent component
+    window.dispatchEvent(new Event('refreshTrafficFineCount'));
   }, [currentPage, filter]);
 
   const fetchRequests = async () => {
@@ -217,6 +219,8 @@ const TrafficFineApproval = () => {
         toast.success('Đã duyệt yêu cầu phạt nguội thành công');
         fetchRequests();
         fetchStats();
+        // Trigger refresh count in parent component
+        window.dispatchEvent(new Event('refreshTrafficFineCount'));
       }
     } catch (error) {
       console.error('Error approving request:', error);
@@ -247,6 +251,8 @@ const TrafficFineApproval = () => {
         fetchStats();
         setRejectModal({ open: false, requestId: null });
         setRejectReason('');
+        // Trigger refresh count in parent component
+        window.dispatchEvent(new Event('refreshTrafficFineCount'));
       }
     } catch (error) {
       console.error('Error rejecting request:', error);

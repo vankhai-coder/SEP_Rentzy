@@ -45,23 +45,32 @@ const AdminPage = () => {
   }, [theme]);
 
   // Fetch pending traffic fine requests count
-  useEffect(() => {
-    const fetchPendingCount = async () => {
-      try {
-        const response = await axiosInstance.get('/api/admin/traffic-fine-requests/stats');
-        if (response.data.success) {
-          setPendingTrafficFineCount(response.data.data.pending || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching pending traffic fine count:', error);
+  const fetchPendingCount = async () => {
+    try {
+      const response = await axiosInstance.get('/api/admin/traffic-fine-requests/stats');
+      if (response.data.success) {
+        setPendingTrafficFineCount(response.data.data.pending || 0);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching pending traffic fine count:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchPendingCount();
     // Refresh every 30 seconds
     const interval = setInterval(fetchPendingCount, 30000);
     
-    return () => clearInterval(interval);
+    // Listen for custom event to refresh count
+    const handleRefreshCount = () => {
+      fetchPendingCount();
+    };
+    window.addEventListener('refreshTrafficFineCount', handleRefreshCount);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshTrafficFineCount', handleRefreshCount);
+    };
   }, []);
 
   // Fetch notifications
