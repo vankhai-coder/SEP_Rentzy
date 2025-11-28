@@ -1,16 +1,16 @@
 // controllers/renter/vehicleReportController.js
+
 import VehicleReport from "../../models/VehicleReport.js";
 import Vehicle from "../../models/Vehicle.js";
-import User from "../../models/User.js"; // Để validate user nếu cần
+import User from "../../models/User.js";
 
 // POST: Tạo báo cáo mới cho xe
 export const createVehicleReport = async (req, res) => {
   try {
-    const { vehicle_id } = req.params; // Lấy vehicle_id từ URL params
-    const { reason, message = "" } = req.body; // reason bắt buộc, message tùy chọn
-    const userId = req.user.userId; // Lấy từ middleware verifyJWTToken
+    const { vehicle_id } = req.params;
+    const { reason, message = "" } = req.body;
+    const userId = req.user.userId;
 
-    // Validation: Kiểm tra reason có hợp lệ không (ENUM)
     const validReasons = [
       "fake_info",
       "illegal",
@@ -18,6 +18,7 @@ export const createVehicleReport = async (req, res) => {
       "dangerous",
       "other",
     ];
+
     if (!validReasons.includes(reason)) {
       return res.status(400).json({
         success: false,
@@ -26,14 +27,6 @@ export const createVehicleReport = async (req, res) => {
       });
     }
 
-    // Kiểm tra xe có tồn tại không
-    console.log(
-      "Vehicle ID from params:",
-      vehicle_id,
-      "Type:",
-      typeof vehicle_id
-    );
-    console.log("Parsed ID:", parseInt(vehicle_id));
     const vehicle = await Vehicle.findByPk(vehicle_id);
     if (!vehicle) {
       return res.status(404).json({
@@ -42,10 +35,10 @@ export const createVehicleReport = async (req, res) => {
       });
     }
 
-    // Kiểm tra người dùng đã báo cáo xe này chưa (tránh trùng lặp)
     const existingReport = await VehicleReport.findOne({
       where: { vehicle_id: parseInt(vehicle_id), user_id: userId },
     });
+
     if (existingReport) {
       return res.status(400).json({
         success: false,
@@ -53,7 +46,6 @@ export const createVehicleReport = async (req, res) => {
       });
     }
 
-    // Tạo báo cáo mới
     const newReport = await VehicleReport.create({
       vehicle_id: parseInt(vehicle_id),
       user_id: userId,
@@ -61,7 +53,6 @@ export const createVehicleReport = async (req, res) => {
       message,
     });
 
-    // Response thành công
     res.status(201).json({
       success: true,
       message: "Báo cáo xe thành công. Cảm ơn bạn đã góp ý!",
@@ -82,15 +73,13 @@ export const createVehicleReport = async (req, res) => {
   }
 };
 
-// GET: Lấy danh sách báo cáo của một xe (hữu ích cho admin/owner kiểm tra)
-// Chỉ cho phép nếu user là owner của xe hoặc admin (thêm check role nếu cần)
+// GET: Lấy danh sách báo cáo của một xe (cho owner/admin)
 export const getVehicleReports = async (req, res) => {
   try {
     const { vehicle_id } = req.params;
     const userId = req.user.userId;
-    const userRole = req.user.role; // Lấy role từ token
+    const userRole = req.user.role;
 
-    // Kiểm tra xe tồn tại
     const vehicle = await Vehicle.findByPk(vehicle_id);
     if (!vehicle) {
       return res.status(404).json({
@@ -99,7 +88,6 @@ export const getVehicleReports = async (req, res) => {
       });
     }
 
-    // Kiểm tra quyền: Owner của xe hoặc admin mới xem được
     if (userRole !== "admin" && vehicle.owner_id !== userId) {
       return res.status(403).json({
         success: false,
@@ -107,17 +95,16 @@ export const getVehicleReports = async (req, res) => {
       });
     }
 
-    // Lấy danh sách báo cáo (include user info để hiển thị ai báo cáo)
     const reports = await VehicleReport.findAll({
       where: { vehicle_id: parseInt(vehicle_id) },
       include: [
         {
           model: User,
-          as: "user", // Giả sử relation User hasMany VehicleReport với as: "reports" - cần thêm nếu chưa có
-          attributes: ["user_id", "full_name", "email"], // Chỉ lấy info cơ bản
+          as: "user",
+          attributes: ["user_id", "full_name", "email"],
         },
       ],
-      order: [["created_at", "DESC"]], // Sắp xếp mới nhất trước
+      order: [["created_at", "DESC"]],
     });
 
     res.status(200).json({
@@ -135,15 +122,21 @@ export const getVehicleReports = async (req, res) => {
   }
 };
 
-// GET: Lấy báo cáo của user (tất cả hoặc filter theo xe cụ thể qua query param vehicle_id)
+// GET: Lấy báo cáo của user có pagination
 export const getMyVehicleReports = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { vehicle_id } = req.query; // Lấy vehicle_id từ query param (optional)
+    const { vehicle_id, page = 1, limit = 10 } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
     let whereClause = { user_id: userId };
+
     if (vehicle_id) {
       whereClause.vehicle_id = parseInt(vehicle_id);
-      // Kiểm tra xe tồn tại nếu filter theo vehicle_id
+
       const vehicle = await Vehicle.findByPk(parseInt(vehicle_id));
       if (!vehicle) {
         return res.status(404).json({
@@ -152,28 +145,40 @@ export const getMyVehicleReports = async (req, res) => {
         });
       }
     }
-    // Lấy danh sách báo cáo của user (include vehicle info để hiển thị xe nào, và status/admin_note)
+
+    // Lấy tổng count
+    const totalReports = await VehicleReport.count({
+      where: whereClause,
+    });
+
+    const totalPages = Math.ceil(totalReports / limitNum);
+
+    // Lấy data có pagination
     const reports = await VehicleReport.findAll({
       where: whereClause,
       include: [
         {
           model: Vehicle,
-          as: "vehicle", // Giả sử relation đã có as: "vehicle"
-          attributes: ["vehicle_id", "license_plate", "model"], // Info cơ bản về xe
+          as: "vehicle",
+          attributes: ["vehicle_id", "license_plate", "model"],
           include: [
             {
               model: User,
-              as: "owner", // Owner của xe nếu cần
+              as: "owner",
               attributes: ["user_id", "full_name"],
             },
           ],
         },
       ],
-      order: [["created_at", "DESC"]], // Sắp xếp mới nhất trước
+      order: [["created_at", "DESC"]],
+      offset,
+      limit: limitNum,
     });
+
     const message = vehicle_id
       ? "Lấy báo cáo của bạn cho xe này thành công."
       : "Lấy tất cả báo cáo của bạn thành công.";
+
     res.status(200).json({
       success: true,
       message,
@@ -196,6 +201,9 @@ export const getMyVehicleReports = async (req, res) => {
         },
       })),
       count: reports.length,
+      totalReports,
+      totalPages,
+      currentPage: pageNum,
     });
   } catch (error) {
     console.error("Lỗi lấy báo cáo của user:", error);
@@ -206,13 +214,12 @@ export const getMyVehicleReports = async (req, res) => {
   }
 };
 
-// GET: Lấy tất cả báo cáo xe (dành cho admin) - filter optional theo status hoặc vehicle_id
+// GET: Lấy tất cả báo cáo (admin) với pagination
 export const getAllVehicleReports = async (req, res) => {
   try {
     const userId = req.user.userId;
     const userRole = req.user.role;
 
-    // Kiểm tra quyền: Chỉ admin mới xem được tất cả
     if (userRole !== "admin") {
       return res.status(403).json({
         success: false,
@@ -221,14 +228,21 @@ export const getAllVehicleReports = async (req, res) => {
       });
     }
 
-    const { status, vehicle_id } = req.query; // Optional filter
+    const { status, vehicle_id, page = 1, limit = 10 } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
     let whereClause = {};
+
     if (status) {
-      whereClause.status = status; // Filter theo status (pending, reviewing, etc.)
+      whereClause.status = status;
     }
+
     if (vehicle_id) {
       whereClause.vehicle_id = parseInt(vehicle_id);
-      // Kiểm tra xe tồn tại nếu filter theo vehicle_id
+
       const vehicle = await Vehicle.findByPk(parseInt(vehicle_id));
       if (!vehicle) {
         return res.status(404).json({
@@ -238,29 +252,38 @@ export const getAllVehicleReports = async (req, res) => {
       }
     }
 
-    // Lấy tất cả báo cáo (include vehicle info và reporter user)
+    // Lấy tổng count
+    const totalReports = await VehicleReport.count({
+      where: whereClause,
+    });
+
+    const totalPages = Math.ceil(totalReports / limitNum);
+
+    // Lấy data có pagination
     const reports = await VehicleReport.findAll({
       where: whereClause,
       include: [
         {
           model: Vehicle,
-          as: "vehicle", // Relation đã có
-          attributes: ["vehicle_id", "license_plate", "model", "status"], // Info cơ bản về xe
+          as: "vehicle",
+          attributes: ["vehicle_id", "license_plate", "model", "status"],
           include: [
             {
               model: User,
-              as: "owner", // Owner của xe
+              as: "owner",
               attributes: ["user_id", "full_name"],
             },
           ],
         },
         {
           model: User,
-          as: "user", // Người báo cáo
+          as: "user",
           attributes: ["user_id", "full_name", "email"],
         },
       ],
-      order: [["created_at", "DESC"]], // Sắp xếp mới nhất trước
+      order: [["created_at", "DESC"]],
+      offset,
+      limit: limitNum,
     });
 
     const message =
@@ -283,20 +306,22 @@ export const getAllVehicleReports = async (req, res) => {
           vehicle_id: report.vehicle.vehicle_id,
           license_plate: report.vehicle.license_plate,
           model: report.vehicle.model,
-          status: report.vehicle.status, // Để admin biết xe có bị block chưa
+          status: report.vehicle.status,
           owner: {
             user_id: report.vehicle.owner.user_id,
             full_name: report.vehicle.owner.full_name,
           },
         },
         reporter: {
-          // Người báo cáo
           user_id: report.user.user_id,
           full_name: report.user.full_name,
           email: report.user.email,
         },
       })),
       count: reports.length,
+      totalReports,
+      totalPages,
+      currentPage: pageNum,
     });
   } catch (error) {
     console.error("Lỗi lấy tất cả báo cáo:", error);
@@ -307,15 +332,14 @@ export const getAllVehicleReports = async (req, res) => {
   }
 };
 
-// PUT: Cập nhật status và admin_note cho một báo cáo (dành cho admin xử lý)
+// PUT: Cập nhật status và admin_note
 export const updateVehicleReport = async (req, res) => {
   try {
     const { report_id } = req.params;
-    const { status, admin_note = "" } = req.body; // status bắt buộc, admin_note tùy chọn
+    const { status, admin_note = "" } = req.body;
     const userId = req.user.userId;
     const userRole = req.user.role;
 
-    // Kiểm tra quyền: Chỉ admin
     if (userRole !== "admin") {
       return res.status(403).json({
         success: false,
@@ -324,8 +348,8 @@ export const updateVehicleReport = async (req, res) => {
       });
     }
 
-    // Validation: Kiểm tra status có hợp lệ không (ENUM)
     const validStatuses = ["pending", "reviewing", "resolved", "rejected"];
+
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -334,8 +358,8 @@ export const updateVehicleReport = async (req, res) => {
       });
     }
 
-    // Tìm báo cáo
     const report = await VehicleReport.findByPk(parseInt(report_id));
+
     if (!report) {
       return res.status(404).json({
         success: false,
@@ -343,25 +367,26 @@ export const updateVehicleReport = async (req, res) => {
       });
     }
 
-    // Cập nhật báo cáo
     await report.update({
       status,
       admin_note,
     });
 
-    // Logic xử lý vi phạm: Nếu resolved và note chứa từ khóa vi phạm, block xe
     let blockMessage = "";
+
     if (
       status === "resolved" &&
       (admin_note.toLowerCase().includes("vi phạm") ||
         admin_note.toLowerCase().includes("block"))
     ) {
       const vehicle = await Vehicle.findByPk(report.vehicle_id);
+
       if (vehicle && vehicle.status === "available") {
         await vehicle.update({
           status: "blocked",
           blocked_by: "admin",
         });
+
         blockMessage = "Xe đã được block tự động do vi phạm.";
       }
     }
@@ -373,8 +398,8 @@ export const updateVehicleReport = async (req, res) => {
       }`,
       data: {
         report_id: report.report_id,
-        status: report.status, // Status mới
-        admin_note: report.admin_note, // Note mới
+        status: report.status,
+        admin_note: report.admin_note,
       },
     });
   } catch (error) {
