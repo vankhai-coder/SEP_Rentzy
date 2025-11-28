@@ -58,7 +58,7 @@ const UserManagement = () => {
 
     return (
 
-        <div className="p-4  bg-red-400 lg:p-6 dark:bg-[#020617] min-h-screen ">
+        <div className="p-4  lg:p-6 dark:bg-[#020617] min-h-screen ">
             <div className="space-y-6 pb-40">
 
                 <div className="flex items-center justify-between" >
