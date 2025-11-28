@@ -584,7 +584,7 @@ const AdminPage = () => {
                 if (!isOpenNotificationDropdown) {
                   fetchNotifications();
                 }
-              }} className="relative p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors outline-none">
+              }} className="relative p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 hover:text-green-500 transition-colors outline-none cursor-pointer">
                 <Bell />
                 {notificationUnreadCount > 0 && (
                   <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">

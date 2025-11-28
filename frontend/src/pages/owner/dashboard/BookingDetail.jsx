@@ -38,6 +38,7 @@ const BookingDetail = () => {
   const [showDeleteTrafficFineModal, setShowDeleteTrafficFineModal] = useState(false);
   const [deleteTrafficFineReason, setDeleteTrafficFineReason] = useState("");
   const [submittingDeleteTrafficFine, setSubmittingDeleteTrafficFine] = useState(false);
+  const [extractingInfo, setExtractingInfo] = useState(false);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -335,6 +336,112 @@ const BookingDetail = () => {
       }
       return prev.filter((img) => img.id !== imageId);
     });
+  };
+
+  // Hàm trích xuất thông tin từ ảnh phạt nguội bằng AI
+  const handleExtractTrafficFineInfo = async () => {
+    if (trafficFineImages.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một ảnh để đọc thông tin");
+      return;
+    }
+
+    // Lấy ảnh đầu tiên để xử lý
+    const firstImage = trafficFineImages[0];
+    
+    try {
+      setExtractingInfo(true);
+      const formData = new FormData();
+      formData.append("image", firstImage.file);
+
+      const response = await axiosInstance.post(
+        `/api/owner/dashboard/extract-traffic-fine-info`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const extractedData = response.data.data;
+        console.log("[ExtractTrafficFine] Received data:", extractedData);
+        
+        // Điền thông tin vào form
+        if (extractedData.fineAmount) {
+          setTrafficFineAmount(extractedData.fineAmount.toString());
+          console.log("[ExtractTrafficFine] Set fine amount:", extractedData.fineAmount);
+        }
+        
+        // Tạo mô tả chi tiết với tất cả thông tin
+        let description = "";
+        
+        // Ngày vi phạm
+        if (extractedData.violationDate) {
+          description += `Ngày vi phạm: ${extractedData.violationDate}`;
+        }
+        
+        // Biển số xe và màu
+        if (extractedData.licensePlate) {
+          if (description) description += "\n";
+          description += `Biển số (màu biển số): ${extractedData.licensePlate}`;
+          if (extractedData.licensePlateColor) {
+            description += ` (${extractedData.licensePlateColor})`;
+          }
+        }
+        
+        // Tốc độ tối đa cho phép
+        if (extractedData.maxAllowedSpeed) {
+          if (description) description += "\n";
+          description += `Tốc độ tối đa cho phép: ${extractedData.maxAllowedSpeed}`;
+        }
+        
+        // Hành vi vi phạm (chi tiết)
+        if (extractedData.violationBehavior) {
+          if (description) description += "\n";
+          description += `Hành vi vi phạm: ${extractedData.violationBehavior}`;
+        }
+        
+        // Lý do vi phạm (tóm tắt)
+        if (extractedData.violationReason) {
+          if (description) description += "\n";
+          description += `Lý do: ${extractedData.violationReason}`;
+        }
+        
+        // Địa điểm vi phạm
+        if (extractedData.violationLocation) {
+          if (description) description += "\n";
+          description += `Địa điểm vi phạm: ${extractedData.violationLocation}`;
+        }
+        
+        // Đơn vị vận hành hệ thống
+        if (extractedData.operatingUnit) {
+          if (description) description += "\n";
+          description += `Đơn vị vận hành hệ thống: ${extractedData.operatingUnit}`;
+        }
+        
+        console.log("[ExtractTrafficFine] Generated description:", description);
+        
+        if (description) {
+          setTrafficFineDescription(description);
+          console.log("[ExtractTrafficFine] Set description to form");
+        } else {
+          console.warn("[ExtractTrafficFine] No description generated - all fields are null or empty");
+          toast.warning("Không tìm thấy thông tin trong ảnh. Vui lòng nhập thủ công.");
+        }
+
+        toast.success("Đã đọc thông tin từ ảnh thành công! Vui lòng kiểm tra và chỉnh sửa nếu cần.");
+      } else {
+        toast.error(response.data.message || "Không thể đọc thông tin từ ảnh");
+      }
+    } catch (error) {
+      console.error("Error extracting traffic fine info:", error);
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi đọc thông tin từ ảnh"
+      );
+    } finally {
+      setExtractingInfo(false);
+    }
   };
 
   if (loading) {
@@ -906,42 +1013,7 @@ const BookingDetail = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={trafficFineAmount}
-                  onChange={(e) => setTrafficFineAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập số tiền phạt nguội"
-                />
-                {trafficFineAmount && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    {formatCurrency(parseFloat(trafficFineAmount) || 0)}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả / Lý do phạt nguội
-                </label>
-                <textarea
-                  value={trafficFineDescription}
-                  onChange={(e) => setTrafficFineDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="4"
-                  placeholder="Ví dụ: Vi phạm tốc độ tại đường ABC, ngày DD/MM/YYYY..."
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Mô tả chi tiết về vi phạm giao thông (tùy chọn)
-                </p>
-              </div>
-
+              {/* Hình ảnh - Đầu tiên */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Hình ảnh phạt nguội <span className="text-red-500">*</span>
@@ -979,40 +1051,130 @@ const BookingDetail = () => {
                   </label>
                 </div>
                 {trafficFineImages.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {trafficFineImages.map((image) => (
-                      <div key={image.id} className="relative group">
-                        <img
-                          src={image.preview}
-                          alt={image.name}
-                          className="w-full h-32 object-cover rounded border border-gray-300"
-                        />
-                        <button
-                          onClick={() => removeTrafficFineImage(image.id)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Xóa ảnh"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                  <>
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleExtractTrafficFineInfo}
+                        disabled={extractingInfo}
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {extractingInfo ? (
+                          <>
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Đang xử lý...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-4 h-4 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            Đọc thông tin từ ảnh (AI)
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {trafficFineImages.map((image) => (
+                        <div key={image.id} className="relative group">
+                          <img
+                            src={image.preview}
+                            alt={image.name}
+                            className="w-full h-32 object-cover rounded border border-gray-300"
+                          />
+                          <button
+                            onClick={() => removeTrafficFineImage(image.id)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Xóa ảnh"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
                 {trafficFineImages.length === 0 && (
                   <p className="mt-2 text-xs text-red-500">
                     * Vui lòng thêm ít nhất một hình ảnh phạt nguội
+                  </p>
+                )}
+              </div>
+
+              {/* Mô tả - Thứ hai */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mô tả / Lý do phạt nguội
+                </label>
+                <textarea
+                  value={trafficFineDescription}
+                  onChange={(e) => setTrafficFineDescription(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="4"
+                  placeholder="Ví dụ: Vi phạm tốc độ tại đường ABC, ngày DD/MM/YYYY..."
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Mô tả chi tiết về vi phạm giao thông (tùy chọn)
+                </p>
+              </div>
+
+              {/* Số tiền - Cuối cùng */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={trafficFineAmount}
+                  onChange={(e) => setTrafficFineAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập số tiền phạt nguội"
+                />
+                {trafficFineAmount && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    {formatCurrency(parseFloat(trafficFineAmount) || 0)}
                   </p>
                 )}
               </div>
