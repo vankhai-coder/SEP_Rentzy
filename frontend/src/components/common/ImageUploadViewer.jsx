@@ -158,12 +158,17 @@ const ImageUploadViewer = ({
       // Gửi kèm ghi chú tình trạng xe khi nhận lại xe (post-rental)
       if (imageType === "post-rental") {
         formData.append("damage_reported", damageReported ? "true" : "false");
-        formData.append("damage_description", damageDescription || "");
+        formData.append("damage_description", (damageDescription || "").trim());
         formData.append("compensation_amount", String(compensationAmount || 0));
         // Trả xe trễ
         formData.append("late_return", lateReturnEnabled ? "true" : "false");
         formData.append("late_return_fee", String(lateReturnFee || ""));
-        formData.append("late_return_fee_description", lateReturnReason || "");
+        const descTrim = (lateReturnReason || "").trim();
+        const isZeroNumeric = /^0*(?:\.0+)?$/.test(descTrim);
+        formData.append(
+          "late_return_fee_description",
+          lateReturnEnabled && descTrim && !isZeroNumeric ? descTrim : ""
+        );
       }
 
       // Sử dụng endpoint đúng cho từng loại handover
@@ -610,7 +615,7 @@ const ImageUploadViewer = ({
                       <textarea
                         value={lateReturnReason}
                         onChange={(e) => setLateReturnReason(e.target.value)}
-                        placeholder="Mô tả/ghi chú lý do trả xe trễ..."
+                        placeholder="Mô tả trả xe trễ..."
                         className="w-full border border-gray-300 rounded-lg p-2 text-sm"
                         rows={2}
                       />
@@ -662,7 +667,7 @@ const ImageUploadViewer = ({
                         </span>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-700">Lý do:</span>
+                        <span className="text-sm text-gray-700">Mô tả:</span>
                         <p className="text-sm text-gray-800 mt-1">
                           {lateReturnReason || "Không có"}
                         </p>

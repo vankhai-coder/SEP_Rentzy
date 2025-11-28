@@ -409,6 +409,9 @@ export const confirmOwnerReturn = async (req, res) => {
 
     if (!handover) {
       console.log("Creating new handover record");
+      const rawDesc = late_return_fee_description;
+      const descTrim = rawDesc !== undefined && rawDesc !== null ? String(rawDesc).trim() : null;
+      const descNormalized = descTrim && !/^0*(?:\.0+)?$/.test(descTrim) ? descTrim : null;
       handover = await BookingHandover.create({
         booking_id: bookingId,
         post_rental_images: uploadedUrls,
@@ -436,12 +439,15 @@ export const confirmOwnerReturn = async (req, res) => {
             : null,
         late_return_fee_description:
           (typeof late_return === "string" ? late_return === "true" : Boolean(late_return))
-            ? ((late_return_fee_description && String(late_return_fee_description).trim()) || null)
+            ? descNormalized
             : null,
       });
     } else {
       console.log("Updating existing handover record");
       // Cập nhật handover với ảnh mới và xác nhận
+      const rawDescUpd = late_return_fee_description;
+      const descTrimUpd = rawDescUpd !== undefined && rawDescUpd !== null ? String(rawDescUpd).trim() : null;
+      const descNormalizedUpd = descTrimUpd && !/^0*(?:\.0+)?$/.test(descTrimUpd) ? descTrimUpd : null;
       await handover.update({
         post_rental_images: uploadedUrls,
         owner_return_confirmed: true,
@@ -476,7 +482,7 @@ export const confirmOwnerReturn = async (req, res) => {
             : handover.late_return_fee,
         late_return_fee_description:
           late_return_fee_description !== undefined
-            ? ((late_return_fee_description && String(late_return_fee_description).trim()) || null)
+            ? descNormalizedUpd
             : handover.late_return_fee_description,
       });
     }

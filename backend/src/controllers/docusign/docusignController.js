@@ -636,7 +636,7 @@ export const signRecipientView = async (req, res) => {
     const originToUse = /^https:\/\//.test(rawOrigin) ? rawOrigin : null;
     const normalizedReturnUrl = (returnUrl || "").trim();
     const redirectUrlCandidate =
-      normalizedReturnUrl && /^https:\/\//.test(normalizedReturnUrl)
+      normalizedReturnUrl && /^http:\/\//.test(normalizedReturnUrl)
         ? normalizedReturnUrl
         : booking && booking.booking_id && originToUse
         ? `${originToUse}/contract/${booking.booking_id}`
@@ -720,6 +720,7 @@ export const getStatus = async (req, res) => {
     const envelopeId = resp.data?.envelopeId || id;
     const status = resp.data?.status;
     const now = new Date();
+    let signerSummaries = [];
 
     const mapStatus = (s) =>
       s === "sent"
@@ -748,6 +749,7 @@ export const getStatus = async (req, res) => {
       });
       const signers = recResp.data?.signers || [];
       const updates = {};
+      signerSummaries = [];
 
       // Resolve renter/owner emails from booking to match signers when clientUserId is missing
       let renterEmail = null;
@@ -783,16 +785,59 @@ export const getStatus = async (req, res) => {
         const clientId = String(s.clientUserId || "").toLowerCase();
         const signerEmail = String(s.email || "").toLowerCase();
         const signerStatus = String(s.status || "").toLowerCase();
+        const roleName = String(s.roleName || "").toLowerCase();
+        const signerName = String(s.name || "");
+        const signedAt = s.signedDateTime ? new Date(s.signedDateTime) : now;
+
+        signerSummaries.push({
+          email: signerEmail,
+          clientUserId: clientId,
+          roleName,
+          status: signerStatus,
+          signedDateTime: s.signedDateTime || null,
+        });
+
         if (signerStatus === "completed") {
-          const isRenter = renterEmail && signerEmail === renterEmail;
-          const isOwner = ownerEmail && signerEmail === ownerEmail;
-          if (isRenter) {
-            updates.renter_signed_at = updates.renter_signed_at || now;
+          // Match by email, clientUserId, and roleName for robustness
+          const isRenterByEmail = renterEmail && signerEmail === renterEmail;
+          const isOwnerByEmail = ownerEmail && signerEmail === ownerEmail;
+          const isRenterByClientId =
+            !!clientId &&
+            (clientId === String(renterEmail || "").toLowerCase() ||
+              clientId === "renter");
+          const isOwnerByClientId =
+            !!clientId &&
+            (clientId === String(ownerEmail || "").toLowerCase() ||
+              clientId === "owner");
+          const isRenterByRole = roleName === "renter";
+          const isOwnerByRole = roleName === "owner";
+
+          if (isRenterByEmail || isRenterByClientId || isRenterByRole) {
+            updates.renter_signed_at = updates.renter_signed_at || signedAt;
           }
-          if (isOwner) {
-            updates.owner_signed_at = updates.owner_signed_at || now;
+          if (isOwnerByEmail || isOwnerByClientId || isOwnerByRole) {
+            updates.owner_signed_at = updates.owner_signed_at || signedAt;
           }
         }
+      }
+
+      // Fallback: if envelope is completed and we have a signer with roleName owner completed
+      // but owner_signed_at is still missing, set it to the owner's signedDateTime (or now)
+      try {
+        const anyOwnerCompleted = signers.some(
+          (s) => String(s.roleName || "").toLowerCase() === "owner" && String(s.status || "").toLowerCase() === "completed"
+        );
+        if (anyOwnerCompleted && !updates.owner_signed_at) {
+          const ownerSigner = signers.find(
+            (s) => String(s.roleName || "").toLowerCase() === "owner" && String(s.status || "").toLowerCase() === "completed"
+          );
+          const fallbackSignedAt = ownerSigner?.signedDateTime
+            ? new Date(ownerSigner.signedDateTime)
+            : now;
+          updates.owner_signed_at = fallbackSignedAt;
+        }
+      } catch (fallbackErr) {
+        console.warn("Owner signed fallback failed:", fallbackErr.message || fallbackErr);
       }
 
       if (Object.keys(updates).length > 0) {
@@ -800,6 +845,14 @@ export const getStatus = async (req, res) => {
         await BookingContract.update(updates, {
           where: { contract_number: envelopeId },
         });
+        console.log(
+          "DocuSign getStatus updates applied:",
+          {
+            envelopeId,
+            updates,
+            signers: signerSummaries,
+          }
+        );
       }
 
       const totalSigners = signers.length;
@@ -831,11 +884,32 @@ export const getStatus = async (req, res) => {
     }
 
     const appStatus = derivedStatus || mappedStatus || "unknown";
+    // Lấy bản ghi hợp đồng sau khi cập nhật để trả về thời điểm ký trong DB
+    let contractAfter = null;
+    try {
+      contractAfter = await BookingContract.findOne({
+        where: { contract_number: envelopeId },
+        attributes: [
+          "booking_id",
+          "contract_status",
+          "renter_signed_at",
+          "owner_signed_at",
+        ],
+      });
+    } catch (fetchErr) {
+      console.warn(
+        "Fetch contract after status update failed:",
+        fetchErr.message || fetchErr
+      );
+    }
+
     return res.json({
       success: true,
       status,
       app_status: appStatus,
       envelope: resp.data,
+      signers: signerSummaries,
+      contract: contractAfter,
     });
   } catch (err) {
     console.error("Get status error", err.response?.data || err.message);
@@ -1073,6 +1147,7 @@ export const webhook = async (req, res) => {
         const signers = recResp.data?.signers || [];
         const now = new Date();
         const updates = {};
+        const signerSummaries = [];
 
         // Fetch booking and existing contract to avoid duplicate mails
         const contractRecord = await BookingContract.findOne({
@@ -1108,15 +1183,31 @@ export const webhook = async (req, res) => {
         }
 
         for (const s of signers) {
-          if (String(s.status || "").toLowerCase() === "completed") {
-            const sEmail = String(s.email || "").toLowerCase();
-            const isRenter =
-              renterEmail && sEmail === String(renterEmail).toLowerCase();
-            const isOwner =
-              ownerEmail && sEmail === String(ownerEmail).toLowerCase();
-            if (isRenter) {
+          const signerEmail = String(s.email || "").toLowerCase();
+          const clientId = String(s.clientUserId || "").toLowerCase();
+          const roleName = String(s.roleName || "").toLowerCase();
+          const signerStatus = String(s.status || "").toLowerCase();
+          const signedAt = s.signedDateTime ? new Date(s.signedDateTime) : now;
+
+          signerSummaries.push({
+            email: signerEmail,
+            clientUserId: clientId,
+            roleName,
+            status: signerStatus,
+            signedDateTime: s.signedDateTime || null,
+          });
+
+          if (signerStatus === "completed") {
+            const isRenterByEmail = renterEmail && signerEmail === String(renterEmail).toLowerCase();
+            const isOwnerByEmail = ownerEmail && signerEmail === String(ownerEmail).toLowerCase();
+            const isRenterByClientId = !!clientId && (clientId === String(renterEmail || "").toLowerCase() || clientId === "renter");
+            const isOwnerByClientId = !!clientId && (clientId === String(ownerEmail || "").toLowerCase() || clientId === "owner");
+            const isRenterByRole = roleName === "renter";
+            const isOwnerByRole = roleName === "owner";
+
+            if (isRenterByEmail || isRenterByClientId || isRenterByRole) {
               const wasSigned = !!contractRecord?.renter_signed_at;
-              updates.renter_signed_at = updates.renter_signed_at || now;
+              updates.renter_signed_at = updates.renter_signed_at || signedAt;
               if (!wasSigned && renterEmail) {
                 // Send confirmation to renter
                 try {
@@ -1129,7 +1220,7 @@ export const webhook = async (req, res) => {
                     html: signingConfirmationTemplate({
                       signerName: renterName,
                       bookingId: booking?.booking_id,
-                      signedAt: now.toLocaleString("vi-VN"),
+                      signedAt: (updates.renter_signed_at || now).toLocaleString("vi-VN"),
                     }),
                   });
                 } catch (e) {
@@ -1151,7 +1242,7 @@ export const webhook = async (req, res) => {
                         otherName: ownerName,
                         bookingId: booking?.booking_id,
                         signerName: renterName,
-                        signedAt: now.toLocaleString("vi-VN"),
+                        signedAt: (updates.renter_signed_at || now).toLocaleString("vi-VN"),
                       }),
                     });
                   } catch (e) {
@@ -1160,9 +1251,9 @@ export const webhook = async (req, res) => {
                 }
               }
             }
-            if (isOwner) {
+            if (isOwnerByEmail || isOwnerByClientId || isOwnerByRole) {
               const wasSigned = !!contractRecord?.owner_signed_at;
-              updates.owner_signed_at = updates.owner_signed_at || now;
+              updates.owner_signed_at = updates.owner_signed_at || signedAt;
               if (!wasSigned && ownerEmail) {
                 // Send confirmation to owner
                 try {
@@ -1175,7 +1266,7 @@ export const webhook = async (req, res) => {
                     html: signingConfirmationTemplate({
                       signerName: ownerName,
                       bookingId: booking?.booking_id,
-                      signedAt: now.toLocaleString("vi-VN"),
+                      signedAt: (updates.owner_signed_at || now).toLocaleString("vi-VN"),
                     }),
                   });
                 } catch (e) {
@@ -1197,7 +1288,7 @@ export const webhook = async (req, res) => {
                         otherName: renterName,
                         bookingId: booking?.booking_id,
                         signerName: ownerName,
-                        signedAt: now.toLocaleString("vi-VN"),
+                        signedAt: (updates.owner_signed_at || now).toLocaleString("vi-VN"),
                       }),
                     });
                   } catch (e) {
@@ -1209,12 +1300,23 @@ export const webhook = async (req, res) => {
           }
         }
 
-        if (Object.keys(updates).length > 0) {
-          updates.updated_at = now;
-          await BookingContract.update(updates, {
-            where: { contract_number: envelopeId },
-          });
-        }
+        // Log signer summaries for debugging
+        console.log("DocuSign webhook signer summaries:", {
+          envelopeId,
+          signers: signerSummaries,
+          updates,
+        });
+
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = now;
+        await BookingContract.update(updates, {
+          where: { contract_number: envelopeId },
+        });
+        console.log("DocuSign webhook updates applied:", {
+          envelopeId,
+          updates,
+        });
+      }
       }
     } catch (innerErr) {
       // Không chặn webhook nếu không thể truy vấn người ký; chỉ log để theo dõi

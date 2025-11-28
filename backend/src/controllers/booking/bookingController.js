@@ -33,10 +33,12 @@ export const getVehicleBookedDates = async (req, res) => {
         status: {
           [Op.in]: [
             "pending",
+            "confirmed",
             "deposit_paid",
             "fully_paid",
             "cancel_requested",
             "in_progress",
+            "completed",
           ],
         },
       },
@@ -632,7 +634,7 @@ export const createBooking = async (req, res) => {
 
     console.log("✅ Không có xung đột lịch đặt");
 
-    //  BƯỚC 6: TÍNH TOÁN CHI PHÍ CƠ BẢN 
+    //  BƯỚC 6: TÍNH TOÁN CHI PHÍ CƠ BẢN
 
     // Tính số ngày thuê (làm tròn lên)
     const timeDiff = end.getTime() - start.getTime();
@@ -801,7 +803,7 @@ export const createBooking = async (req, res) => {
       total_amount,
     });
 
-    // BƯỚC 11: TẠO BOOKING TRONG DATABASE 
+    // BƯỚC 11: TẠO BOOKING TRONG DATABASE
     console.log("💾 Tạo booking trong database...");
 
     // Tách ngày và giờ để lưu đúng format theo múi giờ Việt Nam
@@ -812,7 +814,9 @@ export const createBooking = async (req, res) => {
     // Xác định trạng thái ban đầu dựa trên yêu cầu duyệt của chủ xe
     // Nếu xe yêu cầu chủ xe duyệt: tạo booking ở trạng thái "pending"
     // Nếu không yêu cầu duyệt: tạo booking ở trạng thái "confirmed"
-    const initialStatus = vehicle.require_owner_confirmation ? "pending" : "confirmed";
+    const initialStatus = vehicle.require_owner_confirmation
+      ? "pending"
+      : "confirmed";
 
     const booking = await Booking.create({
       renter_id: renterId,
@@ -858,10 +862,12 @@ export const createBooking = async (req, res) => {
       const renter = await User.findByPk(renterId);
 
       if (owner?.email) {
-        const vehicleName = vehicle?.model || vehicle?.vehicle_name || "Xe của bạn";
-        const statusText = initialStatus === "pending"
-          ? "Booking mới cần bạn xác nhận"
-          : "Booking mới đã được xác nhận";
+        const vehicleName =
+          vehicle?.model || vehicle?.vehicle_name || "Xe của bạn";
+        const statusText =
+          initialStatus === "pending"
+            ? "Booking mới cần bạn xác nhận"
+            : "Booking mới đã được xác nhận";
         const frontURL = process.env.FRONTEND_URL || "";
         const ownerPortalLink = frontURL ? `${frontURL}/owner` : "";
 
@@ -889,17 +895,27 @@ export const createBooking = async (req, res) => {
               <div class="container">
                 <h2>${statusText}</h2>
                 <p>Xin chào${owner.full_name ? ` ${owner.full_name}` : ""},</p>
-                <p>Người thuê${renter?.full_name ? ` ${renter.full_name}` : ""} vừa đặt xe <strong>${vehicleName}</strong>.</p>
+                <p>Người thuê${
+                  renter?.full_name ? ` ${renter.full_name}` : ""
+                } vừa đặt xe <strong>${vehicleName}</strong>.</p>
 
                 <div class="details">
-                  <div class="row"><span class="label">Mã booking:</span><span class="value">#${booking.booking_id}</span></div>
+                  <div class="row"><span class="label">Mã booking:</span><span class="value">#${
+                    booking.booking_id
+                  }</span></div>
                   <div class="row"><span class="label">Thời gian nhận:</span><span class="value">${startDateOnly} ${startTime}</span></div>
                   <div class="row"><span class="label">Thời gian trả:</span><span class="value">${endDateOnly} ${endTime}</span></div>
-                  <div class="row"><span class="label">Tổng tiền:</span><span class="value">${Number(total_amount).toLocaleString('vi-VN')} VNĐ</span></div>
+                  <div class="row"><span class="label">Tổng tiền:</span><span class="value">${Number(
+                    total_amount
+                  ).toLocaleString("vi-VN")} VNĐ</span></div>
                   <div class="row"><span class="label">Trạng thái:</span><span class="value">${initialStatus}</span></div>
                 </div>
 
-                ${ownerPortalLink ? `<a class="cta" href="${ownerPortalLink}" target="_blank">Đăng nhập để xem/duyệt</a>` : ""}
+                ${
+                  ownerPortalLink
+                    ? `<a class="cta" href="${ownerPortalLink}" target="_blank">Đăng nhập để xem/duyệt</a>`
+                    : ""
+                }
 
                 <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
               </div>
@@ -917,7 +933,6 @@ export const createBooking = async (req, res) => {
     } catch (emailErr) {
       console.error("Error sending owner booking notification:", emailErr);
     }
-    
 
     return res.status(201).json({
       success: true,
@@ -943,7 +958,6 @@ export const createBooking = async (req, res) => {
       },
     });
   } catch (error) {
-    
     console.error("Error creating booking:", error);
 
     // Log chi tiết lỗi để debug

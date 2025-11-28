@@ -39,6 +39,7 @@ function BookingForm({ vehicle, prefillParams }) {
   const [deliveryDistanceKm, setDeliveryDistanceKm] = useState(0);
   const [userPoints, setUserPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   const { isReported } = useSelector((state) => state.vehicleReport);
 
@@ -237,6 +238,10 @@ function BookingForm({ vehicle, prefillParams }) {
   const handleBooking = async () => {
     if (!bookingData.startDate || !bookingData.endDate) {
       alert("Vui lòng chọn thời gian thuê xe.");
+      return;
+    }
+    if (!agreedTerms) {
+      alert("Vui lòng tích chọn 'Tôi đồng ý với các điều khoản thuê xe' trước khi đặt.");
       return;
     }
     if (
@@ -526,10 +531,26 @@ function BookingForm({ vehicle, prefillParams }) {
       </div>
 
       <div className="p-6 bg-white border-t border-gray-200">
+        {/* Terms Agreement */}
+        <div className="flex items-start gap-3 mb-4">
+          <input
+            id="agree_terms"
+            type="checkbox"
+            checked={agreedTerms}
+            onChange={(e) => setAgreedTerms(e.target.checked)}
+            className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="agree_terms" className="text-sm text-gray-700">
+            Tôi đồng ý với các điều khoản thuê xe
+            {/* Optional: link to terms page if available */}
+            {/* <a href="/terms" target="_blank" className="text-blue-600 underline ml-1">Xem chi tiết</a> */}
+          </label>
+        </div>
+
         <button
           type="button"
           onClick={handleBooking}
-          disabled={!bookingData.startDate || !bookingData.endDate}
+          disabled={!bookingData.startDate || !bookingData.endDate || !agreedTerms}
           className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Đặt xe ngay"
         >
