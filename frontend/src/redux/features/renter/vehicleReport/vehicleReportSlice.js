@@ -1,9 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-/* ============================================================
-   📤 TẠO BÁO CÁO MỚI (POST) - Renter only
-   ============================================================ */
 export const createReport = createAsyncThunk(
   "vehicleReport/createReport",
   async ({ vehicleId, reason, message }, { rejectWithValue }) => {
@@ -33,9 +30,6 @@ export const createReport = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   🔍 KIỂM TRA XE ĐÃ BÁO CÁO (GET /my?vehicle_id) - Renter only
-   ============================================================ */
 export const checkIfReported = createAsyncThunk(
   "vehicleReport/checkIfReported",
   async (vehicleId, { rejectWithValue }) => {
@@ -61,18 +55,24 @@ export const checkIfReported = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   📋 LẤY TẤT CẢ BÁO CÁO CỦA USER (GET /my) - Renter only
-   ============================================================ */
 export const getMyVehicleReports = createAsyncThunk(
   "vehicleReport/getMyVehicleReports",
-  async ({ vehicleId } = {}, { rejectWithValue }) => {
+  async ({ vehicleId, page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
-      const url = vehicleId
-        ? `${
-            import.meta.env.VITE_API_URL
-          }/api/renter/reports/my?vehicle_id=${vehicleId}`
-        : `${import.meta.env.VITE_API_URL}/api/renter/reports/my`;
+      let url = `${import.meta.env.VITE_API_URL}/api/renter/reports/my`;
+      const params = new URLSearchParams();
+
+      if (vehicleId) {
+        params.append("vehicle_id", vehicleId);
+      }
+
+      params.append("page", page.toString());
+      params.append("limit", limit.toString());
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
       const response = await axios.get(url, { withCredentials: true });
       return response.data;
     } catch (error) {
@@ -92,9 +92,6 @@ export const getMyVehicleReports = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   📋 LẤY TẤT CẢ BÁO CÁO (GET /api/renter/reports) - Admin only, hỗ trợ filter + pagination
-   ============================================================ */
 export const getAllVehicleReports = createAsyncThunk(
   "vehicleReport/getAllVehicleReports",
   async (
@@ -104,11 +101,14 @@ export const getAllVehicleReports = createAsyncThunk(
     try {
       let url = `${import.meta.env.VITE_API_URL}/api/renter/reports`;
       const params = new URLSearchParams();
+
       if (status) params.append("status", status);
       if (vehicle_id) params.append("vehicle_id", vehicle_id);
       params.append("page", page.toString());
       params.append("limit", limit.toString());
+
       if (params.toString()) url += `?${params.toString()}`;
+
       const response = await axios.get(url, { withCredentials: true });
       return response.data;
     } catch (error) {
@@ -126,9 +126,6 @@ export const getAllVehicleReports = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   🔄 CẬP NHẬT BÁO CÁO (PUT /api/renter/reports/:report_id) - Admin only
-   ============================================================ */
 export const updateVehicleReport = createAsyncThunk(
   "vehicleReport/updateVehicleReport",
   async ({ report_id, status, admin_note }, { rejectWithValue }) => {
@@ -154,9 +151,6 @@ export const updateVehicleReport = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   🧩 SLICE - Thêm state cho admin
-   ============================================================ */
 const vehicleReportSlice = createSlice({
   name: "vehicleReport",
   initialState: {
@@ -169,13 +163,21 @@ const vehicleReportSlice = createSlice({
     myReports: [],
     myReportsCount: 0,
     myReportsLoading: false,
+    myReportsTotalPages: 0,
+    myReportsCurrentPage: 1,
+    myReportsTotalReports: 0,
+
     // Admin state
     allReports: [],
     allReportsCount: 0,
     allReportsLoading: false,
+    allReportsTotalPages: 0,
+    allReportsCurrentPage: 1,
+    allReportsTotalReports: 0,
     updateLoading: false,
     adminSuccess: false,
   },
+
   reducers: {
     resetReportState: (state) => {
       state.loading = false;
@@ -185,16 +187,24 @@ const vehicleReportSlice = createSlice({
       state.reportData = null;
       state.myReports = [];
       state.myReportsCount = 0;
+      state.myReportsCurrentPage = 1;
+      state.myReportsTotalPages = 0;
+      state.myReportsTotalReports = 0;
     },
+
     resetAdminReportState: (state) => {
       state.allReports = [];
       state.allReportsCount = 0;
       state.allReportsLoading = false;
+      state.allReportsCurrentPage = 1;
+      state.allReportsTotalPages = 0;
+      state.allReportsTotalReports = 0;
       state.updateLoading = false;
       state.adminSuccess = false;
       state.error = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
       /* 🟢 CREATE REPORT (Renter) */
@@ -234,7 +244,7 @@ const vehicleReportSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* 📋 GET MY REPORTS (Renter) */
+      /* 📋 GET MY REPORTS (Renter) - có pagination */
       .addCase(getMyVehicleReports.pending, (state) => {
         state.myReportsLoading = true;
         state.error = null;
@@ -244,6 +254,9 @@ const vehicleReportSlice = createSlice({
         if (action.payload.success) {
           state.myReports = action.payload.data || [];
           state.myReportsCount = action.payload.count || 0;
+          state.myReportsTotalReports = action.payload.totalReports || 0;
+          state.myReportsTotalPages = action.payload.totalPages || 1;
+          state.myReportsCurrentPage = action.payload.currentPage || 1;
         }
       })
       .addCase(getMyVehicleReports.rejected, (state, action) => {
@@ -251,9 +264,11 @@ const vehicleReportSlice = createSlice({
         state.error = action.payload;
         state.myReports = [];
         state.myReportsCount = 0;
+        state.myReportsTotalPages = 0;
+        state.myReportsCurrentPage = 1;
       })
 
-      /* 📋 GET ALL REPORTS (Admin) */
+      /* 📋 GET ALL REPORTS (Admin) - có pagination */
       .addCase(getAllVehicleReports.pending, (state) => {
         state.allReportsLoading = true;
         state.error = null;
@@ -263,6 +278,9 @@ const vehicleReportSlice = createSlice({
         if (action.payload.success) {
           state.allReports = action.payload.data || [];
           state.allReportsCount = action.payload.count || 0;
+          state.allReportsTotalReports = action.payload.totalReports || 0;
+          state.allReportsTotalPages = action.payload.totalPages || 1;
+          state.allReportsCurrentPage = action.payload.currentPage || 1;
         }
       })
       .addCase(getAllVehicleReports.rejected, (state, action) => {
@@ -270,6 +288,8 @@ const vehicleReportSlice = createSlice({
         state.error = action.payload;
         state.allReports = [];
         state.allReportsCount = 0;
+        state.allReportsTotalPages = 0;
+        state.allReportsCurrentPage = 1;
       })
 
       /* 🔄 UPDATE REPORT (Admin) */
@@ -284,6 +304,7 @@ const vehicleReportSlice = createSlice({
         const index = state.allReports.findIndex(
           (r) => r.report_id === action.payload.data.report_id
         );
+
         if (index !== -1) {
           state.allReports[index].status = action.payload.data.status;
           state.allReports[index].admin_note = action.payload.data.admin_note;
@@ -298,4 +319,5 @@ const vehicleReportSlice = createSlice({
 
 export const { resetReportState, resetAdminReportState } =
   vehicleReportSlice.actions;
+
 export default vehicleReportSlice.reducer;

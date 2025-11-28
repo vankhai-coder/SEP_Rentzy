@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getMyVehicleReports,
   resetReportState,
-} from "../../../redux/features/renter/vehicleReport/vehicleReportSlice"; // Điều chỉnh đường dẫn slice nếu cần
+} from "../../../redux/features/renter/vehicleReport/vehicleReportSlice";
 import {
   AlertCircle,
   Loader2,
@@ -14,31 +14,35 @@ import {
   MessageCircle,
   BadgeCheck,
   UserX,
-} from "lucide-react"; // Icons hiện đại
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const MyReportedVehicles = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userId } = useSelector((state) => state.userStore); // Check userId từ Redux
-  const { myReports, myReportsLoading, error } = useSelector(
-    (state) => state.vehicleReport // Giả sử reducer tên 'vehicleReport'
-  );
+  const { userId } = useSelector((state) => state.userStore);
+  const { myReports, myReportsLoading, error, myReportsTotalPages } =
+    useSelector((state) => state.vehicleReport);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     if (!userId) {
-      navigate("/login", { replace: true }); // Redirect nếu chưa login (backup)
+      navigate("/login", { replace: true });
       return;
     }
-    dispatch(getMyVehicleReports()); // Fetch tất cả reports của user
-    return () => dispatch(resetReportState()); // Cleanup khi unmount
-  }, [dispatch, userId, navigate]);
 
-  // Memoized data transformation & sorting confirmation (BE đã sort DESC, nhưng FE confirm)
+    dispatch(getMyVehicleReports({ page: currentPage, limit: ITEMS_PER_PAGE }));
+
+    return () => dispatch(resetReportState());
+  }, [dispatch, userId, navigate, currentPage]);
+
   const processedReports = useMemo(() => {
     if (!myReports || myReportsLoading) return [];
 
-    // Map reason & status to VN labels
     const reasonMap = {
       fake_info: "Thông tin giả mạo",
       illegal: "Vi phạm pháp luật",
@@ -54,12 +58,7 @@ const MyReportedVehicles = () => {
       rejected: "Bị từ chối",
     };
 
-    // Confirm sorted by created_at DESC (newest first)
-    const sortedReports = [...myReports].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-
-    return sortedReports.map((report) => ({
+    return myReports.map((report) => ({
       ...report,
       reasonVN: reasonMap[report.reason] || report.reason,
       statusVN: statusMap[report.status] || report.status,
@@ -67,7 +66,41 @@ const MyReportedVehicles = () => {
     }));
   }, [myReports, myReportsLoading]);
 
-  if (myReportsLoading) {
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= myReportsTotalPages && page !== currentPage) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(myReportsTotalPages, startPage + maxButtons - 1);
+
+    if (endPage - startPage + 1 < maxButtons) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) pages.push("...");
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    if (endPage < myReportsTotalPages) {
+      if (endPage < myReportsTotalPages - 1) pages.push("...");
+      pages.push(myReportsTotalPages);
+    }
+
+    return pages;
+  };
+
+  if (myReportsLoading && processedReports.length === 0) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-pulse space-y-4">
@@ -78,9 +111,8 @@ const MyReportedVehicles = () => {
     );
   }
 
-  // Xử lý error 401: Redirect login
   if (error && error.includes("Phiên đăng nhập hết hạn")) {
-    localStorage.removeItem("user_id"); // Clear local nếu có
+    localStorage.removeItem("user_id");
     navigate("/login", { replace: true });
     return (
       <div className="text-center py-8">Đang chuyển hướng đăng nhập...</div>
@@ -96,7 +128,7 @@ const MyReportedVehicles = () => {
     );
   }
 
-  if (processedReports.length === 0) {
+  if (processedReports.length === 0 && !myReportsLoading) {
     return (
       <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm">
         <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
@@ -117,9 +149,11 @@ const MyReportedVehicles = () => {
     );
   }
 
+  const pageNumbers = getPageNumbers();
+
   return (
     <div className="space-y-6">
-      {/* Header hiện đại với gradient & shadow */}
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -131,15 +165,16 @@ const MyReportedVehicles = () => {
                 Xe đã báo cáo
               </h1>
               <p className="text-sm text-gray-600">
-                Danh sách báo cáo của bạn ({processedReports.length}) - Sắp xếp
-                mới nhất
+                Danh sách báo cáo ({myReports.length} báo cáo) - Trang{" "}
+                {myReportsTotalPages > 0 ? currentPage : 0}/
+                {myReportsTotalPages}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bảng hiện đại: Responsive, hover effects, badges */}
+      {/* Bảng */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -287,7 +322,86 @@ const MyReportedVehicles = () => {
         </div>
       </div>
 
-      {/* Footer info nhỏ */}
+      {/* Pagination */}
+      {myReportsTotalPages > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-6 border-t border-gray-200">
+          {/* Trái: Thông tin trang */}
+          <div className="text-sm text-gray-700 order-2 sm:order-1">
+            Hiển thị trang <strong>{currentPage}</strong> trên{" "}
+            <strong>{myReportsTotalPages}</strong>
+          </div>
+
+          {/* Phải: Các nút phân trang */}
+          <div className="flex items-center gap-1 order-1 sm:order-2">
+            {/* Nút Trước */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`
+                w-10 h-10 flex items-center justify-center rounded-md transition-all duration-200
+                ${
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 cursor-pointer hover:shadow-sm"
+                }
+              `}
+              title="Trang trước"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            {/* Các số trang */}
+            {pageNumbers.map((page, index) => {
+              if (page === "...") {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-3 text-gray-500 select-none"
+                  >
+                    ...
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`
+                    w-10 h-10 flex items-center justify-center rounded-md font-medium transition-all duration-200
+                    ${
+                      page === currentPage
+                        ? "bg-black text-white cursor-default shadow-md"
+                        : "hover:bg-gray-100 cursor-pointer hover:shadow-sm text-gray-700"
+                    }
+                  `}
+                  title={`Trang ${page}`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            {/* Nút Tiếp */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === myReportsTotalPages}
+              className={`
+                w-10 h-10 flex items-center justify-center rounded-md transition-all duration-200
+                ${
+                  currentPage === myReportsTotalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 cursor-pointer hover:shadow-sm"
+                }
+              `}
+              title="Trang sau"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer info */}
       <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
         Dữ liệu được cập nhật theo thời gian thực. Báo cáo mới nhất ở trên cùng.
       </div>

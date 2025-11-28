@@ -32,12 +32,13 @@ const Reports = () => {
     allReports,
     allReportsLoading,
     allReportsCount,
+    allReportsTotalPages,
     error,
     adminSuccess,
     updateLoading,
   } = useSelector((state) => state.vehicleReport);
 
-  const itemsPerPage = 10;
+  const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -59,11 +60,13 @@ const Reports = () => {
       navigate("/login", { replace: true });
       return;
     }
+
     const status = searchParams.get("status") || null;
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
     setFilterStatus(status);
-    debounceFilter({ status, page, limit: itemsPerPage });
+    debounceFilter({ status, page, limit: ITEMS_PER_PAGE });
+
     return () => dispatch(resetAdminReportState());
   }, [dispatch, role, navigate, searchParams, debounceFilter]);
 
@@ -72,7 +75,7 @@ const Reports = () => {
       toast.success("Cập nhật báo cáo thành công!");
       dispatch(resetAdminReportState());
       const status = searchParams.get("status") || null;
-      debounceFilter({ status, page: currentPage, limit: itemsPerPage });
+      debounceFilter({ status, page: currentPage, limit: ITEMS_PER_PAGE });
     }
   }, [adminSuccess, dispatch, searchParams, debounceFilter, currentPage]);
 
@@ -94,15 +97,16 @@ const Reports = () => {
 
   const handlePageChange = useCallback(
     (page) => {
-      if (page < 1) return;
+      if (page < 1 || page > allReportsTotalPages) return;
       setCurrentPage(page);
       const newParams = new URLSearchParams(searchParams);
       newParams.set("page", page.toString());
       setSearchParams(newParams);
       const status = searchParams.get("status") || null;
-      debounceFilter({ status, page, limit: itemsPerPage });
+      debounceFilter({ status, page, limit: ITEMS_PER_PAGE });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [searchParams, setSearchParams, debounceFilter]
+    [searchParams, setSearchParams, debounceFilter, allReportsTotalPages]
   );
 
   const handleOpenModal = (report) => {
@@ -153,11 +157,34 @@ const Reports = () => {
     }));
   }, [allReports, allReportsLoading]);
 
-  const totalPages = allReportsCount
-    ? Math.ceil(allReportsCount / itemsPerPage)
-    : 0;
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(allReportsTotalPages, startPage + maxButtons - 1);
 
-  if (allReportsLoading) {
+    if (endPage - startPage + 1 < maxButtons) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) pages.push("...");
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    if (endPage < allReportsTotalPages) {
+      if (endPage < allReportsTotalPages - 1) pages.push("...");
+      pages.push(allReportsTotalPages);
+    }
+
+    return pages;
+  };
+
+  if (allReportsLoading && processedReports.length === 0) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-pulse space-y-4">
@@ -191,8 +218,11 @@ const Reports = () => {
     );
   }
 
+  const pageNumbers = getPageNumbers();
+
   return (
-    <div className="space-y-8 p-4 md:p-6">
+    <div className="space-y-6 p-4 md:p-6">
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
           <div className="flex items-center space-x-3">
@@ -204,8 +234,9 @@ const Reports = () => {
                 Xử Lý Báo Cáo Xe
               </h1>
               <p className="text-sm text-gray-600">
-                Danh sách báo cáo ({allReportsCount} tổng) - Trang {currentPage}
-                /{totalPages}
+                Danh sách báo cáo ({allReports.length} báo cáo) - Trang{" "}
+                {allReportsTotalPages > 0 ? currentPage : 0}/
+                {allReportsTotalPages}
               </p>
             </div>
           </div>
@@ -227,8 +258,10 @@ const Reports = () => {
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden max-h-[70vh] flex flex-col">
-        <div className="overflow-x-auto flex-1">
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
               <tr>
@@ -285,11 +318,11 @@ const Reports = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200 overflow-y-auto">
+            <tbody className="bg-white divide-y divide-gray-200">
               {processedReports.map((report) => (
                 <tr
                   key={report.report_id}
-                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 transform hover:scale-[1.01]"
+                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     <div className="flex items-center space-x-2">
@@ -412,37 +445,88 @@ const Reports = () => {
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Hiển thị {(currentPage - 1) * itemsPerPage + 1}-
-              {Math.min(currentPage * itemsPerPage, allReportsCount)} của{" "}
-              {allReportsCount} báo cáo
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Trước
-              </button>
-              <span className="px-3 py-1 text-sm font-medium">
-                Trang {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Sau
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Pagination */}
+      {allReportsTotalPages > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-6 border-t border-gray-200">
+          {/* Trái: Thông tin trang */}
+          <div className="text-sm text-gray-700 order-2 sm:order-1">
+            Hiển thị trang <strong>{currentPage}</strong> trên{" "}
+            <strong>{allReportsTotalPages}</strong>
+          </div>
+
+          {/* Phải: Các nút phân trang */}
+          <div className="flex items-center gap-1 order-1 sm:order-2">
+            {/* Nút Trước */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`
+                w-10 h-10 flex items-center justify-center rounded-md transition-all duration-200
+                ${
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 cursor-pointer hover:shadow-sm"
+                }
+              `}
+              title="Trang trước"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            {/* Các số trang */}
+            {pageNumbers.map((page, index) => {
+              if (page === "...") {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-3 text-gray-500 select-none"
+                  >
+                    ...
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`
+                    w-10 h-10 flex items-center justify-center rounded-md font-medium transition-all duration-200
+                    ${
+                      page === currentPage
+                        ? "bg-black text-white cursor-default shadow-md"
+                        : "hover:bg-gray-100 cursor-pointer hover:shadow-sm text-gray-700"
+                    }
+                  `}
+                  title={`Trang ${page}`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            {/* Nút Tiếp */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === allReportsTotalPages}
+              className={`
+                w-10 h-10 flex items-center justify-center rounded-md transition-all duration-200
+                ${
+                  currentPage === allReportsTotalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100 cursor-pointer hover:shadow-sm"
+                }
+              `}
+              title="Trang sau"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -504,6 +588,8 @@ const Reports = () => {
           </div>
         </div>
       )}
+
+      {/* Footer */}
       <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
         Dữ liệu được cập nhật theo thời gian thực. Báo cáo mới nhất ở trên cùng.
       </div>

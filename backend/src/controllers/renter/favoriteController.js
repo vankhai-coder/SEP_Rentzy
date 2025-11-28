@@ -77,14 +77,16 @@ export const removeFavorite = async (req, res) => {
 export const getFavorites = async (req, res) => {
   try {
     const user_id = req.user.userId;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 6; // Mỗi trang 6 xe
+    const offset = (page - 1) * limit;
 
-    // Lấy tất cả favorites, include chi tiết Vehicle (và Brand nếu có)
-    const favorites = await db.Favorite.findAll({
+    const { count, rows: favorites } = await db.Favorite.findAndCountAll({
       where: { user_id },
       include: [
         {
           model: db.Vehicle,
-          as: "Vehicle", // Giả định bạn đã define association Vehicle.hasMany(Favorite) và Favorite.belongsTo(Vehicle)
+          as: "Vehicle",
           attributes: [
             "vehicle_id",
             "model",
@@ -92,31 +94,34 @@ export const getFavorites = async (req, res) => {
             "price_per_day",
             "main_image_url",
             "location",
-            "vehicle_type", // Thêm để fix mismatch ở frontend
-            "transmission", // Thêm: hộp số
-            "fuel_type", // Thêm: nhiên liệu
-            "seats", // Thêm: số ghế
-            "bike_type", // Thêm: loại xe máy
-            "engine_capacity", // Thêm: phân khối
-            "features", // Thêm: tính năng tiện ích (JSON)
-          ], // Mở rộng fields cần thiết cho frontend
+            "vehicle_type",
+            "transmission",
+            "fuel_type",
+            "seats",
+            "bike_type",
+            "engine_capacity",
+            "features",
+          ],
         },
       ],
-      order: [["created_at", "DESC"]], // Sắp xếp theo mới nhất
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
     });
 
-    if (favorites.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "Danh sách yêu thích rỗng!",
-        data: [],
-      });
-    }
+    const totalPages = Math.ceil(count / limit);
 
     return res.status(200).json({
       success: true,
       message: "Lấy danh sách yêu thích thành công!",
       data: favorites,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: count,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error("Lỗi khi lấy favorites:", error);
