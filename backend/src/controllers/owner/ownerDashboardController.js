@@ -787,36 +787,6 @@ export const getBookingDetail = async (req, res) => {
       });
     }
 
-    // Nếu có envelope, làm mới trạng thái DocuSign trước khi trả về
-    try {
-      if (booking?.contract?.contract_number) {
-        const { refreshStatusForEnvelope } = await import(
-          "../docusign/docusignController.js"
-        );
-        await refreshStatusForEnvelope(booking.contract.contract_number);
-        // Reload contract để đảm bảo dữ liệu cập nhật từ DB
-        const latestContract = await BookingContract.findOne({
-          where: { booking_id: booking.booking_id },
-          attributes: [
-            "contract_id",
-            "contract_number",
-            "contract_status",
-            "renter_signed_at",
-            "owner_signed_at",
-            "contract_file_url",
-          ],
-        });
-        if (latestContract) {
-          booking.contract = latestContract;
-        }
-      }
-    } catch (refreshErr) {
-      console.warn(
-        "Owner getBookingDetail: refresh DocuSign status failed",
-        refreshErr?.message || refreshErr
-      );
-    }
-
     // Parse traffic_fine_images từ JSON string thành array
     const bookingData = booking.toJSON();
     if (bookingData.traffic_fine_images) {
@@ -1111,8 +1081,6 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
-    console.log("[TrafficFineCaptcha] Starting to fetch captcha...");
-    
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1120,21 +1088,13 @@ export const getTrafficFineCaptcha = async (req, res) => {
       "../../utils/trafficFine/captchaSessionStore.js"
     );
 
-    console.log("[TrafficFineCaptcha] Modules imported successfully");
-
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
-    console.log("[TrafficFineCaptcha] CookieJar created");
-    
-    // Fetch captcha trực tiếp bằng https module để tránh lỗi SSL với axios-cookiejar-support
-    const captchaImage = await getCaptchaImage(jar);
-    console.log("[TrafficFineCaptcha] Captcha image fetched, size:", captchaImage.length);
+    const instance = createAxiosInstance(jar);
+    const captchaImage = await getCaptchaImage(instance);
 
     const sessionId = createSession(jar);
-    console.log("[TrafficFineCaptcha] Session created:", sessionId);
-    
     const base64Image = captchaImage.toString("base64");
-    console.log("[TrafficFineCaptcha] Base64 conversion completed");
 
     return res.json({
       success: true,
@@ -1143,22 +1103,10 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
-    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
-    
-    // Kiểm tra nếu là lỗi SSL handshake hoặc SSL protocol error
-    const isSSLError = error.message?.includes('EPROTO') || 
-                       error.message?.includes('handshake failure') ||
-                       error.message?.includes('SSL') ||
-                       error.message?.includes('TLS') ||
-                       error.code === 'EPROTO';
-    
     res.status(500).json({
       success: false,
-      message: isSSLError 
-        ? "Server tra cứu phạt nguội (csgt.vn) đang gặp sự cố về kết nối bảo mật. Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
-        : "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
+      message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      errorCode: isSSLError ? "SSL_CONNECTION_ERROR" : "UNKNOWN_ERROR",
     });
   }
 };
