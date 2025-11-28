@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,7 @@ import {
   CreditCard,
   LayoutDashboard,
   Bell,
+  Receipt,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -57,6 +58,78 @@ const Account = () => {
     console.log("isErrorCheckIfUserAuthMethodIsEmail:", isErrorCheckIfUserAuthMethodIsEmail);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Valid routes in the Select dropdown
+  const validRoutes = [
+    "/account",
+    "/notifications",
+    "/booking-history",
+    "/my-reviews",
+    "/owner",
+    "/register_owner",
+    "/favorites",
+    "/my-reports",
+    "/mytrips",
+    "/longtermrenting",
+    "/points",
+    "/myreward",
+    "/myaddress",
+    "/bank-accounts",
+    "/traffic-fine-search",
+    "/resetpw",
+    "/deleteaccount",
+  ];
+
+  // Map pathname to page name
+  const getPageName = (pathname) => {
+    // Handle routes that start with specific paths
+    if (pathname.startsWith("/account")) {
+      return "Tài khoản của tôi";
+    }
+    if (pathname.startsWith("/owner")) {
+      return "Bảng điều khiển chủ xe";
+    }
+    
+    const pageMap = {
+      "/account": "Tài khoản của tôi",
+      "/notifications": "Thông báo",
+      "/booking-history": "Danh sách thuê xe",
+      "/my-reviews": "Đánh giá của tôi",
+      "/owner": "Bảng điều khiển chủ xe",
+      "/register_owner": "Bảng điều khiển chủ xe",
+      "/favorites": "Xe yêu thích",
+      "/my-reports": "Xe đã báo cáo",
+      "/mytrips": "Chuyến của tôi",
+      "/longtermrenting": "Đơn hàng Thuê xe dài hạn",
+      "/points": "Điểm thưởng",
+      "/myreward": "Quà tặng",
+      "/myaddress": "Địa chỉ của tôi",
+      "/bank-accounts": "Tài khoản ngân hàng",
+      "/traffic-fine-search": "Tra Cứu Phạt Nguội",
+      "/resetpw": "Đổi mật khẩu",
+      "/deleteaccount": "Yêu cầu xóa tài khoản",
+    };
+    return pageMap[pathname] || "Tài khoản của tôi";
+  };
+
+  const currentPageName = getPageName(location.pathname);
+  
+  // Check if current pathname matches any valid route
+  const getSelectValue = () => {
+    if (location.pathname === "/logout") {
+      return undefined;
+    }
+    // Check if pathname exactly matches a valid route
+    if (validRoutes.includes(location.pathname)) {
+      return location.pathname;
+    }
+    // Check if pathname starts with /account or /owner
+    if (location.pathname.startsWith("/account") || location.pathname.startsWith("/owner")) {
+      return location.pathname.startsWith("/account") ? "/account" : "/owner";
+    }
+    return undefined;
+  };
 
   const baseClass =
     "flex items-center gap-2 py-2 hover:cursor-pointer hover:bg-gray-100 hover:opacity-70 pl-5";
@@ -89,9 +162,18 @@ const Account = () => {
   return (
     <div className="p-2 xs:px-4 sm:px-8 md:px-12 lg:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16 w-full max-w-full overflow-x-hidden box-border">
       {/* mobile: nav list */}
-      <Select onValueChange={(value) => navigate(value)}>
+      <Select 
+        onValueChange={(value) => {
+          if (value === "/logout") {
+            // Handle logout - you may need to add logout logic here
+            return;
+          }
+          navigate(value);
+        }}
+        value={getSelectValue()}
+      >
         <SelectTrigger className="lg:hidden w-full text-md font-medium py-4 bg-[#ffffff] mb-6 md:mb-10">
-          <SelectValue placeholder="Navigate..." />
+          <SelectValue placeholder={currentPageName} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
@@ -174,6 +256,12 @@ const Account = () => {
               value="/bank-accounts"
             >
               <CreditCard /> Tài khoản ngân hàng
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
+              value="/traffic-fine-search"
+            >
+              <Receipt /> Tra Cứu Phạt Nguội
             </SelectItem>
             {isEmailAuth &&
               <SelectItem
@@ -294,6 +382,14 @@ const Account = () => {
               }
             >
               <CreditCard /> Tài khoản ngân hàng
+            </NavLink>
+            <NavLink
+              to="/traffic-fine-search"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <Receipt /> Tra Cứu Phạt Nguội
             </NavLink>
 
             {

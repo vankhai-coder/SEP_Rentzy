@@ -1,3 +1,7 @@
+// Set SSL config trước khi import bất kỳ module nào
+// Điều này cần thiết để tránh lỗi SSL handshake với csgt.vn
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -39,6 +43,7 @@ import OwnerOverviewRoute from "./routes/owner/ownerOverviewRoute.js";
 import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 import RenterSystemSettingRoute from "./routes/renter/systemSettingPublicRoute.js";
 import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
+import TrafficFineRoute from "./routes/renter/trafficFineRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
@@ -112,6 +117,8 @@ app.use("/api/renter/system-settings", RenterSystemSettingRoute);
 app.use("/api/renter/transactions", TransactionRoute);
 app.use("/api/renter", RecommendationRoute);
 app.use("/api/renter/notifications", RenterNotificationRoute);
+// traffic fine search route (cho cả renter và owner)
+app.use("/api/traffic-fine-search", TrafficFineRoute);
 // booking route
 app.use("/api/renter/booking", BookingRoute);
 

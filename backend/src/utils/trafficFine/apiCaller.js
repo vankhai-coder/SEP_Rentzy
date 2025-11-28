@@ -4,8 +4,13 @@ import qs from "qs";
 import tough from "tough-cookie";
 import { wrapper } from "axios-cookiejar-support";
 import { extractTrafficViolations } from "./extractTrafficViolations.js";
+import https from "https";
 
 const { CookieJar } = tough;
+
+// Disable SSL verification cho csgt.vn (giống như code mẫu)
+// Set trước khi import axios để đảm bảo áp dụng
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 /**
  * Configuration constants
@@ -45,18 +50,40 @@ export function createAxiosInstance(existingJar = null) {
 }
 
 /**
- * Fetches captcha image (returns image buffer, not text)
- * @param {Object} instance - Axios instance
+ * Fetches captcha image using https module directly (bypass axios-cookiejar-support SSL issue)
+ * @param {Object} jar - Cookie jar to store cookies
  * @returns {Promise<Buffer>} Captcha image buffer
  */
-export async function getCaptchaImage(instance) {
+/**
+ * Fetches captcha image (returns image buffer, not text)
+ * Sử dụng axios instance giống như code mẫu để tránh lỗi SSL
+ * @param {Object} jar - Cookie jar to store cookies
+ * @returns {Promise<Buffer>} Captcha image buffer
+ */
+export async function getCaptchaImage(jar) {
   try {
+    // Tạo axios instance với jar để đảm bảo cookies được lưu
+    const instance = createAxiosInstance(jar);
+    
+    console.log(`[getCaptchaImage] Fetching captcha from: ${CONFIG.BASE_URL}${CONFIG.CAPTCHA_PATH}`);
     const image = await instance.get(CONFIG.CAPTCHA_PATH, {
       responseType: "arraybuffer",
     });
+    
+    console.log(`[getCaptchaImage] Captcha fetched successfully, size: ${image.data?.length || 0} bytes`);
+    if (!image.data || image.data.length === 0) {
+      throw new Error("Captcha image is empty");
+    }
+    
     return Buffer.from(image.data);
   } catch (error) {
-    throw new Error(`Failed to get captcha image: ${error.message}`);
+    console.error(`[getCaptchaImage] Error details:`, {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      responseData: error.response?.data,
+    });
+    throw new Error(`Failed to get captcha image: ${error.message || error.code || 'Unknown error'}`);
   }
 }
 
