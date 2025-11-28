@@ -49,7 +49,8 @@ const validateCarWithAI = async (brand, model, year) => {
           content: validationPrompt,
         },
       ],
-      temperature: 0.3, // Giảm temperature để kết quả chính xác hơn
+      temperature: 0.3,
+      max_tokens: 256,
     });
 
     const aiResponse = response.choices[0].message.content.trim();
@@ -98,24 +99,24 @@ export const generateCarDescription = async (req, res) => {
 
     console.log(`✅ Validation passed: ${aiValidation.message}`);
 
-    // ===== TẠO MÔ TẢ SAU KHI ĐÃ VALIDATE =====
+    
     const prompt = `
-Hãy viết một đoạn mô tả **ngắn gọn, chuyên nghiệp, tự nhiên** để đăng xe cho thuê.
+        Hãy viết một đoạn mô tả **ngắn gọn, chuyên nghiệp, tự nhiên** để đăng xe cho thuê.
 
-Thông tin xe:
-- Thương hiệu: ${brand}
-- Dòng xe: ${model}
-${year ? `- Năm sản xuất: ${year}` : ''}
+        Thông tin xe:
+        - Thương hiệu: ${brand}
+        - Dòng xe: ${model}
+        ${year ? `- Năm sản xuất: ${year}` : ''}
 
-Yêu cầu:
-- Viết giọng văn thân thiện, chuyên nghiệp như các website cho thuê xe.
-- Nhấn mạnh ưu điểm, sự thoải mái & trải nghiệm khi thuê.
-- Hãy mô tả thêm các thông tin xe thuộc thương hiệu, dòng xe, năm sản xuất trên.
-- Không dài dòng, tối đa 5–8 câu.
-- Không lặp lại dữ liệu thừa.
+        Yêu cầu:
+        - Viết giọng văn thân thiện, chuyên nghiệp như các website cho thuê xe.
+        - Nhấn mạnh ưu điểm, sự thoải mái & trải nghiệm khi thuê.
+        - Hãy mô tả thêm các thông tin xe thuộc thương hiệu, dòng xe, năm sản xuất trên.
+        - Không dài dòng, tối đa 5–8 câu.
+        - Không lặp lại dữ liệu thừa.
 
-Bắt đầu viết:
-`;
+        Bắt đầu viết:
+        `;
 
     const response = await client.chat.completions.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -126,6 +127,7 @@ Bắt đầu viết:
         },
       ],
       temperature: 0.7,
+      max_tokens: 512,
     });
 
     const description = response.choices[0].message.content;
@@ -138,18 +140,27 @@ Bắt đầu viết:
 
   } catch (error) {
     console.error("generateCarDescription error:", error?.response?.data || error?.message || error);
-    
     const status = error?.response?.status || 500;
+
+    if (status === 402 || status === 429) {
+      const { brand, model, year } = req.body || {};
+      const desc = [
+        `${brand || "Xe"} ${model || ""} ${year ? `năm ${year}` : ""}`.trim(),
+        "Thiết kế hiện đại, vận hành ổn định phù hợp di chuyển trong thành phố và đường dài.",
+        "Khoang nội thất thoải mái, tiện nghi đầy đủ, phù hợp gia đình và công việc.",
+        "Xe được bảo dưỡng định kỳ, sạch sẽ, giao nhận linh hoạt, hỗ trợ tận tâm.",
+        "Lựa chọn tối ưu cho chuyến đi của bạn với chi phí hợp lý."
+      ].join(". ");
+      return res.json({ success: true, description: desc, validation: "Tạo mô tả bằng bản mẫu do hạn mức AI" });
+    }
+
     const message = error?.response?.data?.error?.message || 
                     error?.response?.data?.message || 
                     (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
                       ? "Đã xảy ra lỗi khi tạo mô tả xe." 
                       : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
 
-    return res.status(status).json({
-      success: false,
-      message,
-    });
+    return res.status(status).json({ success: false, message });
   }
 };
 
@@ -210,6 +221,7 @@ export const generateMotoBikeDescription = async (req, res) => {
                 { role: "user", content: prompt },
             ],
             temperature: 0.7,
+            max_tokens: 512,
         });
 
         const description = response.choices?.[0]?.message?.content || "";
@@ -289,6 +301,25 @@ export const checkVehicleInfo = async (req, res) => {
           ? `Dựa trên dung tích ${src.engine_capacity} cc: tay ga thường 50–160 cc, underbone 100–150 cc, sport/touring 150–1000+ cc.`
           : `Đánh giá theo nhóm dung tích: tay ga 50–160 cc, underbone 100–150 cc, sport/touring 150–1000+ cc.`;
 
+        const normalize = (s) => (s || "").toLowerCase().trim();
+        const allowedBodyTypes = ["sedan","hatchback","suv","crossover","minivan","pickup","coupe","convertible","wagon","mpv"];
+        const allowedTransmissions = ["manual","automatic","cvt","dct"];
+        const fuelAlias = (s) => {
+          const t = normalize(s);
+          if (["xang","xăng","gasoline","petrol"].includes(t)) return "petrol";
+          if (["dau","diesel"].includes(t)) return "diesel";
+          if (["dien","electric"].includes(t)) return "electric";
+          if (["hybrid"].includes(t)) return "hybrid";
+          return t;
+        };
+        const allowedFuelTypes = ["petrol","diesel","hybrid","electric"];
+        const brandModelKey = normalize(`${src.brand || ""} ${src.model || ""}`);
+        const knownModelGuides = {
+          "kia sportage": { body_type: "suv", seats: [5,5], fuel_type: ["petrol","diesel","hybrid"], transmission: ["automatic","manual"] },
+          "toyota vios": { body_type: "sedan", seats: [5,5], fuel_type: ["petrol"], transmission: ["automatic","manual"] },
+          "vinfast vf8": { body_type: "suv", seats: [5,5], fuel_type: ["electric"], transmission: ["automatic"] },
+        };
+
         const commonHeader = `Bạn là chuyên gia kiểm định dữ liệu xe.\n`+
           `Đối với xe ${src.name || ""} ${src.year || ""} ${brandLine}, hãy đánh giá độ hợp lý của các thuộc tính dựa trên kiến thức phổ biến cho thương hiệu/dòng xe này (không truy cập internet).\n`+
           `Trả về JSON duy nhất: {\"checks\": [{\"label\": string, \"status\": \"pass\"|\"fail\"|\"warn\", \"detail\": string}], \"summary\": {\"pass\": number, \"fail\": number, \"warn\": number}}. Nếu không chắc, dùng \"warn\".`;
@@ -358,18 +389,111 @@ export const checkVehicleInfo = async (req, res) => {
           };
         } else {
           if (src.vehicle_type === "car") {
-            if (src.seats && src.seats >= 2 && src.seats <= 9) pushBase("Số chỗ ngồi", "pass", String(src.seats)); else pushBase("Số chỗ ngồi", "warn", "Thiếu hoặc bất thường");
-            if (src.transmission) pushBase("Hộp số", "pass", src.transmission); else pushBase("Hộp số", "warn", "Thiếu");
-            if (src.body_type) pushBase("Dáng xe", "pass", src.body_type); else pushBase("Dáng xe", "warn", "Thiếu");
+            const bt = normalize(src.body_type);
+            if (bt) {
+              const ok = allowedBodyTypes.includes(bt);
+              const guide = knownModelGuides[brandModelKey];
+              if (!ok) {
+                pushBase("Dáng xe", "fail", `${src.body_type}. Gợi ý: chọn một trong ${allowedBodyTypes.join(", ")}${guide ? ` (mẫu: ${guide.body_type})` : ""}`);
+              } else if (guide && bt !== guide.body_type) {
+                pushBase("Dáng xe", "fail", `${src.body_type}. Gợi ý: mẫu ${guide.body_type} cho ${src.brand} ${src.model}`);
+              } else {
+                pushBase("Dáng xe", "pass", src.body_type);
+              }
+            } else {
+              const guide = knownModelGuides[brandModelKey];
+              pushBase("Dáng xe", "warn", `Thiếu. Gợi ý: cung cấp dạng thân xe (ví dụ: sedan, suv)${guide ? ` (mẫu: ${guide.body_type})` : ""}`);
+            }
+            const tr = normalize(src.transmission);
+            if (tr) {
+              const ok = allowedTransmissions.includes(tr);
+              const guide = knownModelGuides[brandModelKey];
+              if (!ok) {
+                pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: ${allowedTransmissions.join(", ")}${guide ? ` (mẫu: ${guide.transmission.join("/")})` : ""}`);
+              } else if (guide && !guide.transmission.includes(tr)) {
+                pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: mẫu ${guide.transmission.join("/")}`);
+              } else {
+                pushBase("Hộp số", "pass", src.transmission);
+              }
+            } else {
+              const guide = knownModelGuides[brandModelKey];
+              pushBase("Hộp số", "warn", `Thiếu. Gợi ý: manual/automatic/CVT/DCT${guide ? ` (mẫu: ${guide.transmission.join("/")})` : ""}`);
+            }
+            const seatsNum = Number(src.seats);
+            if (Number.isFinite(seatsNum)) {
+              const guide = knownModelGuides[brandModelKey];
+              const okRange = seatsNum >= 2 && seatsNum <= 9;
+              if (!okRange) {
+                pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: ${seatGuide}`);
+              } else if (guide && !(seatsNum >= guide.seats[0] && seatsNum <= guide.seats[1])) {
+                pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: mẫu ${guide.seats[0]}–${guide.seats[1]} chỗ`);
+              } else {
+                pushBase("Số chỗ ngồi", "pass", String(src.seats));
+              }
+            } else {
+              pushBase("Số chỗ ngồi", "warn", `Thiếu. Gợi ý: nhập số chỗ ngồi. ${seatGuide}`);
+            }
+            const f = fuelAlias(src.fuel_type);
+            if (src.fuel_type) {
+              const ok = allowedFuelTypes.includes(f);
+              const guide = knownModelGuides[brandModelKey];
+              if (!ok) {
+                pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric${guide ? ` (mẫu: ${guide.fuel_type.join("/")})` : ""}`);
+              } else if (guide && !guide.fuel_type.includes(f)) {
+                pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: mẫu ${guide.fuel_type.join("/")}`);
+              } else {
+                pushBase("Nhiên liệu", "pass", src.fuel_type);
+              }
+            } else {
+              pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
+            }
+            if (src.fuel_consumption) {
+              const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+              if (Number.isFinite(fc)) {
+                const ok = fc >= 3 && fc <= 20;
+                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+              } else {
+                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+              }
+            } else {
+              pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+            }
+            const ec = parseFloat(String(src.engine_capacity || "").replace(/[^\d\.]+/g, ""));
+            if (Number.isFinite(ec)) {
+              const ok = ec >= 600 && ec <= 7000;
+              pushBase("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: ô tô phổ biến 1000–3000 cc`);
+            }
           } else if (src.vehicle_type === "motorbike") {
             const bt = (src.bike_type || src.body_type || "").toLowerCase();
             const allowedBikeTypes = ["tay ga","scooter","underbone","cub","sport","naked","touring","cruiser","adventure","dual-sport","off-road","dirt"];
             const matchesAllowed = bt ? allowedBikeTypes.some(t => bt.includes(t)) : false;
-            if (bt) pushBase("Loại xe", matchesAllowed ? "pass" : "warn", src.bike_type || src.body_type); else pushBase("Loại xe", "warn", "Thiếu");
-            if (src.engine_capacity) pushBase("Dung tích", "pass", `${src.engine_capacity} cc`); else pushBase("Dung tích", "warn", "Thiếu");
+            if (bt) pushBase("Loại xe", matchesAllowed ? "pass" : "fail", matchesAllowed ? (src.bike_type || src.body_type) : `${src.bike_type || src.body_type}. Gợi ý: chọn một trong ${allowedBikeTypes.join(", ")}`); else pushBase("Loại xe", "warn", "Thiếu. Gợi ý: cung cấp loại xe (tay ga, underbone, sport, naked, touring, cruiser, adventure, dual-sport, off-road/dirt)");
+            const ec = parseFloat(String(src.engine_capacity || "").replace(/[^\d\.]+/g, ""));
+            if (Number.isFinite(ec)) {
+              const ok = ec >= 49 && ec <= 2000;
+              pushBase("Dung tích", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: xe máy phổ biến 50–1000 cc`);
+            } else {
+              pushBase("Dung tích", "warn", "Thiếu. Gợi ý: nhập dung tích (ví dụ: 125 cc)");
+            }
           }
-          if (src.fuel_type) pushBase("Nhiên liệu", "pass", src.fuel_type); else pushBase("Nhiên liệu", "warn", "Thiếu");
-          if (src.fuel_consumption) pushBase("Mức tiêu thụ", "pass", src.fuel_consumption); else pushBase("Mức tiêu thụ", "warn", "Thiếu");
+          if (src.fuel_type) {
+            const f = fuelAlias(src.fuel_type);
+            const ok = allowedFuelTypes.includes(f);
+            pushBase("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric`);
+          } else {
+            pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
+          }
+          if (src.fuel_consumption) {
+            const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+            if (Number.isFinite(fc)) {
+              const ok = fc >= 3 && fc <= 20;
+              pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+            } else {
+              pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+            }
+          } else {
+            pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+          }
           
 
           checks = baseChecks;
