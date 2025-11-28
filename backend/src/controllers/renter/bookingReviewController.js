@@ -1,50 +1,89 @@
 // controllers/renter/bookingReviewController.js
 import db from "../../models/index.js";
+import { checkContentModeration } from "../../services/contentModerationService.js";
 
 const { Booking, BookingReview, Vehicle, User, PointsTransaction } = db;
 
 export const createBookingReview = async (req, res) => {
-  const transaction = await db.sequelize.transaction(); // ⚙️ dùng transaction để đảm bảo tính toàn vẹn
+  const transaction = await db.sequelize.transaction();
   try {
     const { booking_id, rating, review_content } = req.body;
-    const renter_id = req.user.userId; // từ verifyJWTToken middleware
+    const renter_id = req.user.userId;
 
     // 1️⃣ Kiểm tra thông tin đầu vào
     if (!booking_id || !rating) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Thiếu thông tin bắt buộc (booking_id, rating)",
+        isModerationError: false,
       });
+    }
+
+    // 🆕 1.5️⃣ KIỂM TRA NỘI DUNG BẰNG AI
+    if (review_content && review_content.trim()) {
+      console.log("🔍 Đang kiểm tra nội dung đánh giá bằng AI...");
+
+      try {
+        const moderationResult = await checkContentModeration(review_content);
+
+        if (!moderationResult.isValid) {
+          console.log("⛔ Nội dung bị từ chối:", moderationResult.reason);
+          await transaction.rollback();
+
+          // ✅ FIX: Trả về status 400 + JSON đầy đủ với flag và reason
+          return res.status(400).json({
+            success: false,
+            message: "Nội dung đánh giá không phù hợp",
+            reason: moderationResult.reason,
+            isModerationError: true,
+          });
+        }
+
+        console.log("✅ Nội dung đánh giá hợp lệ");
+      } catch (aiError) {
+        console.error("⚠️ AI moderation failed:", aiError.message);
+        // Không return, cho phép đánh giá tiếp tục
+      }
     }
 
     // 2️⃣ Kiểm tra booking có tồn tại và thuộc về renter này
     const booking = await Booking.findOne({
       where: { booking_id, renter_id },
+      transaction,
     });
 
     if (!booking) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Không tìm thấy đơn thuê này." });
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn thuê này.",
+        isModerationError: false,
+      });
     }
 
     // 3️⃣ Kiểm tra trạng thái booking (phải completed)
     if (booking.status !== "completed") {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Chỉ có thể đánh giá sau khi đơn thuê đã hoàn tất.",
+        isModerationError: false,
       });
     }
 
     // 4️⃣ Kiểm tra xem đã đánh giá đơn này chưa
     const existingReview = await BookingReview.findOne({
       where: { booking_id },
+      transaction,
     });
 
     if (existingReview) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Bạn đã đánh giá đơn thuê này rồi.",
+        isModerationError: false,
       });
     }
 
@@ -60,19 +99,16 @@ export const createBookingReview = async (req, res) => {
 
     // 6️⃣ Cộng điểm cho renter
     const POINTS_REWARD = 5000;
-
-    // Lấy user hiện tại
     const user = await User.findByPk(renter_id, { transaction });
 
     if (!user) {
       throw new Error("Không tìm thấy người dùng.");
     }
 
-    // Cập nhật điểm
     const newBalance = user.points + POINTS_REWARD;
     await user.update({ points: newBalance }, { transaction });
 
-    // 7️ Ghi lịch sử điểm
+    // 7️⃣ Ghi lịch sử điểm
     await PointsTransaction.create(
       {
         user_id: renter_id,
@@ -86,7 +122,7 @@ export const createBookingReview = async (req, res) => {
       { transaction }
     );
 
-    // 8️⃣ Lấy thông tin xe để trả về cho FE
+    // 8️⃣ Lấy thông tin xe
     const vehicle = await Vehicle.findOne({
       where: { vehicle_id: booking.vehicle_id },
       attributes: ["vehicle_id", "model", "main_image_url", "owner_id"],
@@ -102,6 +138,7 @@ export const createBookingReview = async (req, res) => {
       vehicle,
       points_rewarded: POINTS_REWARD,
       new_balance: newBalance,
+      isModerationError: false,
     });
   } catch (error) {
     await transaction.rollback();
@@ -109,6 +146,8 @@ export const createBookingReview = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi server khi tạo đánh giá.",
+      error: error.message,
+      isModerationError: false,
     });
   }
 };
@@ -126,10 +165,9 @@ export const getReviewsByVehicle = async (req, res) => {
           where: { vehicle_id },
           attributes: ["vehicle_id", "renter_id"],
           include: [
-            // ✅ THÊM MỚI: Nested include Vehicle để tránh alias mismatch và cung cấp data đầy đủ cho FE (model, image, plate)
             {
               model: Vehicle,
-              as: "vehicle", // ✅ SỬA: Bắt buộc dùng 'as: "vehicle"' để khớp association (tránh EagerLoadingError)
+              as: "vehicle",
               attributes: [
                 "vehicle_id",
                 "model",
@@ -153,19 +191,18 @@ export const getReviewsByVehicle = async (req, res) => {
   }
 };
 
-// Lấy tất cả review của người dùng đang đăng nhập (các đánh giá mà renter đã đánh giá)
+// Lấy tất cả review của người dùng đang đăng nhập
 export const getMyReviews = async (req, res) => {
   try {
-    const renter_id = req.user.userId; // từ verifyJWTToken middleware
-    const { sortBy = "created_at" } = req.query; //Query param sortBy (mặc định: created_at DESC - đánh giá mới nhất trước)
+    const renter_id = req.user.userId;
+    const { sortBy = "created_at" } = req.query;
 
-    // Xây dựng order clause dựa trên sortBy (linh hoạt: created_at, start_date, rating)
     let orderClause = [["created_at", "DESC"]];
     if (sortBy === "start_date") {
-      orderClause = [["booking", "start_date", "DESC"]]; // Sắp xếp theo ngày bắt đầu booking (nested sort)
+      orderClause = [["booking", "start_date", "DESC"]];
     } else if (sortBy === "rating") {
-      orderClause = [["rating", "DESC"]]; // Đánh giá cao nhất trước
-    } // Else: Giữ created_at DESC
+      orderClause = [["rating", "DESC"]];
+    }
 
     const reviews = await BookingReview.findAll({
       include: [
@@ -184,7 +221,7 @@ export const getMyReviews = async (req, res) => {
           include: [
             {
               model: Vehicle,
-              as: "vehicle", // Giả sử có association Booking -> Vehicle as "vehicle"
+              as: "vehicle",
               attributes: [
                 "vehicle_id",
                 "model",
@@ -196,14 +233,14 @@ export const getMyReviews = async (req, res) => {
           ],
         },
       ],
-      order: orderClause, // Áp dụng order động (trước đây chỉ fixed created_at)
+      order: orderClause,
     });
 
     res.json({
       success: true,
       reviews,
       totalReviews: reviews.length,
-      sortBy, // Trả về info sort để FE biết (optional)
+      sortBy,
     });
   } catch (error) {
     console.error("Lỗi khi lấy đánh giá của người dùng: ", error);
@@ -214,7 +251,7 @@ export const getMyReviews = async (req, res) => {
   }
 };
 
-// Xóa đánh giá booking (chỉ renter có thể xóa review của mình)
+// Xóa đánh giá booking
 export const deleteBookingReview = async (req, res) => {
   const transaction = await db.sequelize.transaction();
   try {
@@ -228,7 +265,7 @@ export const deleteBookingReview = async (req, res) => {
         {
           model: Booking,
           as: "booking",
-          where: { renter_id }, // Đảm bảo booking thuộc renter này
+          where: { renter_id },
           attributes: ["booking_id", "renter_id"],
         },
       ],
@@ -242,7 +279,7 @@ export const deleteBookingReview = async (req, res) => {
       });
     }
 
-    // 2️⃣ Tìm lịch sử điểm thưởng liên quan (nếu có)
+    // 2️⃣ Tìm lịch sử điểm thưởng liên quan
     const pointsTrans = await PointsTransaction.findOne({
       where: {
         user_id: renter_id,
@@ -261,11 +298,10 @@ export const deleteBookingReview = async (req, res) => {
       throw new Error("Không tìm thấy người dùng.");
     }
 
-    // Kiểm tra điểm hiện tại có đủ không (không cho âm)
     const newBalance = Math.max(0, user.points - POINTS_DEDUCT);
     await user.update({ points: newBalance }, { transaction });
 
-    // 4️⃣ Xóa lịch sử điểm (nếu tồn tại)
+    // 4️⃣ Xóa lịch sử điểm
     if (pointsTrans) {
       await pointsTrans.destroy({ transaction });
     }

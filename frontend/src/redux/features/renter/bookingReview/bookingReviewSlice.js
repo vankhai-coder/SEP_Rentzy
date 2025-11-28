@@ -1,8 +1,7 @@
-// src/redux/features/renter/bookingReview/bookingReviewSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "react-toastify"; // Import toast để dùng trong fulfilled
+import { toast } from "react-toastify";
 
-// Async thunk để fetch chi tiết một booking (cho trang review)
+// 1. FETCH BOOKING DETAIL
 export const fetchBookingDetail = createAsyncThunk(
   "bookingReview/fetchBookingDetail",
   async (bookingId, { rejectWithValue }) => {
@@ -10,24 +9,22 @@ export const fetchBookingDetail = createAsyncThunk(
       const response = await fetch(
         `${
           import.meta.env.VITE_API_URL
-        }/api/renter/booking-history/${bookingId}`, // Giả sử endpoint này tồn tại
+        }/api/renter/booking-history/${bookingId}`,
         {
           method: "GET",
-          credentials: "include", // Gửi JWT cookie
+          credentials: "include",
         }
       );
-      if (!response.ok) {
-        throw new Error("Không thể lấy thông tin booking");
-      }
+      if (!response.ok) throw new Error("Không thể lấy thông tin booking");
       const data = await response.json();
-      return data.data; // Trả về object { booking, vehicle, ... }
+      return data.data;
     } catch (error) {
       return rejectWithValue(error.message || "Lỗi khi lấy thông tin booking");
     }
   }
 );
 
-// Async thunk để tạo review
+// 2. CREATE REVIEW (CÓ AI MODERATION)
 export const createReview = createAsyncThunk(
   "bookingReview/createReview",
   async ({ bookingId, rating, reviewContent }, { rejectWithValue }) => {
@@ -37,94 +34,108 @@ export const createReview = createAsyncThunk(
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // Gửi JWT cookie
+          credentials: "include",
           body: JSON.stringify({
-            booking_id: bookingId,
-            rating,
-            review_content: reviewContent,
+            booking_id: Number(bookingId),
+            rating: Number(rating),
+            review_content: (reviewContent || "").trim(),
           }),
         }
       );
-      if (!response.ok) {
-        throw new Error("Không thể tạo đánh giá");
+
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        return rejectWithValue({
+          isModerationError: false,
+          message: "Lỗi xử lý phản hồi từ server",
+        });
       }
-      const data = await response.json();
-      // Sau success, dispatch refetch booking history để update hasReview (từ slice khác)
-      // Giả sử import từ bookingHistorySlice
-      // const { fetchBookings } = await import("../../bookingHistory/bookingHistorySlice");
-      // dispatch(fetchBookings());
-      return data; // Trả về { success: true, review, vehicle, points_rewarded, new_balance }
-    } catch (error) {
-      return rejectWithValue(error.message || "Lỗi khi tạo đánh giá");
+
+      if (!response.ok) {
+        if (data.isModerationError) {
+          return rejectWithValue({
+            isModerationError: true,
+            reason:
+              data.reason || "Nội dung không phù hợp với chính sách cộng đồng.",
+            message: data.message,
+          });
+        }
+        return rejectWithValue({
+          isModerationError: false,
+          message: data.message || "Không thể gửi đánh giá",
+        });
+      }
+
+      return data;
+    } catch {
+      return rejectWithValue({
+        isModerationError: false,
+        message: "Lỗi kết nối mạng",
+      });
     }
   }
 );
 
-// Async thunk fetch my reviews (danh sách đánh giá của user)
+// 3. FETCH MY REVIEWS
 export const fetchMyReviews = createAsyncThunk(
   "bookingReview/fetchMyReviews",
   async (_, { rejectWithValue }) => {
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/renter/reviews/my-reviews`,
-        {
-          method: "GET",
-          credentials: "include", // Gửi JWT cookie
-        }
+        { method: "GET", credentials: "include" }
       );
-      if (!response.ok) {
-        throw new Error("Không thể lấy danh sách đánh giá");
-      }
+      if (!response.ok) throw new Error("Không thể lấy danh sách đánh giá");
       const data = await response.json();
-      return data; // Trả về { success: true, reviews: [...], totalReviews: n }
+      return data;
     } catch (error) {
       return rejectWithValue(error.message || "Lỗi khi lấy đánh giá của bạn");
     }
   }
 );
 
-// Async thunk để xóa review (gọi API DELETE)
+// 4. DELETE REVIEW
 export const deleteReview = createAsyncThunk(
   "bookingReview/deleteReview",
   async (reviewId, { rejectWithValue }) => {
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/renter/reviews/${reviewId}`,
-        {
-          method: "DELETE",
-          credentials: "include", // Gửi JWT cookie
-        }
+        { method: "DELETE", credentials: "include" }
       );
-      if (!response.ok) {
-        throw new Error("Không thể xóa đánh giá");
-      }
+      if (!response.ok) throw new Error("Không thể xóa đánh giá");
       const data = await response.json();
-      return data; // Trả về { success: true, message, points_deducted, new_balance }
+      return data;
     } catch (error) {
       return rejectWithValue(error.message || "Lỗi khi xóa đánh giá");
     }
   }
 );
 
+// SLICE
 const bookingReviewSlice = createSlice({
   name: "bookingReview",
   initialState: {
     bookingDetail: null,
-    // State cho my reviews
     myReviews: [],
     totalReviews: 0,
     loading: false,
     error: null,
+    moderationError: null,
   },
   reducers: {
     clearError: (state) => {
       state.error = null;
+      state.moderationError = null;
+    },
+    clearModerationError: (state) => {
+      state.moderationError = null;
     },
     clearBookingDetail: (state) => {
-      // Clear khi navigate away
       state.bookingDetail = null;
     },
-    //  Reducer clear my reviews (optional, dùng khi leave page)
     clearMyReviews: (state) => {
       state.myReviews = [];
       state.totalReviews = 0;
@@ -132,7 +143,7 @@ const bookingReviewSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Booking Detail
+      // fetchBookingDetail
       .addCase(fetchBookingDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -144,58 +155,63 @@ const bookingReviewSlice = createSlice({
       .addCase(fetchBookingDetail.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        toast.error(`Lỗi: ${action.payload}`); // Toast error
+        toast.error(`Lỗi: ${action.payload}`);
       })
-      // Create Review
+
+      // createReview
       .addCase(createReview.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.moderationError = null;
       })
       .addCase(createReview.fulfilled, (state, action) => {
         state.loading = false;
         toast.success(
           action.payload.message ||
             "Đánh giá thành công! Bạn được thưởng 5,000 điểm."
-        ); // Toast success từ backend message
-        // Clear detail sau success
-        state.bookingDetail = null;
+        );
       })
       .addCase(createReview.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-        toast.error(`Lỗi: ${action.payload}`);
+
+        // LOG ĐỂ BẠN THẤY RÕ (mở F12)
+        console.log("createReview.rejected → payload:", action.payload);
+
+        if (action.payload?.isModerationError) {
+          state.moderationError = action.payload.reason;
+          console.log("THÔNG BÁO ĐỎ ĐÃ HIỆN:", state.moderationError);
+        } else {
+          state.error = action.payload?.message || "Lỗi không xác định";
+          toast.error(`Lỗi: ${state.error}`);
+        }
       })
-      // Cases cho fetchMyReviews
+
+      // fetchMyReviews
       .addCase(fetchMyReviews.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchMyReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.myReviews = action.payload.reviews || []; // Lưu array reviews
+        state.myReviews = action.payload.reviews || [];
         state.totalReviews = action.payload.totalReviews || 0;
-        if (action.payload.success === false) {
-          state.error = action.payload.message || "Không có dữ liệu";
-        }
       })
       .addCase(fetchMyReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         toast.error(`Lỗi: ${action.payload}`);
       })
-      //  Cases cho deleteReview
+
+      // deleteReview
       .addCase(deleteReview.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(deleteReview.fulfilled, (state, action) => {
         state.loading = false;
-        // Filter bỏ review đã xóa khỏi state (dựa trên reviewId từ arg)
-        const deletedReviewId = action.meta.arg;
+        const deletedId = action.meta.arg;
         state.myReviews = state.myReviews.filter(
-          (review) => review.review_id !== deletedReviewId
+          (r) => r.review_id !== deletedId
         );
-        state.totalReviews = state.myReviews.length; // Cập nhật total sau filter
+        state.totalReviews = state.myReviews.length;
         toast.success(action.payload.message || "Xóa đánh giá thành công!");
       })
       .addCase(deleteReview.rejected, (state, action) => {
@@ -206,8 +222,11 @@ const bookingReviewSlice = createSlice({
   },
 });
 
-// Export thêm action clearMyReviews và thunk deleteReview
-export const { clearError, clearBookingDetail, clearMyReviews } =
-  bookingReviewSlice.actions;
+export const {
+  clearError,
+  clearModerationError,
+  clearBookingDetail,
+  clearMyReviews,
+} = bookingReviewSlice.actions;
 
 export default bookingReviewSlice.reducer;
