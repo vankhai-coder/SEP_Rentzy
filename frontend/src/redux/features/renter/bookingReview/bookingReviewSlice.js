@@ -1,3 +1,5 @@
+// src/redux/features/renter/bookingReview/bookingReviewSlice.js
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 
@@ -78,13 +80,18 @@ export const createReview = createAsyncThunk(
   }
 );
 
-// 3. FETCH MY REVIEWS
+// ✅ 3. FETCH MY REVIEWS với phân trang
 export const fetchMyReviews = createAsyncThunk(
   "bookingReview/fetchMyReviews",
-  async (_, { rejectWithValue }) => {
+  async (
+    { page = 1, limit = 3, sortBy = "created_at" } = {},
+    { rejectWithValue }
+  ) => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/renter/reviews/my-reviews`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/renter/reviews/my-reviews?page=${page}&limit=${limit}&sortBy=${sortBy}`,
         { method: "GET", credentials: "include" }
       );
       if (!response.ok) throw new Error("Không thể lấy danh sách đánh giá");
@@ -114,13 +121,16 @@ export const deleteReview = createAsyncThunk(
   }
 );
 
-// SLICE
+// ✅ SLICE với phân trang
 const bookingReviewSlice = createSlice({
   name: "bookingReview",
   initialState: {
     bookingDetail: null,
     myReviews: [],
     totalReviews: 0,
+    currentPage: 1,
+    totalPages: 1,
+    itemsPerPage: 3,
     loading: false,
     error: null,
     moderationError: null,
@@ -139,6 +149,8 @@ const bookingReviewSlice = createSlice({
     clearMyReviews: (state) => {
       state.myReviews = [];
       state.totalReviews = 0;
+      state.currentPage = 1;
+      state.totalPages = 1;
     },
   },
   extraReducers: (builder) => {
@@ -186,7 +198,7 @@ const bookingReviewSlice = createSlice({
         }
       })
 
-      // fetchMyReviews
+      // ✅ fetchMyReviews với phân trang
       .addCase(fetchMyReviews.pending, (state) => {
         state.loading = true;
       })
@@ -194,6 +206,9 @@ const bookingReviewSlice = createSlice({
         state.loading = false;
         state.myReviews = action.payload.reviews || [];
         state.totalReviews = action.payload.totalReviews || 0;
+        state.currentPage = action.payload.currentPage || 1;
+        state.totalPages = action.payload.totalPages || 1;
+        state.itemsPerPage = action.payload.itemsPerPage || 3;
       })
       .addCase(fetchMyReviews.rejected, (state, action) => {
         state.loading = false;
@@ -207,11 +222,6 @@ const bookingReviewSlice = createSlice({
       })
       .addCase(deleteReview.fulfilled, (state, action) => {
         state.loading = false;
-        const deletedId = action.meta.arg;
-        state.myReviews = state.myReviews.filter(
-          (r) => r.review_id !== deletedId
-        );
-        state.totalReviews = state.myReviews.length;
         toast.success(action.payload.message || "Xóa đánh giá thành công!");
       })
       .addCase(deleteReview.rejected, (state, action) => {

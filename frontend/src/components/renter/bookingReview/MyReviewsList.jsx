@@ -1,16 +1,16 @@
+// src/components/renter/bookingReview/MyReviewsList.jsx
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Star, Calendar, Car, Trash2, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { deleteReview } from "../../../redux/features/renter/bookingReview/bookingReviewSlice";
 
-const MyReviewsList = ({ reviews, loading, error }) => {
+const MyReviewsList = ({ reviews, loading, error, onReviewDeleted }) => {
   const dispatch = useDispatch();
   const { loading: globalLoading } = useSelector(
     (state) => state.bookingReview
   );
 
-  // State cho modal confirm xóa
   const [showModal, setShowModal] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState(null);
 
@@ -19,9 +19,12 @@ const MyReviewsList = ({ reviews, loading, error }) => {
     setShowModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedReviewId) {
-      dispatch(deleteReview(selectedReviewId));
+      const result = await dispatch(deleteReview(selectedReviewId));
+      if (deleteReview.fulfilled.match(result)) {
+        onReviewDeleted?.();
+      }
     }
     setShowModal(false);
     setSelectedReviewId(null);
@@ -34,7 +37,7 @@ const MyReviewsList = ({ reviews, loading, error }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center py-12">
         <div className="text-lg">Đang tải đánh giá...</div>
       </div>
     );
@@ -42,22 +45,24 @@ const MyReviewsList = ({ reviews, loading, error }) => {
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
+      <div className="text-center py-12 text-red-500">
         Lỗi: {error}.{" "}
-        <button onClick={() => window.location.reload()}>Thử lại</button>
+        <button onClick={() => window.location.reload()} className="underline">
+          Thử lại
+        </button>
       </div>
     );
   }
 
   if (!reviews || reviews.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Star className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+      <div className="text-center py-20">
+        <Star className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+        <h3 className="text-xl font-medium text-gray-900 mb-2">
           Chưa có đánh giá nào
         </h3>
         <p className="text-gray-500">
-          Hãy thuê xe và đánh giá để chia sẻ trải nghiệm!
+          Hãy thuê xe và đánh giá để chia sẻ trải nghiệm của bạn!
         </p>
       </div>
     );
@@ -65,111 +70,117 @@ const MyReviewsList = ({ reviews, loading, error }) => {
 
   return (
     <>
-      <div className="space-y-4">
+      {/* Danh sách đánh giá */}
+      <div className="space-y-6">
         {reviews.map((review) => (
           <div
             key={review.review_id}
-            className="border rounded-lg p-4 bg-white shadow-sm"
+            className="border rounded-xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow"
           >
-            {/* Header: Vehicle info */}
-            <div className="flex items-center gap-3 mb-2">
-              <Car className="h-5 w-5 text-blue-500" />
-              <div>
-                <h4 className="font-semibold">
-                  {review.booking.vehicle.model} (
-                  {review.booking.vehicle.license_plate})
-                </h4>
-                <p className="text-sm text-gray-500">
-                  {formatDate(review.booking.start_date)} -{" "}
-                  {formatDate(review.booking.end_date)}
-                </p>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4 mb-3">
+                <Car className="h-6 w-6 text-blue-600" />
+                <div>
+                  <h4 className="font-semibold text-lg">
+                    {review.booking.vehicle.model}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    Biển số: {review.booking.vehicle.license_plate} • Thuê từ{" "}
+                    {formatDate(review.booking.start_date)} đến{" "}
+                    {formatDate(review.booking.end_date)}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Rating */}
-            <div className="flex items-center gap-1 mb-2">
+            <div className="flex items-center gap-1 my-4">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-5 w-5 ${
+                  className={`h-6 w-6 ${
                     i < review.rating
                       ? "text-yellow-400 fill-yellow-400"
                       : "text-gray-300"
                   }`}
                 />
               ))}
-              <span className="ml-2 text-sm text-gray-600">
-                ({review.rating}/5)
+              <span className="ml-2 text-gray-700 font-medium">
+                {review.rating}.0
               </span>
             </div>
 
-            {/* Content */}
             {review.review_content && (
-              <p className="text-gray-700 mb-3 italic">
-                "{review.review_content}"
+              <p className="text-gray-700 italic bg-gray-50 p-4 rounded-lg leading-relaxed">
+                {review.review_content}
               </p>
             )}
 
-            {/* Footer: Date + Delete Button */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between mt-6 text-sm text-gray-500">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
-                {formatDate(review.created_at)}
+                Đánh giá ngày {formatDate(review.created_at)}
               </div>
+
               <button
                 onClick={() => openDeleteModal(review.review_id)}
                 disabled={globalLoading}
-                className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium transition ${
                   globalLoading
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-500 hover:text-red-700"
+                    : "text-red-600 hover:bg-red-50"
                 }`}
-                title="Xóa đánh giá"
               >
                 <Trash2 className="h-4 w-4" />
-                Xóa
+                Xóa đánh giá
               </button>
             </div>
           </div>
         ))}
-        <div className="text-center text-sm text-gray-500 mt-4">
-          Tổng: {reviews.length} đánh giá
-        </div>
       </div>
 
-      {/* Modal Confirm Xóa - Nền trong suốt, không tối */}
+      {/* Modal XÓA - KHÔNG nền đen, chỉ nổi lên giữa màn hình */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Xác nhận xóa
-              </h3>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Bạn có chắc chắn muốn xóa đánh giá này? Hành động này không thể
-              hoàn tác.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={globalLoading}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {globalLoading ? "Đang xóa..." : "Xóa"}
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          {/* Chỉ có modal, không có backdrop */}
+          <div className="pointer-events-auto bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Xóa đánh giá này?
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 leading-relaxed">
+                  Bạn có chắc chắn muốn <strong>xóa vĩnh viễn</strong> đánh giá
+                  này?
+                </p>
+                <p className="text-sm text-red-600 mt-3 font-medium">
+                  Lưu ý: Bạn sẽ bị trừ <strong>5.000 điểm</strong> thưởng.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closeModal}
+                  className="px-5 py-2.5 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition font-medium"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={globalLoading}
+                  className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium shadow-md"
+                >
+                  {globalLoading ? "Đang xóa..." : "Xóa vĩnh viễn"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
