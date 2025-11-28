@@ -114,7 +114,7 @@ const LoginWithPhoneNumber = ({ setIsRegisterWithPhoneOpen, setIsLoginWithPhoneO
                             value={formatPhoneNumber(phoneNumber)}
                             onChange={(e) => { setPhoneNumber(e.target.value) }}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            placeholder="Nhập số điện thoại theo định dạng 0xxxxxxxxx"
+                            placeholder="Nhập sđt theo định dạng 0123 456 789"
                             required
                         />
                     </div>
