@@ -787,11 +787,43 @@ export const getBookingDetail = async (req, res) => {
       });
     }
 
+    // Nếu có envelope, làm mới trạng thái DocuSign trước khi trả về
+    try {
+      if (booking?.contract?.contract_number) {
+        const { refreshStatusForEnvelope } = await import(
+          "../docusign/docusignController.js"
+        );
+        await refreshStatusForEnvelope(booking.contract.contract_number);
+        // Reload contract để đảm bảo dữ liệu cập nhật từ DB
+        const latestContract = await BookingContract.findOne({
+          where: { booking_id: booking.booking_id },
+          attributes: [
+            "contract_id",
+            "contract_number",
+            "contract_status",
+            "renter_signed_at",
+            "owner_signed_at",
+            "contract_file_url",
+          ],
+        });
+        if (latestContract) {
+          booking.contract = latestContract;
+        }
+      }
+    } catch (refreshErr) {
+      console.warn(
+        "Owner getBookingDetail: refresh DocuSign status failed",
+        refreshErr?.message || refreshErr
+      );
+    }
+
     // Parse traffic_fine_images từ JSON string thành array
     const bookingData = booking.toJSON();
     if (bookingData.traffic_fine_images) {
       try {
-        bookingData.traffic_fine_images = JSON.parse(bookingData.traffic_fine_images);
+        bookingData.traffic_fine_images = JSON.parse(
+          bookingData.traffic_fine_images
+        );
       } catch (e) {
         // Nếu không parse được, giữ nguyên hoặc set thành array rỗng
         bookingData.traffic_fine_images = [];
@@ -1373,8 +1405,16 @@ export const rejectBooking = async (req, res) => {
         vehicle_id: { [Op.in]: vehicleIds },
       },
       include: [
-        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
-        { model: Vehicle, as: "vehicle", attributes: ["vehicle_id", "model", "owner_id"] },
+        {
+          model: User,
+          as: "renter",
+          attributes: ["user_id", "full_name", "email"],
+        },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["vehicle_id", "model", "owner_id"],
+        },
       ],
     });
 
@@ -1403,7 +1443,9 @@ export const rejectBooking = async (req, res) => {
     await Notification.create({
       user_id: booking.renter_id,
       title: "Đơn đặt xe đã bị từ chối",
-      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${reason ? `Lý do: ${reason}` : ""}`,
+      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${
+        reason ? `Lý do: ${reason}` : ""
+      }`,
       type: "booking",
       is_read: false,
     });
@@ -1470,7 +1512,8 @@ export const addTrafficFine = async (req, res) => {
     if (!["in_progress", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+        message:
+          "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
       });
     }
 
@@ -1520,7 +1563,9 @@ export const addTrafficFine = async (req, res) => {
       const notifications = adminUsers.map((admin) => ({
         user_id: admin.user_id,
         title: "Yêu cầu duyệt phạt nguội mới",
-        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${booking.booking_id}. Số tiền: ${trafficFineAmount.toLocaleString('vi-VN')} VNĐ.`,
+        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${
+          booking.booking_id
+        }. Số tiền: ${trafficFineAmount.toLocaleString("vi-VN")} VNĐ.`,
         type: "alert",
       }));
       await Notification.bulkCreate(notifications);
@@ -1593,7 +1638,8 @@ export const requestDeleteTrafficFine = async (req, res) => {
     if (!["in_progress", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể yêu cầu xóa phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+        message:
+          "Chỉ có thể yêu cầu xóa phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
       });
     }
 
@@ -1610,7 +1656,8 @@ export const requestDeleteTrafficFine = async (req, res) => {
     if (existingDeleteRequest) {
       return res.status(400).json({
         success: false,
-        message: "Bạn đã có yêu cầu xóa phạt nguội đang chờ duyệt. Vui lòng chờ admin xử lý.",
+        message:
+          "Bạn đã có yêu cầu xóa phạt nguội đang chờ duyệt. Vui lòng chờ admin xử lý.",
       });
     }
 
@@ -1638,7 +1685,9 @@ export const requestDeleteTrafficFine = async (req, res) => {
       const notifications = adminUsers.map((admin) => ({
         user_id: admin.user_id,
         title: "Yêu cầu xóa phạt nguội mới",
-        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${booking.booking_id}. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
+        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${
+          booking.booking_id
+        }. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
         type: "alert",
       }));
       await Notification.bulkCreate(notifications);
@@ -1665,10 +1714,13 @@ export const requestDeleteTrafficFine = async (req, res) => {
       success: false,
       message: "Lỗi khi gửi yêu cầu xóa phạt nguội",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      details: process.env.NODE_ENV === "development" ? {
-        name: error.name,
-        stack: error.stack,
-      } : undefined,
+      details:
+        process.env.NODE_ENV === "development"
+          ? {
+              name: error.name,
+              stack: error.stack,
+            }
+          : undefined,
     });
   }
 };

@@ -6,7 +6,11 @@ import path from "path";
 import jwt from "jsonwebtoken";
 import { decryptWithSecret } from "../../utils/cryptoUtil.js";
 import { sendEmail } from "../../utils/email/sendEmail.js";
-import { signingOtpTemplate, signingConfirmationTemplate, otherPartyNotificationTemplate } from "../../utils/email/templates/emailTemplate.js";
+import {
+  signingOtpTemplate,
+  signingConfirmationTemplate,
+  otherPartyNotificationTemplate,
+} from "../../utils/email/templates/emailTemplate.js";
 import { createOtp, verifyOtp, hasOtp } from "../../utils/otp/otpStore.js";
 
 const { BookingContract, Booking, Vehicle, User } = db;
@@ -173,12 +177,10 @@ export const oauthCallback = async (req, res) => {
     });
   } catch (err) {
     console.error("DocuSign OAuth error:", err.response?.data || err.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to exchange token",
-        details: err.response?.data || err.message,
-      });
+    res.status(500).json({
+      error: "Failed to exchange token",
+      details: err.response?.data || err.message,
+    });
   }
 };
 
@@ -255,17 +257,57 @@ export const sendContract = async (req, res) => {
     pdfBase64,
     htmlBase64,
     signers,
+    positions, // { renter: { pageNumber, xPosition, yPosition, anchorString, anchorXOffset, anchorYOffset }, owner: { ... } }
   } = req.body;
   if (!bookingId || (!pdfBase64 && !htmlBase64)) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Missing bookingId and document base64 (pdfBase64 or htmlBase64)",
-      });
+    return res.status(400).json({
+      error: "Missing bookingId and document base64 (pdfBase64 or htmlBase64)",
+    });
   }
 
   try {
+    // Helper: build SignHere tabs using coordinates or anchors per role
+    const buildSignHereTabs = (role) => {
+      const pos = positions && positions[role] ? positions[role] : null;
+      // Prefer absolute coordinates when provided
+      if (pos && pos.xPosition !== undefined && pos.yPosition !== undefined) {
+        return [
+          {
+            documentId: "1",
+            pageNumber: String(pos.pageNumber || 1),
+            xPosition: String(pos.xPosition),
+            yPosition: String(pos.yPosition),
+          },
+        ];
+      }
+      // Else use anchorString with optional offsets
+      const anchorStringDefault =
+        role === "owner" ? "SIGN_OWNER" : "SIGN_RENTER";
+      const anchorString =
+        pos && pos.anchorString ? pos.anchorString : anchorStringDefault;
+      const anchorXOffset =
+        pos && pos.anchorXOffset !== undefined
+          ? String(pos.anchorXOffset)
+          : "0";
+      const anchorYOffset =
+        pos && pos.anchorYOffset !== undefined
+          ? String(pos.anchorYOffset)
+          : "0";
+      return [
+        {
+          anchorString,
+          anchorUnits: "pixels",
+          // Ensure envelope creation fails if the anchor text is not found,
+          // preventing free-form signing where recipients can place fields anywhere
+          anchorIgnoreIfNotPresent: "false", // ko cho tự kí
+          anchorXOffset,
+          anchorYOffset,
+          documentId: "1",
+          pageNumber: String(pos && pos.pageNumber ? pos.pageNumber : 1),
+        },
+      ];
+    };
+
     // Build signers: use provided or derive from booking
     let signerList = [];
     if (Array.isArray(signers) && signers.length > 0) {
@@ -276,18 +318,16 @@ export const sendContract = async (req, res) => {
         routingOrder: String(s.routingOrder || idx + 1),
         // Use signer's email as clientUserId for embedded signing verification
         clientUserId: String(s.email),
-        tabs: {
-          signHereTabs: [
-            {
-              anchorString: "SIGN_RENTER",
-              anchorUnits: "pixels",
-              anchorXOffset: "0",
-              anchorYOffset: "0",
-              documentId: "1",
-              pageNumber: "1",
-            },
-          ],
-        },
+        tabs:
+          s.tabs && s.tabs.signHereTabs
+            ? { signHereTabs: s.tabs.signHereTabs }
+            : {
+                signHereTabs: buildSignHereTabs(
+                  (s.role || "renter").toLowerCase() === "owner"
+                    ? "owner"
+                    : "renter"
+                ),
+              },
       }));
     } else {
       // Derive from booking: renter first, owner second (sequential signing)
@@ -331,16 +371,7 @@ export const sendContract = async (req, res) => {
           // clientUserId must match when creating recipient view; use email
           clientUserId: String(booking.renter?.email || "renter"),
           tabs: {
-            signHereTabs: [
-              {
-                anchorString: "SIGN_RENTER",
-                anchorUnits: "pixels",
-                anchorXOffset: "0",
-                anchorYOffset: "0",
-                documentId: "1",
-                pageNumber: "1",
-              },
-            ],
+            signHereTabs: buildSignHereTabs("renter"),
           },
         },
         {
@@ -350,16 +381,7 @@ export const sendContract = async (req, res) => {
           routingOrder: "2",
           clientUserId: String(booking.vehicle?.owner?.email || "owner"),
           tabs: {
-            signHereTabs: [
-              {
-                anchorString: "SIGN_OWNER",
-                anchorUnits: "pixels",
-                anchorXOffset: "0",
-                anchorYOffset: "0",
-                documentId: "1",
-                pageNumber: "1",
-              },
-            ],
+            signHereTabs: buildSignHereTabs("owner"),
           },
         },
       ];
@@ -371,13 +393,11 @@ export const sendContract = async (req, res) => {
         ? `${process.env.APP_BASE_URL}/api/docusign/webhook`
         : "");
     if (!/^https:\/\//.test(webhookUrl)) {
-      return res
-        .status(400)
-        .json({
-          errorCode: "HTTPS_REQUIRED_FOR_CONNECT_LISTENER",
-          message:
-            "HTTPS required for Connect listener communication. Set DOCUSIGN_WEBHOOK_URL to an https URL (e.g., https://<your-ngrok>.ngrok-free.dev/api/docusign/webhook).",
-        });
+      return res.status(400).json({
+        errorCode: "HTTPS_REQUIRED_FOR_CONNECT_LISTENER",
+        message:
+          "HTTPS required for Connect listener communication. Set DOCUSIGN_WEBHOOK_URL to an https URL (e.g., https://<your-ngrok>.ngrok-free.dev/api/docusign/webhook).",
+      });
     }
 
     const eventNotification = {
@@ -426,6 +446,38 @@ export const sendContract = async (req, res) => {
     const envelopeId = resp.data?.envelopeId;
     const status = resp.data?.status || "sent";
 
+    // Harden: replace recipient tabs to only our intended ones to
+    // eliminate any auto-placed tabs by account settings/templates
+    try {
+      for (const s of signerList) {
+        const tabsPayload = s.tabs?.signHereTabs
+          ? {
+              signHereTabs: s.tabs.signHereTabs.map((t) => ({
+                ...t,
+                optional: false,
+                locked: true,
+              })),
+            }
+          : {
+              signHereTabs: buildSignHereTabs(
+                (s.name || "").toLowerCase().includes("owner")
+                  ? "owner"
+                  : "renter"
+              ),
+            };
+
+        const putTabsUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/recipients/${s.recipientId}/tabs`;
+        await axios.put(putTabsUrl, tabsPayload, {
+          headers: { Authorization: `Bearer ${docusignAccessToken}` },
+        });
+      }
+    } catch (tabsErr) {
+      console.warn(
+        "Unable to sanitize recipient tabs:",
+        tabsErr.response?.data || tabsErr.message
+      );
+    }
+
     const now = new Date();
     const existing = await BookingContract.findOne({
       where: { booking_id: bookingId },
@@ -458,12 +510,10 @@ export const sendContract = async (req, res) => {
     res.json({ success: true, envelopeId, status });
   } catch (err) {
     console.error("Create envelope error:", err.response?.data || err.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to create envelope",
-        details: err.response?.data || err.message,
-      });
+    res.status(500).json({
+      error: "Failed to create envelope",
+      details: err.response?.data || err.message,
+    });
   }
 };
 
@@ -493,19 +543,36 @@ export const signRecipientView = async (req, res) => {
           {
             model: Vehicle,
             as: "vehicle",
-            attributes: ["brand_id", "vehicle_type", "model", "license_plate", "year", "price_per_day"],
+            attributes: [
+              "brand_id",
+              "vehicle_type",
+              "model",
+              "license_plate",
+              "year",
+              "price_per_day",
+            ],
             include: [
               {
                 model: User,
                 as: "owner",
-                attributes: ["full_name", "phone_number", "email", "national_id_number"],
+                attributes: [
+                  "full_name",
+                  "phone_number",
+                  "email",
+                  "national_id_number",
+                ],
               },
             ],
           },
           {
             model: User,
             as: "renter",
-            attributes: ["full_name", "phone_number", "email", "driver_license_number"],
+            attributes: [
+              "full_name",
+              "phone_number",
+              "email",
+              "driver_license_number",
+            ],
           },
         ],
       });
@@ -522,12 +589,10 @@ export const signRecipientView = async (req, res) => {
     }
 
     if (!signerEmail) {
-      return res
-        .status(400)
-        .json({
-          error: "Missing signer email",
-          message: "Không tìm thấy email người ký phù hợp với role.",
-        });
+      return res.status(400).json({
+        error: "Missing signer email",
+        message: "Không tìm thấy email người ký phù hợp với role.",
+      });
     }
 
     // OTP gate: require a valid OTP before generating recipient view
@@ -537,14 +602,19 @@ export const signRecipientView = async (req, res) => {
       // Try to resolve bookingId for email content
       let bookingIdForEmail = null;
       try {
-        const c = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
+        const c = await BookingContract.findOne({
+          where: { contract_number: envelopeId },
+          attributes: ["booking_id"],
+        });
         bookingIdForEmail = c?.booking_id || null;
       } catch {}
       try {
         await sendEmail({
           from: process.env.GMAIL_USER,
           to: signerEmail,
-          subject: `Mã OTP xác thực ký hợp đồng${bookingIdForEmail ? ` #${bookingIdForEmail}` : ""}`,
+          subject: `Mã OTP xác thực ký hợp đồng${
+            bookingIdForEmail ? ` #${bookingIdForEmail}` : ""
+          }`,
           html: signingOtpTemplate(code, bookingIdForEmail),
         });
       } catch (e) {
@@ -637,7 +707,9 @@ export const getStatus = async (req, res) => {
   try {
     const ok = await ensureAccessTokenJWT();
     if (!ok) {
-      return res.status(500).json({ error: "DocuSign access token missing/expired." });
+      return res
+        .status(500)
+        .json({ error: "DocuSign access token missing/expired." });
     }
 
     const envelopeUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${id}`;
@@ -731,7 +803,9 @@ export const getStatus = async (req, res) => {
       }
 
       const totalSigners = signers.length;
-      const completedSigners = signers.filter((s) => s.status === "completed").length;
+      const completedSigners = signers.filter(
+        (s) => s.status === "completed"
+      ).length;
       if (status === "voided") {
         derivedStatus = "terminated";
       } else if (totalSigners > 0 && completedSigners === totalSigners) {
@@ -757,12 +831,18 @@ export const getStatus = async (req, res) => {
     }
 
     const appStatus = derivedStatus || mappedStatus || "unknown";
-    return res.json({ success: true, status, app_status: appStatus, envelope: resp.data });
+    return res.json({
+      success: true,
+      status,
+      app_status: appStatus,
+      envelope: resp.data,
+    });
   } catch (err) {
     console.error("Get status error", err.response?.data || err.message);
-    return res
-      .status(500)
-      .json({ error: "Failed to get status", details: err.response?.data || err.message });
+    return res.status(500).json({
+      error: "Failed to get status",
+      details: err.response?.data || err.message,
+    });
   }
 };
 
@@ -789,12 +869,10 @@ export const getCombinedDocuments = async (req, res) => {
       "Download combined PDF error:",
       err.response?.data || err.message
     );
-    res
-      .status(500)
-      .json({
-        error: "Failed to download combined PDF",
-        details: err.response?.data || err.message,
-      });
+    res.status(500).json({
+      error: "Failed to download combined PDF",
+      details: err.response?.data || err.message,
+    });
   }
 };
 
@@ -840,19 +918,36 @@ async function buildContractHtmlByBookingId(bookingId) {
       {
         model: Vehicle,
         as: "vehicle",
-        attributes: ["brand_id", "vehicle_type", "model", "license_plate", "year", "price_per_day"],
+        attributes: [
+          "brand_id",
+          "vehicle_type",
+          "model",
+          "license_plate",
+          "year",
+          "price_per_day",
+        ],
         include: [
           {
             model: User,
             as: "owner",
-            attributes: ["full_name", "phone_number", "email", "national_id_number"],
+            attributes: [
+              "full_name",
+              "phone_number",
+              "email",
+              "national_id_number",
+            ],
           },
         ],
       },
       {
         model: User,
         as: "renter",
-        attributes: ["full_name", "phone_number", "email", "driver_license_number"],
+        attributes: [
+          "full_name",
+          "phone_number",
+          "email",
+          "driver_license_number",
+        ],
       },
     ],
   });
@@ -866,7 +961,10 @@ async function buildContractHtmlByBookingId(bookingId) {
     renter_phone: safe(booking.renter?.phone_number, ""),
     renter_email: safe(booking.renter?.email, ""),
     renter_driver_license: booking.renter?.driver_license_number
-      ? decryptWithSecret(booking.renter.driver_license_number, process.env.ENCRYPT_KEY)
+      ? decryptWithSecret(
+          booking.renter.driver_license_number,
+          process.env.ENCRYPT_KEY
+        )
       : "",
     owner_name: safe(booking.vehicle?.owner?.full_name, ""),
     owner_phone: safe(booking.vehicle?.owner?.phone_number, ""),
@@ -904,12 +1002,10 @@ export const contractTemplate = async (req, res) => {
     res.send(html);
   } catch (err) {
     console.error("Generate contract template error:", err.message);
-    res
-      .status(500)
-      .json({
-        error: "Failed to generate contract template",
-        details: err.message,
-      });
+    res.status(500).json({
+      error: "Failed to generate contract template",
+      details: err.message,
+    });
   }
 };
 
@@ -930,12 +1026,10 @@ export const bookingSend = async (req, res) => {
       "Prepare/send envelope error:",
       err.response?.data || err.message
     );
-    res
-      .status(500)
-      .json({
-        error: "Failed to create envelope",
-        details: err.response?.data || err.message,
-      });
+    res.status(500).json({
+      error: "Failed to create envelope",
+      details: err.response?.data || err.message,
+    });
   }
 };
 
@@ -981,7 +1075,9 @@ export const webhook = async (req, res) => {
         const updates = {};
 
         // Fetch booking and existing contract to avoid duplicate mails
-        const contractRecord = await BookingContract.findOne({ where: { contract_number: envelopeId } });
+        const contractRecord = await BookingContract.findOne({
+          where: { contract_number: envelopeId },
+        });
         let booking = null;
         let renterEmail = null;
         let renterName = null;
@@ -991,7 +1087,18 @@ export const webhook = async (req, res) => {
           booking = await Booking.findByPk(contractRecord.booking_id, {
             include: [
               { model: User, as: "renter", attributes: ["full_name", "email"] },
-              { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["full_name", "email"] }] },
+              {
+                model: Vehicle,
+                as: "vehicle",
+                attributes: [],
+                include: [
+                  {
+                    model: User,
+                    as: "owner",
+                    attributes: ["full_name", "email"],
+                  },
+                ],
+              },
             ],
           });
           renterEmail = booking?.renter?.email || null;
@@ -1003,8 +1110,10 @@ export const webhook = async (req, res) => {
         for (const s of signers) {
           if (String(s.status || "").toLowerCase() === "completed") {
             const sEmail = String(s.email || "").toLowerCase();
-            const isRenter = renterEmail && sEmail === String(renterEmail).toLowerCase();
-            const isOwner = ownerEmail && sEmail === String(ownerEmail).toLowerCase();
+            const isRenter =
+              renterEmail && sEmail === String(renterEmail).toLowerCase();
+            const isOwner =
+              ownerEmail && sEmail === String(ownerEmail).toLowerCase();
             if (isRenter) {
               const wasSigned = !!contractRecord?.renter_signed_at;
               updates.renter_signed_at = updates.renter_signed_at || now;
@@ -1014,20 +1123,40 @@ export const webhook = async (req, res) => {
                   await sendEmail({
                     from: process.env.GMAIL_USER,
                     to: renterEmail,
-                    subject: `Xác nhận đã ký hợp đồng #${booking?.booking_id || ""}`,
-                    html: signingConfirmationTemplate({ signerName: renterName, bookingId: booking?.booking_id, signedAt: now.toLocaleString("vi-VN") }),
+                    subject: `Xác nhận đã ký hợp đồng #${
+                      booking?.booking_id || ""
+                    }`,
+                    html: signingConfirmationTemplate({
+                      signerName: renterName,
+                      bookingId: booking?.booking_id,
+                      signedAt: now.toLocaleString("vi-VN"),
+                    }),
                   });
-                } catch (e) { console.error("Email renter confirmation error:", e.message || e); }
+                } catch (e) {
+                  console.error(
+                    "Email renter confirmation error:",
+                    e.message || e
+                  );
+                }
                 // Notify owner that renter signed
                 if (ownerEmail) {
                   try {
                     await sendEmail({
                       from: process.env.GMAIL_USER,
                       to: ownerEmail,
-                      subject: `Thông báo: Người thuê đã ký hợp đồng #${booking?.booking_id || ""}`,
-                      html: otherPartyNotificationTemplate({ otherName: ownerName, bookingId: booking?.booking_id, signerName: renterName, signedAt: now.toLocaleString("vi-VN") }),
+                      subject: `Thông báo: Người thuê đã ký hợp đồng #${
+                        booking?.booking_id || ""
+                      }`,
+                      html: otherPartyNotificationTemplate({
+                        otherName: ownerName,
+                        bookingId: booking?.booking_id,
+                        signerName: renterName,
+                        signedAt: now.toLocaleString("vi-VN"),
+                      }),
                     });
-                  } catch (e) { console.error("Email owner notify error:", e.message || e); }
+                  } catch (e) {
+                    console.error("Email owner notify error:", e.message || e);
+                  }
                 }
               }
             }
@@ -1040,20 +1169,40 @@ export const webhook = async (req, res) => {
                   await sendEmail({
                     from: process.env.GMAIL_USER,
                     to: ownerEmail,
-                    subject: `Xác nhận đã ký hợp đồng #${booking?.booking_id || ""}`,
-                    html: signingConfirmationTemplate({ signerName: ownerName, bookingId: booking?.booking_id, signedAt: now.toLocaleString("vi-VN") }),
+                    subject: `Xác nhận đã ký hợp đồng #${
+                      booking?.booking_id || ""
+                    }`,
+                    html: signingConfirmationTemplate({
+                      signerName: ownerName,
+                      bookingId: booking?.booking_id,
+                      signedAt: now.toLocaleString("vi-VN"),
+                    }),
                   });
-                } catch (e) { console.error("Email owner confirmation error:", e.message || e); }
+                } catch (e) {
+                  console.error(
+                    "Email owner confirmation error:",
+                    e.message || e
+                  );
+                }
                 // Notify renter that owner signed (optional)
                 if (renterEmail) {
                   try {
                     await sendEmail({
                       from: process.env.GMAIL_USER,
                       to: renterEmail,
-                      subject: `Thông báo: Chủ xe đã ký hợp đồng #${booking?.booking_id || ""}`,
-                      html: otherPartyNotificationTemplate({ otherName: renterName, bookingId: booking?.booking_id, signerName: ownerName, signedAt: now.toLocaleString("vi-VN") }),
+                      subject: `Thông báo: Chủ xe đã ký hợp đồng #${
+                        booking?.booking_id || ""
+                      }`,
+                      html: otherPartyNotificationTemplate({
+                        otherName: renterName,
+                        bookingId: booking?.booking_id,
+                        signerName: ownerName,
+                        signedAt: now.toLocaleString("vi-VN"),
+                      }),
                     });
-                  } catch (e) { console.error("Email renter notify error:", e.message || e); }
+                  } catch (e) {
+                    console.error("Email renter notify error:", e.message || e);
+                  }
                 }
               }
             }
@@ -1107,20 +1256,30 @@ export async function sendContractForBookingServerSide(bookingId) {
           "transmission",
           "body_type",
           "seats",
-          "fuel_type"
+          "fuel_type",
         ],
         include: [
           {
             model: User,
             as: "owner",
-            attributes: ["full_name", "phone_number", "email", "national_id_number"],
+            attributes: [
+              "full_name",
+              "phone_number",
+              "email",
+              "national_id_number",
+            ],
           },
         ],
       },
       {
         model: User,
         as: "renter",
-        attributes: ["full_name", "phone_number", "email", "driver_license_number"],
+        attributes: [
+          "full_name",
+          "phone_number",
+          "email",
+          "driver_license_number",
+        ],
       },
     ],
   });
@@ -1165,10 +1324,11 @@ export async function sendContractForBookingServerSide(bookingId) {
               {
                 anchorString: "SIGN_RENTER",
                 anchorUnits: "pixels",
-                anchorXOffset: "0",
-                anchorYOffset: "0",
+                anchorIgnoreIfNotPresent: "false",
+                anchorXOffset: "35",
+                anchorYOffset: "20",
                 documentId: "1",
-                pageNumber: "1",
+                locked: "true",
               },
             ],
           },
@@ -1185,10 +1345,11 @@ export async function sendContractForBookingServerSide(bookingId) {
               {
                 anchorString: "SIGN_OWNER",
                 anchorUnits: "pixels",
-                anchorXOffset: "0",
-                anchorYOffset: "0",
+                anchorIgnoreIfNotPresent: "false",
+                anchorXOffset: "35",
+                anchorYOffset: "20",
                 documentId: "1",
-                pageNumber: "1",
+                locked: "true",
               },
             ],
           },
@@ -1214,6 +1375,49 @@ export async function sendContractForBookingServerSide(bookingId) {
     headers: { Authorization: `Bearer ${docusignAccessToken}` },
   });
   const { envelopeId, status } = resp.data || {};
+
+  // Sanitize tabs to ensure only intended locked SignHere exist
+  try {
+    const renterTabsPayload = {
+      signHereTabs: [
+        {
+          anchorString: "SIGN_RENTER",
+          anchorUnits: "pixels",
+          anchorIgnoreIfNotPresent: "false",
+          anchorXOffset: "0",
+          anchorYOffset: "0",
+          documentId: "1",
+          locked: "true",
+        },
+      ],
+    };
+    const ownerTabsPayload = {
+      signHereTabs: [
+        {
+          anchorString: "SIGN_OWNER",
+          anchorUnits: "pixels",
+          anchorIgnoreIfNotPresent: "false",
+          anchorXOffset: "0",
+          anchorYOffset: "0",
+          documentId: "1",
+          locked: "true",
+        },
+      ],
+    };
+    const renterUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/recipients/1/tabs`;
+    const ownerUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/recipients/2/tabs`;
+    await axios.put(renterUrl, renterTabsPayload, {
+      headers: { Authorization: `Bearer ${docusignAccessToken}` },
+    });
+    await axios.put(ownerUrl, ownerTabsPayload, {
+      headers: { Authorization: `Bearer ${docusignAccessToken}` },
+    });
+  } catch (tabsErr) {
+    console.warn(
+      "Unable to sanitize tabs (server-side send):",
+      tabsErr.response?.data || tabsErr.message
+    );
+  }
 
   const mappedStatus =
     status === "sent"
@@ -1274,7 +1478,9 @@ export async function getRecipientViewUrlServerSide(
   const name = isOwner
     ? booking.vehicle?.owner?.full_name
     : booking.renter?.full_name;
-  const clientUserId = isOwner ? (booking.vehicle?.owner?.email || "owner") : (booking.renter?.email || "renter");
+  const clientUserId = isOwner
+    ? booking.vehicle?.owner?.email || "owner"
+    : booking.renter?.email || "renter";
 
   const feOrigin =
     process.env.CLIENT_ORIGIN ||
@@ -1305,29 +1511,46 @@ export const sendSigningOtp = async (req, res) => {
     let targetEmail = email;
     let bookingIdForEmail = null;
     if (!targetEmail) {
-      const bc = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
-      if (!bc) return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
+      const bc = await BookingContract.findOne({
+        where: { contract_number: envelopeId },
+        attributes: ["booking_id"],
+      });
+      if (!bc)
+        return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
       bookingIdForEmail = bc.booking_id;
       const b = await Booking.findByPk(bc.booking_id, {
         include: [
           { model: User, as: "renter", attributes: ["email"] },
-          { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["email"] }] },
+          {
+            model: Vehicle,
+            as: "vehicle",
+            attributes: [],
+            include: [{ model: User, as: "owner", attributes: ["email"] }],
+          },
         ],
       });
-      targetEmail = String(role).toLowerCase() === "owner" ? b?.vehicle?.owner?.email : b?.renter?.email;
+      targetEmail =
+        String(role).toLowerCase() === "owner"
+          ? b?.vehicle?.owner?.email
+          : b?.renter?.email;
     }
-    if (!targetEmail) return res.status(400).json({ error: "Thiếu email người ký" });
+    if (!targetEmail)
+      return res.status(400).json({ error: "Thiếu email người ký" });
     const code = createOtp(envelopeId, targetEmail);
     await sendEmail({
       from: process.env.GMAIL_USER,
       to: targetEmail,
-      subject: `Mã OTP xác thực ký hợp đồng${bookingIdForEmail ? ` #${bookingIdForEmail}` : ""}`,
+      subject: `Mã OTP xác thực ký hợp đồng${
+        bookingIdForEmail ? ` #${bookingIdForEmail}` : ""
+      }`,
       html: signingOtpTemplate(code, bookingIdForEmail),
     });
     return res.json({ success: true, otp_sent: true });
   } catch (err) {
     console.error("sendSigningOtp error:", err.message || err);
-    return res.status(500).json({ error: "Gửi OTP thất bại", details: err.message || String(err) });
+    return res
+      .status(500)
+      .json({ error: "Gửi OTP thất bại", details: err.message || String(err) });
   }
 };
 
@@ -1336,38 +1559,68 @@ export const sendSigningOtp = async (req, res) => {
 export const verifySigningOtpAndCreateView = async (req, res) => {
   const { envelopeId, role, email, otp, returnUrl } = req.body || {};
   try {
-    if (!envelopeId || !otp) return res.status(400).json({ error: "Thiếu envelopeId hoặc OTP" });
-    if (!email && !role) return res.status(400).json({ error: "Thiếu email hoặc role" });
+    if (!envelopeId || !otp)
+      return res.status(400).json({ error: "Thiếu envelopeId hoặc OTP" });
+    if (!email && !role)
+      return res.status(400).json({ error: "Thiếu email hoặc role" });
 
     // Resolve email by role if needed
     let signerEmail = email;
     let signerName = null;
     let bookingId = null;
     if (!signerEmail) {
-      const bc = await BookingContract.findOne({ where: { contract_number: envelopeId }, attributes: ["booking_id"] });
-      if (!bc) return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
+      const bc = await BookingContract.findOne({
+        where: { contract_number: envelopeId },
+        attributes: ["booking_id"],
+      });
+      if (!bc)
+        return res.status(404).json({ error: "Không tìm thấy hợp đồng" });
       bookingId = bc.booking_id;
       const b = await Booking.findByPk(bc.booking_id, {
         include: [
           { model: User, as: "renter", attributes: ["full_name", "email"] },
-          { model: Vehicle, as: "vehicle", attributes: [], include: [{ model: User, as: "owner", attributes: ["full_name", "email"] }] },
+          {
+            model: Vehicle,
+            as: "vehicle",
+            attributes: [],
+            include: [
+              { model: User, as: "owner", attributes: ["full_name", "email"] },
+            ],
+          },
         ],
       });
       const isOwner = String(role).toLowerCase() === "owner";
       signerEmail = isOwner ? b?.vehicle?.owner?.email : b?.renter?.email;
-      signerName = isOwner ? (b?.vehicle?.owner?.full_name || "Owner") : (b?.renter?.full_name || "Renter");
+      signerName = isOwner
+        ? b?.vehicle?.owner?.full_name || "Owner"
+        : b?.renter?.full_name || "Renter";
     }
-    if (!signerEmail) return res.status(400).json({ error: "Không tìm thấy email người ký" });
+    if (!signerEmail)
+      return res.status(400).json({ error: "Không tìm thấy email người ký" });
 
     // Verify OTP
     const ok = verifyOtp(envelopeId, signerEmail, otp);
-    if (!ok) return res.status(401).json({ error: "OTP không hợp lệ hoặc đã hết hạn" });
+    if (!ok)
+      return res
+        .status(401)
+        .json({ error: "OTP không hợp lệ hoặc đã hết hạn" });
 
     // Build recipient view request
-    const feOrigin = process.env.CLIENT_ORIGIN || process.env.FRONTEND_ORIGIN || process.env.APP_BASE_URL || "";
-    const redir = returnUrl || (feOrigin ? `${feOrigin.replace(/\/$/, "")}/contract/${bookingId || "return"}` : "");
+    const feOrigin =
+      process.env.CLIENT_ORIGIN ||
+      process.env.FRONTEND_ORIGIN ||
+      process.env.APP_BASE_URL ||
+      "";
+    const redir =
+      returnUrl ||
+      (feOrigin
+        ? `${feOrigin.replace(/\/$/, "")}/contract/${bookingId || "return"}`
+        : "");
     if (!/^https:\/\//.test(redir)) {
-      return res.status(400).json({ errorCode: "HTTPS_REQUIRED_FOR_RETURN_URL", message: "Return URL phải là HTTPS" });
+      return res.status(400).json({
+        errorCode: "HTTPS_REQUIRED_FOR_RETURN_URL",
+        message: "Return URL phải là HTTPS",
+      });
     }
     const reqBody = {
       authenticationMethod: "none",
@@ -1377,10 +1630,18 @@ export const verifySigningOtpAndCreateView = async (req, res) => {
       returnUrl: redir,
     };
     const url = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/views/recipient`;
-    const resp = await axios.post(url, reqBody, { headers: { Authorization: `Bearer ${docusignAccessToken}` } });
+    const resp = await axios.post(url, reqBody, {
+      headers: { Authorization: `Bearer ${docusignAccessToken}` },
+    });
     return res.json({ success: true, url: resp.data?.url });
   } catch (err) {
-    console.error("verifySigningOtpAndCreateView error:", err.response?.data || err.message || err);
-    return res.status(500).json({ error: "Tạo recipient view thất bại", details: err.response?.data || err.message || String(err) });
+    console.error(
+      "verifySigningOtpAndCreateView error:",
+      err.response?.data || err.message || err
+    );
+    return res.status(500).json({
+      error: "Tạo recipient view thất bại",
+      details: err.response?.data || err.message || String(err),
+    });
   }
 };

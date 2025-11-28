@@ -850,6 +850,75 @@ export const createBooking = async (req, res) => {
     }
 
     // BƯỚC 13: TRẢ VỀ KẾT QUẢ
+    // Gửi email thông báo cho chủ xe về booking mới
+    try {
+      const owner = vehicle?.owner_id
+        ? await User.findByPk(vehicle.owner_id)
+        : null;
+      const renter = await User.findByPk(renterId);
+
+      if (owner?.email) {
+        const vehicleName = vehicle?.model || vehicle?.vehicle_name || "Xe của bạn";
+        const statusText = initialStatus === "pending"
+          ? "Booking mới cần bạn xác nhận"
+          : "Booking mới đã được xác nhận";
+        const frontURL = process.env.FRONTEND_URL || "";
+        const ownerPortalLink = frontURL ? `${frontURL}/owner` : "";
+
+        const html = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <title>Thông báo booking mới</title>
+              <style>
+                body { font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; }
+                h2 { color: #333333; margin: 0 0 12px 0; }
+                p { color: #555555; font-size: 15px; line-height: 1.6; margin: 6px 0; }
+                .details { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+                .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
+                .row:last-child { border-bottom: none; }
+                .label { color: #64748b; }
+                .value { color: #334155; font-weight: 500; }
+                .cta { display: inline-block; margin-top: 16px; padding: 12px 18px; background: #2563eb; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; }
+                .footer { margin-top: 24px; font-size: 12px; color: #888888; text-align: center; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h2>${statusText}</h2>
+                <p>Xin chào${owner.full_name ? ` ${owner.full_name}` : ""},</p>
+                <p>Người thuê${renter?.full_name ? ` ${renter.full_name}` : ""} vừa đặt xe <strong>${vehicleName}</strong>.</p>
+
+                <div class="details">
+                  <div class="row"><span class="label">Mã booking:</span><span class="value">#${booking.booking_id}</span></div>
+                  <div class="row"><span class="label">Thời gian nhận:</span><span class="value">${startDateOnly} ${startTime}</span></div>
+                  <div class="row"><span class="label">Thời gian trả:</span><span class="value">${endDateOnly} ${endTime}</span></div>
+                  <div class="row"><span class="label">Tổng tiền:</span><span class="value">${Number(total_amount).toLocaleString('vi-VN')} VNĐ</span></div>
+                  <div class="row"><span class="label">Trạng thái:</span><span class="value">${initialStatus}</span></div>
+                </div>
+
+                ${ownerPortalLink ? `<a class="cta" href="${ownerPortalLink}" target="_blank">Đăng nhập để xem/duyệt</a>` : ""}
+
+                <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+              </div>
+            </body>
+          </html>
+        `;
+
+        await sendEmail({
+          from: process.env.GMAIL_USER,
+          to: owner.email,
+          subject: `Có booking mới cho xe của bạn - #${booking.booking_id}`,
+          html,
+        });
+      }
+    } catch (emailErr) {
+      console.error("Error sending owner booking notification:", emailErr);
+    }
+    
+
     return res.status(201).json({
       success: true,
       message: "Tạo booking thành công",
