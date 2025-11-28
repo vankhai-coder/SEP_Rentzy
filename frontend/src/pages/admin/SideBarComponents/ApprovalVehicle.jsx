@@ -519,6 +519,12 @@ const ApprovalVehicle = () => {
                                     <span className="text-gray-900">{vehicle.fuel_consumption}</span>
                                   </div>
                                 )}
+                                {vehicle.location && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-500">Địa chỉ</span>
+                                    <span className="text-gray-900">{vehicle.location}</span>
+                                  </div>
+                                )}
                               </div>
                               <div className="p-3 bg-white rounded border">
                                 <div className="text-sm font-semibold text-gray-700 mb-2">Tính năng</div>
