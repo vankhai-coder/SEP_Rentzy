@@ -3,7 +3,7 @@ import db from '../../models/index.js'
 import { createCookie } from '../../utils/createCookie.js'
 import { sendEmail } from '../../utils/email/sendEmail.js';
 import { changePasswordSuccessTemplate, resetPasswordTemplate, verifyEmailTemplate } from '../../utils/email/templates/emailTemplate.js';
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { decryptWithSecret, encryptWithSecret } from '../../utils/cryptoUtil.js';
 import { getTemporaryImageUrl } from '../../utils/aws/s3.js'
