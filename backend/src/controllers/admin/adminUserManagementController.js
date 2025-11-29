@@ -46,6 +46,8 @@ export const getUsers = async (req, res) => {
     try {
         const { nameOrEmail, role, isActive, page = 1, limit = 10 } = req.query;
 
+        console.log(role);
+
         const whereClause = {};
 
         if (nameOrEmail) {
@@ -61,8 +63,10 @@ export const getUsers = async (req, res) => {
                 whereClause.role = role;
             }
         }
-        // exclude role "admin" : 
-        whereClause.role = { [Op.not]: 'admin' };
+        // exclude role "admin" and remaining filters role : 
+        if (!role) {
+            whereClause.role = { [Op.not]: 'admin' };
+        }
 
         if (isActive) {
             // check if isActive is either 'active' or 'inactive'
@@ -71,6 +75,9 @@ export const getUsers = async (req, res) => {
 
 
         const offset = (page - 1) * limit;
+
+        // log whereClause
+        console.log("whereClause:", whereClause);
 
         const { rows: users, count: totalUsers } = await User.findAndCountAll({
             where: whereClause,
