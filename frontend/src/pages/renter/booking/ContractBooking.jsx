@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-
 const ContractBooking = () => {
   const { bookingId } = useParams();
   const location = useLocation();
@@ -82,7 +81,9 @@ const ContractBooking = () => {
       setOtpSent(true);
     } catch (err) {
       console.error("Error sending OTP:", err);
-      setOtpError(err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại.");
+      setOtpError(
+        err.response?.data?.error || "Không thể gửi OTP. Vui lòng thử lại."
+      );
     } finally {
       setOtpSending(false);
     }
@@ -108,7 +109,9 @@ const ContractBooking = () => {
       }
     } catch (err) {
       console.error("Error verifying OTP / creating recipient view:", err);
-      setOtpError(err.response?.data?.error || "OTP không chính xác hoặc đã hết hạn.");
+      setOtpError(
+        err.response?.data?.error || "OTP không chính xác hoặc đã hết hạn."
+      );
     } finally {
       setOtpVerifying(false);
     }
@@ -498,7 +501,7 @@ const ContractBooking = () => {
             src={contractPdfUrl}
             style={{
               width: "100%",
-              height: "80vh",
+              height: "90vh",
               border: "1px solid #ddd",
               borderRadius: 8,
             }}
@@ -565,7 +568,9 @@ const ContractBooking = () => {
             />
           ) : (
             <div className="space-y-4">
-              <p className="text-gray-700">Nhập mã OTP đã gửi tới email của bạn để mở trang ký.</p>
+              <p className="text-gray-700">
+                Nhập mã OTP đã gửi tới email của bạn để mở trang ký.
+              </p>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
@@ -592,7 +597,9 @@ const ContractBooking = () => {
                   {otpSending ? "Đang gửi OTP..." : "Gửi lại OTP"}
                 </button>
                 {otpSent && (
-                  <span className="text-green-600 text-sm">Đã gửi OTP tới email của bạn.</span>
+                  <span className="text-green-600 text-sm">
+                    Đã gửi OTP tới email của bạn.
+                  </span>
                 )}
               </div>
             </div>

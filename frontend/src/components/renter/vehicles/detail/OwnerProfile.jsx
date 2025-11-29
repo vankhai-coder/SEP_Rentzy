@@ -22,25 +22,28 @@ const OwnerProfile = ({ vehicle }) => {
   const [reviews, setReviews] = useState([]);
   const [showAll, setShowAll] = useState(false);
 
-  // Fetch owner profile and reviews
+  // Fetch vehicle-specific reviews; owner info comes from vehicle prop
   useEffect(() => {
-    const fetchOwnerProfile = async () => {
-      // Determine vehicle ID from props or URL params
+    const fetchVehicleReviews = async () => {
       const vehicleId =
         vehicle?.vehicle_id ?? vehicle?.id ?? vehicle?.idVehicle ?? idParam;
       if (!vehicleId) {
-        setError("Không xác định được mã xe để tải thông tin chủ xe.");
+        setError("Không xác định được mã xe để tải đánh giá.");
         setLoading(false);
         return;
       }
 
+      // Owner info can be read directly from the loaded vehicle
+      setOwner(vehicle?.owner || null);
+
       const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
       try {
-        console.log("Fetching owner profile for vehicle ID:", vehicleId);
-        const res = await fetch(`${baseUrl}/api/renter/vehicles/${vehicleId}`);
+        const res = await fetch(
+          `${baseUrl}/api/renter/reviews/vehicle/${vehicleId}`
+        );
         if (!res.ok) {
           throw new Error(
-            `HTTP ${res.status}: Không thể tải thông tin chủ xe.`
+            `HTTP ${res.status}: Không thể tải đánh giá của xe.`
           );
         }
 
@@ -52,37 +55,28 @@ const OwnerProfile = ({ vehicle }) => {
         }
 
         const json = await res.json();
-        const data = json?.data;
-        if (!data || !data.owner) {
-          throw new Error(
-            "Không tìm thấy thông tin chủ xe trong dữ liệu trả về."
-          );
-        }
-
-        setOwner(data.owner);
-        setReviews(
-          Array.isArray(data.owner_comments) ? data.owner_comments : []
-        );
+        const data = json?.reviews ?? [];
+        setReviews(Array.isArray(data) ? data : []);
       } catch (e) {
-        console.error("fetchOwnerProfile error:", e);
-        setError(e.message || "Lỗi tải dữ liệu chủ xe.");
+        console.error("fetchVehicleReviews error:", e);
+        setError(e.message || "Lỗi tải đánh giá xe.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOwnerProfile();
+    fetchVehicleReviews();
   }, [vehicle, idParam]);
 
   // Normalize reviews for consistent rendering
   const normalizedReviews = useMemo(() => {
     return (reviews || []).map((r) => ({
-      id: r.review_id ?? r.id ?? Math.random().toString(36).substring(2), // Fallback ID
-      userName: r.renter?.full_name || "Người thuê",
-      userAvatar: r.renter?.avatar_url || "/default_avt.jpg",
+      id: r.review_id ?? r.id ?? Math.random().toString(36).substring(2),
+      userName: r.booking?.renter?.full_name || "Người thuê",
+      userAvatar: r.booking?.renter?.avatar_url || "/default_avt.jpg",
       rating: Number(r.rating) || 0,
       date: r.created_at,
-      comment: r.comment || "",
+      comment: r.review_content || "",
     }));
   }, [reviews]);
 

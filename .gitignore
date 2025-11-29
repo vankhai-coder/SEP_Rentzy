@@ -60,3 +60,7 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+*.doc
+*.docx
+*.docs
+docs/
