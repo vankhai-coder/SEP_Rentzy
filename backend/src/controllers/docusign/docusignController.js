@@ -220,7 +220,8 @@ export const requireToken = (req, res, next) => {
           consentUrl.searchParams.set("scope", "signature impersonation");
           consentUrl.searchParams.set("client_id", DOCUSIGN_INTEGRATION_KEY);
           const fallbackRedirect =
-            "http://localhost:3000/api/docusign/oauth/callback";
+            // "http://localhost:3000/api/docusign/oauth/callback";
+            `${process.env.NODE_ENV === "production" ? "https://rentzy-vehicle.online" : "http://localhost:3000"}/api/docusign/oauth/callback`;
           consentUrl.searchParams.set(
             "redirect_uri",
             DOCUSIGN_REDIRECT_URI || fallbackRedirect
