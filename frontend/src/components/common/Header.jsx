@@ -89,7 +89,7 @@ const Header = () => {
 
           {/* Message */}
           {userId && (
-            <button className="text-gray-600 hover:text-green-500 hidden lg:block ">
+            <button className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors">
               {/* Chat Icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -16,6 +16,7 @@ import {
   acceptBooking,
   rejectBooking,
 } from "../../controllers/owner/ownerDashboardController.js";
+import { extractTrafficFineInfo } from "../../controllers/owner/extractTrafficFineInfo.js";
 import { createOwner } from "../../controllers/auth/createOwner.js";
 import { createTestData } from "../../controllers/auth/createTestData.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
@@ -70,5 +71,7 @@ router.post("/traffic-fine-search", searchTrafficFine);
 // 7. Quản lý phí phạt nguội
 router.post("/bookings/:id/traffic-fine", upload.array("images", 10), addTrafficFine);
 router.post("/bookings/:id/traffic-fine/delete-request", requestDeleteTrafficFine);
+// Trích xuất thông tin từ ảnh phạt nguội bằng AI
+router.post("/extract-traffic-fine-info", upload.single("image"), extractTrafficFineInfo);
 
 export default router;

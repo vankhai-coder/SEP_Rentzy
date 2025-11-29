@@ -45,23 +45,32 @@ const AdminPage = () => {
   }, [theme]);
 
   // Fetch pending traffic fine requests count
-  useEffect(() => {
-    const fetchPendingCount = async () => {
-      try {
-        const response = await axiosInstance.get('/api/admin/traffic-fine-requests/stats');
-        if (response.data.success) {
-          setPendingTrafficFineCount(response.data.data.pending || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching pending traffic fine count:', error);
+  const fetchPendingCount = async () => {
+    try {
+      const response = await axiosInstance.get('/api/admin/traffic-fine-requests/stats');
+      if (response.data.success) {
+        setPendingTrafficFineCount(response.data.data.pending || 0);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching pending traffic fine count:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchPendingCount();
     // Refresh every 30 seconds
     const interval = setInterval(fetchPendingCount, 30000);
     
-    return () => clearInterval(interval);
+    // Listen for custom event to refresh count
+    const handleRefreshCount = () => {
+      fetchPendingCount();
+    };
+    window.addEventListener('refreshTrafficFineCount', handleRefreshCount);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshTrafficFineCount', handleRefreshCount);
+    };
   }, []);
 
   // Fetch notifications
@@ -584,7 +593,7 @@ const AdminPage = () => {
                 if (!isOpenNotificationDropdown) {
                   fetchNotifications();
                 }
-              }} className="relative p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors outline-none">
+              }} className="relative p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 hover:text-green-500 transition-colors outline-none cursor-pointer">
                 <Bell />
                 {notificationUnreadCount > 0 && (
                   <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
