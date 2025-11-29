@@ -164,10 +164,6 @@ const Account = () => {
       {/* mobile: nav list */}
       <Select 
         onValueChange={(value) => {
-          if (value === "/logout") {
-            // Handle logout - you may need to add logout logic here
-            return;
-          }
           navigate(value);
         }}
         value={getSelectValue()}

@@ -1,17 +1,26 @@
 import { logoutUser } from '@/redux/features/auth/authSlice'
 import React, { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 
 const Logout = () => {
 
+    const navigate = useNavigate()
     const dispatch = useDispatch()
+
+    const { loading } = useSelector((state) => state.userStore)
+
     useEffect(() => {
         dispatch(logoutUser())
-         window.location.href = "/";
-    }, [])
+        navigate("/")
+    }, [dispatch, navigate])
+
+    if (loading) {
+        return (
+            <div className='text-center'>Logging out...</div>
+        )
+    }
     return (
-
-
         <div className='text-center'>Logging out...</div>
     )
 }

@@ -1,8 +1,7 @@
-import { useDispatch, useSelector } from "react-redux";
+import {  useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-import { logoutUser } from "@/redux/features/auth/authSlice";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,7 @@ import NotificationDropdown from "./NotificationDropdown";
 
 const Header = () => {
   const { userId, email, avatar, role } = useSelector((state) => state.userStore);
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // set open/close for Login,Register Dialog :
   const [loginOpen, setLoginOpen] = useState(false);
@@ -253,9 +252,10 @@ const Header = () => {
                     <span
                       className="flex gap-2 items-center text-red-500 font-semibold hover:cursor-pointer"
                       onClick={() => {
-                        dispatch(logoutUser());
                         setLoginOpen(false);
-                        window.location.href = "/";
+                        navigate("/logout");
+                        console.log("Logged out khai");
+
                       }}
                     >
                       <BiLogOut size={25} />
