@@ -291,7 +291,7 @@ const NotificationDropdown = () => {
             fetchNotifications();
           }
         }}
-        className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
+        className="relative p-2 text-gray-600 hover:text-green-500 transition-colors cursor-pointer"
         aria-label="Thông báo"
       >
         <Bell className="h-6 w-6" />

@@ -791,7 +791,9 @@ export const getBookingDetail = async (req, res) => {
     const bookingData = booking.toJSON();
     if (bookingData.traffic_fine_images) {
       try {
-        bookingData.traffic_fine_images = JSON.parse(bookingData.traffic_fine_images);
+        bookingData.traffic_fine_images = JSON.parse(
+          bookingData.traffic_fine_images
+        );
       } catch (e) {
         // Nếu không parse được, giữ nguyên hoặc set thành array rỗng
         bookingData.traffic_fine_images = [];
@@ -1079,8 +1081,6 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
-    console.log("[TrafficFineCaptcha] Starting to fetch captcha...");
-    
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1088,21 +1088,13 @@ export const getTrafficFineCaptcha = async (req, res) => {
       "../../utils/trafficFine/captchaSessionStore.js"
     );
 
-    console.log("[TrafficFineCaptcha] Modules imported successfully");
-
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
-    console.log("[TrafficFineCaptcha] CookieJar created");
-    
-    // Fetch captcha trực tiếp bằng https module để tránh lỗi SSL với axios-cookiejar-support
-    const captchaImage = await getCaptchaImage(jar);
-    console.log("[TrafficFineCaptcha] Captcha image fetched, size:", captchaImage.length);
+    const instance = createAxiosInstance(jar);
+    const captchaImage = await getCaptchaImage(instance);
 
     const sessionId = createSession(jar);
-    console.log("[TrafficFineCaptcha] Session created:", sessionId);
-    
     const base64Image = captchaImage.toString("base64");
-    console.log("[TrafficFineCaptcha] Base64 conversion completed");
 
     return res.json({
       success: true,
@@ -1111,22 +1103,10 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
-    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
-    
-    // Kiểm tra nếu là lỗi SSL handshake hoặc SSL protocol error
-    const isSSLError = error.message?.includes('EPROTO') || 
-                       error.message?.includes('handshake failure') ||
-                       error.message?.includes('SSL') ||
-                       error.message?.includes('TLS') ||
-                       error.code === 'EPROTO';
-    
     res.status(500).json({
       success: false,
-      message: isSSLError 
-        ? "Server tra cứu phạt nguội (csgt.vn) đang gặp sự cố về kết nối bảo mật. Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
-        : "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
+      message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      errorCode: isSSLError ? "SSL_CONNECTION_ERROR" : "UNKNOWN_ERROR",
     });
   }
 };
@@ -1395,8 +1375,16 @@ export const rejectBooking = async (req, res) => {
         vehicle_id: { [Op.in]: vehicleIds },
       },
       include: [
-        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
-        { model: Vehicle, as: "vehicle", attributes: ["vehicle_id", "model", "owner_id"] },
+        {
+          model: User,
+          as: "renter",
+          attributes: ["user_id", "full_name", "email"],
+        },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          attributes: ["vehicle_id", "model", "owner_id"],
+        },
       ],
     });
 
@@ -1425,7 +1413,9 @@ export const rejectBooking = async (req, res) => {
     await Notification.create({
       user_id: booking.renter_id,
       title: "Đơn đặt xe đã bị từ chối",
-      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${reason ? `Lý do: ${reason}` : ""}`,
+      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${
+        reason ? `Lý do: ${reason}` : ""
+      }`,
       type: "booking",
       is_read: false,
     });
@@ -1492,7 +1482,8 @@ export const addTrafficFine = async (req, res) => {
     if (!["in_progress", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+        message:
+          "Chỉ có thể thêm phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
       });
     }
 
@@ -1542,7 +1533,9 @@ export const addTrafficFine = async (req, res) => {
       const notifications = adminUsers.map((admin) => ({
         user_id: admin.user_id,
         title: "Yêu cầu duyệt phạt nguội mới",
-        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${booking.booking_id}. Số tiền: ${trafficFineAmount.toLocaleString('vi-VN')} VNĐ.`,
+        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${
+          booking.booking_id
+        }. Số tiền: ${trafficFineAmount.toLocaleString("vi-VN")} VNĐ.`,
         type: "alert",
       }));
       await Notification.bulkCreate(notifications);
@@ -1615,7 +1608,8 @@ export const requestDeleteTrafficFine = async (req, res) => {
     if (!["in_progress", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể yêu cầu xóa phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
+        message:
+          "Chỉ có thể yêu cầu xóa phí phạt nguội cho đơn thuê đang diễn ra hoặc đã hoàn thành",
       });
     }
 
@@ -1632,7 +1626,8 @@ export const requestDeleteTrafficFine = async (req, res) => {
     if (existingDeleteRequest) {
       return res.status(400).json({
         success: false,
-        message: "Bạn đã có yêu cầu xóa phạt nguội đang chờ duyệt. Vui lòng chờ admin xử lý.",
+        message:
+          "Bạn đã có yêu cầu xóa phạt nguội đang chờ duyệt. Vui lòng chờ admin xử lý.",
       });
     }
 
@@ -1660,7 +1655,9 @@ export const requestDeleteTrafficFine = async (req, res) => {
       const notifications = adminUsers.map((admin) => ({
         user_id: admin.user_id,
         title: "Yêu cầu xóa phạt nguội mới",
-        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${booking.booking_id}. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
+        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${
+          booking.booking_id
+        }. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
         type: "alert",
       }));
       await Notification.bulkCreate(notifications);
@@ -1687,10 +1684,13 @@ export const requestDeleteTrafficFine = async (req, res) => {
       success: false,
       message: "Lỗi khi gửi yêu cầu xóa phạt nguội",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      details: process.env.NODE_ENV === "development" ? {
-        name: error.name,
-        stack: error.stack,
-      } : undefined,
+      details:
+        process.env.NODE_ENV === "development"
+          ? {
+              name: error.name,
+              stack: error.stack,
+            }
+          : undefined,
     });
   }
 };

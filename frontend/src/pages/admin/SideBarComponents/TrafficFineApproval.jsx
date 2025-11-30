@@ -10,7 +10,8 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdImage,
-  MdErrorOutline
+  MdErrorOutline,
+  MdContentCopy
 } from 'react-icons/md';
 
 // Component để hiển thị thumbnail hình ảnh với error handling
@@ -122,6 +123,8 @@ const TrafficFineApproval = () => {
   useEffect(() => {
     fetchRequests();
     fetchStats();
+    // Trigger refresh count in parent component
+    window.dispatchEvent(new Event('refreshTrafficFineCount'));
   }, [currentPage, filter]);
 
   const fetchRequests = async () => {
@@ -216,6 +219,8 @@ const TrafficFineApproval = () => {
         toast.success('Đã duyệt yêu cầu phạt nguội thành công');
         fetchRequests();
         fetchStats();
+        // Trigger refresh count in parent component
+        window.dispatchEvent(new Event('refreshTrafficFineCount'));
       }
     } catch (error) {
       console.error('Error approving request:', error);
@@ -246,6 +251,8 @@ const TrafficFineApproval = () => {
         fetchStats();
         setRejectModal({ open: false, requestId: null });
         setRejectReason('');
+        // Trigger refresh count in parent component
+        window.dispatchEvent(new Event('refreshTrafficFineCount'));
       }
     } catch (error) {
       console.error('Error rejecting request:', error);
@@ -268,6 +275,39 @@ const TrafficFineApproval = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Hàm copy biển số xe
+  const copyLicensePlate = async (licensePlate) => {
+    try {
+      // Lấy biển số từ text (có thể có format như "30K-364.53 (Nền màu trắng...)" hoặc chỉ "30K-364.53")
+      // Tách lấy phần biển số trước dấu ngoặc đơn hoặc khoảng trắng
+      const plateNumber = licensePlate.split('(')[0].trim();
+      
+      await navigator.clipboard.writeText(plateNumber);
+      toast.success(`Đã copy biển số: ${plateNumber}`);
+    } catch (error) {
+      console.error('Error copying license plate:', error);
+      toast.error('Không thể copy biển số');
+    }
+  };
+
+  // Hàm extract biển số từ description line
+  const extractLicensePlate = (line) => {
+    // Tìm dòng có chứa "Biển số"
+    if (line.toLowerCase().includes('biển số')) {
+      const parts = line.split(':');
+      if (parts.length > 1) {
+        const value = parts.slice(1).join(':').trim();
+        // Lấy phần biển số (trước dấu ngoặc đơn nếu có)
+        const plateMatch = value.match(/^([^\(]+)/);
+        if (plateMatch) {
+          return plateMatch[1].trim();
+        }
+        return value;
+      }
+    }
+    return null;
   };
 
   const getStatusBadge = (status) => {
@@ -401,7 +441,17 @@ const TrafficFineApproval = () => {
                     Người thuê: {request.booking?.renter?.full_name} ({request.booking?.renter?.email})
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Xe: {request.booking?.vehicle?.model} - {request.booking?.vehicle?.license_plate}
+                    Xe: {request.booking?.vehicle?.model} -{' '}
+                    {request.booking?.vehicle?.license_plate && (
+                      <span
+                        onClick={() => copyLicensePlate(request.booking.vehicle.license_plate)}
+                        className="inline-flex items-center gap-1 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
+                        title="Click để copy biển số"
+                      >
+                        {request.booking.vehicle.license_plate}
+                        <MdContentCopy className="w-3 h-3" />
+                      </span>
+                    )}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Ngày tạo: {formatDate(request.created_at)}
@@ -432,8 +482,46 @@ const TrafficFineApproval = () => {
 
               {request.request_type !== 'delete' && request.description && (
                 <div className="mb-4 p-3 bg-gray-50 dark:bg-secondary-900 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lý do:</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{request.description}</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Lý do:</p>
+                  <div className="space-y-1">
+                    {request.description.split('\n').map((line, index) => {
+                      // Bỏ qua dòng trống
+                      if (!line.trim()) return null;
+                      
+                      // Tách label và value nếu có dấu ":"
+                      const parts = line.split(':');
+                      const label = parts[0]?.trim();
+                      const value = parts.slice(1).join(':').trim();
+                      
+                      // Kiểm tra xem có phải dòng biển số không
+                      const isLicensePlate = label?.toLowerCase().includes('biển số');
+                      const licensePlateNumber = isLicensePlate ? extractLicensePlate(line) : null;
+                      
+                      return (
+                        <div key={index} className="text-sm text-gray-600 dark:text-gray-400">
+                          {value ? (
+                            <>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">{label}:</span>{' '}
+                              {isLicensePlate && licensePlateNumber ? (
+                                <span
+                                  onClick={() => copyLicensePlate(value)}
+                                  className="inline-flex items-center gap-1 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium group"
+                                  title="Click để copy biển số"
+                                >
+                                  <span>{value}</span>
+                                  <MdContentCopy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                              ) : (
+                                <span>{value}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span>{line}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

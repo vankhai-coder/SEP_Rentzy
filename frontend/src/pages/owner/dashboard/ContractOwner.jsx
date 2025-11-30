@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useParams, Link, useLocation } from "react-router-dom";
 import axiosInstance from "@/config/axiosInstance";
 import "./ContractOwner.scss";
@@ -9,10 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getBasicUserInformation } from "@/redux/features/auth/userInformationSlice";
 
 const ContractOwner = () => {
   const { id } = useParams();
   const location = useLocation();
+  const dispatch = useDispatch();
+  const { email: ownerEmail } = useSelector((state) => state.userInformationStore);
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +60,14 @@ const ContractOwner = () => {
     }
   };
 
+  // Lấy thông tin cơ bản của chủ xe (để kiểm tra email có hay không)
+  useEffect(() => {
+    dispatch(getBasicUserInformation());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isOwnerEmailMissing = !ownerEmail || !ownerEmail.trim();
+
   const hasEnvelope = !!booking?.contract?.contract_number;
   const ownerHasSigned =
     Boolean(booking?.contract?.owner_signed_at) ||
@@ -75,6 +87,7 @@ const ContractOwner = () => {
       await axiosInstance.post(`/api/docusign/sign/send-otp`, {
         envelopeId,
         role: "owner",
+        email: ownerEmail,
       });
       setOtpSent(true);
       toast.info("Đã gửi OTP tới email của bạn.");
@@ -101,7 +114,13 @@ const ContractOwner = () => {
       const currentPath = window.location.pathname;
       const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "owner", returnUrl, otp },
+        params: {
+          role: "owner",
+          returnUrl,
+          otp,
+          email: ownerEmail,
+          clientUserId: ownerEmail || "owner",
+        },
       });
       const url = resp.data?.url;
       if (url) {
@@ -121,6 +140,12 @@ const ContractOwner = () => {
   };
 
   const handleSignContract = async () => {
+    if (isOwnerEmailMissing) {
+      toast.error(
+        "Thiếu email người ký. Vui lòng cập nhật email để nhận OTP ký DocuSign."
+      );
+      return;
+    }
     setSignUrl("");
     setOtp("");
     setOtpError("");
@@ -264,6 +289,23 @@ const ContractOwner = () => {
 
   return (
     <div className="contract-owner">
+      {isOwnerEmailMissing && (
+        <div className="banner">
+          <div className="banner-content">
+            <div className="banner-text">
+              <h2>Thiếu email người ký</h2>
+              <p>
+                Vui lòng cập nhật email để nhận OTP và ký hợp đồng DocuSign.
+              </p>
+            </div>
+            <div className="banner-actions">
+              <Link to="/account" className="btn btn-primary">
+                Cập nhật email
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Thông tin hợp đồng */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -390,7 +432,7 @@ const ContractOwner = () => {
                 <button
                   className="btn btn-primary"
                   onClick={handleSignContract}
-                  disabled={!ownerNeedsSign}
+                  disabled={!ownerNeedsSign || isOwnerEmailMissing}
                 >
                   Ký hợp đồng
                 </button>

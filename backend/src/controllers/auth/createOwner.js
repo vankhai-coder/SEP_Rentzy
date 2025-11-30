@@ -1,5 +1,5 @@
 import db from '../../models/index.js'
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export const createOwner = async (req, res) => {
     try {

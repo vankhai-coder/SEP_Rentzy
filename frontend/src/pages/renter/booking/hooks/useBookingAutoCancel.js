@@ -80,11 +80,11 @@ export const useBookingAutoCancel = (booking) => {
 
   // Tính toán thời gian đã trôi qua từ khi tạo booking
   const getElapsedTime = useCallback(() => {
-    if (!booking?.created_at) return 0;
+    if (!booking?.updated_at) return 0;
     
     const now = new Date().getTime();
-    const created = new Date(booking.created_at).getTime();
-    return now - created;
+    const updated = new Date(booking.updated_at).getTime();
+    return now - updated;
   }, [booking]);
 
   // Kiểm tra xem có nên hiển thị countdown timer không
@@ -98,7 +98,7 @@ export const useBookingAutoCancel = (booking) => {
       booking: booking ? {
         id: booking.booking_id,
         status: booking.status,
-        created_at: booking.created_at
+        updated_at: booking.updated_at
       } : null,
       canCancel,
       elapsed: Math.floor(elapsed / 1000) + 's',

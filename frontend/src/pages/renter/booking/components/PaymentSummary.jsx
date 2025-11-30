@@ -71,7 +71,7 @@ const PaymentSummary = ({
         
         {/* Countdown timer - tự động hủy khi hết 15 phút */}
         <CountdownTimer 
-          createdAt={booking?.created_at}
+          startAt={booking?.updated_at} // Dùng updated_at khi chuyển sang confirmed
           duration={15 * 60 * 1000} // 15 phút = 900,000ms
           warningThreshold={2 * 60 * 1000} // Cảnh báo khi còn 2 phút
         />      

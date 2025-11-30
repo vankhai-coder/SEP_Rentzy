@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 const CountdownTimer = ({ 
-  createdAt, 
+  startAt, 
   onTimeUp, 
   duration = 15 * 60 * 1000, // 15 phút mặc định
   warningThreshold = 2 * 60 * 1000 // 2 phút cảnh báo
@@ -13,18 +13,18 @@ const CountdownTimer = ({
 
   // Tính toán thời gian còn lại
   const calculateTimeLeft = () => {
-    if (!createdAt) return 0;
+    if (!startAt) return 0;
     
     const now = new Date().getTime();
-    const created = new Date(createdAt).getTime();
-    const elapsed = now - created;
+    const started = new Date(startAt).getTime();
+    const elapsed = now - started;
     const remaining = duration - elapsed;
     
     // Debug log để kiểm tra
     console.log('⏰ Countdown calculation:', {
-      createdAt,
+      startAt,
       now: new Date(now).toLocaleString('vi-VN'),
-      created: new Date(created).toLocaleString('vi-VN'),
+      started: new Date(started).toLocaleString('vi-VN'),
       elapsed: Math.floor(elapsed / 1000) + 's',
       remaining: Math.floor(remaining / 1000) + 's',
       duration: Math.floor(duration / 1000) + 's'
@@ -42,7 +42,7 @@ const CountdownTimer = ({
   };
 
   // Format thời gian tạo booking
-  const formatCreatedTime = (timestamp) => {
+  const formatStartTime = (timestamp) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleString('vi-VN', {
@@ -80,7 +80,7 @@ const CountdownTimer = ({
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [createdAt, duration, warningThreshold, isExpired]);
+  }, [startAt, duration, warningThreshold, isExpired]);
 
   if (isExpired) {
     return (
@@ -111,7 +111,7 @@ const CountdownTimer = ({
         </div>
         
         <div className="countdown-info">
-          Booking tạo lúc: {formatCreatedTime(createdAt)}
+          Bắt đầu giữ chỗ lúc: {formatStartTime(startAt)}
         </div>
         
         {isWarning && (

@@ -172,7 +172,7 @@ export const getBasicUserInformation = createAsyncThunk(
   "user/getBasicUserInformation",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.post("api/renter/info/get-basic-user-information");
+      const res = await axiosInstance.post("/api/renter/info/get-basic-user-information");
 
       // expect: { success: true, user : { points, driver_class, ... } }
       return res.data;

@@ -276,8 +276,8 @@ const HandoverImageViewer = ({
         ))}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Action & Post-rental Info */}
+      <div className={imageType === "post-rental" ? "space-y-0" : "space-y-4"}>
         {imageType === "pre-rental" && (
           <>
             {!handoverData?.renter_handover_confirmed && (
@@ -326,9 +326,66 @@ const HandoverImageViewer = ({
         )}
 
         {imageType === "post-rental" && (
-          <>
+          <div className="flex flex-col gap-0 items-stretch">
+            {/* Tình trạng xe khi trả (từ chủ xe) */}
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-2">
+                Tình trạng xe khi trả (từ chủ xe)
+              </h4>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700">
+                  Hư hỏng: <span className={`ml-1 font-medium ${handoverData?.damage_reported ? "text-red-600" : "text-green-600"}`}>{handoverData?.damage_reported ? "Có" : "Không"}</span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  Mô tả: <span className="ml-1 text-gray-800">{handoverData?.damage_description || "Không có"}</span>
+                </p>
+                {handoverData?.damage_reported && (
+                  <p className="text-sm text-gray-700">
+                    Bồi thường ước tính: <span className="ml-1 text-gray-800">{Number(handoverData?.compensation_amount || 0) > 0 ? `${Number(handoverData?.compensation_amount).toLocaleString("vi-VN")} VND` : "Không có"}</span>
+                  </p>
+                )}
+              </div>
+              {!handoverData?.renter_return_confirmed && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Vui lòng kiểm tra và xác nhận nếu thông tin tình trạng xe chính xác.
+                </p>
+              )}
+            </div>
+
+            {/* Trả xe trễ (từ chủ xe) */}
+            <div className="p-4 bg-white rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-2">Trả xe trễ (từ chủ xe)</h4>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700">
+                  Có trả trễ: <span className={`ml-1 font-medium ${handoverData?.late_return ? "text-red-600" : "text-green-600"}`}>{handoverData?.late_return ? "Có" : "Không"}</span>
+                </p>
+
+                {handoverData?.late_return && (
+                  <>
+                    <p className="text-sm text-gray-700">
+                      Mô tả: <span className="ml-1 text-gray-800">{(() => {
+                        const v = (handoverData?.late_return_fee_description ?? "").toString().trim();
+                        const isZeroNumeric = /^0*(?:\.0+)?$/.test(v);
+                        return v && !isZeroNumeric ? v : "Không có";
+                      })()}</span>
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      Phí trả trễ: <span className="ml-1 text-gray-800">{Number(handoverData?.late_return_fee || 0) > 0 ? `${Number(handoverData?.late_return_fee).toLocaleString("vi-VN")} VND` : "Không có"}</span>
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {!handoverData?.renter_return_confirmed && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Vui lòng kiểm tra và xác nhận nếu thông tin trả trễ chính xác.
+                </p>
+              )}
+            </div>
+
+            {/* Nút xác nhận ảnh xe đặt cuối cùng */}
             {!handoverData?.renter_return_confirmed && (
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col items-center">
                 <button
                   onClick={handleConfirmImages}
                   disabled={confirming}
@@ -340,101 +397,13 @@ const HandoverImageViewer = ({
                 >
                   {confirming ? "Đang xác nhận..." : "Xác nhận ảnh xe"}
                 </button>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 text-center">
                   Vui lòng kiểm tra ảnh xe do chủ xe gửi và xác nhận tình trạng
                   xe sau khi trả.
                 </div>
               </div>
             )}
-
-            {/* Hiển thị ghi chú tình trạng xe/hư hỏng từ chủ xe nếu có */}
-            <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-900 mb-2">
-                Tình trạng xe khi trả (từ chủ xe)
-              </h4>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 items-start">
-                  <span className="text-sm text-gray-700">Hư hỏng:</span>
-                  <span
-                    className={`text-sm font-medium ${
-                      handoverData?.damage_reported
-                        ? "text-red-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {handoverData?.damage_reported ? "Có" : "Không"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 items-start">
-                  <span className="text-sm text-gray-700">Mô tả:</span>
-                  <span className="text-sm text-gray-800">
-                    {handoverData?.damage_description || "Không có"}
-                  </span>
-                </div>
-                {handoverData?.damage_reported && (
-                  <div className="grid grid-cols-2 gap-3 items-start">
-                    <span className="text-sm text-gray-700">Bồi thường ước tính:</span>
-                    <span className="text-sm text-gray-800">
-                      {Number(handoverData?.compensation_amount || 0) > 0
-                        ? `${Number(handoverData?.compensation_amount).toLocaleString("vi-VN")} VND`
-                        : "Không có"}
-                    </span>
-                  </div>
-                )}
-              </div>
-              {!handoverData?.renter_return_confirmed && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Vui lòng kiểm tra và xác nhận nếu thông tin tình trạng xe chính xác.
-                </p>
-              )}
-            </div>
-
-            {/* Hiển thị thông tin trả xe trễ từ chủ xe nếu có */}
-            <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-900 mb-2">Trả xe trễ (từ chủ xe)</h4>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 items-start">
-                  <span className="text-sm text-gray-700">Có trả trễ:</span>
-                  <span
-                    className={`text-sm font-medium ${
-                      handoverData?.late_return ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {handoverData?.late_return ? "Có" : "Không"}
-                  </span>
-                </div>
-
-                {handoverData?.late_return && (
-                  <>
-                    <div className="grid grid-cols-2 gap-3 items-start">
-                      <span className="text-sm text-gray-700">Lý do trả trễ:</span>
-                      <span className="text-sm text-gray-800">
-                        {(() => {
-                          const v = (handoverData?.late_return_fee_description ?? "").toString().trim();
-                          return v && !["0", "0.0", "0.00"].includes(v) ? v : "Không có";
-                        })()}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 items-start">
-                      <span className="text-sm text-gray-700">Phí trả trễ:</span>
-                      <span className="text-sm text-gray-800">
-                        {Number(handoverData?.late_return_fee || 0) > 0
-                          ? `${Number(handoverData?.late_return_fee).toLocaleString("vi-VN")} VND`
-                          : "Không có"}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {!handoverData?.renter_return_confirmed && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Vui lòng kiểm tra và xác nhận nếu thông tin trả trễ chính xác.
-                </p>
-              )}
-            </div>
-          </>
+          </div>
         )}
 
         {/* Success message when both parties have confirmed */}

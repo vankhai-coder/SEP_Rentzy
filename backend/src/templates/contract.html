@@ -113,6 +113,20 @@
       color: #000;
     }
 
+    /* Hiển thị anchor text theo kiểu “trắng trên trắng” để DocuSign nhận diện */
+    .signature-anchor-text {
+      color: #ffffff; /* nền trang là trắng */
+      font-size: 1px; /* vẫn hiển thị nhưng cực nhỏ */
+      line-height: 1px;
+      user-select: none;
+      position: absolute; /* cố định toạ độ trong khung ký */
+      left: 24px;
+      top: 36px;
+      display: block;
+      width: 1px;
+      height: 1px;
+    }
+
     .footer {
       margin-top: 16px;
       font-size: 12px;
@@ -126,7 +140,9 @@
     .first-page {
       line-height: 1.2;
     }
-    .first-page .row { margin: 2px 0; }
+    .first-page .section { margin: 10px 0; }
+    .first-page .box { padding: 8px; }
+    .first-page .row { margin: 2px 0; gap: 8px; }
     .first-page .bullet { margin: 2px 0; }
 
     /* Khung ký để đặt vị trí ký rõ ràng */
@@ -134,7 +150,7 @@
       display: inline-block;
       width: 100%;
       min-height: 100px;
-      border: 1px dashed rgba(0, 0, 0, 0.25);
+      border: none; /* bỏ viền khung ký */
       border-radius: 4px;
       margin-top: 8px;
       position: relative;
@@ -146,6 +162,10 @@
       font-size: 10px;
       color: #333;
     }
+    .page-break {
+      page-break-before: always;
+    }
+    .signatures-section { page-break-inside: avoid; }
   </style>
 </head>
 
@@ -423,23 +443,42 @@
       </div>
     </div>
 
+    <!-- Điều 16: Giải quyết tranh chấp -->
     <div class="section">
+      <div class="section-title">Điều 16. Giải quyết tranh chấp</div>
+      <div class="box terms">
+        <div class="bullet">- Mọi tranh chấp phát sinh trong quá trình thực hiện Hợp đồng ưu tiên giải quyết bằng thương lượng/hoà giải giữa các bên.</div>
+        <div class="bullet">- Nếu không đạt thoả thuận trong vòng 10 ngày, tranh chấp được đưa ra Toà án có thẩm quyền tại nơi Bên A cư trú/đăng ký kinh doanh.</div>
+        <div class="bullet">- Chi phí liên quan đến việc giải quyết tranh chấp do bên thua kiện chịu, trừ khi có thoả thuận khác hoặc theo phán quyết của Toà án.</div>
+      </div>
+    </div>
+
+    <!-- Điều 17: Điều khoản chung -->
+    <div class="section">
+      <div class="section-title">Điều 17. Điều khoản chung</div>
+      <div class="box terms">
+        <div class="bullet">- Hai bên cam kết cung cấp thông tin trung thực, hợp tác đầy đủ trong suốt quá trình thực hiện Hợp đồng.</div>
+        <div class="bullet">- Mọi sửa đổi, bổ sung Hợp đồng phải được lập thành văn bản hoặc xác nhận điện tử trên nền tảng và có hiệu lực khi hai bên đồng ý.</div>
+        <div class="bullet">- Trường hợp một điều khoản bị vô hiệu, các điều khoản còn lại vẫn có hiệu lực và các bên sẽ thoả thuận điều khoản thay thế phù hợp.</div>
+      </div>
+    </div>
+
+    
+    <div class="section signatures-section">
       <div class="section-title">Xác nhận và chữ ký</div>
       <div class="signatures">
         <div class="signature-box">
           <div class="signature-label">Bên A (Chủ xe)</div>
           <div class="signature-anchor">Ký và ghi rõ họ tên</div>
           <div class="signature-pad">
-            <span class="anchor-text">Vị trí ký Bên A</span>
-            <span style="opacity:0">SIGN_OWNER</span>
+            <span class="signature-anchor-text">SIGN_OWNER</span>
           </div>
         </div>
         <div class="signature-box">
           <div class="signature-label">Bên B (Người thuê)</div>
           <div class="signature-anchor">Ký và ghi rõ họ tên</div>
           <div class="signature-pad">
-            <span class="anchor-text">Vị trí ký Bên B</span>
-            <span style="opacity:0">SIGN_RENTER</span>
+            <span class="signature-anchor-text">SIGN_RENTER</span>
           </div>
         </div>
       </div>

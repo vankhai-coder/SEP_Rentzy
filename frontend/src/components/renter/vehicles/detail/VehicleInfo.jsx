@@ -6,10 +6,57 @@ const VehicleInfo = ({ vehicle }) => {
 
   if (!vehicle) return null;
 
+  // Helpers: map enum values to Vietnamese labels
+  const formatFuelType = (fuel) => {
+    if (!fuel) return "N/A";
+    const normalized = String(fuel).toLowerCase();
+    if (normalized.includes("petrol") || normalized.includes("xăng"))
+      return "Xăng";
+    if (normalized.includes("diesel") || normalized.includes("dầu"))
+      return "Dầu";
+    if (normalized.includes("electric") || normalized.includes("điện"))
+      return "Điện";
+    if (normalized.includes("hybrid")) return "Hybrid";
+    return fuel;
+  };
+
+  const formatTransmission = (trans) => {
+    if (!trans) return "Số tự động";
+    const normalized = String(trans).toLowerCase();
+    if (
+      normalized.includes("auto") ||
+      normalized.includes("automatic") ||
+      normalized.includes("at")
+    )
+      return "Số tự động";
+    if (normalized.includes("manual") || normalized.includes("mt"))
+      return "Số sàn";
+    return trans;
+  };
+
+  const formatBikeType = (bikeType) => {
+    if (!bikeType) return "N/A";
+    const normalized = String(bikeType).toLowerCase();
+    if (normalized.includes("scooter") || normalized.includes("ga"))
+      return "Xe ga";
+    if (normalized.includes("clutch") || normalized.includes("côn"))
+      return "Xe côn";
+    if (normalized.includes("manual") || normalized.includes("số"))
+      return "Xe số";
+    if (normalized.includes("electric") || normalized.includes("điện"))
+      return "Xe điện";
+    return bikeType;
+  };
+
+  const transmissionDisplay =
+    vehicle.vehicle_type === "motorbike"
+      ? formatBikeType(vehicle.bike_type)
+      : formatTransmission(vehicle.transmission);
+
   const specifications = [
     {
       label: "Truyền động",
-      value: vehicle.transmission || "Số tự động",
+      value: transmissionDisplay,
       icon: (
         <svg
           className="w-6 h-6 text-green-600"
@@ -36,7 +83,7 @@ const VehicleInfo = ({ vehicle }) => {
     },
     {
       label: "Nhiên liệu",
-      value: vehicle.fuel_type || "Xăng",
+      value: formatFuelType(vehicle.fuel_type),
       icon: (
         <svg
           className="w-6 h-6 text-orange-600"
