@@ -95,19 +95,29 @@ const TransactionManagement = () => {
         setTransactions(txs);
         setTotalPages(response.data.data.pagination?.totalPages || 1);
 
-        // Tính toán thống kê
-        const stats = txs.reduce(
-          (acc, t) => {
-            acc.totalTransactions++;
-            const amt = parseFloat(t.amount) || 0;
-            acc.totalAmount += amt;
-            if (amt > 0) acc.moneyIn += amt;
-            else acc.moneyOut += Math.abs(amt);
-            return acc;
-          },
-          { totalTransactions: 0, totalAmount: 0, moneyIn: 0, moneyOut: 0 }
-        );
-        setStatistics(stats);
+        // Sử dụng thống kê từ backend (tổng số, không chỉ trang hiện tại)
+        if (response.data.data.statistics) {
+          setStatistics({
+            totalTransactions: response.data.data.statistics.totalTransactions || 0,
+            totalAmount: response.data.data.statistics.totalAmount || 0,
+            moneyIn: response.data.data.statistics.moneyIn || 0,
+            moneyOut: response.data.data.statistics.moneyOut || 0,
+          });
+        } else {
+          // Fallback: tính toán từ transactions hiện tại nếu backend chưa có statistics
+          const stats = txs.reduce(
+            (acc, t) => {
+              acc.totalTransactions++;
+              const amt = parseFloat(t.amount) || 0;
+              acc.totalAmount += amt;
+              if (amt > 0) acc.moneyIn += amt;
+              else acc.moneyOut += Math.abs(amt);
+              return acc;
+            },
+            { totalTransactions: 0, totalAmount: 0, moneyIn: 0, moneyOut: 0 }
+          );
+          setStatistics(stats);
+        }
       } else {
         setTransactions([]);
         setError("Không thể tải danh sách giao dịch");

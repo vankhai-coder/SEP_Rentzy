@@ -216,6 +216,12 @@ export const getOwnerTransactions = async (req, res) => {
       type: { [Op.in]: ["COMPENSATION", "PAYOUT"] }, // Chỉ lấy COMPENSATION và PAYOUT
     };
 
+    console.log('Owner Transactions Query:', {
+      ownerId,
+      whereConditions,
+      filters: { search, type, status }
+    });
+
     // Add search condition
     if (search) {
       whereConditions[Op.or] = [
@@ -286,6 +292,18 @@ export const getOwnerTransactions = async (req, res) => {
       distinct: true,
     });
 
+    console.log('Transaction Query Results:', {
+      count,
+      transactionsFound: transactions.length,
+      sampleTransaction: transactions[0] ? {
+        id: transactions[0].transaction_id,
+        type: transactions[0].type,
+        amount: transactions[0].amount,
+        to_user_id: transactions[0].to_user_id,
+        status: transactions[0].status
+      } : null
+    });
+
     // Format transactions data
     const formattedTransactions = transactions.map((transaction) => {
       // Xác định loại giao dịch
@@ -346,11 +364,80 @@ export const getOwnerTransactions = async (req, res) => {
 
     const totalPages = Math.ceil(count / parseInt(limit));
 
+    // Tính thống kê tổng từ tất cả transactions (không chỉ trang hiện tại)
+    const allTransactionsStats = await Transaction.findAll({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("COUNT", db.sequelize.col("transaction_id")),
+          "totalTransactions",
+        ],
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("amount")),
+          "totalAmount",
+        ],
+      ],
+      raw: true,
+    });
+
+    const stats = allTransactionsStats[0] || {};
+    const totalTransactions = parseInt(stats.totalTransactions || 0);
+    const totalAmount = parseFloat(stats.totalAmount || 0);
+
+    console.log('Transaction Statistics:', {
+      totalTransactions,
+      totalAmount,
+      rawStats: stats
+    });
+
+    // Tính tiền vào (tất cả transactions có amount > 0)
+    const moneyInResult = await Transaction.findOne({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+        amount: { [Op.gt]: 0 },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("amount")),
+          "moneyIn",
+        ],
+      ],
+      raw: true,
+    });
+    const moneyIn = parseFloat(moneyInResult?.moneyIn || 0);
+
+    // Tính tiền ra (tất cả transactions có amount < 0)
+    const moneyOutResult = await Transaction.findOne({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+        amount: { [Op.lt]: 0 },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("SUM", db.sequelize.fn("ABS", db.sequelize.col("amount"))),
+          "moneyOut",
+        ],
+      ],
+      raw: true,
+    });
+    const moneyOut = parseFloat(moneyOutResult?.moneyOut || 0);
+
     res.status(200).json({
       success: true,
       message: "Lấy danh sách giao dịch thành công",
       data: {
         transactions: formattedTransactions,
+        statistics: {
+          totalTransactions,
+          totalAmount,
+          moneyIn,
+          moneyOut,
+        },
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -424,8 +511,8 @@ export const getOwnerRevenue = async (req, res) => {
       },
     });
 
-    // Doanh thu theo tháng (12 tháng gần nhất)
-    const monthlyRevenue = await db.sequelize.query(
+    // Doanh thu theo tháng (6 tháng gần nhất)
+    const monthlyRevenueRaw = await db.sequelize.query(
       `
       SELECT 
         MONTH(created_at) as month,
@@ -435,15 +522,70 @@ export const getOwnerRevenue = async (req, res) => {
       FROM bookings 
       WHERE vehicle_id IN (${vehicleIds.join(",")})
         AND status = 'completed'
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
       GROUP BY YEAR(created_at), MONTH(created_at)
       ORDER BY year DESC, month DESC
     `,
       { type: db.sequelize.QueryTypes.SELECT }
     );
 
+    // Tạo map để dễ tìm kiếm
+    const revenueMap = new Map();
+    monthlyRevenueRaw.forEach(item => {
+      const key = `${item.year}-${item.month}`;
+      revenueMap.set(key, item);
+    });
+
+    // Tạo đầy đủ 6 tháng gần nhất (kể cả tháng không có dữ liệu)
+    const now = new Date();
+    const monthlyRevenue = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const key = `${year}-${month}`;
+      
+      if (revenueMap.has(key)) {
+        monthlyRevenue.push(revenueMap.get(key));
+      } else {
+        monthlyRevenue.push({
+          month: month,
+          year: year,
+          revenue: 0,
+          booking_count: 0
+        });
+      }
+    }
+
+    // Thống kê trạng thái đặt xe
+    const bookingStatusStats = await Booking.findAll({
+      where: {
+        vehicle_id: { [Op.in]: vehicleIds },
+      },
+      attributes: [
+        "status",
+        [db.sequelize.fn("COUNT", db.sequelize.col("booking_id")), "count"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
+
+    // Thống kê trạng thái thanh toán giải ngân (PAYOUT transactions)
+    const disbursementStatusStats = await Transaction.findAll({
+      where: {
+        type: "PAYOUT",
+        to_user_id: ownerId,
+      },
+      attributes: [
+        "status",
+        [db.sequelize.fn("COUNT", db.sequelize.col("transaction_id")), "count"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
+
     // Thống kê theo xe
-    const vehicleStats = await Booking.findAll({
+    const vehicleStatsRaw = await Booking.findAll({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
         status: "completed",
@@ -473,8 +615,18 @@ export const getOwnerRevenue = async (req, res) => {
           "bookingCount",
         ],
       ],
-      group: ["vehicle_id"],
+      group: ["vehicle_id", "vehicle.vehicle_id"],
       raw: false,
+    });
+
+    // Serialize dữ liệu để đảm bảo cấu trúc đúng
+    const vehicleStats = vehicleStatsRaw.map(stat => {
+      const data = stat.toJSON ? stat.toJSON() : stat;
+      return {
+        vehicle: data.vehicle || null,
+        totalRevenue: parseFloat(data.totalRevenue || data.dataValues?.totalRevenue || 0),
+        bookingCount: parseInt(data.bookingCount || data.dataValues?.bookingCount || 0),
+      };
     });
 
     res.json({
@@ -484,6 +636,8 @@ export const getOwnerRevenue = async (req, res) => {
         completedBookings,
         monthlyRevenue,
         vehicleStats,
+        bookingStatusStats,
+        disbursementStatusStats,
       },
     });
   } catch (error) {
