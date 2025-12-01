@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 // Utility: Render star rating
 const renderStars = (rating) =>
@@ -16,6 +16,7 @@ const renderStars = (rating) =>
 
 const OwnerProfile = ({ vehicle }) => {
   const { id: idParam } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [owner, setOwner] = useState(null);
@@ -115,6 +116,12 @@ const OwnerProfile = ({ vehicle }) => {
   const ownerAvatar = owner?.avatar_url || "/default_avt.jpg";
   const itemsToShow = showAll ? normalizedReviews.length : 2;
 
+  const handleOwnerClick = () => {
+    const ownerId = owner?.user_id || vehicle?.owner_id;
+    if (!ownerId) return;
+    navigate(`/owner-public/${ownerId}`);
+  };
+
   return (
     <div className="bg-white p-6 space-y-6">
       <h3 className="text-xl font-bold">Chủ xe</h3>
@@ -125,9 +132,10 @@ const OwnerProfile = ({ vehicle }) => {
             src={ownerAvatar}
             alt={ownerName}
             className="w-14 h-14 rounded-full object-cover bg-white"
+            onClick={handleOwnerClick}
           />
           <div>
-            <div className="text-lg font-semibold">{ownerName}</div>
+            <div className="text-lg font-semibold" onClick={handleOwnerClick}>{ownerName}</div>
             <div className="flex items-center gap-3 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <span className="font-semibold text-gray-900">{avgRating}</span>
