@@ -424,7 +424,7 @@ export const getOwnerRevenue = async (req, res) => {
       },
     });
 
-    // Doanh thu theo tháng (12 tháng gần nhất)
+    // Doanh thu theo tháng (6 tháng gần nhất)
     const monthlyRevenue = await db.sequelize.query(
       `
       SELECT 
@@ -435,12 +435,39 @@ export const getOwnerRevenue = async (req, res) => {
       FROM bookings 
       WHERE vehicle_id IN (${vehicleIds.join(",")})
         AND status = 'completed'
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
       GROUP BY YEAR(created_at), MONTH(created_at)
       ORDER BY year DESC, month DESC
     `,
       { type: db.sequelize.QueryTypes.SELECT }
     );
+
+    // Thống kê trạng thái đặt xe
+    const bookingStatusStats = await Booking.findAll({
+      where: {
+        vehicle_id: { [Op.in]: vehicleIds },
+      },
+      attributes: [
+        "status",
+        [db.sequelize.fn("COUNT", db.sequelize.col("booking_id")), "count"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
+
+    // Thống kê trạng thái thanh toán giải ngân (PAYOUT transactions)
+    const disbursementStatusStats = await Transaction.findAll({
+      where: {
+        type: "PAYOUT",
+        to_user_id: ownerId,
+      },
+      attributes: [
+        "status",
+        [db.sequelize.fn("COUNT", db.sequelize.col("transaction_id")), "count"],
+      ],
+      group: ["status"],
+      raw: true,
+    });
 
     // Thống kê theo xe
     const vehicleStats = await Booking.findAll({
@@ -484,6 +511,8 @@ export const getOwnerRevenue = async (req, res) => {
         completedBookings,
         monthlyRevenue,
         vehicleStats,
+        bookingStatusStats,
+        disbursementStatusStats,
       },
     });
   } catch (error) {

@@ -15,7 +15,8 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Legend
 } from 'recharts';
 
 const Revenue = () => {
@@ -111,6 +112,60 @@ const Revenue = () => {
     }
   };
 
+  // Prepare booking status data for donut chart
+  const prepareBookingStatusData = () => {
+    try {
+      if (!revenueData?.bookingStatusStats || !Array.isArray(revenueData.bookingStatusStats)) {
+        return [];
+      }
+
+      const statusMap = {
+        'pending': { name: 'Chờ xác nhận', color: '#FFB6C1' }, // Pink
+        'deposit_paid': { name: 'Đã đặt cọc', color: '#FFD700' }, // Yellow
+        'fully_paid': { name: 'Đã thanh toán toàn bộ', color: '#87CEEB' }, // Light Blue
+        'in_progress': { name: 'Đang thuê', color: '#4169E1' }, // Dark Blue
+        'completed': { name: 'Hoàn thành', color: '#9370DB' }, // Purple
+        'cancel_requested': { name: 'Yêu cầu hủy', color: '#90EE90' }, // Light Green
+        'canceled': { name: 'Đã hủy', color: '#228B22' }, // Dark Green
+        'confirmed': { name: 'Đã xác nhận', color: '#FFA500' }, // Orange
+      };
+
+      return revenueData.bookingStatusStats.map(stat => ({
+        name: statusMap[stat.status]?.name || stat.status,
+        value: parseInt(stat.count || 0),
+        color: statusMap[stat.status]?.color || '#8884D8'
+      })).filter(item => item.value > 0);
+    } catch (error) {
+      console.error('Error preparing booking status data:', error);
+      return [];
+    }
+  };
+
+  // Prepare disbursement status data for donut chart
+  const prepareDisbursementStatusData = () => {
+    try {
+      if (!revenueData?.disbursementStatusStats || !Array.isArray(revenueData.disbursementStatusStats)) {
+        return [];
+      }
+
+      const statusMap = {
+        'PENDING': { name: 'Chờ xử lý', color: '#FFB6C1' }, // Pink
+        'COMPLETED': { name: 'Hoàn thành', color: '#87CEEB' }, // Light Blue
+        'FAILED': { name: 'Thất bại', color: '#9370DB' }, // Purple
+        'CANCELLED': { name: 'Đã hủy', color: '#4169E1' }, // Dark Blue
+      };
+
+      return revenueData.disbursementStatusStats.map(stat => ({
+        name: statusMap[stat.status]?.name || stat.status,
+        value: parseInt(stat.count || 0),
+        color: statusMap[stat.status]?.color || '#8884D8'
+      })).filter(item => item.value > 0);
+    } catch (error) {
+      console.error('Error preparing disbursement status data:', error);
+      return [];
+    }
+  };
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   console.log('Revenue: Rendering, loading:', loading, 'error:', error, 'revenueData:', revenueData);
@@ -131,17 +186,17 @@ const Revenue = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Doanh thu</h1>
-            <p className={themeUtils.textSecondary}>Theo dõi doanh thu và hiệu suất kinh doanh</p>
+            <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Biểu đồ doanh thu</h1>
+            <p className={themeUtils.textSecondary}>Quản lí trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
           </div>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center">
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="month">12 tháng gần nhất</option>
+              <option value="month">6 tháng gần nhất</option>
               <option value="year">Theo năm</option>
             </select>
           </div>
@@ -219,45 +274,89 @@ const Revenue = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Revenue Trend Chart */}
+        {/* Booking Status Donut Chart */}
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Xu hướng doanh thu</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Trạng thái đặt xe</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={prepareBookingStatusData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {prepareBookingStatusData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry) => <span style={{ color: entry.color }}>{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Disbursement Status Donut Chart */}
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Trạng thái thanh toán giải ngân</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={prepareDisbursementStatusData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {prepareDisbursementStatusData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry) => <span style={{ color: entry.color }}>{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Revenue Chart */}
+      <div className="mb-6">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Tổng doanh thu theo tháng</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={prepareChartData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCompactCurrency} />
+                <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
                 <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'revenue' ? formatCurrency(value) : value,
-                    name === 'revenue' ? 'Doanh thu' : 'Số đơn'
-                  ]}
+                  formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#3B82F6" 
+                  stroke="#14B8A6" 
                   strokeWidth={2}
-                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: '#14B8A6', strokeWidth: 2, r: 4 }}
+                  name="Doanh thu"
                 />
               </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Bookings Chart */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Số đơn thuê theo tháng</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={prepareChartData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
-                <Tooltip formatter={(value) => [Math.round(value), 'Số đơn']} />
-                <Bar dataKey="bookings" fill="#10B981" />
-              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
