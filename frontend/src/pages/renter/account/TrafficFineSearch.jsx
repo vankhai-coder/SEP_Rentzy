@@ -106,18 +106,18 @@ const TrafficFineSearch = () => {
   };
 
   return (
-    <div className="p-4 lg:p-6 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Tra Cứu Phạt Nguội</h1>
-        <p className="text-gray-600">Tra cứu các vi phạm giao thông (phạt nguội) theo biển số xe</p>
+    <div className="p-3 sm:p-4 lg:p-6 bg-gray-50 min-h-screen overflow-x-hidden max-w-full">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Tra Cứu Phạt Nguội</h1>
+        <p className="text-sm sm:text-base text-gray-600">Tra cứu các vi phạm giao thông (phạt nguội) theo biển số xe</p>
       </div>
 
       {/* Search Form */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <form onSubmit={handleSearch}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 mb-6 w-full max-w-full overflow-hidden">
+        <form onSubmit={handleSearch} className="w-full max-w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 w-full max-w-full">
             {/* Biển kiểm soát */}
-            <div>
+            <div className="w-full min-w-0">
               <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-700 mb-2">
                 Biển kiểm soát
               </label>
@@ -127,13 +127,13 @@ const TrafficFineSearch = () => {
                 value={licensePlate}
                 onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
                 placeholder="VD: 30A12345"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full min-w-0 px-2.5 sm:px-3 md:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 maxLength={15}
               />
             </div>
 
             {/* Loại phương tiện */}
-            <div>
+            <div className="w-full min-w-0">
               <label htmlFor="vehicleType" className="block text-sm font-medium text-gray-700 mb-2">
                 Loại phương tiện
               </label>
@@ -141,7 +141,7 @@ const TrafficFineSearch = () => {
                 id="vehicleType"
                 value={vehicleType}
                 onChange={(e) => setVehicleType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full min-w-0 px-2.5 sm:px-3 md:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="1">Ô tô</option>
                 <option value="2">Xe máy</option>
@@ -149,39 +149,42 @@ const TrafficFineSearch = () => {
             </div>
 
             {/* Mã bảo mật */}
-            <div>
+            <div className="w-full sm:col-span-2 lg:col-span-1 min-w-0 max-w-full">
               <label htmlFor="captcha" className="block text-sm font-medium text-gray-700 mb-2">
                 Mã bảo mật
               </label>
-              <div className="flex gap-2 items-center">
-                {captchaImage && (
-                  <img 
-                    src={captchaImage} 
-                    alt="Captcha" 
-                    className="h-10 border border-gray-300 rounded"
-                    style={{ width: 'auto' }}
-                  />
-                )}
-                {loadingCaptcha && (
-                  <div className="h-10 w-24 border border-gray-300 rounded flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleRefreshCaptcha}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                  title="Làm mới mã bảo mật"
-                >
-                  <MdRefresh className="text-xl" />
-                </button>
+              <div className="flex gap-2 items-center w-full min-w-0 max-w-full">
+                <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
+                  {loadingCaptcha ? (
+                    <div className="h-8 sm:h-9 md:h-10 w-14 sm:w-16 md:w-20 lg:w-22 border border-gray-300 rounded flex items-center justify-center flex-shrink-0">
+                      <div className="animate-spin rounded-full h-3 sm:h-3.5 md:h-4 w-3 sm:w-3.5 md:w-4 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : captchaImage ? (
+                    <div className="flex-shrink-0">
+                      <img 
+                        src={captchaImage} 
+                        alt="Captcha" 
+                        className="h-8 sm:h-9 md:h-10 w-auto max-w-[70px] sm:max-w-[85px] md:max-w-[100px] lg:max-w-[110px] border border-gray-300 rounded object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleRefreshCaptcha}
+                    className="p-1 sm:p-1.5 md:p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex-shrink-0"
+                    title="Làm mới mã bảo mật"
+                    disabled={loadingCaptcha}
+                  >
+                    <MdRefresh className="text-base sm:text-lg md:text-xl" />
+                  </button>
+                </div>
                 <input
                   type="text"
                   id="captcha"
                   value={captcha}
                   onChange={(e) => setCaptcha(e.target.value)}
                   placeholder="Nhập mã"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 min-w-0 w-24 sm:w-28 md:w-32 lg:w-36 px-2 sm:px-2.5 md:px-3 lg:px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   autoCapitalize="off"
                   autoCorrect="off"
                   spellCheck={false}

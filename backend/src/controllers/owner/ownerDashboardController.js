@@ -1426,6 +1426,11 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
+    // Đảm bảo SSL config được set trước khi import
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1436,10 +1441,18 @@ export const getTrafficFineCaptcha = async (req, res) => {
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
     const instance = createAxiosInstance(jar);
-    const captchaImage = await getCaptchaImage(instance);
+    
+    console.log("[TrafficFineCaptcha] Fetching captcha image...");
+    const captchaImage = await getCaptchaImage(jar);
+
+    if (!captchaImage || captchaImage.length === 0) {
+      throw new Error("Captcha image is empty");
+    }
 
     const sessionId = createSession(jar);
     const base64Image = captchaImage.toString("base64");
+
+    console.log("[TrafficFineCaptcha] Captcha fetched successfully, size:", captchaImage.length, "bytes");
 
     return res.json({
       success: true,
@@ -1448,6 +1461,14 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
+    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
+    console.error("[TrafficFineCaptcha] Error details:", {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      responseData: error.response?.data,
+    });
+    
     res.status(500).json({
       success: false,
       message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",

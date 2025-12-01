@@ -37,10 +37,13 @@ const CONFIG = {
  */
 export function createAxiosInstance(existingJar = null) {
   const jar = existingJar || new CookieJar();
+  // Không thể dùng httpsAgent với axios-cookiejar-support
+  // Chỉ dựa vào NODE_TLS_REJECT_UNAUTHORIZED = '0' đã set ở đầu file
   const instance = axios.create({
     jar,
     withCredentials: true,
     baseURL: CONFIG.BASE_URL,
+    timeout: 30000, // 30 seconds timeout
     headers: {
       "User-Agent": CONFIG.HEADERS.USER_AGENT,
       Accept: CONFIG.HEADERS.ACCEPT,
@@ -61,30 +64,53 @@ export function createAxiosInstance(existingJar = null) {
  * @returns {Promise<Buffer>} Captcha image buffer
  */
 export async function getCaptchaImage(jar) {
-  try {
-    // Tạo axios instance với jar để đảm bảo cookies được lưu
-    const instance = createAxiosInstance(jar);
-    
-    console.log(`[getCaptchaImage] Fetching captcha from: ${CONFIG.BASE_URL}${CONFIG.CAPTCHA_PATH}`);
-    const image = await instance.get(CONFIG.CAPTCHA_PATH, {
-      responseType: "arraybuffer",
-    });
-    
-    console.log(`[getCaptchaImage] Captcha fetched successfully, size: ${image.data?.length || 0} bytes`);
-    if (!image.data || image.data.length === 0) {
-      throw new Error("Captcha image is empty");
+  let lastError = null;
+  
+  // Retry logic với MAX_RETRIES lần
+  for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES; attempt++) {
+    try {
+      // Đảm bảo SSL config được set
+      if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      }
+
+      // Tạo axios instance với jar để đảm bảo cookies được lưu
+      const instance = createAxiosInstance(jar);
+      
+      console.log(`[getCaptchaImage] Attempt ${attempt}/${CONFIG.MAX_RETRIES}: Fetching captcha from: ${CONFIG.BASE_URL}${CONFIG.CAPTCHA_PATH}`);
+      
+      const image = await instance.get(CONFIG.CAPTCHA_PATH, {
+        responseType: "arraybuffer",
+        timeout: 30000, // 30 seconds
+      });
+      
+      console.log(`[getCaptchaImage] Captcha fetched successfully, size: ${image.data?.length || 0} bytes`);
+      
+      if (!image.data || image.data.length === 0) {
+        throw new Error("Captcha image is empty");
+      }
+      
+      return Buffer.from(image.data);
+    } catch (error) {
+      lastError = error;
+      console.error(`[getCaptchaImage] Attempt ${attempt}/${CONFIG.MAX_RETRIES} failed:`, {
+        message: error.message,
+        code: error.code,
+        response: error.response?.status,
+        responseData: error.response?.data,
+      });
+      
+      // Nếu không phải lần thử cuối, đợi một chút rồi thử lại
+      if (attempt < CONFIG.MAX_RETRIES) {
+        const delay = attempt * 1000; // Exponential backoff: 1s, 2s, 3s, 4s
+        console.log(`[getCaptchaImage] Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
-    
-    return Buffer.from(image.data);
-  } catch (error) {
-    console.error(`[getCaptchaImage] Error details:`, {
-      message: error.message,
-      code: error.code,
-      response: error.response?.status,
-      responseData: error.response?.data,
-    });
-    throw new Error(`Failed to get captcha image: ${error.message || error.code || 'Unknown error'}`);
   }
+  
+  // Nếu tất cả các lần thử đều thất bại
+  throw new Error(`Failed to get captcha image after ${CONFIG.MAX_RETRIES} attempts: ${lastError?.message || lastError?.code || 'Unknown error'}`);
 }
 
 /**
