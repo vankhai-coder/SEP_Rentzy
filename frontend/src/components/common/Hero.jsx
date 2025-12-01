@@ -5,7 +5,7 @@ import "./Hero.css";
 
 const Hero = () => (
   <section
-    className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-gray-900 px-4"
+    className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-visible bg-gray-900 px-4 py-8"
     data-aos="fade-down" // [THÊM AOS: Fade từ trên xuống cho toàn section]
     data-aos-duration="1000" // Thời gian dài hơn cho hero
     data-aos-delay="0"
@@ -18,9 +18,18 @@ const Hero = () => (
       }}
     />
     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60" />
-    <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
+    <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center overflow-visible pb-8">
       <h1
-        className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent leading-none tracking-tight"
+        className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl xl:text-9xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent tracking-tight"
+        style={{ 
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          lineHeight: '1.2',
+          paddingBottom: '1rem',
+          marginBottom: '1rem',
+          display: 'block',
+          overflow: 'visible'
+        }}
         data-aos="zoom-in" // [THÊM AOS: Zoom cho title]
         data-aos-delay="200"
       >
