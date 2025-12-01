@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { logoutUser } from "@/redux/features/auth/authSlice";
 import VehicleManagement from "./vehicleManagement/vehicleManagement.jsx";
 import VehicleDetail from "./vehicleManagement/VehicleDetail.jsx";
 import AddCarForm from "./vehicleManagement/addCarForm.jsx";
@@ -38,15 +36,8 @@ import {
 import { FaClipboardList } from "react-icons/fa";
 
 const OwnerPage = () => {
-  const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
-
-  const handleLogout = (e) => {
-    e.preventDefault();
-    dispatch(logoutUser());
-    window.location.href = "/";
-  };
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -67,7 +58,7 @@ const OwnerPage = () => {
     if (pathname.startsWith("/owner/contract/")) {
       return "Hợp đồng";
     }
-    
+
     const pageMap = {
       "/owner": "Tổng Quan Hệ Thống",
       "/owner/": "Tổng Quan Hệ Thống",
@@ -86,7 +77,7 @@ const OwnerPage = () => {
 
   return (
     <div className="min-h-screen">
-      <SidebarOwner handleLogout={handleLogout} isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+      <SidebarOwner isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
       <div className="p-5 bg-gray-50 min-h-screen md:ml-[250px] ml-0">
         <div className="md:hidden mb-4">
           <div className="flex items-center gap-2 mb-3">
@@ -100,15 +91,15 @@ const OwnerPage = () => {
             <span className="text-lg font-semibold text-gray-800 whitespace-nowrap">Khu vực chủ xe</span>
           </div>
           {/* Navigation dropdown for mobile */}
-          <Select 
-            onValueChange={(value) => navigate(value)} 
-            value={location.pathname.startsWith("/owner/vehicles/") || 
-                   location.pathname.startsWith("/owner/booking-management/detail/") ||
-                   location.pathname.startsWith("/owner/edit-") ||
-                   location.pathname.startsWith("/owner/add-") ||
-                   location.pathname.startsWith("/owner/contract/") 
-                   ? undefined 
-                   : location.pathname}
+          <Select
+            onValueChange={(value) => navigate(value)}
+            value={location.pathname.startsWith("/owner/vehicles/") ||
+              location.pathname.startsWith("/owner/booking-management/detail/") ||
+              location.pathname.startsWith("/owner/edit-") ||
+              location.pathname.startsWith("/owner/add-") ||
+              location.pathname.startsWith("/owner/contract/")
+              ? undefined
+              : location.pathname}
           >
             <SelectTrigger className="w-full text-md font-medium py-4 bg-[#ffffff]">
               <SelectValue placeholder={currentPageName} />
