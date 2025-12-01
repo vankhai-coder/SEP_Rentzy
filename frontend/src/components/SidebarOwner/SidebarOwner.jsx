@@ -82,17 +82,16 @@ const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-      {/* Back icon at top-left */}
-      <NavLink
-        to="/account"
-        className="absolute left-3 top-3 inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61]"
-        title="Quay về hồ sơ"
-        aria-label="Quay về hồ sơ"
-      >
-        <MdArrowBack className="text-xl" />
-      </NavLink>
-
-      <div className="px-5 pl-14 mb-[30px] pt-1">
+      {/* Header with back button and title */}
+      <div className="flex items-center gap-3 px-5 mb-[30px] pt-3">
+        <NavLink
+          to="/account"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61] flex-shrink-0"
+          title="Quay về hồ sơ"
+          aria-label="Quay về hồ sơ"
+        >
+          <MdArrowBack className="text-xl" />
+        </NavLink>
         <div className="text-2xl font-bold text-[#3498db]">
           Bảng điều khiển chủ xe
         </div>
