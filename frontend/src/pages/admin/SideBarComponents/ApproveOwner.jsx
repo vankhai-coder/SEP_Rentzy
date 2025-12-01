@@ -188,8 +188,8 @@ const ApproveOwner = () => {
         <div className="flex items-center justify-between" >
           {/* User Management Title */}
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lí chủ xe</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Quản lí các chủ sở hữu và quyền truy cập tài khoản của họ</p>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lý chủ xe</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lý các chủ sở hữu và quyền truy cập tài khoản của họ</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">

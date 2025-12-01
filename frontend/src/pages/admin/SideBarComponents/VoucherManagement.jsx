@@ -232,8 +232,8 @@ const VoucherManagement = () => {
         <div className="flex items-center justify-between" >
           {/* User Management Title */}
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lí voucher</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Quản lí các phiếu giảm giá và khuyến mãi của người dùng</p>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lý voucher</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lý các phiếu giảm giá và khuyến mãi của người dùng</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">

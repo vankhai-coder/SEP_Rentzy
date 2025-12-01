@@ -239,11 +239,8 @@ const ContractOwner = () => {
 
   if (loading) {
     return (
-      <div className="contract-owner">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải hợp đồng...</p>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -446,9 +443,8 @@ const ContractOwner = () => {
 
       <div className="contract-viewer">
         {pdfLoading && (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Đang tải hợp đồng DocuSign...</p>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         )}
         {!pdfLoading && pdfError && (

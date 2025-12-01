@@ -262,7 +262,7 @@ const Revenue = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Biểu đồ doanh thu</h1>
-            <p className={themeUtils.textSecondary}>Quản lí trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
+            <p className={themeUtils.textSecondary}>Quản lý trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
           </div>
           
           <div className="flex flex-wrap gap-3 items-end">

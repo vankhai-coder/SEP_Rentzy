@@ -112,7 +112,7 @@ const LocationModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-transparent">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50">
       <div
         className="bg-white rounded-2xl w-full max-w-sm sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl 
                    animate-in fade-in slide-in-from-top-4 duration-300 

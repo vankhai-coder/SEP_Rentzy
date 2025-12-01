@@ -154,7 +154,7 @@ const TrafficFineSearch = () => {
                 Mã bảo mật
               </label>
               <div className="flex gap-2 items-center w-full min-w-0 max-w-full">
-                <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
+                <div className="flex gap-4 sm:gap-5 md:gap-6 items-center flex-shrink-0">
                   {loadingCaptcha ? (
                     <div className="h-8 sm:h-9 md:h-10 w-14 sm:w-16 md:w-20 lg:w-22 border border-gray-300 rounded flex items-center justify-center flex-shrink-0">
                       <div className="animate-spin rounded-full h-3 sm:h-3.5 md:h-4 w-3 sm:w-3.5 md:w-4 border-b-2 border-blue-500"></div>

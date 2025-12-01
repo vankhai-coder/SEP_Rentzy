@@ -159,7 +159,7 @@ const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
               }
             >
               <MdTransform className="mr-[10px] text-xl" />
-              Quản lí giao dịch
+              Quản lý giao dịch
             </NavLink>
           </li>
           <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
