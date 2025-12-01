@@ -84,11 +84,19 @@ const Revenue = () => {
         return [];
       }
 
-      return revenueData.monthlyRevenue.map(item => ({
+      // Sắp xếp theo năm và tháng (từ cũ đến mới)
+      const sortedData = [...revenueData.monthlyRevenue].sort((a, b) => {
+        if (a.year !== b.year) {
+          return a.year - b.year;
+        }
+        return a.month - b.month;
+      });
+
+      return sortedData.map(item => ({
         month: `${item.month}/${item.year}`,
         revenue: parseFloat(item.revenue || 0),
         bookings: parseInt(item.booking_count || 0)
-      })).reverse(); // Show oldest to newest
+      }));
     } catch (error) {
       console.error('Error preparing chart data:', error);
       return [];
@@ -101,11 +109,18 @@ const Revenue = () => {
         return [];
       }
 
-      return revenueData.vehicleStats.map(stat => ({
-        name: `${stat.vehicle?.model || 'N/A'} (${stat.vehicle?.license_plate || 'N/A'})`,
-        revenue: parseFloat(stat.dataValues?.totalRevenue || 0),
-        bookings: parseInt(stat.dataValues?.bookingCount || 0)
-      }));
+      return revenueData.vehicleStats.map(stat => {
+        // Hỗ trợ cả cấu trúc mới (từ backend đã serialize) và cấu trúc cũ
+        const revenue = parseFloat(stat.totalRevenue || stat.dataValues?.totalRevenue || 0);
+        const bookings = parseInt(stat.bookingCount || stat.dataValues?.bookingCount || 0);
+        const vehicle = stat.vehicle || stat.dataValues?.vehicle || null;
+
+        return {
+          name: `${vehicle?.model || 'N/A'} (${vehicle?.license_plate || 'N/A'})`,
+          revenue: revenue,
+          bookings: bookings
+        };
+      }).filter(stat => stat.revenue > 0 || stat.bookings > 0); // Chỉ hiển thị xe có doanh thu hoặc đơn
     } catch (error) {
       console.error('Error preparing vehicle stats:', error);
       return [];
@@ -352,8 +367,10 @@ const Revenue = () => {
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="#14B8A6" 
-                  strokeWidth={2}
-                  dot={{ fill: '#14B8A6', strokeWidth: 2, r: 4 }}
+                  strokeWidth={3}
+                  dot={{ fill: '#14B8A6', strokeWidth: 2, r: 5 }}
+                  activeDot={{ r: 7 }}
+                  connectNulls={false}
                   name="Doanh thu"
                 />
               </LineChart>

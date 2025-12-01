@@ -425,7 +425,7 @@ export const getOwnerRevenue = async (req, res) => {
     });
 
     // Doanh thu theo tháng (6 tháng gần nhất)
-    const monthlyRevenue = await db.sequelize.query(
+    const monthlyRevenueRaw = await db.sequelize.query(
       `
       SELECT 
         MONTH(created_at) as month,
@@ -441,6 +441,34 @@ export const getOwnerRevenue = async (req, res) => {
     `,
       { type: db.sequelize.QueryTypes.SELECT }
     );
+
+    // Tạo map để dễ tìm kiếm
+    const revenueMap = new Map();
+    monthlyRevenueRaw.forEach(item => {
+      const key = `${item.year}-${item.month}`;
+      revenueMap.set(key, item);
+    });
+
+    // Tạo đầy đủ 6 tháng gần nhất (kể cả tháng không có dữ liệu)
+    const now = new Date();
+    const monthlyRevenue = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const key = `${year}-${month}`;
+      
+      if (revenueMap.has(key)) {
+        monthlyRevenue.push(revenueMap.get(key));
+      } else {
+        monthlyRevenue.push({
+          month: month,
+          year: year,
+          revenue: 0,
+          booking_count: 0
+        });
+      }
+    }
 
     // Thống kê trạng thái đặt xe
     const bookingStatusStats = await Booking.findAll({
@@ -470,7 +498,7 @@ export const getOwnerRevenue = async (req, res) => {
     });
 
     // Thống kê theo xe
-    const vehicleStats = await Booking.findAll({
+    const vehicleStatsRaw = await Booking.findAll({
       where: {
         vehicle_id: { [Op.in]: vehicleIds },
         status: "completed",
@@ -500,8 +528,18 @@ export const getOwnerRevenue = async (req, res) => {
           "bookingCount",
         ],
       ],
-      group: ["vehicle_id"],
+      group: ["vehicle_id", "vehicle.vehicle_id"],
       raw: false,
+    });
+
+    // Serialize dữ liệu để đảm bảo cấu trúc đúng
+    const vehicleStats = vehicleStatsRaw.map(stat => {
+      const data = stat.toJSON ? stat.toJSON() : stat;
+      return {
+        vehicle: data.vehicle || null,
+        totalRevenue: parseFloat(data.totalRevenue || data.dataValues?.totalRevenue || 0),
+        bookingCount: parseInt(data.bookingCount || data.dataValues?.bookingCount || 0),
+      };
     });
 
     res.json({
