@@ -216,6 +216,12 @@ export const getOwnerTransactions = async (req, res) => {
       type: { [Op.in]: ["COMPENSATION", "PAYOUT"] }, // Chỉ lấy COMPENSATION và PAYOUT
     };
 
+    console.log('Owner Transactions Query:', {
+      ownerId,
+      whereConditions,
+      filters: { search, type, status }
+    });
+
     // Add search condition
     if (search) {
       whereConditions[Op.or] = [
@@ -286,6 +292,18 @@ export const getOwnerTransactions = async (req, res) => {
       distinct: true,
     });
 
+    console.log('Transaction Query Results:', {
+      count,
+      transactionsFound: transactions.length,
+      sampleTransaction: transactions[0] ? {
+        id: transactions[0].transaction_id,
+        type: transactions[0].type,
+        amount: transactions[0].amount,
+        to_user_id: transactions[0].to_user_id,
+        status: transactions[0].status
+      } : null
+    });
+
     // Format transactions data
     const formattedTransactions = transactions.map((transaction) => {
       // Xác định loại giao dịch
@@ -346,11 +364,80 @@ export const getOwnerTransactions = async (req, res) => {
 
     const totalPages = Math.ceil(count / parseInt(limit));
 
+    // Tính thống kê tổng từ tất cả transactions (không chỉ trang hiện tại)
+    const allTransactionsStats = await Transaction.findAll({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("COUNT", db.sequelize.col("transaction_id")),
+          "totalTransactions",
+        ],
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("amount")),
+          "totalAmount",
+        ],
+      ],
+      raw: true,
+    });
+
+    const stats = allTransactionsStats[0] || {};
+    const totalTransactions = parseInt(stats.totalTransactions || 0);
+    const totalAmount = parseFloat(stats.totalAmount || 0);
+
+    console.log('Transaction Statistics:', {
+      totalTransactions,
+      totalAmount,
+      rawStats: stats
+    });
+
+    // Tính tiền vào (tất cả transactions có amount > 0)
+    const moneyInResult = await Transaction.findOne({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+        amount: { [Op.gt]: 0 },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("SUM", db.sequelize.col("amount")),
+          "moneyIn",
+        ],
+      ],
+      raw: true,
+    });
+    const moneyIn = parseFloat(moneyInResult?.moneyIn || 0);
+
+    // Tính tiền ra (tất cả transactions có amount < 0)
+    const moneyOutResult = await Transaction.findOne({
+      where: {
+        to_user_id: ownerId,
+        type: { [Op.in]: ["COMPENSATION", "PAYOUT"] },
+        amount: { [Op.lt]: 0 },
+      },
+      attributes: [
+        [
+          db.sequelize.fn("SUM", db.sequelize.fn("ABS", db.sequelize.col("amount"))),
+          "moneyOut",
+        ],
+      ],
+      raw: true,
+    });
+    const moneyOut = parseFloat(moneyOutResult?.moneyOut || 0);
+
     res.status(200).json({
       success: true,
       message: "Lấy danh sách giao dịch thành công",
       data: {
         transactions: formattedTransactions,
+        statistics: {
+          totalTransactions,
+          totalAmount,
+          moneyIn,
+          moneyOut,
+        },
         pagination: {
           currentPage: parseInt(page),
           totalPages,
