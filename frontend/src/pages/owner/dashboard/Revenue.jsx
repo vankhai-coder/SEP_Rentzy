@@ -26,14 +26,56 @@ const Revenue = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedQuarter, setSelectedQuarter] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+
+  // Tạo danh sách năm (từ năm hiện tại trở về trước 5 năm)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  // Tạo danh sách quý
+  const quarters = [
+    { value: 1, label: 'Quý 1' },
+    { value: 2, label: 'Quý 2' },
+    { value: 3, label: 'Quý 3' },
+    { value: 4, label: 'Quý 4' }
+  ];
+
+  // Tạo danh sách tháng
+  const months = [
+    { value: 1, label: 'Tháng 1' },
+    { value: 2, label: 'Tháng 2' },
+    { value: 3, label: 'Tháng 3' },
+    { value: 4, label: 'Tháng 4' },
+    { value: 5, label: 'Tháng 5' },
+    { value: 6, label: 'Tháng 6' },
+    { value: 7, label: 'Tháng 7' },
+    { value: 8, label: 'Tháng 8' },
+    { value: 9, label: 'Tháng 9' },
+    { value: 10, label: 'Tháng 10' },
+    { value: 11, label: 'Tháng 11' },
+    { value: 12, label: 'Tháng 12' }
+  ];
 
   const fetchRevenueData = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Revenue: Fetching data with period:', selectedPeriod);
+      console.log('Revenue: Fetching data with filters:', { 
+        period: selectedPeriod, 
+        year: selectedYear, 
+        quarter: selectedQuarter, 
+        month: selectedMonth 
+      });
+      
+      const params = { period: selectedPeriod };
+      if (selectedYear) params.year = selectedYear;
+      if (selectedQuarter) params.quarter = selectedQuarter;
+      if (selectedMonth) params.month = selectedMonth;
+      
       const response = await axiosInstance.get('/api/owner/dashboard/revenue', {
-        params: { period: selectedPeriod }
+        params
       });
 
       console.log('Revenue: API response:', response.data);
@@ -57,7 +99,7 @@ const Revenue = () => {
   useEffect(() => {
     console.log('Revenue: Component mounted, fetching data');
     fetchRevenueData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, selectedYear, selectedQuarter, selectedMonth]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -77,7 +119,7 @@ const Revenue = () => {
     return amount.toString();
   };
 
-  // Prepare chart data
+  // Prepare chart data (monthly - line chart)
   const prepareChartData = () => {
     try {
       if (!revenueData?.monthlyRevenue || !Array.isArray(revenueData.monthlyRevenue)) {
@@ -99,6 +141,24 @@ const Revenue = () => {
       }));
     } catch (error) {
       console.error('Error preparing chart data:', error);
+      return [];
+    }
+  };
+
+  // Prepare daily chart data (bar chart when month is selected)
+  const prepareDailyChartData = () => {
+    try {
+      if (!revenueData?.dailyRevenue || !Array.isArray(revenueData.dailyRevenue)) {
+        return [];
+      }
+
+      return revenueData.dailyRevenue.map(item => ({
+        day: `${String(item.day).padStart(2, '0')}/${String(item.month).padStart(2, '0')}`,
+        revenue: parseFloat(item.revenue || 0),
+        bookings: parseInt(item.booking_count || 0)
+      }));
+    } catch (error) {
+      console.error('Error preparing daily chart data:', error);
       return [];
     }
   };
@@ -205,15 +265,84 @@ const Revenue = () => {
             <p className={themeUtils.textSecondary}>Quản lí trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
           </div>
           
-          <div className="flex space-x-2 items-center">
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="month">6 tháng gần nhất</option>
-              <option value="year">Theo năm</option>
-            </select>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Chọn năm
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(Number(e.target.value));
+                  setSelectedQuarter('');
+                  setSelectedMonth('');
+                }}
+                className="px-3 py-2 min-w-[150px] border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Chọn năm --</option>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Chọn quý
+              </label>
+              <select
+                value={selectedQuarter}
+                onChange={(e) => {
+                  setSelectedQuarter(e.target.value ? Number(e.target.value) : '');
+                  setSelectedMonth('');
+                }}
+                disabled={!selectedYear}
+                className="px-3 py-2 min-w-[150px] border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">-- Chọn quý --</option>
+                {quarters.map(quarter => (
+                  <option key={quarter.value} value={quarter.value}>{quarter.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Chọn tháng
+              </label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : '')}
+                disabled={!selectedYear || !!selectedQuarter}
+                className="px-3 py-2 min-w-[150px] border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">-- Chọn tháng --</option>
+                {months.map(month => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Khoảng thời gian
+              </label>
+              <select
+                value={selectedPeriod}
+                onChange={(e) => {
+                  setSelectedPeriod(e.target.value);
+                  if (e.target.value === 'month') {
+                    setSelectedYear('');
+                    setSelectedQuarter('');
+                    setSelectedMonth('');
+                  }
+                }}
+                className="px-3 py-2 min-w-[150px] border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="month">6 tháng gần nhất</option>
+                <option value="year">Theo năm</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -351,33 +480,105 @@ const Revenue = () => {
       </div>
 
       {/* Total Revenue Chart */}
-      <div className="mb-6">
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Tổng doanh thu theo tháng</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={prepareChartData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
-                <Tooltip 
-                  formatter={(value) => [formatCurrency(value), 'Doanh thu']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#14B8A6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#14B8A6', strokeWidth: 2, r: 5 }}
-                  activeDot={{ r: 7 }}
-                  connectNulls={false}
-                  name="Doanh thu"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+      {revenueData?.dailyRevenue ? (
+        // Hiển thị bar chart khi chọn tháng
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Biểu đồ doanh thu */}
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Biểu đồ doanh thu
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Tháng {selectedMonth}/{selectedYear}
+            </p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={prepareDailyChartData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="day" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={Math.floor(prepareDailyChartData().length / 10)}
+                  />
+                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#3B82F6"
+                    name="Doanh thu"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Biểu đồ số đơn đặt xe */}
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Số đơn đặt xe
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Tháng {selectedMonth}/{selectedYear}
+            </p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={prepareDailyChartData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="day" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={Math.floor(prepareDailyChartData().length / 10)}
+                  />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip 
+                    formatter={(value) => [value, 'Số đơn']}
+                  />
+                  <Bar 
+                    dataKey="bookings" 
+                    fill="#10B981"
+                    name="Số đơn"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // Hiển thị line chart khi không chọn tháng
+        <div className="mb-6">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Tổng doanh thu theo tháng</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={prepareChartData()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#14B8A6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#14B8A6', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7 }}
+                    connectNulls={false}
+                    name="Doanh thu"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Vehicle Performance */}
       <div className="grid grid-cols-1 gap-6">
