@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../config/axiosInstance.js';
-import { MdAttachMoney, MdTrendingUp, MdCalendarToday, MdDirectionsCar } from 'react-icons/md';
+import { MdTrendingUp, MdCalendarToday, MdDirectionsCar, MdFilterList } from 'react-icons/md';
+import { DollarSign } from 'lucide-react';
 import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
 import { createThemeUtils } from "@/utils/themeUtils";
 import {
@@ -258,18 +259,19 @@ const Revenue = () => {
     return (
       <div className={`p-4 lg:p-6 min-h-screen ${themeUtils.bgMain}`}>
       <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Biểu đồ doanh thu</h1>
-            <p className={themeUtils.textSecondary}>Quản lý trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
-          </div>
-          
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Chọn năm
-              </label>
-              <select
+        <div className="mb-4">
+          <h1 className={`text-2xl font-bold mb-2 ${themeUtils.textPrimary}`}>Biểu đồ doanh thu</h1>
+          <p className={themeUtils.textSecondary}>Quản lý trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
+        </div>
+        
+        {/* Filters */}
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 mb-6">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <MdFilterList className="text-gray-500 dark:text-gray-400" size={20} />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Bộ lọc:</span>
+            </div>
+            <select
                 value={selectedYear}
                 onChange={(e) => {
                   setSelectedYear(Number(e.target.value));
@@ -283,13 +285,8 @@ const Revenue = () => {
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
-            </div>
 
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Chọn quý
-              </label>
-              <select
+            <select
                 value={selectedQuarter}
                 onChange={(e) => {
                   setSelectedQuarter(e.target.value ? Number(e.target.value) : '');
@@ -303,13 +300,8 @@ const Revenue = () => {
                   <option key={quarter.value} value={quarter.value}>{quarter.label}</option>
                 ))}
               </select>
-            </div>
 
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Chọn tháng
-              </label>
-              <select
+            <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : '')}
                 disabled={!selectedYear || !!selectedQuarter}
@@ -320,28 +312,6 @@ const Revenue = () => {
                   <option key={month.value} value={month.value}>{month.label}</option>
                 ))}
               </select>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Khoảng thời gian
-              </label>
-              <select
-                value={selectedPeriod}
-                onChange={(e) => {
-                  setSelectedPeriod(e.target.value);
-                  if (e.target.value === 'month') {
-                    setSelectedYear('');
-                    setSelectedQuarter('');
-                    setSelectedMonth('');
-                  }
-                }}
-                className="px-3 py-2 min-w-[150px] border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="month">6 tháng gần nhất</option>
-                <option value="year">Theo năm</option>
-              </select>
-            </div>
           </div>
         </div>
       </div>
@@ -357,12 +327,12 @@ const Revenue = () => {
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-              <MdAttachMoney className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng doanh thu</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatCompactCurrency(revenueData?.totalRevenue || 0)}
+                {formatCurrency(revenueData?.totalRevenue || 0)}
               </p>
             </div>
           </div>
@@ -390,7 +360,7 @@ const Revenue = () => {
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Doanh thu TB/tháng</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatCompactCurrency(
+                {formatCurrency(
                   revenueData?.monthlyRevenue?.length > 0
                     ? revenueData.monthlyRevenue.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0) / revenueData.monthlyRevenue.length
                     : 0
@@ -479,20 +449,25 @@ const Revenue = () => {
       </div>
 
       {/* Total Revenue Chart */}
-      {revenueData?.dailyRevenue ? (
-        // Hiển thị bar chart khi chọn tháng
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Biểu đồ doanh thu */}
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Biểu đồ doanh thu
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Tháng {selectedMonth}/{selectedYear}
-            </p>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={prepareDailyChartData()}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Biểu đồ doanh thu */}
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            {revenueData?.dailyRevenue ? 'Biểu đồ doanh thu' : 'Tổng doanh thu theo tháng'}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {revenueData?.dailyRevenue 
+              ? `Tháng ${selectedMonth}/${selectedYear}`
+              : selectedQuarter 
+                ? `Quý ${selectedQuarter} - ${selectedYear}`
+                : selectedYear 
+                  ? `Năm ${selectedYear}`
+                  : 'Tất cả thời gian'}
+          </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              {revenueData?.dailyRevenue ? (
+                <BarChart data={prepareDailyChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="day" 
@@ -501,7 +476,7 @@ const Revenue = () => {
                     height={80}
                     interval={Math.floor(prepareDailyChartData().length / 10)}
                   />
-                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} />
+                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} width={70} />
                   <Tooltip 
                     formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                   />
@@ -511,54 +486,11 @@ const Revenue = () => {
                     name="Doanh thu"
                   />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Biểu đồ số đơn đặt xe */}
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Số đơn đặt xe
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Tháng {selectedMonth}/{selectedYear}
-            </p>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={prepareDailyChartData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="day" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={Math.floor(prepareDailyChartData().length / 10)}
-                  />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip 
-                    formatter={(value) => [value, 'Số đơn']}
-                  />
-                  <Bar 
-                    dataKey="bookings" 
-                    fill="#10B981"
-                    name="Số đơn"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // Hiển thị line chart khi không chọn tháng
-        <div className="mb-6">
-          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Tổng doanh thu theo tháng</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={prepareChartData()}>
+              ) : (
+                <LineChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
+                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} width={70} />
                   <Tooltip 
                     formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                   />
@@ -573,11 +505,71 @@ const Revenue = () => {
                     name="Doanh thu"
                   />
                 </LineChart>
-              </ResponsiveContainer>
-            </div>
+              )}
+            </ResponsiveContainer>
           </div>
         </div>
-      )}
+
+        {/* Biểu đồ số đơn đặt xe */}
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Số đơn đặt xe
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {revenueData?.dailyRevenue 
+              ? `Tháng ${selectedMonth}/${selectedYear}`
+              : selectedQuarter 
+                ? `Quý ${selectedQuarter} - ${selectedYear}`
+                : selectedYear 
+                  ? `Năm ${selectedYear}`
+                  : 'Tất cả thời gian'}
+          </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              {revenueData?.dailyRevenue ? (
+                <BarChart data={prepareDailyChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="day" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={Math.floor(prepareDailyChartData().length / 10)}
+                  />
+                  <YAxis allowDecimals={false} width={70} />
+                  <Tooltip 
+                    formatter={(value) => [value, 'Số đơn']}
+                  />
+                  <Bar 
+                    dataKey="bookings" 
+                    fill="#10B981"
+                    name="Số đơn"
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis allowDecimals={false} width={70} />
+                  <Tooltip 
+                    formatter={(value) => [value, 'Số đơn']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="bookings" 
+                    stroke="#10B981" 
+                    strokeWidth={3}
+                    dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7 }}
+                    connectNulls={false}
+                    name="Số đơn"
+                  />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
 
       {/* Vehicle Performance */}
       <div className="grid grid-cols-1 gap-6">

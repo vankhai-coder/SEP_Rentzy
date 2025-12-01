@@ -54,10 +54,41 @@
     table {
       width:100%;
       border-collapse:collapse;
-      th,td { padding:0.6rem 0.8rem; text-align:left; border-bottom:1px solid #eee; }
+      th,td { 
+        padding:0.6rem 0.8rem; 
+        text-align:left; 
+        border-bottom:1px solid #eee; 
+        vertical-align: middle;
+        line-height: 1.5;
+      }
       th { cursor:pointer; user-select:none; }
 
-      .status-badge, .type-badge { display:flex; align-items:center; gap:0.2rem; padding:0.2rem 0.4rem; border-radius:0.25rem; font-size:0.8rem; }
+      td {
+        vertical-align: middle;
+        
+        &.status-badge {
+          vertical-align: middle;
+        }
+        
+        .status-badge, .type-badge { 
+          display:inline-flex; 
+          align-items:center; 
+          gap:0.2rem; 
+          padding:0.4rem 0.6rem; 
+          border-radius:0.25rem; 
+          font-size:0.8rem; 
+          line-height: 1.4;
+          vertical-align: middle;
+          
+          svg {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+          }
+        }
+      }
 
       .status-badge.pending { background:#fff3cd; color:#856404; }
       .status-badge.completed { background:#d4edda; color:#155724; }

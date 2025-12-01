@@ -270,9 +270,6 @@ const TransactionManagement = () => {
 
       {/* Filters */}
       <div className="filters-section dark:bg-secondary-800 dark:border-secondary-700">
-        <div className="filters-header dark:text-white">
-          <Filter size={20} /> Bộ lọc
-        </div>
         <div className="filters-content">
           <div className="search-box">
             <Search size={18} className="dark:text-gray-400" />

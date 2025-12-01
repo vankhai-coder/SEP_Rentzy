@@ -175,6 +175,19 @@ const OverViewManagement = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  // Format compact currency for charts (1.3M, 104.2K, etc.) - without đ
+  const formatCompactCurrency = (amount) => {
+    if (!amount || amount === 0) return '0';
+    if (amount >= 1000000000) {
+      return `${(amount / 1000000000).toFixed(1)}B`;
+    } else if (amount >= 1000000) {
+      return `${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(1)}K`;
+    }
+    return amount.toString();
+  };
+
   // Format date like : 12 tháng 9, 2023
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -486,7 +499,7 @@ const OverViewManagement = () => {
                         height={60}
                         fontSize={12}
                       />
-                      <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                      <YAxis tickFormatter={(value) => formatCompactCurrency(value)} />
                       <Tooltip 
                         formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                         labelFormatter={(label) => `Ngày: ${label}`}
@@ -501,7 +514,7 @@ const OverViewManagement = () => {
                     <LineChart data={formatChartData(revenueChart)}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="label" />
-                      <YAxis tickFormatter={(value) => formatCurrencyShort(value)} />
+                      <YAxis tickFormatter={(value) => formatCompactCurrency(value)} />
                       <Tooltip 
                         formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                         labelFormatter={(label) => `Thời gian: ${label}`}
