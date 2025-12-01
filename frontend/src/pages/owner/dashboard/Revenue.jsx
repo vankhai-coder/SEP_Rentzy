@@ -254,8 +254,8 @@ const Revenue = () => {
               <BarChart data={prepareChartData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => Math.round(value)} allowDecimals={false} />
+                <Tooltip formatter={(value) => [Math.round(value), 'Số đơn']} />
                 <Bar dataKey="bookings" fill="#10B981" />
               </BarChart>
             </ResponsiveContainer>
@@ -264,23 +264,7 @@ const Revenue = () => {
       </div>
 
       {/* Vehicle Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Vehicle Revenue Chart */}
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Doanh thu theo xe</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={prepareVehicleStats()} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tickFormatter={formatCompactCurrency} />
-                <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip formatter={(value) => [formatCurrency(value), 'Doanh thu']} />
-                <Bar dataKey="revenue" fill="#8B5CF6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Vehicle Stats Table */}
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Thống kê xe</h3>
