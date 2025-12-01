@@ -10,6 +10,7 @@ import { sendEmail } from "../../utils/email/sendEmail.js";
 import Transaction from "../../models/Transaction.js";
 import Notification from "../../models/Notification.js";
 import { autoCancelExpiredBookings } from "../../services/cronService.js";
+import { sendToUser } from "../../services/wsService.js";
 
 // Lấy lịch xe đã đặt theo vehicleId
 export const getVehicleBookedDates = async (req, res) => {
@@ -500,12 +501,21 @@ export const createBooking = async (req, res) => {
     // Tạo datetime theo múi giờ Việt Nam (UTC+7)
     // Sử dụng format ISO với timezone offset để đảm bảo đúng múi giờ
     const vietnamOffset = "+07:00";
-    const startDateTimeStr = `${startDate}T${
-      startTime || "00:00:00"
-    }${vietnamOffset}`;
-    const endDateTimeStr = `${endDate}T${
-      endTime || "23:59:59"
-    }${vietnamOffset}`;
+    const normalizeTime = (t) => {
+      if (!t) return "00:00:00";
+      return /^\d{2}:\d{2}$/.test(t) ? `${t}:00` : t;
+    };
+    const extractDateOnly = (d) => {
+      if (!d) return "";
+      if (typeof d === "string" && d.includes("T")) return d.split("T")[0];
+      return d;
+    };
+    const startDateOnlyForParse = extractDateOnly(startDate);
+    const endDateOnlyForParse = extractDateOnly(endDate);
+    const startTimeNorm = normalizeTime(startTime);
+    const endTimeNorm = normalizeTime(endTime);
+    const startDateTimeStr = `${startDateOnlyForParse}T${startTimeNorm}${vietnamOffset}`;
+    const endDateTimeStr = `${endDateOnlyForParse}T${endTimeNorm}${vietnamOffset}`;
 
     const start = new Date(startDateTimeStr);
     const end = new Date(endDateTimeStr);
@@ -808,8 +818,8 @@ export const createBooking = async (req, res) => {
 
     // Tách ngày và giờ để lưu đúng format theo múi giờ Việt Nam
     // Lưu trực tiếp string date để tránh timezone conversion
-    const startDateOnly = startDate; // Lưu trực tiếp string "2025-10-19"
-    const endDateOnly = endDate; // Lưu trực tiếp string "2025-10-19"
+    const startDateOnly = startDateOnlyForParse;
+    const endDateOnly = endDateOnlyForParse;
 
     // Xác định trạng thái ban đầu dựa trên yêu cầu duyệt của chủ xe
     // Nếu xe yêu cầu chủ xe duyệt: tạo booking ở trạng thái "pending"
@@ -823,8 +833,8 @@ export const createBooking = async (req, res) => {
       vehicle_id,
       start_date: startDateOnly,
       end_date: endDateOnly,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: startTimeNorm,
+      end_time: endTimeNorm,
       total_days,
       total_cost,
       discount_amount,
@@ -840,6 +850,27 @@ export const createBooking = async (req, res) => {
     });
 
     console.log("✅ Booking đã được tạo với ID:", booking.booking_id);
+
+    if (vehicle && vehicle.owner_id) {
+      try {
+        const notif = await Notification.create({
+          user_id: vehicle.owner_id,
+          title: "Có booking mới",
+          content: `Booking #${booking.booking_id} cho xe ${vehicle.model}`,
+          type: "rental",
+          is_read: false,
+        });
+        sendToUser(vehicle.owner_id, {
+          type: "NEW_NOTIFICATION",
+          data: {
+            notification_id: notif.notification_id,
+            title: notif.title,
+            content: notif.content,
+            created_at: notif.created_at,
+          },
+        });
+      } catch {}
+    }
 
     //  BƯỚC 12: CẬP NHẬT ĐIỂM THƯỞNG NGƯỜI DÙNG
     if (points_used > 0) {
