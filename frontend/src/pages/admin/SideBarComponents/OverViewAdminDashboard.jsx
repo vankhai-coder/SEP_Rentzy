@@ -1,6 +1,6 @@
 import axiosInstance from '@/config/axiosInstance'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCart, User } from 'lucide-react'
+import { ChevronRight, DollarSign, Home, MoveDownRight, MoveUpRight, ShoppingCart, User, Users, Car } from 'lucide-react'
 import React from 'react'
 
 const OverViewAdminDashboard = () => {
@@ -136,89 +136,88 @@ const OverViewAdminDashboard = () => {
         {/* overview content : 4 boxes */}
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 '>
           {/* first box */}
-          <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
+          <div className='bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng doanh thu</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRevenue}</p>
+                <p className='text-sm font-medium text-green-600 dark:text-green-400 mb-1'>Tổng doanh thu</p>
+                <p className='text-3xl font-bold text-green-700 dark:text-green-300 mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRevenue}</p>
                 <div className='flex items-center gap-2'>
                 </div>
               </div>
-              <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
-                <DollarSign className='lucide lucide-dollar-sign w-6 h-6 text-green-600 dark:text-green-400' />
+              <div className='p-2 bg-green-100 dark:bg-green-900/40 rounded-lg'>
+                <DollarSign className='w-6 h-6 text-green-600 dark:text-green-400' />
               </div>
             </div>
           </div>
           {/* second box */}
-          <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
+          <div className='bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng người thuê</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.count}</p>
+                <p className='text-sm font-medium text-blue-600 dark:text-blue-400 mb-1'>Tổng người thuê</p>
+                <p className='text-3xl font-bold text-blue-700 dark:text-blue-300 mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.count}</p>
                 <div className='flex items-center gap-2'>
                   <span className={`  badge ${getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth) >= 0 ? "badge-success" : "badge-danger"}  px-2 py-0.5 text-xs flex items-center gap-1`}>
                     {getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
                     <span>{getPercentageChange(overviewStats?.totalRenters?.previousMonth, overviewStats?.totalRenters?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+                  <span className='text-xs text-blue-500 dark:text-blue-400'>So với tháng trước</span>
 
                 </div>
                 <div className='flex flex-col mt-2 gap-1'>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.previousMonth}</span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.currentMonth}</span>
+                  <span className='text-xs text-blue-500 dark:text-blue-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.previousMonth}</span>
+                  <span className='text-xs text-blue-500 dark:text-blue-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalRenters?.currentMonth}</span>
                 </div>
               </div>
-              <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
-                <User className='lucide lucide-dollar-sign w-6 h-6 text-green-600 dark:text-green-400' />
+              <div className='p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg'>
+                <Users className='w-6 h-6 text-blue-600 dark:text-blue-400' />
               </div>
             </div>
           </div>
           {/* third box */}
-          <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
+          <div className='bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng số đặt xe</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.count}</p>
+                <p className='text-sm font-medium text-purple-600 dark:text-purple-400 mb-1'>Tổng số đặt xe</p>
+                <p className='text-3xl font-bold text-purple-700 dark:text-purple-300 mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.count}</p>
                 <div className='flex items-center gap-2'>
                   <span className={`badge ${getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth) >= 0 ? "badge-success" : "badge-danger"} px-2 py-0.5 text-xs flex items-center gap-1`}>
                     {getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
                     <span>{getPercentageChange(overviewStats?.totalCompletedBookings?.previousMonth, overviewStats?.totalCompletedBookings?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+                  <span className='text-xs text-purple-500 dark:text-purple-400'>So với tháng trước</span>
 
                 </div>
                 <div className='flex flex-col mt-2 gap-1'>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.previousMonth}</span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.currentMonth}</span>
+                  <span className='text-xs text-purple-500 dark:text-purple-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.previousMonth}</span>
+                  <span className='text-xs text-purple-500 dark:text-purple-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalCompletedBookings?.currentMonth}</span>
                 </div>
               </div>
-              <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
-                <ShoppingCart
-                  className='lucide lucide-shopping-cart w-6 h-6 text-green-600 dark:text-green-400' />
+              <div className='p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg'>
+                <ShoppingCart className='w-6 h-6 text-purple-600 dark:text-purple-400' />
               </div>
             </div>
           </div>
           {/* fourth box */}
-          <div className='card p-6 transition-all duration-200 relative overflow-hidden'>
+          <div className='bg-orange-50 dark:bg-orange-900/20 p-6 rounded-lg border border-orange-200 dark:border-orange-800 transition-all duration-200 relative overflow-hidden'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className='text-sm font-medium text-secondary-600 dark:text-secondary-400 mb-1'>Tổng người cho thuê</p>
-                <p className='text-3xl font-bold text-secondary-900 dark:text-white mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.count}</p>
+                <p className='text-sm font-medium text-orange-600 dark:text-orange-400 mb-1'>Tổng người cho thuê</p>
+                <p className='text-3xl font-bold text-orange-700 dark:text-orange-300 mb-2'>{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.count}</p>
                 <div className='flex items-center gap-2'>
                   <span className={`badge ${getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth) >= 0 ? "badge-success" : "badge-danger"} px-2 py-0.5 text-xs flex items-center gap-1`}>
                     {getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth) >= 0 ? <MoveUpRight /> : <MoveDownRight />}
                     <span>{getPercentageChange(overviewStats?.totalOwners?.previousMonth, overviewStats?.totalOwners?.currentMonth)}%</span>
                   </span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>So với tháng trước</span>
+                  <span className='text-xs text-orange-500 dark:text-orange-400'>So với tháng trước</span>
 
                 </div>
                 <div className='flex flex-col mt-2 gap-1'>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.previousMonth}</span>
-                  <span className='text-xs text-secondary-500 dark:text-secondary-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.currentMonth}</span>
+                  <span className='text-xs text-orange-500 dark:text-orange-400'>Tháng trước : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.previousMonth}</span>
+                  <span className='text-xs text-orange-500 dark:text-orange-400'>Tháng nay : {isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewStats?.totalOwners?.currentMonth}</span>
                 </div>
               </div>
-              <div className='p-3 rounded-xl bg-green-100 dark:bg-green-900'>
-                <User className='lucide lucide-dollar-sign w-6 h-6 text-green-600 dark:text-green-400' />
+              <div className='p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg'>
+                <Car className='w-6 h-6 text-orange-600 dark:text-orange-400' />
               </div>
             </div>
           </div>

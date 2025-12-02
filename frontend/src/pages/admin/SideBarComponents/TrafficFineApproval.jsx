@@ -11,7 +11,11 @@ import {
   MdChevronRight,
   MdImage,
   MdErrorOutline,
-  MdContentCopy
+  MdContentCopy,
+  MdReceipt,
+  MdAccessTime,
+  MdCheckCircleOutline,
+  MdCancelPresentation
 } from 'react-icons/md';
 
 // Component để hiển thị thumbnail hình ảnh với error handling
@@ -350,20 +354,48 @@ const TrafficFineApproval = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg border border-gray-200 dark:border-secondary-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Tổng số</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tổng số</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+            </div>
+            <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <MdReceipt className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            </div>
+          </div>
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-          <p className="text-sm text-yellow-600 dark:text-yellow-400">Chờ duyệt</p>
-          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{stats.pending}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">Chờ duyệt</p>
+              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{stats.pending}</p>
+            </div>
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
+              <MdAccessTime className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+          </div>
         </div>
         <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-          <p className="text-sm text-green-600 dark:text-green-400">Đã duyệt</p>
-          <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.approved}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-600 dark:text-green-400">Đã duyệt</p>
+              <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.approved}</p>
+            </div>
+            <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+              <MdCheckCircleOutline className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-          <p className="text-sm text-red-600 dark:text-red-400">Đã từ chối</p>
-          <p className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.rejected}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-red-600 dark:text-red-400">Đã từ chối</p>
+              <p className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.rejected}</p>
+            </div>
+            <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
+              <MdCancelPresentation className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
         </div>
       </div>
 

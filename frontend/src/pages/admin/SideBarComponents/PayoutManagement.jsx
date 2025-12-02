@@ -19,6 +19,9 @@ import {
   QrCode,
   DollarSign,
   X,
+  FileText,
+  Ban,
+  CircleCheck,
 } from "lucide-react";
 import { MdCheckCircle, MdCancel } from "react-icons/md";
 import "./PayoutManagement.scss";
@@ -288,101 +291,134 @@ const PayoutManagement = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="badge badge-primary px-2 py-0.5 text-xs">
-            Tổng: {statistics.total || 0}
-          </span>
-          <span className="badge badge-warning px-2 py-0.5 text-xs">
-            Chờ duyệt: {statistics.pending || 0}
-          </span>
-          <span className="badge badge-success px-2 py-0.5 text-xs">
-            Hoàn thành: {statistics.completed || 0}
-          </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-600 dark:text-blue-400">Tổng số</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{statistics.total || 0}</p>
+            </div>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+              <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">Chờ duyệt</p>
+              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{statistics.pending || 0}</p>
+            </div>
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
+              <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-green-600 dark:text-green-400">Đã duyệt</p>
+              <p className="text-2xl font-bold text-green-700 dark:text-green-300">{statistics.approved || 0}</p>
+            </div>
+            <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-red-600 dark:text-red-400">Từ chối</p>
+              <p className="text-2xl font-bold text-red-700 dark:text-red-300">{statistics.rejected || 0}</p>
+            </div>
+            <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
+              <Ban className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">Hoàn thành</p>
+              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{statistics.completed || 0}</p>
+            </div>
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
+              <CircleCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-600 dark:text-orange-400">Thất bại</p>
+              <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">{statistics.failed || 0}</p>
+            </div>
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
+              <XCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.total || 0}</div>
-            <div className="stat-label">Tổng số</div>
-          </div>
+      <div className="mb-6 flex gap-4 items-center">
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setFilter("all"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "all"
+                ? "bg-primary-600 text-white"
+                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+            }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => { setFilter("pending"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "pending"
+                ? "bg-primary-600 text-white"
+                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+            }`}
+          >
+            Chờ duyệt
+          </button>
+          <button
+            onClick={() => { setFilter("completed"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "completed"
+                ? "bg-primary-600 text-white"
+                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+            }`}
+          >
+            Hoàn thành
+          </button>
+          <button
+            onClick={() => { setFilter("cancelled"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "cancelled"
+                ? "bg-primary-600 text-white"
+                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+            }`}
+          >
+            Từ chối
+          </button>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.pending || 0}</div>
-            <div className="stat-label">Chờ duyệt</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.approved || 0}</div>
-            <div className="stat-label">Đã duyệt</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.rejected || 0}</div>
-            <div className="stat-label">Từ chối</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.completed || 0}</div>
-            <div className="stat-label">Hoàn thành</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.failed || 0}</div>
-            <div className="stat-label">Thất bại</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="controls">
-        <div className="control-group">
-          <Filter size={16} />
-          <div className="flex items-center gap-2">
-            <button
-              className={`chip ${filter === "all" ? "chip-active" : ""}`}
-              onClick={() => setFilter("all")}
-            >
-              Tất cả
-            </button>
-            <button
-              className={`chip ${filter === "pending" ? "chip-active" : ""}`}
-              onClick={() => setFilter("pending")}
-            >
-              Chờ duyệt
-            </button>
-            <button
-              className={`chip ${filter === "completed" ? "chip-active" : ""}`}
-              onClick={() => setFilter("completed")}
-            >
-              Hoàn thành
-            </button>
-            <button
-              className={`chip ${filter === "cancelled" ? "chip-active" : ""}`}
-              onClick={() => setFilter("cancelled")}
-            >
-              Từ chối
-            </button>
-          </div>
-        </div>
-
-        <div className="control-group">
-          <Search size={16} />
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <Search size={16} className="text-gray-500 dark:text-gray-400" />
           <input
             type="text"
             placeholder="Tìm theo payout, booking, chủ xe, xe..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
       </div>

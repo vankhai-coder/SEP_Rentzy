@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axiosInstance from "../../../config/axiosInstance";
 import { toast } from "react-toastify";
 import { MdRefresh } from "react-icons/md";
+import { FileText, Clock, DollarSign } from "lucide-react";
 
 const RefundManagement = () => {
   const [refunds, setRefunds] = useState([]);
@@ -314,43 +315,58 @@ const RefundManagement = () => {
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white p-6 rounded-lg shadow">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Tổng số yêu cầu
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {filteredRefunds?.length || 0}
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Tổng số yêu cầu
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {filteredRefunds?.length || 0}
+                </p>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Chờ xử lý</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {filteredRefunds?.filter((r) =>
-                  activeTab === "renter"
-                    ? r.renter_refund?.refund_status === "pending"
-                    : r.owner_refund?.refund_status === "pending"
-                ).length || 0}
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Chờ xử lý</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {filteredRefunds?.filter((r) =>
+                    activeTab === "renter"
+                      ? r.renter_refund?.refund_status === "pending"
+                      : r.owner_refund?.refund_status === "pending"
+                  ).length || 0}
+                </p>
+              </div>
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
             </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Tổng tiền hoàn
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(
-                  filteredRefunds?.reduce((sum, refund) => {
-                    const amount =
-                      activeTab === "renter"
-                        ? refund.renter_refund?.refund_amount || 0
-                        : refund.owner_refund?.refund_amount || 0;
-                    return sum + amount;
-                  }, 0) || 0
-                )}
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Tổng tiền hoàn
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(
+                    filteredRefunds?.reduce((sum, refund) => {
+                      const amount =
+                        activeTab === "renter"
+                          ? refund.renter_refund?.refund_amount || 0
+                          : refund.owner_refund?.refund_amount || 0;
+                      return sum + amount;
+                    }, 0) || 0
+                  )}
+                </p>
+              </div>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
             </div>
           </div>
         </div>
