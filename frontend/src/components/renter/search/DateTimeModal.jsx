@@ -152,8 +152,14 @@ const DateTimeModal = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-lg md:max-w-2xl shadow-xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl w-full max-w-lg md:max-w-2xl shadow-xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Calendar Section */}
         <div className="md:w-1/2 p-4 md:p-6 flex flex-col items-center flex-shrink-0">
           <div className="flex justify-between items-center w-full mb-4">
