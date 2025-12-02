@@ -246,7 +246,9 @@ const TransactionManagement = () => {
           </div>
         </div>
         <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <DollarSign size={24} className="dark:text-white" />
+          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+            <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
           <div>
             <h3 className="dark:text-gray-300">Tổng tiền</h3>
             <p className="dark:text-white">{formatCurrency(statistics.totalAmount)}</p>
@@ -364,8 +366,10 @@ const TransactionManagement = () => {
                   {/* <td className={`type-badge ${type.color}`}>
                     <type.icon size={16} /> {type.label}
                   </td> */}
-                  <td className={`status-badge ${status.color}`}>
-                    <status.icon size={16} /> {status.label}
+                  <td>
+                    <span className={`status-badge ${status.color}`}>
+                      <status.icon size={16} /> {status.label}
+                    </span>
                   </td>
                   <td>{formatDate(tx.createdAt)}</td>
                 </tr>

@@ -421,7 +421,6 @@ const OverViewManagement = () => {
             <div className="flex flex-wrap gap-3 items-center">
               {/* Dropdown chọn năm (10 năm) */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">Chọn năm</label>
                 <select
                   value={selectedYear ?? ''}
                   onChange={(e) => { const y = parseInt(e.target.value); setSelectedYear(y); setSelectedPeriod('month'); setSelectedQuarter(null); }}
@@ -436,7 +435,6 @@ const OverViewManagement = () => {
  
               {/* Dropdown chọn quý */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">Chọn quý</label>
                 <select
                   value={selectedQuarter ?? ''}
                   onChange={(e) => { const q = parseInt(e.target.value); if (!isNaN(q)) { setSelectedQuarter(q); setSelectedPeriod('quarter'); } else { setSelectedQuarter(null); } }}
@@ -452,7 +450,6 @@ const OverViewManagement = () => {
 
               {/* Dropdown chọn tháng: 12 tháng hoặc theo quý đã chọn */}
               <div className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1">Chọn tháng</label>
                 <select
                   value={selectedMonth ?? ''}
                   onChange={(e) => { const m = parseInt(e.target.value); setSelectedMonth(m); setSelectedPeriod('day'); }}

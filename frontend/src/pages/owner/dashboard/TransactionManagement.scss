@@ -66,17 +66,13 @@
       td {
         vertical-align: middle;
         
-        &.status-badge {
-          vertical-align: middle;
-        }
-        
         .status-badge, .type-badge { 
-          display:inline-flex; 
-          align-items:center; 
-          gap:0.2rem; 
-          padding:0.4rem 0.6rem; 
-          border-radius:0.25rem; 
-          font-size:0.8rem; 
+          display: inline-flex; 
+          align-items: center; 
+          gap: 0.2rem; 
+          padding: 0.4rem 0.6rem; 
+          border-radius: 0.25rem; 
+          font-size: 0.8rem; 
           line-height: 1.4;
           vertical-align: middle;
           

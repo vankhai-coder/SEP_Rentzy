@@ -7,10 +7,10 @@ import {
   MdCalendarToday,
   MdPerson,
   MdDirectionsCar,
-  MdAttachMoney,
   MdSearch,
   MdFilterList,
 } from "react-icons/md";
+import { DollarSign } from "lucide-react";
 
 const BookingManagement = () => {
   const navigate = useNavigate();
@@ -268,7 +268,7 @@ const BookingManagement = () => {
         <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-              <MdAttachMoney className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
