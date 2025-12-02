@@ -64,7 +64,12 @@ export const getOverviewStats = async (req, res) => {
     });
 
     // Đếm tổng số xe đã được phê duyệt
-    const totalVehicles = vehicleIds.length;
+    const totalVehicles = await Vehicle.count({
+      where: {
+        vehicle_id: vehicleIds, // Lọc theo danh sách ID
+        approvalStatus: 'approved'
+      }
+    });
 
     const totalRevenue = totalRevenueResult?.totalRevenue || 0;
 

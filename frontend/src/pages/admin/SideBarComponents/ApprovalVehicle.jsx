@@ -312,6 +312,7 @@ const ApprovalVehicle = () => {
         if (res.data && res.data.success) {
           setAutoApproveEnabled(!!res.data.enabled);
         }
+      // eslint-disable-next-line no-empty
       } catch {}
     })();
   }, [fetchVehicles, fetchStats]);
@@ -340,6 +341,7 @@ const ApprovalVehicle = () => {
     await fetchVehicles(pagination.currentPage);
     await fetchStats();
     autoProcessingRef.current = false;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoApproveEnabled, vehicles, checkResults, pagination.currentPage, fetchVehicles, fetchStats]);
 
   useEffect(() => {

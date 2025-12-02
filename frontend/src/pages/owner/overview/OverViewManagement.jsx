@@ -379,7 +379,7 @@ const OverViewManagement = () => {
           <div className='card p-6 transition-all duration-200 relative overflow-hidden border border-gray-200 shadow-md'>
             <div className='flex items-start justify-between'>
               <div className='flex-1'>
-                <p className="text-sm font-medium mb-1 text-gray-700">Tổng số đặt xe</p>
+                <p className="text-sm font-medium mb-1 text-gray-700">Tổng số đơn đặt xe</p>
                 <p className="text-3xl font-bold mb-2 text-black">{isLoadingOverviewStats ? "Loading..." : isErrorOverviewStats ? "Error" : overviewData?.totalBookings || 0}</p>
               </div>
               <div className="p-3 rounded-xl bg-green-100">
