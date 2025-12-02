@@ -1,4 +1,5 @@
 import React from "react";
+import { Car, Bike, Users } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -27,33 +28,27 @@ const Footer = () => {
               <li>
                 <a
                   href="/cars"
-                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-block group"
+                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-flex items-center gap-2 group"
                 >
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">
-                    →
-                  </span>
+                  <Car className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                   Xe Ô Tô
                 </a>
               </li>
               <li>
                 <a
                   href="/motorbikes"
-                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-block group"
+                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-flex items-center gap-2 group"
                 >
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">
-                    →
-                  </span>
+                  <Bike className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                   Xe Máy
                 </a>
               </li>
               <li>
                 <a
                   href="/about"
-                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-block group"
+                  className="text-gray-200 hover:text-white transition-colors duration-200 inline-flex items-center gap-2 group"
                 >
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">
-                    →
-                  </span>
+                  <Users className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                   Về Chúng Tôi
                 </a>
               </li>
