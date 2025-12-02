@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axiosInstance from '../../../config/axiosInstance';
 import { toast } from 'react-toastify';
 import { 
@@ -34,6 +34,9 @@ const ApprovalVehicle = () => {
   });
   const [rejectModal, setRejectModal] = useState({ open: false, vehicleId: null, vehicleModel: '' });
   const [rejectReason, setRejectReason] = useState('');
+  const [autoApproveEnabled, setAutoApproveEnabled] = useState(false);
+  const autoProcessingRef = useRef(false);
+  const processedRef = useRef(new Set());
 
   const buildAutoRejectReason = (vehicleId, vehicleModel) => {
     const result = checkResults[vehicleId];
@@ -53,6 +56,29 @@ const ApprovalVehicle = () => {
       lines.push(`- ${statusText} ${label}: ${detail}. Gợi ý: vui lòng kiểm tra và cập nhật thông tin "${label}" cho chính xác.`);
     });
     return lines.join('\n');
+  };
+
+  const buildAutoRejectReasonFromResult = (result, vehicleModel) => {
+    try {
+      if (!result || !Array.isArray(result.checks)) return '';
+      const items = (result.checks || []).filter((c) => c && (c.status === 'fail' || c.status === 'warn'));
+      if (items.length === 0) return '';
+      const lines = [];
+      lines.push(`Xe ${vehicleModel} có vấn đề cần chỉnh sửa.`);
+      const failCount = items.filter((c) => c.status === 'fail').length;
+      const warnCount = items.filter((c) => c.status === 'warn').length;
+      if (failCount > 0) lines.push(`Lỗi nghiêm trọng: ${failCount}`);
+      if (warnCount > 0) lines.push(`Cảnh báo: ${warnCount}`);
+      items.forEach((c) => {
+        const label = String(c.label || '').trim();
+        const detail = String(c.detail || '').trim();
+        const statusText = c.status === 'fail' ? 'Lỗi' : 'Cảnh báo';
+        lines.push(`- ${statusText} ${label}: ${detail}. Gợi ý: vui lòng kiểm tra và cập nhật thông tin "${label}" cho chính xác.`);
+      });
+      return lines.join('\n');
+    } catch {
+      return '';
+    }
   };
 
   // Fetch pending vehicles
@@ -99,6 +125,16 @@ const ApprovalVehicle = () => {
     setImageModal(null);
   };
 
+  const setAutoApprove = async (enabled) => {
+    try {
+      setAutoApproveEnabled(enabled);
+      await axiosInstance.patch('/api/admin/approval-vehicles/auto-approve-flag', { enabled });
+    } catch (error) {
+      setAutoApproveEnabled(!enabled);
+      toast.error('Không thể cập nhật trạng thái tự động duyệt');
+    }
+  };
+
   // Handle approve vehicle
   const handleApprove = async (vehicleId, vehicleModel) => {
     if (!window.confirm(`Bạn có chắc chắn muốn chấp nhận xe ${vehicleModel}?`)) {
@@ -127,6 +163,49 @@ const ApprovalVehicle = () => {
     setRejectModal({ open: true, vehicleId, vehicleModel });
     const autoText = buildAutoRejectReason(vehicleId, vehicleModel);
     setRejectReason(autoText);
+  };
+
+  const approveSilent = async (vehicleId, vehicleModel) => {
+    try {
+      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${vehicleId}/approve`);
+      if (response.data.success) {
+        toast.success(`Đã chấp nhận xe ${vehicleModel}`);
+        if (expandedVehicleId === vehicleId) {
+          setExpandedVehicleId(null);
+          setSelectedVehicle(null);
+        }
+      }
+    } catch (error) {
+      toast.error('Lỗi khi chấp nhận xe');
+    }
+  };
+
+  const rejectSilent = async (vehicleId, vehicleModel, reason) => {
+    try {
+      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${vehicleId}/reject`, { reason });
+      if (response.data.success) {
+        toast.success(`Đã từ chối xe ${vehicleModel}`);
+        if (expandedVehicleId === vehicleId) {
+          setExpandedVehicleId(null);
+          setSelectedVehicle(null);
+        }
+      }
+    } catch (error) {
+      toast.error('Lỗi khi từ chối xe');
+    }
+  };
+
+  const checkByAI = async (vehicle) => {
+    try {
+      const res = await axiosInstance.post('/api/ai/check-vehicle-info', { vehicle_id: vehicle.vehicle_id });
+      if (res.data && res.data.success) {
+        setCheckResults((prev) => ({ ...prev, [vehicle.vehicle_id]: res.data.data }));
+        return res.data.data;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -227,7 +306,45 @@ const ApprovalVehicle = () => {
   useEffect(() => {
     fetchVehicles();
     fetchStats();
+    (async () => {
+      try {
+        const res = await axiosInstance.get('/api/admin/approval-vehicles/auto-approve-flag');
+        if (res.data && res.data.success) {
+          setAutoApproveEnabled(!!res.data.enabled);
+        }
+      } catch {}
+    })();
   }, [fetchVehicles, fetchStats]);
+
+  const autoProcessPending = useCallback(async () => {
+    if (!autoApproveEnabled || autoProcessingRef.current) return;
+    if (!Array.isArray(vehicles) || vehicles.length === 0) return;
+    autoProcessingRef.current = true;
+    for (const v of vehicles) {
+      if (v.approvalStatus !== 'pending') continue;
+      if (processedRef.current.has(v.vehicle_id)) continue;
+      let result = checkResults[v.vehicle_id];
+      if (!result) {
+        result = await checkByAI(v);
+      }
+      const fail = Number(result?.summary?.fail || 0);
+      if (fail > 0) {
+        const reason = buildAutoRejectReasonFromResult(result, v.model) || 'Dữ liệu không hợp lệ theo kiểm tra AI';
+        await rejectSilent(v.vehicle_id, v.model, reason);
+      } else if (result) {
+        await approveSilent(v.vehicle_id, v.model);
+      }
+      processedRef.current.add(v.vehicle_id);
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    await fetchVehicles(pagination.currentPage);
+    await fetchStats();
+    autoProcessingRef.current = false;
+  }, [autoApproveEnabled, vehicles, checkResults, pagination.currentPage, fetchVehicles, fetchStats]);
+
+  useEffect(() => {
+    autoProcessPending();
+  }, [autoProcessPending]);
 
   const normalizeImages = (vehicle) => {
     const extras = typeof vehicle?.extra_images === 'string'
@@ -278,13 +395,24 @@ const ApprovalVehicle = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Duyệt xe</h1>
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <MdRefresh className="w-4 h-4" />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <span>Tự động duyệt</span>
+            <button
+              onClick={() => setAutoApprove(!autoApproveEnabled)}
+              className={`w-12 h-6 rounded-full p-1 transition-colors ${autoApproveEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+            >
+              <span className={`block w-4 h-4 bg-white rounded-full transition-transform ${autoApproveEnabled ? 'translate-x-6' : 'translate-x-0'}`}></span>
+            </button>
+          </label>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <MdRefresh className="w-4 h-4" />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

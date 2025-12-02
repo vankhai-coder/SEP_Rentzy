@@ -1,7 +1,7 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
 
-const { Vehicle, User, Brand, Notification } = db;
+const { Vehicle, User, Brand, Notification, FeatureFlag } = db;
 
 // GET /api/admin/approval-vehicles - Lấy danh sách xe chờ duyệt
 export const getPendingVehicles = async (req, res) => {
@@ -255,5 +255,39 @@ export const getApprovalStats = async (req, res) => {
       message: "Lỗi khi lấy thống kê duyệt xe",
       error: error.message,
     });
+  }
+};
+
+// PATCH /api/admin/approval-vehicles/auto-approve-flag - Bật/tắt tự động duyệt
+export const setAutoApproveFlag = async (req, res) => {
+  try {
+    const { enabled } = req.body || {};
+    const value = Boolean(enabled);
+    const [flag, created] = await FeatureFlag.findOrCreate({
+      where: { key: "AUTO_APPROVE_VEHICLE" },
+      defaults: {
+        key: "AUTO_APPROVE_VEHICLE",
+        enabled: value,
+        description: "Bật/tắt cron tự động kiểm tra AI và duyệt/từ chối xe chờ duyệt",
+      },
+    });
+    if (!created) {
+      await flag.update({ enabled: value, updated_at: new Date() });
+    }
+    return res.json({ success: true, enabled: value });
+  } catch (error) {
+    console.error("Error setting auto-approve flag:", error);
+    return res.status(500).json({ success: false, message: "Lỗi khi cập nhật trạng thái tự động duyệt" });
+  }
+};
+
+// GET /api/admin/approval-vehicles/auto-approve-flag - Lấy trạng thái tự động duyệt
+export const getAutoApproveFlag = async (req, res) => {
+  try {
+    const flag = await FeatureFlag.findOne({ where: { key: "AUTO_APPROVE_VEHICLE" } });
+    return res.json({ success: true, enabled: !!(flag && flag.enabled) });
+  } catch (error) {
+    console.error("Error getting auto-approve flag:", error);
+    return res.status(500).json({ success: false, message: "Lỗi khi lấy trạng thái tự động duyệt" });
   }
 };

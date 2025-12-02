@@ -5,6 +5,7 @@ import User from "./User.js";
 import Brand from "./Brand.js";
 import Voucher from "./Voucher.js";
 import SystemSetting from "./SystemSetting.js";
+import FeatureFlag from "./FeatureFlag.js";
 
 // Bảng phụ thuộc User
 import Bank from "./Bank.js";
@@ -196,6 +197,7 @@ const db = {
   Brand,
   Voucher,
   SystemSetting,
+  FeatureFlag,
   // Bảng phụ thuộc User
   Bank,
   Notification,

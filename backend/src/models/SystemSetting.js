@@ -27,6 +27,7 @@ const SystemSetting = sequelize.define(
         "CANCEL_WITHIN_7_DAYS",
         "PLATFORM_FEE_COMPLETE_ORDER",
         "LATE_RETURN_FEE_PER_HOUR",
+        "AUTO_APPROVE_VEHICLE",
         "OTHER_FEES"
       ),
       allowNull: false,

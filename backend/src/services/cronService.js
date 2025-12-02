@@ -3,6 +3,8 @@ import Booking from "../models/Booking.js";
 import Vehicle from "../models/Vehicle.js";
 import User from "../models/User.js";
 import Notification from "../models/Notification.js";
+import FeatureFlag from "../models/FeatureFlag.js";
+import { checkVehicleInfoCore } from "../controllers/ai/generateCarDescription.js";
 import { Op } from "sequelize";
 
 /**
@@ -164,6 +166,12 @@ export const initializeCronJobs = () => {
 
   // Có thể thêm các cron job khác ở đây
   // Ví dụ: cleanup old notifications, send reminder emails, etc.
+  // Tự động duyệt xe pending khi bật cờ AUTO_APPROVE_VEHICLE
+  cron.schedule("*/2 * * * *", autoApprovePendingVehicles, {
+    scheduled: true,
+    timezone: "Asia/Ho_Chi_Minh",
+  });
+  console.log("✅ [CRON] Auto-approve vehicles job scheduled (every 2 minutes)");
 };
 
 /**
@@ -422,3 +430,76 @@ const autoCancelUnapprovedPendingBookings = async () => {
 
 // Export function để test manual
 export { autoCancelExpiredBookings, notifyUnpaidBookingsBeforePickup, autoCancelUnapprovedPendingBookings };
+
+// ====== Auto approve/reject vehicles pending ======
+const autoApprovePendingVehicles = async () => {
+  const startTime = Date.now();
+  try {
+    const flag = await FeatureFlag.findOne({ where: { key: "AUTO_APPROVE_VEHICLE" } });
+    if (!flag || flag.enabled !== true) {
+      return;
+    }
+
+    const pendings = await Vehicle.findAll({
+      where: { approvalStatus: "pending" },
+      include: [
+        { model: User, as: "owner", attributes: ["user_id", "full_name", "email"] },
+      ],
+      order: [["created_at", "ASC"]],
+      limit: 20,
+    });
+
+    if (pendings.length === 0) return;
+
+    for (const v of pendings) {
+      try {
+        const result = await checkVehicleInfoCore({ vehicle: v.toJSON() });
+        const fail = Number(result?.summary?.fail || 0);
+        if (fail > 0) {
+          await v.update({ approvalStatus: "rejected", updated_at: new Date() });
+          const reason = buildRejectReasonFromResult(result, v.model);
+          await Notification.create({
+            user_id: v.owner?.user_id,
+            title: "Xe bị từ chối",
+            content: `Xe ${v.model} (${v.license_plate}) đã bị từ chối. Lý do:\n${reason}`,
+            type: "alert",
+            is_read: false,
+          });
+        } else {
+          await v.update({ approvalStatus: "approved", updated_at: new Date() });
+        }
+      } catch (e) {
+        console.error("[CRON] Auto-approve vehicle error:", e.message);
+      }
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`[CRON] Auto-approve vehicles completed in ${duration}ms, processed ${pendings.length}`);
+  } catch (error) {
+    console.error("[CRON] Error in autoApprovePendingVehicles:", error.message);
+  }
+};
+
+const buildRejectReasonFromResult = (result, vehicleModel) => {
+  try {
+    if (!result || !Array.isArray(result.checks)) return "";
+    const items = (result.checks || []).filter((c) => c && (c.status === "fail" || c.status === "warn"));
+    if (items.length === 0) return "";
+    const lines = [];
+    lines.push(`Xe ${vehicleModel} có vấn đề cần chỉnh sửa.`);
+    const failCount = items.filter((c) => c.status === "fail").length;
+    const warnCount = items.filter((c) => c.status === "warn").length;
+    if (failCount > 0) lines.push(`Lỗi nghiêm trọng: ${failCount}`);
+    if (warnCount > 0) lines.push(`Cảnh báo: ${warnCount}`);
+    items.forEach((c) => {
+      const label = String(c.label || '').trim();
+      const detail = String(c.detail || '').trim();
+      const statusText = c.status === 'fail' ? 'Lỗi' : 'Cảnh báo';
+      lines.push(`- ${statusText} ${label}: ${detail}. Gợi ý: vui lòng kiểm tra và cập nhật thông tin "${label}" cho chính xác.`);
+    });
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+};
