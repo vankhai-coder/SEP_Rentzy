@@ -281,12 +281,12 @@ const PayoutManagement = () => {
     <div className="payout-management">
       <div className="page-header">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-            <Wallet size={22} className="text-primary-600" />
+          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+            <Wallet size={22} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Giải ngân cho chủ xe</h1>
-            <p className="text-secondary-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Giải ngân cho chủ xe</h1>
+            <p className="text-gray-500 dark:text-gray-400">
               Danh sách các yêu cầu cần xử lý
             </p>
           </div>
@@ -373,8 +373,8 @@ const PayoutManagement = () => {
             onClick={() => { setFilter("all"); setCurrentPage(1); }}
             className={`px-4 py-2 rounded-lg transition-colors ${
               filter === "all"
-                ? "bg-primary-600 text-white"
-                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
             Tất cả
@@ -383,8 +383,8 @@ const PayoutManagement = () => {
             onClick={() => { setFilter("pending"); setCurrentPage(1); }}
             className={`px-4 py-2 rounded-lg transition-colors ${
               filter === "pending"
-                ? "bg-primary-600 text-white"
-                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
             Chờ duyệt
@@ -393,8 +393,8 @@ const PayoutManagement = () => {
             onClick={() => { setFilter("completed"); setCurrentPage(1); }}
             className={`px-4 py-2 rounded-lg transition-colors ${
               filter === "completed"
-                ? "bg-primary-600 text-white"
-                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
             Hoàn thành
@@ -403,8 +403,8 @@ const PayoutManagement = () => {
             onClick={() => { setFilter("cancelled"); setCurrentPage(1); }}
             className={`px-4 py-2 rounded-lg transition-colors ${
               filter === "cancelled"
-                ? "bg-primary-600 text-white"
-                : "bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-secondary-600"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
             Từ chối
@@ -418,7 +418,7 @@ const PayoutManagement = () => {
             placeholder="Tìm theo payout, booking, chủ xe, xe..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -559,18 +559,18 @@ const PayoutManagement = () => {
                           <div className="bank-info">
                             {payout.owner_info?.bank_name ? (
                               <>
-                                <div className="bank-name font-semibold">
+                                <div className="bank-name">
                                   {payout.owner_info.bank_name}
                                 </div>
-                                <div className="account-number text-secondary-600">
+                                <div className="account-number">
                                   {payout.owner_info.account_number}
                                 </div>
-                                <div className="account-holder text-secondary-600">
+                                <div className="account-holder">
                                   {payout.owner_info.account_holder_name}
                                 </div>
                               </>
                             ) : (
-                              <div className="no-bank text-secondary-500">
+                              <div className="no-bank">
                                 Chưa có thông tin bank
                               </div>
                             )}
@@ -614,11 +614,16 @@ const PayoutManagement = () => {
                         </td>
                         <td>
                           <div className="date">
-                            {format(
+                            <span>{format(
                               new Date(payout.created_at),
-                              "dd/MM/yyyy HH:mm",
+                              "dd/MM/yyyy",
                               { locale: vi }
-                            )}
+                            )}</span>
+                            <small>{format(
+                              new Date(payout.created_at),
+                              "HH:mm",
+                              { locale: vi }
+                            )}</small>
                           </div>
                         </td>
                         <td>
@@ -740,54 +745,54 @@ const PayoutManagement = () => {
                     <XCircle size={48} className="reject-icon" />
                   )}
                 </div>
-                <p>
+                <p className="text-gray-900 dark:text-white">
                   Bạn có chắc chắn muốn{" "}
                   {confirmAction === "approve" ? "duyệt" : "từ chối"} thanh toán
                   <strong> #{confirmPayout.payout_id}</strong>?
                 </p>
                 <div className="grid grid-cols-2 gap-3 my-3">
                   <div className="flex items-center justify-between">
-                    <span>Tổng đơn</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Tổng đơn</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).total)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Tiền mặt (renter → owner)</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Tiền mặt (renter → owner)</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).offlineCash)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Phí nền tảng</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Phí nền tảng</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).platformFee)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Cần chuyển cho owner</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Cần chuyển cho owner</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).finalToOwner)}
                     </strong>
                   </div>
                 </div>
                 <div className="payout-info">
-                  <p>
+                  <p className="text-gray-900 dark:text-white">
                     <strong>Chủ xe:</strong>{" "}
                     {confirmPayout.owner_info?.full_name}
                   </p>
-                  <p>
+                  <p className="text-gray-900 dark:text-white">
                     <strong>Mã booking:</strong> BK
                     {confirmPayout.booking_info?.booking_id}
                   </p>
                 </div>
                 {confirmAction === "reject" && (
                   <div className="mt-3">
-                    <label className="text-sm text-secondary-600">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
                       Lý do từ chối (tuỳ chọn)
                     </label>
                     <textarea
-                      className="input w-full mt-1"
+                      className="input w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={3}
                       placeholder="Nhập lý do từ chối..."
                       value={confirmReason}

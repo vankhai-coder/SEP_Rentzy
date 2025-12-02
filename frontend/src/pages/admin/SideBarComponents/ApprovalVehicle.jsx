@@ -196,9 +196,9 @@ const ApprovalVehicle = () => {
   // Get approval status badge
   const getApprovalStatusBadge = (status) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Chờ duyệt' },
-      approved: { color: 'bg-green-100 text-green-800', text: 'Đã duyệt' },
-      rejected: { color: 'bg-red-100 text-red-800', text: 'Từ chối' }
+      pending: { color: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300', text: 'Chờ duyệt' },
+      approved: { color: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', text: 'Đã duyệt' },
+      rejected: { color: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300', text: 'Từ chối' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -212,8 +212,8 @@ const ApprovalVehicle = () => {
   // Get vehicle status badge
   const getVehicleStatusBadge = (status) => {
     const statusConfig = {
-      available: { color: 'bg-green-100 text-green-800', text: 'Có sẵn' },
-      blocked: { color: 'bg-red-100 text-red-800', text: 'Bị khóa' }
+      available: { color: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', text: 'Có sẵn' },
+      blocked: { color: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300', text: 'Bị khóa' }
     };
 
     const config = statusConfig[status] || statusConfig.available;
@@ -274,10 +274,10 @@ const ApprovalVehicle = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Duyệt xe</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Duyệt xe</h1>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -329,10 +329,10 @@ const ApprovalVehicle = () => {
 
 
       {/* Vehicles Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-blue-600 text-white">
+            <thead className="bg-blue-600 dark:bg-blue-700 text-white">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ẢNH</th>
                 <th className="px-4 py-3 text-left font-medium">XE</th>
@@ -345,25 +345,25 @@ const ApprovalVehicle = () => {
                 <th className="px-4 py-3 text-left font-medium">HÀNH ĐỘNG</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Đang tải...
                   </td>
                 </tr>
               ) : vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Không có xe nào
                   </td>
                 </tr>
               ) : (
                 vehicles.map((vehicle) => (
                   <>
-                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpand(vehicle)}>
+                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" onClick={() => toggleExpand(vehicle)}>
                     <td className="px-4 py-3">
-                      <div className="w-16 h-12 bg-gray-200 rounded overflow-hidden">
+                      <div className="w-16 h-12 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
                         {vehicle.main_image_url ? (
                           <img
                             src={vehicle.main_image_url}
@@ -373,9 +373,9 @@ const ApprovalVehicle = () => {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             {vehicle.vehicle_type === 'car' ? (
-                              <MdDirectionsCar className="w-6 h-6 text-gray-400" />
+                              <MdDirectionsCar className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                             ) : (
-                              <MdTwoWheeler className="w-6 h-6 text-gray-400" />
+                              <MdTwoWheeler className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                             )}
                           </div>
                         )}
@@ -383,30 +383,30 @@ const ApprovalVehicle = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">{vehicle.model}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium text-gray-900 dark:text-white">{vehicle.model}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {vehicle.brand?.name} • {vehicle.year}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">{vehicle.owner?.full_name}</div>
-                        <div className="text-sm text-gray-500">{vehicle.owner?.email}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{vehicle.owner?.full_name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{vehicle.owner?.email}</div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 rounded">
                         {vehicle.license_plate}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-medium text-green-600">
+                      <span className="font-medium text-green-600 dark:text-green-400">
                         {formatPrice(vehicle.price_per_day)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900">{formatDate(vehicle.created_at)}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{formatDate(vehicle.created_at)}</span>
                     </td>
                     <td className="px-4 py-3">
                       {getVehicleStatusBadge(vehicle.status)}
@@ -418,14 +418,14 @@ const ApprovalVehicle = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleApprove(vehicle.vehicle_id, vehicle.model); }}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
+                          className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded text-sm hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors flex items-center gap-1"
                         >
                           <MdCheckCircle className="w-4 h-4" />
                           Chấp nhận
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReject(vehicle.vehicle_id, vehicle.model); }}
-                          className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
+                          className="px-3 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors flex items-center gap-1"
                         >
                           <MdCancel className="w-4 h-4" />
                           Từ chối
@@ -435,20 +435,20 @@ const ApprovalVehicle = () => {
                   </tr>
                   {expandedVehicleId === vehicle.vehicle_id && (
                     <tr>
-                      <td colSpan="9" className="px-4 py-4 bg-gray-50">
+                      <td colSpan="9" className="px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <div className="space-y-4">
                             {(() => { const imgs = normalizeImages(vehicle); return (
                               <div className="space-y-3">
                                 {imgs.main && (
-                                  <div className="w-full h-56 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, 0); }}>
+                                  <div className="w-full h-56 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, 0); }}>
                                     <img src={imgs.main} alt={vehicle.model} className="w-full h-full object-cover" />
                                   </div>
                                 )}
                                 {imgs.extras.length > 0 && (
                                   <div className="grid grid-cols-3 gap-3">
                                     {imgs.extras.map((url, idx) => (
-                                      <div key={idx} className="w-full h-24 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, idx + (imgs.main ? 1 : 0)); }}>
+                                      <div key={idx} className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, idx + (imgs.main ? 1 : 0)); }}>
                                         <img src={url} alt={`${vehicle.model}-${idx}`} className="w-full h-full object-cover" />
                                       </div>
                                     ))}
@@ -477,72 +477,72 @@ const ApprovalVehicle = () => {
                               </div>
                             </div> */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                              <div className="p-3 bg-white rounded border space-y-2">
-                                <div className="text-sm font-semibold text-gray-700">Thông tin xe</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 space-y-2">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Thông tin xe</div>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-500">Năm sản xuất</span>
-                                  <span className="text-gray-900">{vehicle.year}</span>
+                                  <span className="text-gray-500 dark:text-gray-400">Năm sản xuất</span>
+                                  <span className="text-gray-900 dark:text-white">{vehicle.year}</span>
                                 </div>
                                 {vehicle.vehicle_type === 'car' && vehicle.seats && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Số chỗ ngồi</span>
-                                    <span className="text-gray-900">{vehicle.seats}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Số chỗ ngồi</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.seats}</span>
                                   </div>
                                 )}
                                 {vehicle.vehicle_type === 'car' && vehicle.transmission && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Hộp số</span>
-                                    <span className="text-gray-900">{vehicle.transmission}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Hộp số</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.transmission}</span>
                                   </div>
                                 )}
                                 {vehicle.vehicle_type === 'car' && vehicle.body_type && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Dáng xe</span>
-                                    <span className="text-gray-900">{vehicle.body_type}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Dáng xe</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.body_type}</span>
                                   </div>
                                 )}
                                 {vehicle.engine_capacity && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Dung tích</span>
-                                    <span className="text-gray-900">{vehicle.engine_capacity} cc</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Dung tích</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.engine_capacity} cc</span>
                                   </div>
                                 )}
                                 {vehicle.fuel_type && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Nhiên liệu</span>
-                                    <span className="text-gray-900">{vehicle.fuel_type}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Nhiên liệu</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.fuel_type}</span>
                                   </div>
                                 )}
                                 {vehicle.fuel_consumption && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Mức tiêu thụ</span>
-                                    <span className="text-gray-900">{vehicle.fuel_consumption}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Mức tiêu thụ</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.fuel_consumption}</span>
                                   </div>
                                 )}
                                 {vehicle.location && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Địa chỉ</span>
-                                    <span className="text-gray-900">{vehicle.location}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Địa chỉ</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.location}</span>
                                   </div>
                                 )}
                               </div>
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">Tính năng</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tính năng</div>
                                 {vehicle.features && Array.isArray(vehicle.features) && vehicle.features.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {vehicle.features.map((f, idx) => (
-                                      <span key={idx} className="text-xs px-2 py-1 bg-gray-100 rounded">{String(f)}</span>
+                                      <span key={idx} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded">{String(f)}</span>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-sm text-gray-500">Không có tính năng</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">Không có tính năng</div>
                                 )}
                               </div>
                             </div>
                             {vehicle.description && (
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-semibold text-gray-700 mb-1">Mô tả</div>
-                                <div className="text-sm text-gray-900 whitespace-pre-line">{vehicle.description}</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Mô tả</div>
+                                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">{vehicle.description}</div>
                               </div>
                             )}
                             <div className="flex items-center gap-2">
@@ -560,21 +560,21 @@ const ApprovalVehicle = () => {
                               </button> */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleCheckVehicleInfo(vehicle); }}
-                                className="ml-auto px-4 py-2 border rounded bg-blue-400 text-white hover:bg-blue-500"
+                                className="ml-auto px-4 py-2 border border-blue-400 dark:border-blue-600 rounded bg-blue-400 dark:bg-blue-600 text-white hover:bg-blue-500 dark:hover:bg-blue-700 transition-colors"
                               >
                                 {checkingId === vehicle.vehicle_id ? 'Đang kiểm tra...' : 'Kiểm tra'}
                               </button>
                             </div>
                             {checkResults[vehicle.vehicle_id] && (
-                              <div className="mt-3 p-3 rounded border bg-white">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">Kết quả kiểm tra</div>
-                                <div className="text-sm text-gray-900 mb-2">
+                              <div className="mt-3 p-3 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Kết quả kiểm tra</div>
+                                <div className="text-sm text-gray-900 dark:text-white mb-2">
                                   {checkResults[vehicle.vehicle_id].brand} {checkResults[vehicle.vehicle_id].model} • {checkResults[vehicle.vehicle_id].year}
                                 </div>
                                 <div className="flex gap-3 text-xs mb-3">
-                                  <span className="px-2 py-1 rounded bg-green-100 text-green-700">Tốt: {checkResults[vehicle.vehicle_id].summary.pass}</span>
-                                  <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700">Cảnh báo: {checkResults[vehicle.vehicle_id].summary.warn}</span>
-                                  <span className="px-2 py-1 rounded bg-red-100 text-red-700">Nguy hiểm: {checkResults[vehicle.vehicle_id].summary.fail}</span>
+                                  <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">Tốt: {checkResults[vehicle.vehicle_id].summary.pass}</span>
+                                  <span className="px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300">Cảnh báo: {checkResults[vehicle.vehicle_id].summary.warn}</span>
+                                  <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">Nguy hiểm: {checkResults[vehicle.vehicle_id].summary.fail}</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {(
@@ -582,9 +582,9 @@ const ApprovalVehicle = () => {
                                       .filter((c) => { const l = String(c.label || '').toLowerCase(); return !l.includes('vị trí') && !l.includes('vi tri'); })
                                       .filter((c) => vehicle.vehicle_type === 'car' ? !String(c.label || '').toLowerCase().includes('dung tích') : true)
                                   ).map((c, idx) => (
-                                    <div key={idx} className={`p-2 rounded border ${c.status === 'pass' ? 'border-green-200 bg-green-50' : c.status === 'fail' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'}`}>
-                                      <div className="text-xs text-gray-500">{c.label}</div>
-                                      <div className="text-sm text-gray-900">{c.detail}</div>
+                                    <div key={idx} className={`p-2 rounded border ${c.status === 'pass' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : c.status === 'fail' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' : 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'}`}>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{c.label}</div>
+                                      <div className="text-sm text-gray-900 dark:text-white">{c.detail}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -604,8 +604,8 @@ const ApprovalVehicle = () => {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               Hiển thị {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} đến{' '}
               {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} trong tổng số{' '}
               {pagination.totalItems} xe
@@ -614,7 +614,7 @@ const ApprovalVehicle = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
               >
                 Trước
               </button>
@@ -629,8 +629,8 @@ const ApprovalVehicle = () => {
                     onClick={() => handlePageChange(page)}
                     className={`px-3 py-1 text-sm border rounded ${
                       isCurrentPage
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'border-gray-300 hover:bg-gray-50'
+                        ? 'bg-blue-600 dark:bg-blue-700 text-white border-blue-600 dark:border-blue-700'
+                        : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {page}
@@ -641,7 +641,7 @@ const ApprovalVehicle = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
               >
                 Sau
               </button>
@@ -650,22 +650,22 @@ const ApprovalVehicle = () => {
         )}
       </div>
       {imageModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 dark:bg-opacity-90 flex items-center justify-center p-4">
           <button
             onClick={closeImageModal}
-            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdClose className="w-5 h-5" />
           </button>
           <button
             onClick={prevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdChevronRight className="w-6 h-6" />
           </button>
@@ -683,32 +683,32 @@ const ApprovalVehicle = () => {
       )}
       {rejectModal.open && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-4xl min-w-[768px] rounded-lg shadow-lg">
-            <div className="px-5 py-4 border-b flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">Nhập lí do từ chối</div>
-              <button onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })} className="text-gray-500 hover:text-gray-700">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-4xl min-w-[768px] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">Nhập lí do từ chối</div>
+              <button onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <MdClose className="w-5 h-5" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
-              <div className="text-sm text-gray-700">Xe: {rejectModal.vehicleModel}</div>
+              <div className="text-sm text-gray-700 dark:text-gray-300">Xe: {rejectModal.vehicleModel}</div>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full min-h-60 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full min-h-60 p-3 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 placeholder="Nhập lí do từ chối gửi tới chủ xe"
               />
             </div>
-            <div className="px-6 py-4 border-t flex items-center justify-end gap-3">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
               <button
                 onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 Hủy
               </button>
               <button
                 onClick={confirmReject}
-                className="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-5 py-2 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-800"
               >
                 Xác nhận
               </button>
