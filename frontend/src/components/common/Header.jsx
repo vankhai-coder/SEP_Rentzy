@@ -254,7 +254,6 @@ const Header = () => {
                       onClick={() => {
                         setLoginOpen(false);
                         navigate("/logout");
-                        console.log("Logged out khai");
 
                       }}
                     >

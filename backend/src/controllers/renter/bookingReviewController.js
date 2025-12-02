@@ -191,12 +191,18 @@ export const getReviewsByVehicle = async (req, res) => {
   }
 };
 
-// Lấy tất cả review của người dùng đang đăng nhập
+// ✅ CẬP NHẬT: Lấy tất cả review của người dùng với PHÂN TRANG
 export const getMyReviews = async (req, res) => {
   try {
     const renter_id = req.user.userId;
-    const { sortBy = "created_at" } = req.query;
+    const { sortBy = "created_at", page = 1, limit = 3 } = req.query;
 
+    // Tính offset
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Xác định thứ tự sắp xếp
     let orderClause = [["created_at", "DESC"]];
     if (sortBy === "start_date") {
       orderClause = [["booking", "start_date", "DESC"]];
@@ -204,6 +210,19 @@ export const getMyReviews = async (req, res) => {
       orderClause = [["rating", "DESC"]];
     }
 
+    // Lấy tổng số reviews để tính totalPages
+    const totalReviews = await BookingReview.count({
+      include: [
+        {
+          model: Booking,
+          as: "booking",
+          where: { renter_id },
+          attributes: [],
+        },
+      ],
+    });
+
+    // Lấy reviews theo phân trang
     const reviews = await BookingReview.findAll({
       include: [
         {
@@ -234,12 +253,19 @@ export const getMyReviews = async (req, res) => {
         },
       ],
       order: orderClause,
+      limit: limitNum,
+      offset: offset,
     });
+
+    const totalPages = Math.max(1, Math.ceil(totalReviews / limitNum));
 
     res.json({
       success: true,
       reviews,
-      totalReviews: reviews.length,
+      totalReviews,
+      currentPage: pageNum,
+      totalPages,
+      itemsPerPage: limitNum,
       sortBy,
     });
   } catch (error) {

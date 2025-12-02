@@ -44,6 +44,7 @@ import RenterInfoRoute from "./routes/renter/renterInformationRoute.js";
 import RenterSystemSettingRoute from "./routes/renter/systemSettingPublicRoute.js";
 import RenterNotificationRoute from "./routes/renter/notificationRoute.js";
 import TrafficFineRoute from "./routes/renter/trafficFineRoute.js";
+import OwnerPublicRoute from "./routes/renter/ownerPublicRoute.js";
 
 // admin routes
 import AdminApprovalVehicleRoute from "./routes/admin/adminApprovalVehicleRoute.js";
@@ -117,6 +118,7 @@ app.use("/api/renter/system-settings", RenterSystemSettingRoute);
 app.use("/api/renter/transactions", TransactionRoute);
 app.use("/api/renter", RecommendationRoute);
 app.use("/api/renter/notifications", RenterNotificationRoute);
+app.use("/api/renter/owner-public", OwnerPublicRoute);
 // traffic fine search route (cho cả renter và owner)
 app.use("/api/traffic-fine-search", TrafficFineRoute);
 // booking route

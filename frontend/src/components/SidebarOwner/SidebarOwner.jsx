@@ -1,6 +1,6 @@
 // fe/src/components/SidebarOwner/SidebarOwner.jsx
 import React, { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   MdOutlineDashboard,
   MdDirectionsCar,
@@ -8,21 +8,16 @@ import {
   MdNotifications,
   MdShowChart,
   MdLogout,
-  MdAccountCircle,
   MdTransform,
   MdArrowBack,
 } from "react-icons/md";
 import {
-  FaCar,
   FaClipboardList,
-  FaBell,
-  FaMoneyCheckAlt,
-  FaTimesCircle,
 } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 
 
-const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
+const SidebarOwner = ({ isOpen, onClose }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -78,20 +73,20 @@ const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
         <div className="fixed inset-0 bg-black/40 z-[999] md:hidden" onClick={onClose} />
       )}
       <div
-        className={`bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] w-[80vw] md:w-[250px] fixed top-0 left-0 transform transition-transform duration-200 md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        className={`bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] w-[80vw] md:w-[250px] fixed top-0 left-0 transform transition-transform duration-200 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
       >
-      {/* Header with back button and title */}
-      <div className="flex items-center gap-3 px-5 mb-[30px] pt-3">
-        <NavLink
-          to="/account"
-          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61] flex-shrink-0"
-          title="Quay về hồ sơ"
-          aria-label="Quay về hồ sơ"
-        >
-          <MdArrowBack className="text-xl" />
-        </NavLink>
+      {/* Back icon at top-left */}
+      <NavLink
+        to="/account"
+        className="absolute left-3 top-3 inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61]"
+        title="Quay về hồ sơ"
+        aria-label="Quay về hồ sơ"
+      >
+        <MdArrowBack className="text-xl" />
+      </NavLink>
+
+      <div className="px-5 pl-14 mb-[30px] pt-1">
         <div className="text-2xl font-bold text-[#3498db]">
           Bảng điều khiển chủ xe
         </div>
@@ -106,135 +101,125 @@ const SidebarOwner = ({ handleLogout, isOpen, onClose }) => {
                   isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdOutlineDashboard className="mr-[10px] text-xl" />
-              Tổng quan
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/vehicle-management"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+                  }`
+                }
+              >
+                <MdOutlineDashboard className="mr-[10px] text-xl" />
+                Tổng quan
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/vehicle-management"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdDirectionsCar className="mr-[10px] text-xl" />
-              Quản lý xe
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/booking-management"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+                  }`
+                }
+              >
+                <MdDirectionsCar className="mr-[10px] text-xl" />
+                Quản lý xe
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/booking-management"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdCalendarMonth className="mr-[10px] text-xl" />
-              Quản lý đơn thuê
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-          <li>
-            <NavLink
-              to="/owner/transaction-management"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+                  }`
+                }
+              >
+                <MdCalendarMonth className="mr-[10px] text-xl" />
+                Quản lý đơn thuê
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li>
+              <NavLink
+                to="/owner/transaction-management"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
                 }`
               }
             >
               <MdTransform className="mr-[10px] text-xl" />
-              Quản lý giao dịch
+              Quản lí giao dịch
             </NavLink>
           </li>
           <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
 
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/revenue"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/revenue"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdShowChart className="mr-[10px] text-xl" />
-              Doanh thu
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/vehicle-reviews"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+                  }`
+                }
+              >
+                <MdShowChart className="mr-[10px] text-xl" />
+                Doanh thu
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/vehicle-reviews"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <FaClipboardList className="mr-[8px] text-lg" />
-              Đánh giá về xe của tôi
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/notifications"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+                  }`
+                }
+              >
+                <FaClipboardList className="mr-[8px] text-lg" />
+                Đánh giá về xe của tôi
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/notifications"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdNotifications className="mr-[10px] text-xl" />
-              Thông báo
-              {unreadCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </NavLink>
-          </li>
+                  }`
+                }
+              >
+                <MdNotifications className="mr-[10px] text-xl" />
+                Thông báo
+                {unreadCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </NavLink>
+            </li>
 
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
 
-          <li className="mb-[10px]">
-            <a
-              href="#"
-              className="flex items-center px-5 py-[10px] text-[#ffffff] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#e02b2b]"
-              onClick={(e) => {
-                e.preventDefault();
-                handleLogout(e);
-              }}
-            >
-              <MdLogout className="mr-[10px] text-xl" />
-              Đăng xuất
-            </a>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
-        </ul>
-      </nav>
-    </div>
+            <li className="mb-[10px]">
+              <Link
+                to="/logout"
+                className="flex items-center px-5 py-[10px] text-[#ffffff] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#e02b2b]"
+              >
+                <MdLogout className="mr-[10px] text-xl" />
+                Đăng xuất
+              </Link>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+          </ul>
+        </nav>
+      </div>
     </>
   );
 };

@@ -22,6 +22,7 @@ import BankAccountPage from "./pages/renter/account/BankAccountPage.jsx";
 import Logout from "./pages/renter/auth/Logout.jsx";
 import About from "./components/common/About.jsx";
 import BrandVehicles from "./components/renter/brand/BrandVehicles.jsx";
+import OwnerPublicPage from "./pages/renter/owner/OwnerPublicPage.jsx";
 
 import VehicleDetail from "./pages/renter/vehicle/VehicleDetail.jsx";
 import MyReviewsPage from "./pages/renter/bookingReview/MyReviewsPage.jsx";
@@ -133,6 +134,9 @@ const App = () => {
           />
           {/* Vehicle Detail */}
           <Route path="/detail/:id" element={<VehicleDetail />} />
+
+          {/* Public Owner Page */}
+          <Route path="/owner-public/:ownerId" element={<OwnerPublicPage />} />
 
           {/* Order Confirmation */}
           <Route

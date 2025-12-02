@@ -158,17 +158,12 @@ const ImageUploadViewer = ({
       // Gửi kèm ghi chú tình trạng xe khi nhận lại xe (post-rental)
       if (imageType === "post-rental") {
         formData.append("damage_reported", damageReported ? "true" : "false");
-        formData.append("damage_description", (damageDescription || "").trim());
+        formData.append("damage_description", damageDescription || "");
         formData.append("compensation_amount", String(compensationAmount || 0));
         // Trả xe trễ
         formData.append("late_return", lateReturnEnabled ? "true" : "false");
         formData.append("late_return_fee", String(lateReturnFee || ""));
-        const descTrim = (lateReturnReason || "").trim();
-        const isZeroNumeric = /^0*(?:\.0+)?$/.test(descTrim);
-        formData.append(
-          "late_return_fee_description",
-          lateReturnEnabled && descTrim && !isZeroNumeric ? descTrim : ""
-        );
+        formData.append("late_return_fee_description", lateReturnReason || "");
       }
 
       // Sử dụng endpoint đúng cho từng loại handover
