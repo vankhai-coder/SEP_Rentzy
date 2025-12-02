@@ -73,13 +73,13 @@ const BookingHistory = () => {
     dispatch(fetchBookings(fetchParams));
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-2 text-blue-600">Đang tải...</span>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
+  }
 
   return (
     <>
