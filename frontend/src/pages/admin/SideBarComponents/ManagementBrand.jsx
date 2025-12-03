@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FaMotorcycle, FaBorderAll } from "react-icons/fa";
-import { CarFront, Pencil, Plus, Trash2 } from "lucide-react";
+import { CarFront, Pencil, Plus, Trash2, FileText, Car, Bike, Grid3x3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
 
@@ -174,63 +174,63 @@ const ManagementBrand = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                <p className="text-sm text-blue-600 dark:text-blue-400">
                   Tổng thương hiệu
                 </p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">
                   {isLoading ? "Loading..." : isError ? "Error" : stats.total}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <img src="/rentzy_logo.png" alt="logo" className="w-6 h-6" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                <p className="text-sm text-green-600 dark:text-green-400">
                   Ô tô
                 </p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">
                   {isLoading ? "-" : stats.car}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
-                <CarFront className="text-secondary-700 dark:text-secondary-300" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                <Car className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-lg border border-orange-200 dark:border-orange-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                <p className="text-sm text-orange-600 dark:text-orange-400">
                   Xe máy
                 </p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">
+                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300 mt-1">
                   {isLoading ? "-" : stats.motorbike}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
-                <FaMotorcycle className="text-secondary-700 dark:text-secondary-300" />
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
+                <Bike className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </div>
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">
+                <p className="text-sm text-purple-600 dark:text-purple-400">
                   Cả hai
                 </p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">
                   {isLoading ? "-" : stats.both}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center">
-                <FaBorderAll className="text-secondary-700 dark:text-secondary-300" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                <Grid3x3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </div>

@@ -65,7 +65,7 @@ const RevenueStats = () => {
           {/* User Management Title */}
           <div>
             <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Biểu đồ doanh thu</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Quản lí trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lý trực quan doanh thu theo thời gian và các chỉ số liên quan</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">

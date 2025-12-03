@@ -117,7 +117,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
 
   return (
     <div
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100"
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100 flex flex-col h-full"
       onClick={handleCardClick}
     >
       <div className="relative">
@@ -168,7 +168,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         </button>
       </div>
       {/* **Giữ nguyên 100%**: Phần nội dung dưới img */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow">
         <div className="flex items-center mb-2">
           <span className="flex items-center text-gray-700 border border-gray-300 px-3 py-1 rounded-full text-xs">
             Miễn thế chấp
@@ -204,8 +204,9 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
             )}
           </div>
         )}
+        <div className="flex-grow"></div>
         <hr className="my-3 border-gray-200" />
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between">
           <div className="flex flex-col">
             <p className="text-green-700 font-bold text-base whitespace-nowrap">
               {formatCurrency(vehicle.price_per_day)} / ngày

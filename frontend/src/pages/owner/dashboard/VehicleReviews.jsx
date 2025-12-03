@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../config/axiosInstance.js';
 import { MdStar, MdPerson, MdDirectionsCar, MdCalendarToday, MdFilterList } from 'react-icons/md';
 import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
@@ -7,6 +8,7 @@ import { createThemeUtils } from "@/utils/themeUtils";
 const VehicleReviews = () => {
   const theme = useOwnerTheme();
   const themeUtils = createThemeUtils(theme);
+  const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -194,7 +196,15 @@ const VehicleReviews = () => {
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-secondary-700">
             {reviews.map((review) => (
-              <div key={review.review_id} className="p-6 hover:bg-gray-50 dark:hover:bg-secondary-700">
+              <div 
+                key={review.review_id} 
+                className="p-6 hover:bg-gray-50 dark:hover:bg-secondary-700 cursor-pointer transition-colors"
+                onClick={() => {
+                  if (review.booking?.vehicle?.vehicle_id) {
+                    navigate(`/owner/vehicles/${review.booking.vehicle.vehicle_id}`);
+                  }
+                }}
+              >
                 <div className="flex items-start space-x-4">
                   {/* Customer Avatar */}
                   <div className="flex-shrink-0">

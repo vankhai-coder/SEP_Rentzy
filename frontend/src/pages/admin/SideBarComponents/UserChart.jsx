@@ -65,7 +65,7 @@ const UserManagement = () => {
                     {/* User Management Title */}
                     <div>
                         <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Biểu đồ người dùng</h1>
-                        <p className="text-secondary-600 dark:text-secondary-400">Quản lí trực quan số người dùng và các vai trò của họ</p>
+                        <p className="text-secondary-600 dark:text-secondary-400">Quản lý trực quan số người dùng và các vai trò của họ</p>
                     </div>
                     {/* User Management Actions */}
                     <div className="flex items-center gap-3">

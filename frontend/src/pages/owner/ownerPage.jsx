@@ -65,7 +65,7 @@ const OwnerPage = () => {
       "/owner/overview": "Tổng Quan Hệ Thống",
       "/owner/vehicle-management": "Quản lý xe",
       "/owner/booking-management": "Quản lý đơn thuê",
-      "/owner/transaction-management": "Quản lí giao dịch",
+      "/owner/transaction-management": "Quản lý giao dịch",
       "/owner/revenue": "Doanh thu",
       "/owner/vehicle-reviews": "Đánh giá về xe của tôi",
       "/owner/notifications": "Thông báo",
@@ -128,7 +128,7 @@ const OwnerPage = () => {
                   className={"border-b-1 py-2 text-md font-medium"}
                   value="/owner/transaction-management"
                 >
-                  <MdTransform className="inline mr-2" /> Quản lí giao dịch
+                  <MdTransform className="inline mr-2" /> Quản lý giao dịch
                 </SelectItem>
                 <SelectItem
                   className={"border-b-1 py-2 text-md font-medium"}

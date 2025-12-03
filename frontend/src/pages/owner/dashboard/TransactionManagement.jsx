@@ -207,11 +207,8 @@ const TransactionManagement = () => {
 
   if (loading)
     return (
-      <div className="transaction-history">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải dữ liệu...</p>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
 
@@ -249,7 +246,9 @@ const TransactionManagement = () => {
           </div>
         </div>
         <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <DollarSign size={24} className="dark:text-white" />
+          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+            <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
           <div>
             <h3 className="dark:text-gray-300">Tổng tiền</h3>
             <p className="dark:text-white">{formatCurrency(statistics.totalAmount)}</p>
@@ -273,9 +272,6 @@ const TransactionManagement = () => {
 
       {/* Filters */}
       <div className="filters-section dark:bg-secondary-800 dark:border-secondary-700">
-        <div className="filters-header dark:text-white">
-          <Filter size={20} /> Bộ lọc
-        </div>
         <div className="filters-content">
           <div className="search-box">
             <Search size={18} className="dark:text-gray-400" />
@@ -370,8 +366,10 @@ const TransactionManagement = () => {
                   {/* <td className={`type-badge ${type.color}`}>
                     <type.icon size={16} /> {type.label}
                   </td> */}
-                  <td className={`status-badge ${status.color}`}>
-                    <status.icon size={16} /> {status.label}
+                  <td>
+                    <span className={`status-badge ${status.color}`}>
+                      <status.icon size={16} /> {status.label}
+                    </span>
                   </td>
                   <td>{formatDate(tx.createdAt)}</td>
                 </tr>

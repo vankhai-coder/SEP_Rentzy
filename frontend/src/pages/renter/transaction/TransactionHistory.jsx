@@ -149,23 +149,13 @@ const TransactionHistory = () => {
     }
   };
 
-  const LoadingSkeleton = () => (
-    <div className="transaction-history">
-      <div className="page-header skeleton skeleton-header"></div>
-      <div className="stats-grid">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="stat-card skeleton skeleton-stat"></div>
-        ))}
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
-      <div className="controls">
-        <div className="skeleton skeleton-control"></div>
-        <div className="skeleton skeleton-control"></div>
-      </div>
-      <div className="table-card skeleton skeleton-table"></div>
-    </div>
-  );
-
-  if (loading) return <LoadingSkeleton />;
+    );
+  }
 
   if (error) {
     return (

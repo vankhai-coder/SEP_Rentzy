@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Lock, LockKeyholeOpen, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X } from "lucide-react"
+import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Lock, LockKeyholeOpen, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X, Users, UserCheck, Car, UserCircle } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -165,8 +165,8 @@ const UserManagement = () => {
         <div className="flex items-center justify-between" >
           {/* User Management Title */}
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lí người dùng</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Quản lí các thành viên trong nhóm và quyền truy cập tài khoản của họ</p>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lý người dùng</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lý các thành viên trong nhóm và quyền truy cập tài khoản của họ</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">
@@ -183,50 +183,50 @@ const UserManagement = () => {
         {/* User Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Total Users */}
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người dùng</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.totalUsers}</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">Tổng người dùng</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.totalUsers}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
           {/* Active Users */}
-          <div className="card transition-all duration-200 p-6">
+          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người dùng hoạt động</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.activeUsers}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">Tổng người dùng hoạt động</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.activeUsers}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
-          {/* Pending Invitations */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Total Owners */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng chủ xe</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.ownerUsers}</p>
+                <p className="text-sm text-purple-600 dark:text-purple-400">Tổng chủ xe</p>
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.ownerUsers}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                <Car className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </div>
-          {/* Pending Invitations */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Total Renters */}
+          <div className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-lg border border-orange-200 dark:border-orange-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng người thuê</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.renterUsers}</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400">Tổng người thuê</p>
+                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300 mt-1">{isLoadingUserStats ? 'Loading...' : isErrorUserStats ? 'Error' : userStats?.renterUsers}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                <UserCircle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </div>

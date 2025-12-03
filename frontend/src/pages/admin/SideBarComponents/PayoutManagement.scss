@@ -1,8 +1,89 @@
 .payout-management {
   padding: 24px;
-  background-color: #f8fafc;
+  // Background color handled by Tailwind classes in JSX
+  // background-color: #f8fafc !important;
   min-height: 100vh;
 
+  // @media (prefers-color-scheme: dark) {
+  //   background-color: #111827 !important;
+  // }
+
+  // Force light mode colors for specific elements
+  .owner-email,
+  .owner-phone,
+  .bank-name,
+  .account-number,
+  .account-holder {
+    color: #111827 !important;
+  }
+
+  html.dark & {
+    .owner-email,
+    .owner-phone {
+      color: #d1d5db !important;
+    }
+    .bank-name {
+      color: #ffffff !important;
+    }
+    .account-number,
+    .account-holder {
+      color: #d1d5db !important;
+    }
+  }
+
+  // Force light mode colors for statistics cards
+  .grid > div {
+    background-color: inherit !important;
+    border-color: inherit !important;
+    
+    p {
+      color: inherit !important;
+    }
+    
+    svg {
+      color: inherit !important;
+    }
+    
+    div[class*="bg-"] {
+      background-color: inherit !important;
+    }
+  }
+
+  // Force light mode colors for modal header and footer
+  // Background colors handled by Tailwind classes with !important in JSX
+  // .modal-header {
+  //   background-color: white !important;
+  // }
+
+  // html.dark .modal-header,
+  // :global(.dark) .modal-header,
+  // .dark .modal-header {
+  //   background-color: #1f2937 !important;
+  // }
+
+  // .modal-footer {
+  //   background-color: white !important;
+  // }
+
+  // html.dark .modal-footer {
+  //   background-color: #1f2937 !important;
+  // }
+
+  // Force light mode colors for modal body
+  // .modal-body {
+  //   background-color: white !important;
+  // }
+
+  // html.dark .modal-body {
+  //   background-color: #1f2937 !important;
+  // }
+}
+
+// html.dark .payout-management {
+//   background-color: #111827 !important;
+// }
+
+.payout-management {
   .page-header {
     display: flex;
     align-items: center;
@@ -16,17 +97,42 @@
     h1 {
       font-size: 28px;
       font-weight: 700;
-      color: #1e293b;
+      // Color handled by Tailwind classes in JSX
+      // color: #1e293b;
       margin: 0;
+
+      // @media (prefers-color-scheme: dark) {
+      //   color: #ffffff;
+      // }
     }
     
     p {
-      color: #64748b;
+      // Color handled by Tailwind classes in JSX
+      // color: #64748b;
       margin: 4px 0 0 0;
       font-size: 14px;
+
+      // @media (prefers-color-scheme: dark) {
+      //   color: #9ca3af;
+      // }
+    }
     }
   }
 
+
+// html.dark .payout-management {
+//   .page-header {
+//     h1 {
+//       color: #ffffff;
+//     }
+//     
+//     p {
+//       color: #9ca3af;
+//     }
+//   }
+// }
+
+.payout-management {
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -46,29 +152,32 @@
     }
 
     .stat-card {
-      background: white;
+      // Background, border, and colors handled by Tailwind classes in JSX
+      // background: white;
       border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e2e8f0;
+      // padding: 24px; // Handled by Tailwind p-4
+      // box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      // border: 1px solid #e2e8f0;
       transition: all 0.2s ease;
 
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-      }
+      // &:hover {
+      //   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      //   transform: translateY(-2px);
+      // }
 
       .stat-content {
         .stat-value {
           font-size: 32px;
           font-weight: 700;
-          color: #1e293b;
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
           margin-bottom: 8px;
         }
 
         .stat-label {
           font-size: 14px;
-          color: #64748b;
+          // Color handled by Tailwind classes in JSX
+          // color: #64748b;
           font-weight: 500;
         }
       }
@@ -91,9 +200,27 @@
       padding: 8px 12px;
       min-width: 200px;
 
+      @media (prefers-color-scheme: dark) {
+        background: #1f2937;
+        border-color: #374151;
+      }
+
+      html.dark & {
+        background: #1f2937;
+        border-color: #374151;
+      }
+
       svg {
         color: #64748b;
         flex-shrink: 0;
+
+        @media (prefers-color-scheme: dark) {
+          color: #9ca3af;
+        }
+
+        html.dark & {
+              color: #9ca3af;
+            }
       }
 
       select, input {
@@ -104,8 +231,24 @@
         color: #1e293b;
         flex: 1;
 
+        @media (prefers-color-scheme: dark) {
+          color: #ffffff;
+        }
+
+        html.dark & {
+          color: #ffffff;
+        }
+
         &::placeholder {
           color: #94a3b8;
+
+          @media (prefers-color-scheme: dark) {
+            color: #6b7280;
+          }
+
+          html.dark & {
+            color: #6b7280;
+          }
         }
       }
 
@@ -116,20 +259,47 @@
   }
 
   .table-card {
-    background: white;
+    // Background and border handled by Tailwind classes in JSX
+    // background: white !important;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    // border: 1px solid #e2e8f0;
     overflow: hidden;
+
+    // @media (prefers-color-scheme: dark) {
+    //   background: #1f2937 !important;
+    //   border-color: #374151;
+    // }
+
+    // html.dark & {
+    //   background: #1f2937 !important;
+    //   border-color: #374151;
+    // }
 
     .empty-state {
       text-align: center;
       padding: 80px 20px;
       color: #64748b;
 
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+
+      html.dark & {
+              color: #9ca3af;
+            }
+
       svg {
         margin-bottom: 16px;
         color: #cbd5e1;
+
+        @media (prefers-color-scheme: dark) {
+          color: #4b5563;
+        }
+
+        html.dark & {
+          color: #4b5563;
+        }
       }
 
       h3 {
@@ -137,11 +307,27 @@
         font-weight: 600;
         margin-bottom: 8px;
         color: #475569;
+
+        @media (prefers-color-scheme: dark) {
+          color: #ffffff;
+        }
+
+        html.dark & {
+          color: #ffffff;
+        }
       }
 
       p {
         font-size: 14px;
         margin: 0;
+
+        @media (prefers-color-scheme: dark) {
+          color: #9ca3af;
+        }
+
+        html.dark & {
+              color: #9ca3af;
+            }
       }
     }
 
@@ -154,14 +340,27 @@
       border-collapse: collapse;
 
       th {
-        background: #f8fafc;
+        // Background and color handled by Tailwind classes in JSX
+        // background: #f8fafc;
         padding: 16px;
         text-align: left;
         font-weight: 600;
-        color: #374151;
+        // color: #374151;
         font-size: 14px;
         border-bottom: 1px solid #e5e7eb;
         white-space: nowrap;
+
+        @media (prefers-color-scheme: dark) {
+          // background: #374151;
+          // color: #e5e7eb;
+          border-bottom-color: #4b5563;
+        }
+
+        html.dark & {
+          // background: #374151;
+          // color: #e5e7eb;
+          border-bottom-color: #4b5563;
+        }
 
         &.sortable {
           cursor: pointer;
@@ -170,6 +369,14 @@
 
           &:hover {
             background: #f1f5f9;
+
+            @media (prefers-color-scheme: dark) {
+              background: #4b5563;
+            }
+
+            html.dark & {
+              background: #4b5563;
+            }
           }
 
           span {
@@ -180,6 +387,14 @@
 
           svg {
             color: #6b7280;
+
+            @media (prefers-color-scheme: dark) {
+              color: #9ca3af;
+            }
+
+            html.dark & {
+              color: #9ca3af;
+            }
           }
         }
       }
@@ -189,19 +404,60 @@
         border-bottom: 1px solid #f1f5f9;
         vertical-align: middle;
         font-size: 13px; // giảm font chữ một chút
+        // Background and color handled by Tailwind classes in JSX
+        // background: white !important;
+        // color: #1e293b !important;
+
+        @media (prefers-color-scheme: dark) {
+          // background: #1f2937 !important;
+          border-bottom-color: #4b5563;
+          // color: #ffffff !important;
+        }
+
+        html.dark & {
+          // background: #1f2937 !important;
+          border-bottom-color: #4b5563;
+          // color: #ffffff !important;
+        }
 
         .id-badge {
-          background: #eff6ff;
-          color: #1d4ed8;
+          // Background and color handled by Tailwind classes in JSX
+          // background: #eff6ff;
+          // color: #1d4ed8;
           padding: 4px 8px;
           border-radius: 6px;
           font-size: 12px;
           font-weight: 600;
+
+          // @media (prefers-color-scheme: dark) {
+          //   background: #1e3a8a;
+          //   color: #93c5fd;
+          // }
+
+          // html.dark & {
+          //   background: #1e3a8a;
+          //   color: #93c5fd;
+          // }
         }
 
         .booking-code {
           font-weight: 600;
-          color: #1e293b;
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
+          display: block;
+          line-height: 1.5;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #ffffff;
+          // }
+
+          // html.dark & {
+          //   color: #ffffff;
+          // }
+        }
+
+        .booking-cell {
+          display: block;
         }
 
         .user-info, .vehicle-info, .bank-info {
@@ -212,39 +468,146 @@
           svg {
             color: #64748b;
             flex-shrink: 0;
+
+            @media (prefers-color-scheme: dark) {
+              color: #9ca3af;
+            }
+
+            html.dark & {
+              color: #9ca3af;
+            }
           }
 
           .name, .plate, .bank-name {
             font-weight: 600;
-            color: #1e293b;
+            // Color handled by Tailwind classes in JSX
+            // color: #1e293b;
             font-size: 14px;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #ffffff;
+            // }
+
+            // html.dark & {
+            //   color: #ffffff;
+            // }
           }
 
           .email, .model, .account-number, .account-holder {
-            color: #64748b;
+            // Color handled by Tailwind classes in JSX
+            // color: #64748b;
             font-size: 12px;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #9ca3af;
+            // }
+
+            // html.dark & {
+            //   color: #9ca3af;
+            // }
           }
 
           .no-bank {
             color: #ef4444;
             font-size: 12px;
             font-style: italic;
+
+            @media (prefers-color-scheme: dark) {
+              color: #f87171;
+            }
+
+            html.dark & {
+              color: #f87171;
+            }
           }
+        }
+
+        .owner-name {
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
+          font-weight: 600;
+          font-size: 14px;
+          display: block;
+          line-height: 1.5;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #ffffff;
+          // }
+
+          // html.dark & {
+          //   color: #ffffff;
+          // }
+        }
+
+        .owner-email {
+          // Color handled by Tailwind classes in JSX
+          // color: #64748b;
+          font-size: 13px;
+          display: block;
+          line-height: 1.5;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #9ca3af;
+          // }
+
+          //   html.dark & {
+          //     color: #9ca3af;
+          //   }
+        }
+
+        .owner-phone {
+          // Color handled by Tailwind classes in JSX
+          // color: #64748b;
+          font-size: 13px;
+          display: block;
+          line-height: 1.5;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #9ca3af;
+          // }
+
+          //   html.dark & {
+          //     color: #9ca3af;
+          //   }
         }
 
         // Bank info vertical layout
         .bank-info {
           flex-direction: column;
           align-items: flex-start;
-          gap: 4px;
+          gap: 8px;
 
           .bank-name {
             font-weight: 700;
-            color: #0f172a;
+            // Color handled by Tailwind classes in JSX
+            // color: #1e293b;
+            font-size: 14px;
+            margin-bottom: 4px;
+            line-height: 1.6;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #ffffff;
+            // }
+
+            // html.dark & {
+            //   color: #ffffff;
+            // }
           }
 
           .account-number, .account-holder {
-            color: #475569;
+            // Color handled by Tailwind classes in JSX
+            // color: #64748b;
+            font-size: 12px;
+            line-height: 1.8;
+            margin-top: 2px;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #9ca3af;
+            // }
+
+            // html.dark & {
+            //   color: #9ca3af;
+            // }
           }
         }
 
@@ -263,6 +626,14 @@
     transition: all 0.2s ease;
     border: 2px solid #e5e7eb;
 
+    @media (prefers-color-scheme: dark) {
+      border-color: #4b5563;
+    }
+
+    html.dark & {
+      border-color: #4b5563;
+    }
+
     &:hover {
       transform: scale(1.1);
       border-color: #3b82f6;
@@ -275,62 +646,187 @@
     font-style: italic;
     font-size: 0.875rem;
     text-align: center;
+
+    @media (prefers-color-scheme: dark) {
+      color: #9ca3af;
+    }
+
+            html.dark & {
+              color: #9ca3af;
+            }
   }
 }
 
         .amount {
           font-weight: 700;
-          color: #059669;
+          // Color handled by Tailwind classes in JSX
+          // color: #059669;
           font-size: 16px;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #10b981;
+          // }
+
+          // html.dark & {
+          //   color: #10b981;
+          // }
         }
 
-        .date-time {
+        .date, .date-time {
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
+          font-size: 14px;
+          display: block;
+          line-height: 1.8;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #ffffff;
+          // }
+
+          // html.dark & {
+          //   color: #ffffff;
+          // }
+
           span {
             display: block;
             font-weight: 600;
-            color: #1e293b;
+            // Color handled by Tailwind classes in JSX
+            // color: #1e293b;
             font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 4px;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #ffffff;
+            // }
+
+            // html.dark & {
+            //   color: #ffffff;
+            // }
           }
 
           small {
-            color: #64748b;
+            // Color handled by Tailwind classes in JSX
+            // color: #64748b;
             font-size: 12px;
+            display: block;
+            line-height: 1.8;
+            margin-top: 2px;
+
+            // @media (prefers-color-scheme: dark) {
+            //   color: #9ca3af;
+            // }
+
+            // html.dark & {
+            //   color: #9ca3af;
+            // }
           }
+        }
+
+        .payout-id {
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
+          font-weight: 600;
+          display: block;
+          line-height: 1.5;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #ffffff;
+          // }
+
+          // html.dark & {
+          //   color: #ffffff;
+          // }
         }
 
         .status-badge {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
           padding: 6px 12px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
+          line-height: 1.5;
 
-          &.pending {
-            background: #fef3c7;
-            color: #92400e;
-          }
+          // Background and color handled by Tailwind classes in JSX
+          // &.pending, &.badge-warning {
+          //   background: #fef3c7;
+          //   color: #92400e;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #78350f;
+          //     color: #fbbf24;
+          //   }
+          //   html.dark & {
+          //     background: #78350f;
+          //     color: #fbbf24;
+          //   }
+          // }
 
-          &.approved {
-            background: #d1fae5;
-            color: #065f46;
-          }
+          // &.approved {
+          //   background: #d1fae5;
+          //   color: #065f46;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #064e3b;
+          //     color: #10b981;
+          //   }
+          //   html.dark & {
+          //     background: #064e3b;
+          //     color: #10b981;
+          //   }
+          // }
 
-          &.rejected {
-            background: #fee2e2;
-            color: #991b1b;
-          }
+          // &.rejected, &.badge-danger {
+          //   background: #fee2e2;
+          //   color: #991b1b;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #7f1d1d;
+          //     color: #f87171;
+          //   }
+          //   html.dark & {
+          //     background: #7f1d1d;
+          //     color: #f87171;
+          //   }
+          // }
 
-          &.completed {
-            background: #d1fae5;
-            color: #065f46;
-          }
+          // &.completed, &.badge-success {
+          //   background: #d1fae5;
+          //   color: #065f46;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #064e3b;
+          //     color: #10b981;
+          //   }
+          //   html.dark & {
+          //     background: #064e3b;
+          //     color: #10b981;
+          //   }
+          // }
 
-          &.failed {
-            background: #fee2e2;
-            color: #991b1b;
-          }
+          // &.failed {
+          //   background: #fee2e2;
+          //   color: #991b1b;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #7f1d1d;
+          //     color: #f87171;
+          //   }
+          //   html.dark & {
+          //     background: #7f1d1d;
+          //     color: #f87171;
+          //   }
+          // }
+
+          // &.badge-secondary {
+          //   background: #f1f5f9;
+          //   color: #475569;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #374151;
+          //     color: #9ca3af;
+          //   }
+          //   html.dark & {
+          //     background: #374151;
+          //     color: #9ca3af;
+          //   }
+          // }
         }
 
         .action-buttons {
@@ -349,13 +845,16 @@
             cursor: pointer;
             transition: all 0.2s;
             font-size: 13px;
+            // Background and color handled by Tailwind classes in JSX
+            // background: #059669;
+            // color: white;
           }
 
           .btn-approve {
-            background: #059669;
-            color: white;
-
-            &:hover { background: #047857; }
+            // Background and color handled by Tailwind classes in JSX
+            // background: #059669;
+            // color: white;
+            // &:hover { background: #047857; }
 
             &:disabled {
               opacity: 0.6;
@@ -363,20 +862,41 @@
             }
           }
 
-          .btn-reject {
-            background: #dc2626;
-            color: white;
-            &:hover { background: #b91c1c; }
-          }
+          // .btn-reject {
+          //   Background and color handled by Tailwind classes in JSX
+          //   background: #dc2626;
+          //   color: white;
+          //   &:hover { background: #b91c1c; }
+          // }
         }
       }
 
       tbody tr {
         transition: background-color 0.2s;
+        // Background and color handled by Tailwind classes in JSX
+        // background: white !important;
+        // color: #1e293b !important;
 
-        &:hover {
-          background: #f8fafc;
-        }
+        // Dark mode styles handled by Tailwind classes in JSX
+        // @media (prefers-color-scheme: dark) {
+        //   background: #1f2937 !important;
+        //   color: #ffffff !important;
+        // }
+
+        // html.dark & {
+        //   background: #1f2937 !important;
+        //   color: #ffffff !important;
+        // }
+
+        // Hover styles handled by Tailwind classes in JSX
+        // &:hover {
+        //   @media (prefers-color-scheme: dark) {
+        //     background: #374151 !important;
+        //   }
+        //   html.dark & {
+        //     background: #374151 !important;
+        //   }
+        // }
       }
     }
 
@@ -385,11 +905,29 @@
       justify-content: space-between;
       align-items: center;
       padding: 20px 24px;
-      border-top: 1px solid #f1f5f9;
+      // Border handled by Tailwind classes in JSX
+      // border-top: 1px solid #f1f5f9;
+
+      // @media (prefers-color-scheme: dark) {
+      //   border-top-color: #4b5563;
+      // }
+
+      // html.dark & {
+      //   border-top-color: #4b5563;
+      // }
 
       .pagination-info {
-        color: #64748b;
+        // Color handled by Tailwind classes in JSX
+        // color: #64748b;
         font-size: 14px;
+
+        // @media (prefers-color-scheme: dark) {
+        //   color: #9ca3af;
+        // }
+
+        // html.dark & {
+        //   color: #9ca3af;
+        // }
       }
 
       .pagination-btns {
@@ -402,24 +940,45 @@
           justify-content: center;
           width: 36px;
           height: 36px;
-          border: 1px solid #e2e8f0;
-          background: white;
-          color: #64748b;
+          // Border, background, and color handled by Tailwind classes in JSX
+          // border: 1px solid #e2e8f0;
+          // background: white;
+          // color: #64748b;
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s;
           font-size: 14px;
 
-          &:hover:not(:disabled) {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-          }
+          // @media (prefers-color-scheme: dark) {
+          //   border-color: #4b5563;
+          //   background: #374151;
+          //   color: #9ca3af;
+          // }
 
-          &.active {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-          }
+          // html.dark & {
+          //   border-color: #4b5563;
+          //   background: #374151;
+          //   color: #9ca3af;
+          // }
+
+          // &:hover:not(:disabled) {
+          //   background: #f8fafc;
+          //   border-color: #cbd5e1;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #4b5563;
+          //     border-color: #6b7280;
+          //   }
+          //   html.dark & {
+          //     background: #4b5563;
+          //     border-color: #6b7280;
+          //   }
+          // }
+
+          // &.active {
+          //   background: #3b82f6;
+          //   color: white;
+          //   border-color: #3b82f6;
+          // }
 
           &:disabled {
             opacity: 0.5;
@@ -437,6 +996,14 @@
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
+    @media (prefers-color-scheme: dark) {
+      background: #1f2937;
+    }
+
+    html.dark & {
+      background: #1f2937;
+    }
+
     svg {
       color: #ef4444;
       margin-bottom: 16px;
@@ -445,6 +1012,14 @@
     h3 {
       color: #1e293b;
       margin-bottom: 16px;
+
+      @media (prefers-color-scheme: dark) {
+        color: #ffffff;
+      }
+
+        html.dark & {
+          color: #ffffff;
+        }
     }
 
     .btn-retry {
@@ -517,7 +1092,8 @@
 
   // QR Code Modal Styles
   .qr-modal-content {
-    background: white;
+    // Background handled by Tailwind classes in JSX
+    // background: white;
     border-radius: 12px;
     padding: 0;
     max-width: 500px;
@@ -526,19 +1102,47 @@
     overflow: hidden;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
+    // @media (prefers-color-scheme: dark) {
+    //   background: #1f2937;
+    // }
+
+    // html.dark & {
+    //   background: #1f2937;
+    // }
+
     .qr-modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 20px 24px;
-      border-bottom: 1px solid #e5e7eb;
-      background: #f9fafb;
+      // Border and background handled by Tailwind classes in JSX
+      // border-bottom: 1px solid #e5e7eb;
+      background-color: #f9fafb !important;
+
+      // @media (prefers-color-scheme: dark) {
+      //   border-bottom-color: #4b5563;
+      //   background: #374151;
+      // }
+
+      // html.dark & {
+      //   border-bottom-color: #4b5563;
+      //   background: #374151;
+      // }
 
       h3 {
         margin: 0;
         font-size: 1.25rem;
         font-weight: 600;
-        color: #111827;
+        // Color handled by Tailwind classes in JSX
+        // color: #111827;
+
+        // @media (prefers-color-scheme: dark) {
+        //   color: #ffffff;
+        // }
+
+        // html.dark & {
+        //   color: #ffffff;
+        // }
       }
 
       .btn-close {
@@ -550,9 +1154,27 @@
         color: #6b7280;
         transition: all 0.2s ease;
 
+        @media (prefers-color-scheme: dark) {
+          color: #9ca3af;
+        }
+
+        html.dark & {
+              color: #9ca3af;
+            }
+
         &:hover {
           background: #e5e7eb;
           color: #374151;
+
+          @media (prefers-color-scheme: dark) {
+            background: #4b5563;
+            color: #ffffff;
+          }
+
+          html.dark & {
+            background: #4b5563;
+            color: #ffffff;
+          }
         }
       }
     }
@@ -562,6 +1184,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      // Background handled by Tailwind classes in JSX
+      // background-color: white;
 
       .qr-code-large {
         max-width: 100%;
@@ -573,7 +1197,8 @@
   }
 
   .modal-content {
-    background: white;
+    // Background handled by Tailwind classes in JSX
+    // background: white;
     border-radius: 12px;
     max-width: 800px;
     width: 100%;
@@ -581,18 +1206,46 @@
     overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
+    // @media (prefers-color-scheme: dark) {
+    //   background: #1f2937;
+    // }
+
+    // html.dark & {
+    //   background: #1f2937;
+    // }
+
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 24px;
-      border-bottom: 1px solid #e5e7eb;
+      // Background handled by Tailwind classes and CSS rules at root level
+      // background-color: white;
+      // Border and background handled by Tailwind classes in JSX
+      // border-bottom: 1px solid #e5e7eb;
+
+      // @media (prefers-color-scheme: dark) {
+      //   border-bottom-color: #4b5563;
+      // }
+
+      // html.dark & {
+      //   border-bottom-color: #4b5563;
+      // }
 
       h3 {
         font-size: 20px;
         font-weight: 700;
-        color: #1e293b;
+        // Color handled by Tailwind classes in JSX
+        // color: #1e293b;
         margin: 0;
+
+        // @media (prefers-color-scheme: dark) {
+        //   color: #ffffff;
+        // }
+
+        // html.dark & {
+        //   color: #ffffff;
+        // }
       }
 
       .btn-close {
@@ -604,15 +1257,106 @@
         border-radius: 4px;
         transition: all 0.2s;
 
+        @media (prefers-color-scheme: dark) {
+          color: #9ca3af;
+        }
+
+        html.dark & {
+              color: #9ca3af;
+            }
+
         &:hover {
           background: #f1f5f9;
           color: #1e293b;
+
+          @media (prefers-color-scheme: dark) {
+            background: #4b5563;
+            color: #ffffff;
+          }
+
+          html.dark & {
+            background: #4b5563;
+            color: #ffffff;
+          }
         }
       }
     }
 
     .modal-body {
       padding: 24px;
+
+      .confirm-content {
+        text-align: center;
+
+        p {
+          // Color handled by Tailwind classes in JSX
+          // color: #1e293b;
+          margin-bottom: 16px;
+
+          // @media (prefers-color-scheme: dark) {
+          //   color: #ffffff;
+          // }
+
+          // html.dark & {
+          //   color: #ffffff;
+          // }
+
+          // strong {
+          //   Color handled by Tailwind classes in JSX
+          //   color: #1e293b;
+          //   @media (prefers-color-scheme: dark) {
+          //     color: #ffffff;
+          //   }
+          //   html.dark & {
+          //     color: #ffffff;
+          //   }
+          // }
+        }
+
+        .confirm-icon {
+          margin-bottom: 16px;
+        }
+
+        .payout-info {
+          margin-top: 16px;
+          padding: 16px;
+          // Background and color handled by Tailwind classes in JSX
+          // background: #f8fafc;
+          border-radius: 8px;
+          text-align: left;
+
+          // @media (prefers-color-scheme: dark) {
+          //   background: #374151;
+          // }
+
+          // html.dark & {
+          //   background: #374151;
+          // }
+
+          p {
+            margin: 8px 0;
+            // Color handled by Tailwind classes in JSX
+            // color: #1e293b;
+            // @media (prefers-color-scheme: dark) {
+            //   color: #ffffff;
+            // }
+            // html.dark & {
+            //   color: #ffffff;
+            // }
+
+            // strong {
+            //   Color handled by Tailwind classes in JSX
+            //   color: #1e293b;
+            //   @media (prefers-color-scheme: dark) {
+            //     color: #ffffff;
+            //   }
+            //   html.dark & {
+            //     color: #ffffff;
+            //   }
+            // }
+          }
+        }
+      }
 
       .detail-grid {
         display: grid;
@@ -626,6 +1370,16 @@
             margin-bottom: 16px;
             padding-bottom: 8px;
             border-bottom: 1px solid #e5e7eb;
+
+            @media (prefers-color-scheme: dark) {
+              color: #ffffff;
+              border-bottom-color: #4b5563;
+            }
+
+            html.dark & {
+              color: #ffffff;
+              border-bottom-color: #4b5563;
+            }
           }
 
           .detail-item {
@@ -635,6 +1389,14 @@
             padding: 8px 0;
             border-bottom: 1px solid #f1f5f9;
 
+            @media (prefers-color-scheme: dark) {
+              border-bottom-color: #4b5563;
+            }
+
+            html.dark & {
+              border-bottom-color: #4b5563;
+            }
+
             &:last-child {
               border-bottom: none;
             }
@@ -643,6 +1405,14 @@
               font-weight: 500;
               color: #64748b;
               min-width: 120px;
+
+              @media (prefers-color-scheme: dark) {
+                color: #9ca3af;
+              }
+
+            html.dark & {
+              color: #9ca3af;
+            }
             }
 
             .value {
@@ -650,27 +1420,83 @@
               text-align: right;
               flex: 1;
 
+              @media (prefers-color-scheme: dark) {
+                color: #ffffff;
+              }
+
+        html.dark & {
+          color: #ffffff;
+        }
+
               &.amount {
                 font-weight: 700;
                 color: #059669;
                 font-size: 16px;
+
+                @media (prefers-color-scheme: dark) {
+                  color: #10b981;
+                }
+
+                html.dark & {
+                  color: #10b981;
+                }
               }
 
               &.status {
                 &.pending {
                   color: #92400e;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #fbbf24;
+                  }
+
+                  html.dark & {
+                    color: #fbbf24;
+                  }
                 }
                 &.approved {
                   color: #065f46;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #10b981;
+                  }
+
+                  html.dark & {
+                    color: #10b981;
+                  }
                 }
                 &.rejected {
                   color: #991b1b;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #f87171;
+                  }
+
+                  html.dark & {
+                    color: #f87171;
+                  }
                 }
                 &.completed {
                   color: #065f46;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #10b981;
+                  }
+
+                  html.dark & {
+                    color: #10b981;
+                  }
                 }
                 &.failed {
                   color: #991b1b;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #f87171;
+                  }
+
+                  html.dark & {
+                    color: #f87171;
+                  }
                 }
               }
             }
@@ -689,11 +1515,27 @@
                 background: #f8fafc;
                 border-radius: 8px;
 
+                @media (prefers-color-scheme: dark) {
+                  background: #374151;
+                }
+
+                html.dark & {
+                  background: #374151;
+                }
+
                 .qr-image {
                   width: 200px;
                   height: 200px;
                   border-radius: 8px;
                   border: 1px solid #e5e7eb;
+
+                  @media (prefers-color-scheme: dark) {
+                    border-color: #4b5563;
+                  }
+
+                  html.dark & {
+                    border-color: #4b5563;
+                  }
                 }
 
                 .qr-info {
@@ -702,6 +1544,14 @@
                   gap: 8px;
                   color: #64748b;
                   font-size: 14px;
+
+                  @media (prefers-color-scheme: dark) {
+                    color: #9ca3af;
+                  }
+
+            html.dark & {
+              color: #9ca3af;
+            }
 
                   svg {
                     color: #3b82f6;
@@ -716,15 +1566,63 @@
 
     .modal-footer {
       padding: 24px;
-      border-top: 1px solid #e5e7eb;
+      // Background handled by Tailwind classes and CSS rules at root level
+      // background-color: white;
+      // Border and background handled by Tailwind classes in JSX
+      // border-top: 1px solid #e5e7eb;
       display: flex;
       justify-content: flex-end;
+
+      // @media (prefers-color-scheme: dark) {
+      //   border-top-color: #4b5563;
+      // }
+
+      // html.dark & {
+      //   border-top-color: #4b5563;
+      // }
 
       .action-buttons {
         display: flex;
         gap: 12px;
 
-        .btn-approve, .btn-reject {
+        .btn-cancel {
+          padding: 12px 24px;
+          // Border, background, and color handled by Tailwind classes in JSX
+          // border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          // background: white;
+          // color: #64748b;
+
+          // @media (prefers-color-scheme: dark) {
+          //   background: #374151;
+          //   border-color: #4b5563;
+          //   color: #9ca3af;
+          // }
+
+          // html.dark & {
+          //   background: #374151;
+          //   border-color: #4b5563;
+          //   color: #9ca3af;
+          // }
+
+          // &:hover {
+          //   background: #f8fafc;
+          //   border-color: #cbd5e1;
+          //   @media (prefers-color-scheme: dark) {
+          //     background: #4b5563;
+          //     border-color: #6b7280;
+          //   }
+          //   html.dark & {
+          //     background: #4b5563;
+          //     border-color: #6b7280;
+          //   }
+          // }
+        }
+
+        .btn-approve, .btn-reject, .btn-confirm {
           display: flex;
           align-items: center;
           gap: 8px;
@@ -735,33 +1633,47 @@
           cursor: pointer;
           transition: all 0.2s;
 
-          &.btn-approve {
-            background: #059669;
-            color: white;
+          // &.btn-approve {
+          //   Background and color handled by Tailwind classes in JSX
+          //   background: #059669;
+          //   color: white;
+          //   &:hover {
+          //     background: #047857;
+          //   }
+          // }
 
-            &:hover {
-              background: #047857;
-            }
-          }
-
-          &.btn-reject {
-            background: #dc2626;
-            color: white;
-
-            &:hover {
-              background: #b91c1c;
-            }
-          }
+          // &.btn-reject {
+          //   Background and color handled by Tailwind classes in JSX
+          //   background: #dc2626;
+          //   color: white;
+          //   &:hover {
+          //     background: #b91c1c;
+          //   }
+          // }
         }
       }
     }
   }
 
+  // Force dark mode background for modal header and footer
+  :global(.dark) .modal-header,
+  .dark .modal-header,
+  html.dark .modal-header {
+    background-color: #1f2937 !important;
+  }
+
+  :global(.dark) .modal-footer,
+  .dark .modal-footer,
+  html.dark .modal-footer {
+    background-color: #1f2937 !important;
+  }
+
   // Responsive design
   @media (max-width: 768px) {
-    padding: 16px;
+    .payout-management {
+      padding: 16px;
 
-    .page-header {
+      .page-header {
       h1 {
         font-size: 24px;
       }
@@ -833,5 +1745,41 @@
         }
       }
     }
+    }
   }
+}
+
+// Force light mode background for modal header and footer
+.modal-header {
+  background-color: white !important;
+}
+
+.modal-footer {
+  background-color: white !important;
+}
+
+// Force dark mode background for modal header and footer (outside .payout-management)
+html.dark .modal-content .modal-header,
+.dark .modal-content .modal-header,
+html.dark .modal-header,
+.dark .modal-header {
+  background-color: #1f2937 !important;
+}
+
+html.dark .modal-content .modal-footer,
+.dark .modal-content .modal-footer,
+html.dark .modal-footer,
+.dark .modal-footer {
+  background-color: #1f2937 !important;
+}
+
+// Force dark mode background for QR modal header and body
+html.dark .qr-modal-header,
+.dark .qr-modal-header {
+  background-color: #374151 !important;
+}
+
+html.dark .qr-modal-body,
+.dark .qr-modal-body {
+  background-color: #1f2937 !important;
 }

@@ -19,6 +19,9 @@ import {
   QrCode,
   DollarSign,
   X,
+  FileText,
+  Ban,
+  CircleCheck,
 } from "lucide-react";
 import { MdCheckCircle, MdCancel } from "react-icons/md";
 import "./PayoutManagement.scss";
@@ -54,6 +57,26 @@ const PayoutManagement = () => {
   useEffect(() => {
     fetchPayouts();
   }, [currentPage, filter]);
+
+  // Detect dark mode and apply styles
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    
+    // Watch for changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const fetchPayouts = async () => {
     try {
@@ -241,7 +264,7 @@ const PayoutManagement = () => {
   };
 
   const LoadingSkeleton = () => (
-    <div className="payout-management">
+    <div className="payout-management bg-gray-50 dark:bg-gray-900">
       <div className="page-header">
         <div className="skeleton skeleton-text"></div>
       </div>
@@ -262,11 +285,11 @@ const PayoutManagement = () => {
 
   if (error) {
     return (
-      <div className="payout-management">
-        <div className="error-state">
-          <XCircle size={48} />
-          <h3>{error}</h3>
-          <button onClick={fetchPayouts} className="btn-retry">
+    <div className="payout-management bg-gray-50 dark:bg-gray-900">
+      <div className="error-state text-gray-700 dark:text-gray-300">
+          <XCircle size={48} className="text-red-500 dark:text-red-400" />
+          <h3 className="text-gray-900 dark:text-white">{error}</h3>
+          <button onClick={fetchPayouts} className="btn-retry bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white">
             Thử lại
           </button>
         </div>
@@ -275,130 +298,163 @@ const PayoutManagement = () => {
   }
 
   return (
-    <div className="payout-management">
+    <div className="payout-management bg-gray-50 dark:bg-gray-900">
       <div className="page-header">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-            <Wallet size={22} className="text-primary-600" />
+          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+            <Wallet size={22} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Giải ngân cho chủ xe</h1>
-            <p className="text-secondary-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Giải ngân cho chủ xe</h1>
+            <p className="text-gray-500 dark:text-gray-400">
               Danh sách các yêu cầu cần xử lý
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="badge badge-primary px-2 py-0.5 text-xs">
-            Tổng: {statistics.total || 0}
-          </span>
-          <span className="badge badge-warning px-2 py-0.5 text-xs">
-            Chờ duyệt: {statistics.pending || 0}
-          </span>
-          <span className="badge badge-success px-2 py-0.5 text-xs">
-            Hoàn thành: {statistics.completed || 0}
-          </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="!bg-blue-50 dark:!bg-blue-900/20 p-4 rounded-lg border !border-blue-200 dark:!border-blue-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-blue-600 dark:!text-blue-400">Tổng số</p>
+              <p className="text-2xl font-bold !text-blue-700 dark:!text-blue-300">{statistics.total || 0}</p>
+            </div>
+            <div className="p-2 !bg-blue-100 dark:!bg-blue-900/40 rounded-lg">
+              <FileText className="w-6 h-6 !text-blue-600 dark:!text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="!bg-yellow-50 dark:!bg-yellow-900/20 p-4 rounded-lg border !border-yellow-200 dark:!border-yellow-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-yellow-600 dark:!text-yellow-400">Chờ duyệt</p>
+              <p className="text-2xl font-bold !text-yellow-700 dark:!text-yellow-300">{statistics.pending || 0}</p>
+            </div>
+            <div className="p-2 !bg-yellow-100 dark:!bg-yellow-900/40 rounded-lg">
+              <Clock className="w-6 h-6 !text-yellow-600 dark:!text-yellow-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="!bg-green-50 dark:!bg-green-900/20 p-4 rounded-lg border !border-green-200 dark:!border-green-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-green-600 dark:!text-green-400">Đã duyệt</p>
+              <p className="text-2xl font-bold !text-green-700 dark:!text-green-300">{statistics.approved || 0}</p>
+            </div>
+            <div className="p-2 !bg-green-100 dark:!bg-green-900/40 rounded-lg">
+              <CheckCircle className="w-6 h-6 !text-green-600 dark:!text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="!bg-red-50 dark:!bg-red-900/20 p-4 rounded-lg border !border-red-200 dark:!border-red-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-red-600 dark:!text-red-400">Từ chối</p>
+              <p className="text-2xl font-bold !text-red-700 dark:!text-red-300">{statistics.rejected || 0}</p>
+            </div>
+            <div className="p-2 !bg-red-100 dark:!bg-red-900/40 rounded-lg">
+              <Ban className="w-6 h-6 !text-red-600 dark:!text-red-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="!bg-emerald-50 dark:!bg-emerald-900/20 p-4 rounded-lg border !border-emerald-200 dark:!border-emerald-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-emerald-600 dark:!text-emerald-400">Hoàn thành</p>
+              <p className="text-2xl font-bold !text-emerald-700 dark:!text-emerald-300">{statistics.completed || 0}</p>
+            </div>
+            <div className="p-2 !bg-emerald-100 dark:!bg-emerald-900/40 rounded-lg">
+              <CircleCheck className="w-6 h-6 !text-emerald-600 dark:!text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="!bg-orange-50 dark:!bg-orange-900/20 p-4 rounded-lg border !border-orange-200 dark:!border-orange-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm !text-orange-600 dark:!text-orange-400">Thất bại</p>
+              <p className="text-2xl font-bold !text-orange-700 dark:!text-orange-300">{statistics.failed || 0}</p>
+            </div>
+            <div className="p-2 !bg-orange-100 dark:!bg-orange-900/40 rounded-lg">
+              <XCircle className="w-6 h-6 !text-orange-600 dark:!text-orange-400" />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.total || 0}</div>
-            <div className="stat-label">Tổng số</div>
-          </div>
+      <div className="mb-6 flex gap-4 items-center">
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setFilter("all"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "all"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => { setFilter("pending"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "pending"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            Chờ duyệt
+          </button>
+          <button
+            onClick={() => { setFilter("completed"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "completed"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            Hoàn thành
+          </button>
+          <button
+            onClick={() => { setFilter("cancelled"); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              filter === "cancelled"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            Từ chối
+          </button>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.pending || 0}</div>
-            <div className="stat-label">Chờ duyệt</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.approved || 0}</div>
-            <div className="stat-label">Đã duyệt</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.rejected || 0}</div>
-            <div className="stat-label">Từ chối</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.completed || 0}</div>
-            <div className="stat-label">Hoàn thành</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-content">
-            <div className="stat-value">{statistics.failed || 0}</div>
-            <div className="stat-label">Thất bại</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="controls">
-        <div className="control-group">
-          <Filter size={16} />
-          <div className="flex items-center gap-2">
-            <button
-              className={`chip ${filter === "all" ? "chip-active" : ""}`}
-              onClick={() => setFilter("all")}
-            >
-              Tất cả
-            </button>
-            <button
-              className={`chip ${filter === "pending" ? "chip-active" : ""}`}
-              onClick={() => setFilter("pending")}
-            >
-              Chờ duyệt
-            </button>
-            <button
-              className={`chip ${filter === "completed" ? "chip-active" : ""}`}
-              onClick={() => setFilter("completed")}
-            >
-              Hoàn thành
-            </button>
-            <button
-              className={`chip ${filter === "cancelled" ? "chip-active" : ""}`}
-              onClick={() => setFilter("cancelled")}
-            >
-              Từ chối
-            </button>
-          </div>
-        </div>
-
-        <div className="control-group">
-          <Search size={16} />
+        <div className="flex items-center gap-2 flex-1 max-w-md">
+          <Search size={16} className="text-gray-500 dark:text-gray-400" />
           <input
             type="text"
             placeholder="Tìm theo payout, booking, chủ xe, xe..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
 
-      <div className="table-card">
+      <div className="table-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         {filteredAndSortedPayouts.length === 0 ? (
-          <div className="empty-state">
-            <CreditCard size={48} />
-            <h3>Chưa có yêu cầu thanh toán</h3>
-            <p>Các yêu cầu thanh toán sẽ hiển thị ở đây</p>
+          <div className="empty-state text-gray-500 dark:text-gray-400">
+            <CreditCard size={48} className="text-gray-400 dark:text-gray-500" />
+            <h3 className="text-gray-700 dark:text-white">Chưa có yêu cầu thanh toán</h3>
+            <p className="text-gray-500 dark:text-gray-400">Các yêu cầu thanh toán sẽ hiển thị ở đây</p>
           </div>
         ) : (
           <>
             <div className="table-scroll">
               <table className="payout-table modern">
-                <thead>
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th
                       onClick={() => handleSort("payout_id")}
@@ -486,61 +542,61 @@ const PayoutManagement = () => {
                     <th>Thao tác</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white dark:bg-gray-800">
                   {filteredAndSortedPayouts.map((payout) => {
                     const statusInfo = getStatusInfo(payout.status);
                     const StatusIcon = statusInfo.icon;
 
                     const amounts = calcAmounts(payout);
                     return (
-                      <tr key={payout.payout_id}>
-                        <td>
+                      <tr key={payout.payout_id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="text-gray-900 dark:text-white">
                           <span className="payout-id">#{payout.payout_id}</span>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <div className="booking-cell">
                             <span className="booking-id">
                               BK{payout.booking_info?.booking_id}
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <span className="owner-name">
                             {payout.owner_info?.full_name}
                           </span>
                         </td>
-                        <td>
-                          <span className="owner-email">
+                        <td className="text-gray-900 dark:text-gray-300">
+                          <span className="owner-email text-gray-900 dark:text-gray-300">
                             {payout.owner_info?.email}
                           </span>
                         </td>
-                        <td>
-                          <span className="owner-phone">
+                        <td className="text-gray-900 dark:text-gray-300">
+                          <span className="owner-phone text-gray-900 dark:text-gray-300">
                             {payout.owner_info?.phone_number}
                           </span>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <div className="bank-info">
                             {payout.owner_info?.bank_name ? (
                               <>
-                                <div className="bank-name font-semibold">
+                                <div className="bank-name text-gray-900 dark:text-white">
                                   {payout.owner_info.bank_name}
                                 </div>
-                                <div className="account-number text-secondary-600">
+                                <div className="account-number text-gray-700 dark:text-gray-300">
                                   {payout.owner_info.account_number}
                                 </div>
-                                <div className="account-holder text-secondary-600">
+                                <div className="account-holder text-gray-700 dark:text-gray-300">
                                   {payout.owner_info.account_holder_name}
                                 </div>
                               </>
                             ) : (
-                              <div className="no-bank text-secondary-500">
+                              <div className="no-bank text-red-500 dark:text-red-400">
                                 Chưa có thông tin bank
                               </div>
                             )}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <div className="qr-code-cell">
                             {payout.owner_info?.qr_code ? (
                               <img
@@ -552,56 +608,61 @@ const PayoutManagement = () => {
                                 }
                               />
                             ) : (
-                              <div className="no-qr">Chưa có QR</div>
+                              <div className="no-qr text-gray-500 dark:text-gray-400">Chưa có QR</div>
                             )}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-green-600 dark:text-green-400">
                           <div className="amount">
                             {formatCurrency(amounts.total)}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-green-600 dark:text-green-400">
                           <div className="amount">
                             {formatCurrency(amounts.offlineCash)}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-green-600 dark:text-green-400">
                           <div className="amount">
                             {formatCurrency(amounts.platformFee)}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-green-600 dark:text-green-400">
                           <div className="amount font-semibold">
                             {formatCurrency(amounts.finalToOwner)}
                           </div>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <div className="date">
-                            {format(
+                            <span className="text-gray-900 dark:text-white">{format(
                               new Date(payout.created_at),
-                              "dd/MM/yyyy HH:mm",
+                              "dd/MM/yyyy",
                               { locale: vi }
-                            )}
+                            )}</span>
+                            <small className="text-gray-600 dark:text-gray-400">{format(
+                              new Date(payout.created_at),
+                              "HH:mm",
+                              { locale: vi }
+                            )}</small>
                           </div>
                         </td>
                         <td>
                           <div
-                            className={`status-badge ${
+                            className={`status-badge inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                               payout.status === "pending"
-                                ? "badge-warning"
+                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
                                 : payout.status === "completed"
-                                ? "badge-success"
+                                ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300"
                                 : payout.status === "cancelled"
-                                ? "badge-danger"
-                                : "badge-secondary"
+                                ? "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
                             }`}
                           >
                             <StatusIcon size={16} />
                             <span>{statusInfo.text}</span>
                           </div>
                         </td>
-                        <td>
+                        <td className="text-gray-900 dark:text-white">
                           <div className="action-buttons">
                             {payout.status === "pending" && (
                               <>
@@ -609,7 +670,7 @@ const PayoutManagement = () => {
                                   onClick={() =>
                                     showConfirmModal("approve", payout)
                                   }
-                                  className={`btn-approve`}
+                                  className="btn-approve !bg-green-600 hover:!bg-green-700 dark:!bg-green-700 dark:hover:!bg-green-800 !text-white"
                                   title="Duyệt thanh toán"
                                   disabled={
                                     calcAmounts(payout).finalToOwner <= 0
@@ -621,7 +682,7 @@ const PayoutManagement = () => {
                                   onClick={() =>
                                     showConfirmModal("reject", payout)
                                   }
-                                  className={`btn-reject`}
+                                  className="btn-reject !bg-red-600 hover:!bg-red-700 dark:!bg-red-700 dark:hover:!bg-red-800 !text-white"
                                   title="Từ chối thanh toán"
                                 >
                                   Huỷ duyệt
@@ -637,15 +698,15 @@ const PayoutManagement = () => {
               </table>
             </div>
 
-            <div className="pagination">
-              <div className="pagination-info">
+            <div className="pagination bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+              <div className="pagination-info text-gray-700 dark:text-gray-300">
                 Trang {currentPage} / {totalPages}
               </div>
               <div className="pagination-btns">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="btn-page"
+                  className="btn-page border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={14} />
                 </button>
@@ -656,8 +717,10 @@ const PayoutManagement = () => {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`btn-page ${
-                        currentPage === page ? "active" : ""
+                      className={`btn-page border ${
+                        currentPage === page
+                          ? "bg-blue-600 dark:bg-blue-700 text-white border-blue-600 dark:border-blue-700"
+                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                       }`}
                     >
                       {page}
@@ -668,7 +731,7 @@ const PayoutManagement = () => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="btn-page"
+                  className="btn-page border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={14} />
                 </button>
@@ -680,78 +743,81 @@ const PayoutManagement = () => {
 
       {/* Confirm Modal */}
       {isConfirmModalOpen && confirmPayout && (
-        <div className="modal-overlay" onClick={closeConfirmModal}>
+        <div className="modal-overlay bg-black/60 dark:bg-black/80" onClick={closeConfirmModal}>
           <div
-            className="modal-content confirm-modal"
+            className="modal-content confirm-modal bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
-              <h3>
+            <div 
+              className="modal-header !bg-white dark:!bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+              style={isDarkMode ? { backgroundColor: '#1f2937' } : { backgroundColor: 'white' }}
+            >
+              <h3 className="text-gray-900 dark:text-white">
                 Xác nhận {confirmAction === "approve" ? "duyệt" : "từ chối"}{" "}
                 thanh toán
               </h3>
-              <button onClick={closeConfirmModal} className="btn-close">
+              <button onClick={closeConfirmModal} className="btn-close text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <XCircle size={20} />
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body !bg-white dark:!bg-gray-800">
               <div className="confirm-content">
                 <div className="confirm-icon">
                   {confirmAction === "approve" ? (
-                    <CheckCircle size={48} className="approve-icon" />
+                    <CheckCircle size={48} className="approve-icon text-green-600 dark:text-green-400" />
                   ) : (
-                    <XCircle size={48} className="reject-icon" />
+                    <XCircle size={48} className="reject-icon text-red-600 dark:text-red-400" />
                   )}
                 </div>
-                <p>
+                <p className="text-gray-900 dark:text-white">
                   Bạn có chắc chắn muốn{" "}
                   {confirmAction === "approve" ? "duyệt" : "từ chối"} thanh toán
                   <strong> #{confirmPayout.payout_id}</strong>?
                 </p>
                 <div className="grid grid-cols-2 gap-3 my-3">
                   <div className="flex items-center justify-between">
-                    <span>Tổng đơn</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Tổng đơn</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).total)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Tiền mặt (renter → owner)</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Tiền mặt (renter → owner)</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).offlineCash)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Phí nền tảng</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Phí nền tảng</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).platformFee)}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Cần chuyển cho owner</span>
-                    <strong>
+                    <span className="text-gray-700 dark:text-gray-300">Cần chuyển cho owner</span>
+                    <strong className="text-gray-900 dark:text-white">
                       {formatCurrency(calcAmounts(confirmPayout).finalToOwner)}
                     </strong>
                   </div>
                 </div>
-                <div className="payout-info">
-                  <p>
-                    <strong>Chủ xe:</strong>{" "}
+                <div className="payout-info bg-gray-200 dark:bg-gray-700">
+                  <p className="text-gray-900 dark:text-white">
+                    <strong className="text-gray-900 dark:text-white">Chủ xe:</strong>{" "}
                     {confirmPayout.owner_info?.full_name}
                   </p>
-                  <p>
-                    <strong>Mã booking:</strong> BK
+                  <p className="text-gray-900 dark:text-white">
+                    <strong className="text-gray-900 dark:text-white">Mã booking:</strong> BK
                     {confirmPayout.booking_info?.booking_id}
                   </p>
                 </div>
                 {confirmAction === "reject" && (
                   <div className="mt-3">
-                    <label className="text-sm text-secondary-600">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
                       Lý do từ chối (tuỳ chọn)
                     </label>
                     <textarea
-                      className="input w-full mt-1"
+                      className="input w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows={3}
                       placeholder="Nhập lý do từ chối..."
                       value={confirmReason}
@@ -762,16 +828,19 @@ const PayoutManagement = () => {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div 
+              className="modal-footer !bg-white dark:!bg-gray-800 border-t border-gray-200 dark:border-gray-700"
+              style={isDarkMode ? { backgroundColor: '#1f2937' } : { backgroundColor: 'white' }}
+            >
               <div className="action-buttons">
-                <button onClick={closeConfirmModal} className="btn-cancel">
+                <button onClick={closeConfirmModal} className="btn-cancel border !border-gray-300 dark:!border-gray-600 !text-gray-700 dark:!text-gray-300 hover:!bg-gray-50 dark:hover:!bg-gray-700 bg-white dark:bg-gray-700">
                   Hủy
                 </button>
                 <button
                   onClick={handleConfirmAction}
                   className={`btn-confirm ${
-                    confirmAction === "approve" ? "btn-approve" : "btn-reject"
-                  }`}
+                    confirmAction === "approve" ? "btn-approve !bg-green-600 hover:!bg-green-700 dark:!bg-green-700 dark:hover:!bg-green-800" : "btn-reject !bg-red-600 hover:!bg-red-700 dark:!bg-red-700 dark:hover:!bg-red-800"
+                  } !text-white`}
                 >
                   {confirmAction === "approve"
                     ? "Xác nhận duyệt"
@@ -785,18 +854,18 @@ const PayoutManagement = () => {
 
       {/* QR Code Modal */}
       {isQrModalOpen && (
-        <div className="modal-overlay" onClick={closeQrModal}>
+        <div className="modal-overlay bg-black/60 dark:bg-black/80" onClick={closeQrModal}>
           <div
-            className="qr-modal-content"
+            className="qr-modal-content bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="qr-modal-header">
-              <h3>QR Code Thanh Toán</h3>
-              <button onClick={closeQrModal} className="btn-close">
+            <div className="qr-modal-header !bg-gray-50 dark:!bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="!text-gray-900 dark:!text-white">QR Code Thanh Toán</h3>
+              <button onClick={closeQrModal} className="btn-close text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <X size={24} />
               </button>
             </div>
-            <div className="qr-modal-body">
+            <div className="qr-modal-body !bg-white dark:!bg-gray-800">
               <img
                 src={selectedQrCode}
                 alt="QR Code"

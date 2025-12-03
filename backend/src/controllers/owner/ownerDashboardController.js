@@ -462,8 +462,9 @@ export const getOwnerRevenue = async (req, res) => {
     const ownerId = req.user.userId;
     const {
       period = "month",
-      year = new Date().getFullYear(),
-      month = new Date().getMonth() + 1,
+      year,
+      quarter,
+      month,
     } = req.query;
 
     // Lấy danh sách xe của owner
@@ -486,12 +487,50 @@ export const getOwnerRevenue = async (req, res) => {
       });
     }
 
+    // Tạo điều kiện filter cho totalRevenue và completedBookings
+    let revenueWhereCondition = {
+      vehicle_id: { [Op.in]: vehicleIds },
+      status: "completed",
+    };
+
+    // Áp dụng filter theo năm/quý/tháng
+    if (year) {
+      const filterYear = parseInt(year);
+      const dateConditions = [
+        db.sequelize.where(
+          db.sequelize.fn("YEAR", db.sequelize.col("created_at")),
+          filterYear
+        ),
+      ];
+
+      if (quarter) {
+        const filterQuarter = parseInt(quarter);
+        const startMonth = (filterQuarter - 1) * 3 + 1;
+        const endMonth = filterQuarter * 3;
+        dateConditions.push(
+          db.sequelize.where(
+            db.sequelize.fn("MONTH", db.sequelize.col("created_at")),
+            { [Op.between]: [startMonth, endMonth] }
+          )
+        );
+      } else if (month) {
+        const filterMonth = parseInt(month);
+        dateConditions.push(
+          db.sequelize.where(
+            db.sequelize.fn("MONTH", db.sequelize.col("created_at")),
+            filterMonth
+          )
+        );
+      }
+
+      revenueWhereCondition.created_at = {
+        [Op.and]: dateConditions,
+      };
+    }
+
     // Tính doanh thu tổng
     const totalRevenueResult = await Booking.findOne({
-      where: {
-        vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed",
-      },
+      where: revenueWhereCondition,
       attributes: [
         [
           db.sequelize.fn("SUM", db.sequelize.col("total_amount")),
@@ -505,55 +544,199 @@ export const getOwnerRevenue = async (req, res) => {
 
     // Đếm số đơn hoàn thành
     const completedBookings = await Booking.count({
-      where: {
-        vehicle_id: { [Op.in]: vehicleIds },
-        status: "completed",
-      },
+      where: revenueWhereCondition,
     });
 
-    // Doanh thu theo tháng (6 tháng gần nhất)
-    const monthlyRevenueRaw = await db.sequelize.query(
-      `
-      SELECT 
-        MONTH(created_at) as month,
-        YEAR(created_at) as year,
-        SUM(total_amount) as revenue,
-        COUNT(*) as booking_count
-      FROM bookings 
-      WHERE vehicle_id IN (${vehicleIds.join(",")})
-        AND status = 'completed'
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-      GROUP BY YEAR(created_at), MONTH(created_at)
-      ORDER BY year DESC, month DESC
-    `,
-      { type: db.sequelize.QueryTypes.SELECT }
-    );
-
-    // Tạo map để dễ tìm kiếm
-    const revenueMap = new Map();
-    monthlyRevenueRaw.forEach(item => {
-      const key = `${item.year}-${item.month}`;
-      revenueMap.set(key, item);
-    });
-
-    // Tạo đầy đủ 6 tháng gần nhất (kể cả tháng không có dữ liệu)
+    // Xử lý filter theo năm/quý/tháng
+    let dateFilter = "";
+    let monthlyRevenue = [];
     const now = new Date();
-    const monthlyRevenue = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const key = `${year}-${month}`;
+
+    if (year) {
+      const filterYear = parseInt(year);
       
-      if (revenueMap.has(key)) {
-        monthlyRevenue.push(revenueMap.get(key));
-      } else {
-        monthlyRevenue.push({
-          month: month,
-          year: year,
-          revenue: 0,
-          booking_count: 0
+      if (quarter) {
+        // Filter theo quý (3 tháng)
+        const filterQuarter = parseInt(quarter);
+        const startMonth = (filterQuarter - 1) * 3 + 1;
+        const endMonth = filterQuarter * 3;
+        
+        dateFilter = `AND YEAR(created_at) = ${filterYear} 
+                      AND MONTH(created_at) >= ${startMonth} 
+                      AND MONTH(created_at) <= ${endMonth}`;
+        
+        // Tạo đầy đủ 3 tháng trong quý
+        const monthlyRevenueRaw = await db.sequelize.query(
+          `
+          SELECT 
+            MONTH(created_at) as month,
+            YEAR(created_at) as year,
+            SUM(total_amount) as revenue,
+            COUNT(*) as booking_count
+          FROM bookings 
+          WHERE vehicle_id IN (${vehicleIds.join(",")})
+            AND status = 'completed'
+            ${dateFilter}
+          GROUP BY YEAR(created_at), MONTH(created_at)
+          ORDER BY year ASC, month ASC
+        `,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+
+        const revenueMap = new Map();
+        monthlyRevenueRaw.forEach(item => {
+          const key = `${item.year}-${item.month}`;
+          revenueMap.set(key, item);
         });
+
+        for (let m = startMonth; m <= endMonth; m++) {
+          const key = `${filterYear}-${m}`;
+          if (revenueMap.has(key)) {
+            monthlyRevenue.push(revenueMap.get(key));
+          } else {
+            monthlyRevenue.push({
+              month: m,
+              year: filterYear,
+              revenue: 0,
+              booking_count: 0
+            });
+          }
+        }
+      } else if (month) {
+        // Filter theo tháng cụ thể - trả về dữ liệu theo ngày
+        const filterMonth = parseInt(month);
+        dateFilter = `AND YEAR(created_at) = ${filterYear} 
+                      AND MONTH(created_at) = ${filterMonth}`;
+        
+        // Lấy dữ liệu theo ngày trong tháng
+        const dailyRevenueRaw = await db.sequelize.query(
+          `
+          SELECT 
+            DAY(created_at) as day,
+            MONTH(created_at) as month,
+            YEAR(created_at) as year,
+            SUM(total_amount) as revenue,
+            COUNT(*) as booking_count
+          FROM bookings 
+          WHERE vehicle_id IN (${vehicleIds.join(",")})
+            AND status = 'completed'
+            ${dateFilter}
+          GROUP BY YEAR(created_at), MONTH(created_at), DAY(created_at)
+          ORDER BY year ASC, month ASC, day ASC
+        `,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+
+        // Tạo map để dễ tìm kiếm
+        const dailyRevenueMap = new Map();
+        dailyRevenueRaw.forEach(item => {
+          dailyRevenueMap.set(item.day, item);
+        });
+
+        // Tạo đầy đủ các ngày trong tháng (kể cả ngày không có dữ liệu)
+        const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
+        const dailyRevenue = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+          if (dailyRevenueMap.has(day)) {
+            dailyRevenue.push(dailyRevenueMap.get(day));
+          } else {
+            dailyRevenue.push({
+              day: day,
+              month: filterMonth,
+              year: filterYear,
+              revenue: 0,
+              booking_count: 0
+            });
+          }
+        }
+
+        // Vẫn giữ monthlyRevenue để tương thích, nhưng sẽ dùng dailyRevenue cho frontend
+        monthlyRevenue = dailyRevenue;
+      } else {
+        // Filter theo cả năm (12 tháng)
+        dateFilter = `AND YEAR(created_at) = ${filterYear}`;
+        
+        const monthlyRevenueRaw = await db.sequelize.query(
+          `
+          SELECT 
+            MONTH(created_at) as month,
+            YEAR(created_at) as year,
+            SUM(total_amount) as revenue,
+            COUNT(*) as booking_count
+          FROM bookings 
+          WHERE vehicle_id IN (${vehicleIds.join(",")})
+            AND status = 'completed'
+            ${dateFilter}
+          GROUP BY YEAR(created_at), MONTH(created_at)
+          ORDER BY year ASC, month ASC
+        `,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+
+        const revenueMap = new Map();
+        monthlyRevenueRaw.forEach(item => {
+          const key = `${item.year}-${item.month}`;
+          revenueMap.set(key, item);
+        });
+
+        // Tạo đầy đủ 12 tháng trong năm
+        for (let m = 1; m <= 12; m++) {
+          const key = `${filterYear}-${m}`;
+          if (revenueMap.has(key)) {
+            monthlyRevenue.push(revenueMap.get(key));
+          } else {
+            monthlyRevenue.push({
+              month: m,
+              year: filterYear,
+              revenue: 0,
+              booking_count: 0
+            });
+          }
+        }
+      }
+    } else {
+      // Mặc định: 6 tháng gần nhất
+      const monthlyRevenueRaw = await db.sequelize.query(
+        `
+        SELECT 
+          MONTH(created_at) as month,
+          YEAR(created_at) as year,
+          SUM(total_amount) as revenue,
+          COUNT(*) as booking_count
+        FROM bookings 
+        WHERE vehicle_id IN (${vehicleIds.join(",")})
+          AND status = 'completed'
+          AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        GROUP BY YEAR(created_at), MONTH(created_at)
+        ORDER BY year DESC, month DESC
+      `,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+
+      // Tạo map để dễ tìm kiếm
+      const revenueMap = new Map();
+      monthlyRevenueRaw.forEach(item => {
+        const key = `${item.year}-${item.month}`;
+        revenueMap.set(key, item);
+      });
+
+      // Tạo đầy đủ 6 tháng gần nhất (kể cả tháng không có dữ liệu)
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const key = `${year}-${month}`;
+        
+        if (revenueMap.has(key)) {
+          monthlyRevenue.push(revenueMap.get(key));
+        } else {
+          monthlyRevenue.push({
+            month: month,
+            year: year,
+            revenue: 0,
+            booking_count: 0
+          });
+        }
       }
     }
 
@@ -629,16 +812,24 @@ export const getOwnerRevenue = async (req, res) => {
       };
     });
 
+    // Nếu có filter tháng, trả về dailyRevenue thay vì monthlyRevenue
+    const responseData = {
+      totalRevenue,
+      completedBookings,
+      monthlyRevenue: year && month ? [] : monthlyRevenue, // Chỉ trả về monthlyRevenue khi không có filter tháng
+      vehicleStats,
+      bookingStatusStats,
+      disbursementStatusStats,
+    };
+
+    // Thêm dailyRevenue nếu có filter tháng
+    if (year && month) {
+      responseData.dailyRevenue = monthlyRevenue; // monthlyRevenue đã chứa dữ liệu theo ngày
+    }
+
     res.json({
       success: true,
-      data: {
-        totalRevenue,
-        completedBookings,
-        monthlyRevenue,
-        vehicleStats,
-        bookingStatusStats,
-        disbursementStatusStats,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("Error getting owner revenue:", error);
@@ -1235,6 +1426,11 @@ export const getCancelledBookings = async (req, res) => {
 // GET /api/owner/dashboard/traffic-fine-search/captcha - Lấy captcha image
 export const getTrafficFineCaptcha = async (req, res) => {
   try {
+    // Đảm bảo SSL config được set trước khi import
+    if (process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+
     const { createAxiosInstance, getCaptchaImage } = await import(
       "../../utils/trafficFine/apiCaller.js"
     );
@@ -1245,10 +1441,18 @@ export const getTrafficFineCaptcha = async (req, res) => {
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
     const instance = createAxiosInstance(jar);
-    const captchaImage = await getCaptchaImage(instance);
+    
+    console.log("[TrafficFineCaptcha] Fetching captcha image...");
+    const captchaImage = await getCaptchaImage(jar);
+
+    if (!captchaImage || captchaImage.length === 0) {
+      throw new Error("Captcha image is empty");
+    }
 
     const sessionId = createSession(jar);
     const base64Image = captchaImage.toString("base64");
+
+    console.log("[TrafficFineCaptcha] Captcha fetched successfully, size:", captchaImage.length, "bytes");
 
     return res.json({
       success: true,
@@ -1257,6 +1461,14 @@ export const getTrafficFineCaptcha = async (req, res) => {
     });
   } catch (error) {
     console.error("[TrafficFineCaptcha] Error getting captcha:", error);
+    console.error("[TrafficFineCaptcha] Error stack:", error.stack);
+    console.error("[TrafficFineCaptcha] Error details:", {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      responseData: error.response?.data,
+    });
+    
     res.status(500).json({
       success: false,
       message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",

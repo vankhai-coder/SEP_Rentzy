@@ -1,4 +1,4 @@
-import { Ban, ChevronLeft, ChevronRight, CircleX, Download, Ellipsis, Eye, Handshake, Loader, ShieldCheck, UserPlus } from "lucide-react"
+import { Ban, ChevronLeft, ChevronRight, CircleX, Download, Ellipsis, Eye, Handshake, Loader, ShieldCheck, UserPlus, FileText, CheckCircle, XCircle, Clock } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -188,8 +188,8 @@ const ApproveOwner = () => {
         <div className="flex items-center justify-between" >
           {/* User Management Title */}
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lí chủ xe</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">Quản lí các chủ sở hữu và quyền truy cập tài khoản của họ</p>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white mb-2">Quản lý chủ xe</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">Quản lý các chủ sở hữu và quyền truy cập tài khoản của họ</p>
           </div>
           {/* User Management Actions */}
           <div className="flex items-center gap-3">
@@ -207,51 +207,51 @@ const ApproveOwner = () => {
 
         {/* User Statistics Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* Total Users */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Total Requests */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Tổng yêu cầu</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalRequests}</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">Tổng yêu cầu</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalRequests}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
-          {/* Active Users */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Approved */}
+          <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Đã chấp nhận</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalApproved}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">Đã chấp nhận</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalApproved}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
-          {/* Pending Invitations */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Rejected */}
+          <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Đã từ chối</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalRejected}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">Đã từ chối</p>
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalRejected}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
+                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </div>
-          {/* Pending Invitations */}
-          <div className="card transition-all duration-200 p-6">
+          {/* Pending */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-lg border border-yellow-200 dark:border-yellow-800 transition-all duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-secondary-600 dark:text-secondary-400">Chờ phê duyệt</p>
-                <p className="text-2xl font-bold text-secondary-900 dark:text-white mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalPending}</p>
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">Chờ phê duyệt</p>
+                <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300 mt-1">{isLoadingOwnerApprovalStats ? 'Loading...' : isErrorOwnerApprovalStats ? 'Error' : ownerApprovalStats?.totalPending}</p>
               </div>
-              <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                <ShieldCheck className="lucide lucide-shield h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </div>
