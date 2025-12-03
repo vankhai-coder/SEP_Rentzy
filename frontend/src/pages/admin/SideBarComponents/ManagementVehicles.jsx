@@ -166,8 +166,8 @@ const ManagementVehicles = () => {
   // Get vehicle status badge
   const getVehicleStatusBadge = (status) => {
     const statusConfig = {
-      available: { color: 'bg-green-100 text-green-800', text: 'Có sẵn' },
-      blocked: { color: 'bg-red-100 text-red-800', text: 'Bị khóa' }
+      available: { color: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', text: 'Có sẵn' },
+      blocked: { color: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300', text: 'Bị khóa' }
     };
 
     const config = statusConfig[status] || statusConfig.available;
@@ -181,10 +181,10 @@ const ManagementVehicles = () => {
   // Get approval status badge
   const getApprovalStatusBadge = (status) => {
     const statusConfig = {
-      none: { color: 'bg-gray-100 text-gray-800', text: 'Chưa gửi' },
-      pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Chờ duyệt' },
-      approved: { color: 'bg-green-100 text-green-800', text: 'Đã duyệt' },
-      rejected: { color: 'bg-red-100 text-red-800', text: 'Từ chối' }
+      none: { color: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300', text: 'Chưa gửi' },
+      pending: { color: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300', text: 'Chờ duyệt' },
+      approved: { color: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300', text: 'Đã duyệt' },
+      rejected: { color: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300', text: 'Từ chối' }
     };
 
     const config = statusConfig[status] || statusConfig.none;
@@ -221,10 +221,10 @@ const ManagementVehicles = () => {
   const nextImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index + 1) % m.images.length }));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý xe</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý xe</h1>
         <button
           onClick={handleRefresh}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -235,19 +235,19 @@ const ManagementVehicles = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <form onSubmit={handleSearch} className="space-y-4">
           {/* Search Input */}
           <div className="flex gap-4">
             <div className="flex-1">
               <div className="relative">
-                <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm theo tên , biển số ..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -262,11 +262,11 @@ const ManagementVehicles = () => {
 
           {/* Filters */}
           <div className="flex gap-4 items-center">
-            <MdFilterList className="text-gray-500 w-5 h-5" />
+            <MdFilterList className="text-gray-500 dark:text-gray-400 w-5 h-5" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="available">Có sẵn</option>
@@ -276,7 +276,7 @@ const ManagementVehicles = () => {
             <select
               value={vehicleTypeFilter}
               onChange={(e) => setVehicleTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Tất cả loại xe</option>
               <option value="car">Ô tô</option>
@@ -286,7 +286,7 @@ const ManagementVehicles = () => {
             <select
               value={approvalStatusFilter}
               onChange={(e) => setApprovalStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Tất cả trạng thái duyệt</option>
               <option value="none">Chưa gửi</option>
@@ -299,10 +299,10 @@ const ManagementVehicles = () => {
       </div>
 
       {/* Vehicles Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-blue-600 text-white">
+            <thead className="bg-blue-600 dark:bg-blue-700 text-white">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">ẢNH</th>
                 <th className="px-4 py-3 text-left font-medium">XE</th>
@@ -314,25 +314,25 @@ const ManagementVehicles = () => {
                 <th className="px-4 py-3 text-left font-medium">HÀNH ĐỘNG</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Đang tải...
                   </td>
                 </tr>
               ) : vehicles.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Không có xe nào
                   </td>
                 </tr>
               ) : (
                 vehicles.map((vehicle) => (
                   <>
-                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpand(vehicle)}>
+                  <tr key={vehicle.vehicle_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer" onClick={() => toggleExpand(vehicle)}>
                     <td className="px-4 py-3">
-                      <div className="w-16 h-12 bg-gray-200 rounded overflow-hidden">
+                      <div className="w-16 h-12 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
                         {vehicle.main_image_url ? (
                           <img
                             src={vehicle.main_image_url}
@@ -342,9 +342,9 @@ const ManagementVehicles = () => {
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             {vehicle.vehicle_type === 'car' ? (
-                              <MdDirectionsCar className="w-6 h-6 text-gray-400" />
+                              <MdDirectionsCar className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                             ) : (
-                              <MdTwoWheeler className="w-6 h-6 text-gray-400" />
+                              <MdTwoWheeler className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                             )}
                           </div>
                         )}
@@ -352,25 +352,25 @@ const ManagementVehicles = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">{vehicle.model}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium text-gray-900 dark:text-white">{vehicle.model}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {vehicle.brand?.brand_name} • {vehicle.year}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900">{vehicle.owner?.full_name}</div>
-                        <div className="text-sm text-gray-500">{vehicle.owner?.email}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{vehicle.owner?.full_name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{vehicle.owner?.email}</div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-sm text-black bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm text-black dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                         {vehicle.license_plate}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-medium text-green-600">
+                      <span className="font-medium text-green-600 dark:text-green-400">
                         {formatPrice(vehicle.price_per_day)}
                       </span>
                     </td>
@@ -387,7 +387,7 @@ const ManagementVehicles = () => {
                             {vehicle.status === 'available' ? (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleLockVehicle(vehicle.vehicle_id, vehicle.model); }}
-                                className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors flex items-center gap-1"
+                                className="px-3 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors flex items-center gap-1"
                               >
                                 <MdLock className="w-4 h-4" />
                                 Khóa
@@ -395,7 +395,7 @@ const ManagementVehicles = () => {
                             ) : (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleUnlockVehicle(vehicle.vehicle_id, vehicle.model); }}
-                                className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors flex items-center gap-1"
+                                className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded text-sm hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors flex items-center gap-1"
                               >
                                 <MdLockOpen className="w-4 h-4" />
                                 Mở khóa
@@ -408,20 +408,20 @@ const ManagementVehicles = () => {
                   </tr>
                   {expandedVehicleId === vehicle.vehicle_id && (
                     <tr>
-                      <td colSpan="8" className="px-4 py-4 bg-gray-50">
+                      <td colSpan="8" className="px-4 py-4 bg-gray-50 dark:bg-gray-800/50">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <div className="space-y-4">
                             {(() => { const imgs = normalizeImages(vehicle); return (
                               <div className="space-y-3">
                                 {imgs.main && (
-                                  <div className="w-full h-56 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, 0); }}>
+                                  <div className="w-full h-56 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, 0); }}>
                                     <img src={imgs.main} alt={vehicle.model} className="w-full h-full object-cover" />
                                   </div>
                                 )}
                                 {imgs.extras.length > 0 && (
                                   <div className="grid grid-cols-3 gap-3">
                                     {imgs.extras.map((url, idx) => (
-                                      <div key={idx} className="w-full h-24 bg-gray-200 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, idx + (imgs.main ? 1 : 0)); }}>
+                                      <div key={idx} className="w-full h-24 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden cursor-pointer" onClick={(e) => { e.stopPropagation(); openImageModal(vehicle, idx + (imgs.main ? 1 : 0)); }}>
                                         <img src={url} alt={`${vehicle.model}-${idx}`} className="w-full h-full object-cover" />
                                       </div>
                                     ))}
@@ -432,66 +432,66 @@ const ManagementVehicles = () => {
                           </div>
                           <div className="space-y-3">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                              <div className="p-3 bg-white rounded border space-y-2">
-                                <div className="text-sm font-semibold text-gray-700">Thông tin xe</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 space-y-2">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Thông tin xe</div>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-500">Năm sản xuất</span>
-                                  <span className="text-gray-900">{vehicle.year}</span>
+                                  <span className="text-gray-500 dark:text-gray-400">Năm sản xuất</span>
+                                  <span className="text-gray-900 dark:text-white">{vehicle.year}</span>
                                 </div>
                                 {vehicle.vehicle_type === 'car' && vehicle.seats && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Số chỗ ngồi</span>
-                                    <span className="text-gray-900">{vehicle.seats}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Số chỗ ngồi</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.seats}</span>
                                   </div>
                                 )}
                                 {vehicle.vehicle_type === 'car' && vehicle.transmission && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Hộp số</span>
-                                    <span className="text-gray-900">{vehicle.transmission}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Hộp số</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.transmission}</span>
                                   </div>
                                 )}
                                 {vehicle.vehicle_type === 'car' && vehicle.body_type && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Dáng xe</span>
-                                    <span className="text-gray-900">{vehicle.body_type}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Dáng xe</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.body_type}</span>
                                   </div>
                                 )}
                                 {vehicle.engine_capacity && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Dung tích</span>
-                                    <span className="text-gray-900">{vehicle.engine_capacity} cc</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Dung tích</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.engine_capacity} cc</span>
                                   </div>
                                 )}
                                 {vehicle.fuel_type && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Nhiên liệu</span>
-                                    <span className="text-gray-900">{vehicle.fuel_type}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Nhiên liệu</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.fuel_type}</span>
                                   </div>
                                 )}
                                 {vehicle.fuel_consumption && (
                                   <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Mức tiêu thụ</span>
-                                    <span className="text-gray-900">{vehicle.fuel_consumption}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Mức tiêu thụ</span>
+                                    <span className="text-gray-900 dark:text-white">{vehicle.fuel_consumption}</span>
                                   </div>
                                 )}
                               </div>
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-semibold text-gray-700 mb-2">Tính năng</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tính năng</div>
                                 {vehicle.features && Array.isArray(vehicle.features) && vehicle.features.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
                                     {vehicle.features.map((f, idx) => (
-                                      <span key={idx} className="text-xs px-2 py-1 bg-gray-100 rounded">{String(f)}</span>
+                                      <span key={idx} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded">{String(f)}</span>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-sm text-gray-500">Không có tính năng</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">Không có tính năng</div>
                                 )}
                               </div>
                             </div>
                             {vehicle.description && (
-                              <div className="p-3 bg-white rounded border">
-                                <div className="text-sm font-semibold text-gray-700 mb-1">Mô tả</div>
-                                <div className="text-sm text-gray-900 whitespace-pre-line">{vehicle.description}</div>
+                              <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Mô tả</div>
+                                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">{vehicle.description}</div>
                               </div>
                             )}
                           </div>
@@ -508,8 +508,8 @@ const ManagementVehicles = () => {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               Hiển thị {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} - {' '}
               {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} {' '}
               trong tổng số {pagination.totalItems} xe
@@ -518,7 +518,7 @@ const ManagementVehicles = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm text-black hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-black dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Trước
               </button>
@@ -540,8 +540,8 @@ const ManagementVehicles = () => {
                       key={i}
                       onClick={() => handlePageChange(i)}
                       className={`px-3 py-1 text-sm border rounded ${i === pagination.currentPage
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-300 text-black hover:bg-gray-50'
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
+                        : 'border-gray-300 dark:border-gray-600 text-black dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                     >
                       {i}
@@ -554,7 +554,7 @@ const ManagementVehicles = () => {
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm text-black hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-black dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Sau
               </button>
@@ -564,22 +564,22 @@ const ManagementVehicles = () => {
       </div>
 
       {imageModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 dark:bg-opacity-90 flex items-center justify-center p-4">
           <button
             onClick={closeImageModal}
-            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdClose className="w-5 h-5" />
           </button>
           <button
             onClick={prevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 dark:bg-opacity-70 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 dark:hover:bg-opacity-90"
           >
             <MdChevronRight className="w-6 h-6" />
           </button>
