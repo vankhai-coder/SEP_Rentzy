@@ -11,6 +11,8 @@ import BrandList from "@/components/renter/brand/BrandList";
 import OwnerBanner from "@/components/common/OwnerBanner";
 import AboutBanner from "@/components/common/AboutBanner";
 import CounterSection from "@/components/common/CounterSection";
+import ServiceFeatures from "@/components/common/ServiceFeatures";
+import RentalGuide from "@/components/common/RentalGuide";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -75,7 +77,9 @@ const Home = () => {
           <h2 className="text-xl sm:text-2xl font-bold mb-2">
             Đối Tác Thương Hiệu Nổi Bật
           </h2>
-          <p className="text-gray-500 text-base sm:text-lg">Khám phá các hãng xe hàng đầu</p>
+          <p className="text-gray-500 text-base sm:text-lg">
+            Khám phá các hãng xe hàng đầu
+          </p>
         </div>
         {brandLoading ? (
           <p className="text-center">Đang tải hãng xe...</p>
@@ -85,8 +89,10 @@ const Home = () => {
           <BrandList brands={brands.slice(0, 8)} />
         )}
       </section>
+      <ServiceFeatures />
       <OwnerBanner />
-      <CounterSection /> {/* KHÔNG ÁP DỤNG AOS */}
+      <RentalGuide />
+      <CounterSection />
       <AboutBanner />
     </div>
   );
