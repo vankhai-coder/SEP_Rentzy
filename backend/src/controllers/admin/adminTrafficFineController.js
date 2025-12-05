@@ -96,22 +96,49 @@ export const getTrafficFineRequests = async (req, res) => {
       
       if (requestData.images) {
         try {
-          // Nếu đã là array, giữ nguyên
-          if (Array.isArray(requestData.images)) {
+          let parsed;
+          // Nếu đã là object hoặc array, giữ nguyên
+          if (typeof requestData.images === 'object' && !Array.isArray(requestData.images)) {
+            parsed = requestData.images;
+          } else if (Array.isArray(requestData.images)) {
+            // Format cũ: array đơn giản
             requestData.images = requestData.images;
+            requestData.receipt_images = [];
+            return requestData;
           } else if (typeof requestData.images === 'string') {
             // Parse từ JSON string
-            const parsed = JSON.parse(requestData.images);
-            requestData.images = Array.isArray(parsed) ? parsed : [];
+            parsed = JSON.parse(requestData.images);
+          } else {
+            parsed = null;
+          }
+          
+          // Kiểm tra format mới: {violations: [...], receipts: [...]}
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (parsed.violations || parsed.receipts) {
+              // Format mới
+              requestData.images = Array.isArray(parsed.violations) ? parsed.violations : [];
+              requestData.receipt_images = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+            } else {
+              // Object nhưng không phải format mới, thử convert thành array
+              requestData.images = Object.values(parsed).filter(v => typeof v === 'string');
+              requestData.receipt_images = [];
+            }
+          } else if (Array.isArray(parsed)) {
+            // Format cũ: array đơn giản
+            requestData.images = parsed;
+            requestData.receipt_images = [];
           } else {
             requestData.images = [];
+            requestData.receipt_images = [];
           }
         } catch (e) {
           console.error(`Error parsing images for request #${requestData.request_id}:`, e);
           requestData.images = [];
+          requestData.receipt_images = [];
         }
       } else {
         requestData.images = [];
+        requestData.receipt_images = [];
       }
       
       // Log kết quả
@@ -264,23 +291,49 @@ export const approveTrafficFineRequest = async (req, res) => {
         );
       }
     } else {
-      // Xử lý request thêm/sửa phạt nguội (logic cũ)
-      // Parse images
+      // Xử lý request thêm/sửa phạt nguội
+      // Parse images - hỗ trợ cả format mới và format cũ
       let imageUrls = [];
+      let receiptImageUrls = [];
+      
       if (request.images) {
         try {
-          imageUrls = JSON.parse(request.images);
+          const parsed = typeof request.images === 'string' 
+            ? JSON.parse(request.images) 
+            : request.images;
+          
+          // Kiểm tra format mới: {violations: [...], receipts: [...]}
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (parsed.violations || parsed.receipts) {
+              // Format mới
+              imageUrls = Array.isArray(parsed.violations) ? parsed.violations : [];
+              receiptImageUrls = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+            } else {
+              // Object nhưng không phải format mới
+              imageUrls = Object.values(parsed).filter(v => typeof v === 'string');
+            }
+          } else if (Array.isArray(parsed)) {
+            // Format cũ: array đơn giản
+            imageUrls = parsed;
+          }
         } catch (e) {
+          console.error('Error parsing images in approve:', e);
           imageUrls = [];
         }
       }
+
+      // Lưu cả violations và receipts vào traffic_fine_images với format mới
+      const allImages = {
+        violations: imageUrls,
+        receipts: receiptImageUrls
+      };
 
       // Cập nhật booking với thông tin phạt nguội
       await request.booking.update(
         {
           traffic_fine_amount: parseFloat(request.amount),
           traffic_fine_description: request.description,
-          traffic_fine_images: JSON.stringify(imageUrls),
+          traffic_fine_images: JSON.stringify(allImages),
           updated_at: now,
         },
         { transaction }
