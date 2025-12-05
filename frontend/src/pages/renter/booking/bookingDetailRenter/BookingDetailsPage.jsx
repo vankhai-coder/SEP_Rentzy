@@ -256,7 +256,8 @@ const BookingDetailsPage = () => {
     const remaining = totalAmount - totalPaid;
 
     const showDepositButton = booking.status === "confirmed"; // Thanh toán 30%
-    const showRemainingButton = booking.status === "deposit_paid" && remaining > 0; // Thanh toán 70%
+    const showRemainingButton =
+      booking.status === "deposit_paid" && remaining > 0; // Thanh toán 70%
 
     return {
       totalPaid,
@@ -267,8 +268,13 @@ const BookingDetailsPage = () => {
     };
   };
 
-  const { totalPaid, remaining, showDepositButton, showRemainingButton, nextPaymentAmount } =
-    calculatePaymentDetails();
+  const {
+    totalPaid,
+    remaining,
+    showDepositButton,
+    showRemainingButton,
+    nextPaymentAmount,
+  } = calculatePaymentDetails();
 
   if (loading) {
     return (
@@ -567,39 +573,46 @@ const BookingDetailsPage = () => {
                   onClick={handlePayOSDepositPayment}
                   disabled={paymentLoading}
                 >
-                  {paymentLoading ? "Đang tạo link thanh toán..." : "Thanh toán cọc 30%"}
+                  {paymentLoading
+                    ? "Đang tạo link thanh toán..."
+                    : "Thanh toán cọc 30%"}
                 </button>
               </div>
-              <p className="mt-2 text-sm text-gray-600">Vui lòng thanh toán 30% để giữ lịch thuê.</p>
+              <p className="mt-2 text-sm text-gray-600">
+                Vui lòng thanh toán 30% để giữ lịch thuê.
+              </p>
             </div>
           )}
 
           {/* Trạng thái deposit_paid: hiển thị nút thanh toán phần còn lại 70% */}
-          {showRemainingButton && booking.remaining_paid_by_cash_status === "none" && (
-            <div className="payment-action">
-              <div className="payment-actions-grid">
-                <button
-                  className="payment-button primary"
-                  onClick={handlePayOSRemainingPayment}
-                  disabled={paymentLoading}
-                >
-                  {paymentLoading ? "Đang tạo link thanh toán..." : "Thanh toán 70% còn lại"}
-                </button>
-                <button
-                  className="payment-button secondary"
-                  onClick={() => {
-                    handlePaymentRemainingByCash();
-                  }}
-                  disabled={
-                    booking.remaining_paid_by_cash_status === "pending" ||
-                    booking.remaining_paid_by_cash_status === "approved"
-                  }
-                >
-                  Thanh toán tiền mặt cho chủ xe
-                </button>
+          {showRemainingButton &&
+            booking.remaining_paid_by_cash_status === "none" && (
+              <div className="payment-action">
+                <div className="payment-actions-grid">
+                  <button
+                    className="payment-button primary"
+                    onClick={handlePayOSRemainingPayment}
+                    disabled={paymentLoading}
+                  >
+                    {paymentLoading
+                      ? "Đang tạo link thanh toán..."
+                      : "Thanh toán 70% còn lại"}
+                  </button>
+                  <button
+                    className="payment-button secondary"
+                    onClick={() => {
+                      handlePaymentRemainingByCash();
+                    }}
+                    disabled={
+                      booking.remaining_paid_by_cash_status === "pending" ||
+                      booking.remaining_paid_by_cash_status === "approved"
+                    }
+                  >
+                    Thanh toán tiền còn lại cho chủ xe
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {booking.remaining_paid_by_cash_status === "pending" && (
             <div className="payment-action">
@@ -647,11 +660,15 @@ const BookingDetailsPage = () => {
                   </span>
                 </div>
               )}
-              {booking.traffic_fine_amount - (booking.traffic_fine_paid || 0) > 0 && (
+              {booking.traffic_fine_amount - (booking.traffic_fine_paid || 0) >
+                0 && (
                 <div className="traffic-fine-row">
                   <span className="traffic-fine-label">Còn lại:</span>
                   <span className="traffic-fine-value remaining">
-                    {formatCurrency(booking.traffic_fine_amount - (booking.traffic_fine_paid || 0))}
+                    {formatCurrency(
+                      booking.traffic_fine_amount -
+                        (booking.traffic_fine_paid || 0)
+                    )}
                   </span>
                 </div>
               )}
@@ -663,22 +680,25 @@ const BookingDetailsPage = () => {
                   </span>
                 </div>
               )}
-              {booking.traffic_fine_images && booking.traffic_fine_images.length > 0 && (
-                <div className="traffic-fine-images">
-                  <span className="traffic-fine-label">Hình ảnh phạt nguội:</span>
-                  <div className="traffic-fine-images-grid">
-                    {booking.traffic_fine_images.map((imageUrl, index) => (
-                      <img
-                        key={index}
-                        src={imageUrl}
-                        alt={`Phạt nguội ${index + 1}`}
-                        className="traffic-fine-image"
-                        onClick={() => window.open(imageUrl, '_blank')}
-                      />
-                    ))}
+              {booking.traffic_fine_images &&
+                booking.traffic_fine_images.length > 0 && (
+                  <div className="traffic-fine-images">
+                    <span className="traffic-fine-label">
+                      Hình ảnh phạt nguội:
+                    </span>
+                    <div className="traffic-fine-images-grid">
+                      {booking.traffic_fine_images.map((imageUrl, index) => (
+                        <img
+                          key={index}
+                          src={imageUrl}
+                          alt={`Phạt nguội ${index + 1}`}
+                          className="traffic-fine-image"
+                          onClick={() => window.open(imageUrl, "_blank")}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         )}
