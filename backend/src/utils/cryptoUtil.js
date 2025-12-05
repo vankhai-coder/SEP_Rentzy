@@ -24,23 +24,31 @@ export function encryptWithSecret(plaintext, secret) {
 
 /**
  * Decrypts Base64 string back to plaintext using the same secret.
+ * Returns null if decryption fails.
  */
 export function decryptWithSecret(encryptedBase64, secret) {
-  const data = Buffer.from(encryptedBase64, "base64");
+  try {
+    const data = Buffer.from(encryptedBase64, "base64");
 
-  const salt = data.subarray(0, 16);
-  const iv = data.subarray(16, 28);
-  const tag = data.subarray(28, 44);
-  const ciphertext = data.subarray(44);
+    const salt = data.subarray(0, 16);
+    const iv = data.subarray(16, 28);
+    const tag = data.subarray(28, 44);
+    const ciphertext = data.subarray(44);
 
-  const key = crypto.pbkdf2Sync(secret, salt, 100000, 32, "sha256");
+    const key = crypto.pbkdf2Sync(secret, salt, 100000, 32, "sha256");
 
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
-  decipher.setAuthTag(tag);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
-  return decrypted.toString("utf8");
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+
+    return decrypted.toString("utf8");
+  } catch (err) {
+    console.error("Decryption failed:", err.message);
+    return null;
+  }
 }
+
