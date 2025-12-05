@@ -153,38 +153,97 @@ const TrafficFineApproval = () => {
             request_id: request.request_id,
             images_raw: request.images,
             images_type: typeof request.images,
+            receipt_images_raw: request.receipt_images,
+            receipt_images_type: typeof request.receipt_images,
             request_type: request.request_type
           });
           
-          // Backend đã parse images rồi, nhưng đảm bảo nó là array
+          // Nếu backend đã trả về receipt_images riêng (đã parse), sử dụng nó trước
+          let receiptImages = request.receipt_images && Array.isArray(request.receipt_images) 
+            ? request.receipt_images 
+            : undefined;
+          
+          // Backend đã parse images rồi, nhưng đảm bảo nó được xử lý đúng
+          // Hỗ trợ cả format mới: {violations: [...], receipts: [...]} và format cũ: array
           if (request.images) {
             if (typeof request.images === 'string') {
               try {
                 const parsed = JSON.parse(request.images);
-                request.images = Array.isArray(parsed) ? parsed : [];
+                // Kiểm tra format mới
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                  if (parsed.violations || parsed.receipts) {
+                    // Format mới
+                    request.images = Array.isArray(parsed.violations) ? parsed.violations : [];
+                    // Chỉ set receipt_images nếu backend chưa trả về
+                    if (receiptImages === undefined) {
+                      request.receipt_images = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+                    } else {
+                      request.receipt_images = receiptImages;
+                    }
+                  } else {
+                    // Object nhưng không phải format mới
+                    request.images = Object.values(parsed).filter(v => typeof v === 'string');
+                    request.receipt_images = receiptImages || [];
+                  }
+                } else if (Array.isArray(parsed)) {
+                  // Format cũ: array đơn giản
+                  request.images = parsed;
+                  request.receipt_images = receiptImages || [];
+                } else {
+                  request.images = [];
+                  request.receipt_images = receiptImages || [];
+                }
               } catch (e) {
                 console.error('Error parsing images string:', e, 'Raw images:', request.images);
                 request.images = [];
+                request.receipt_images = [];
               }
             } else if (Array.isArray(request.images)) {
-              // Đã là array, giữ nguyên
+              // Format cũ: array đơn giản
               request.images = request.images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
+              request.receipt_images = receiptImages || [];
+            } else if (typeof request.images === 'object' && !Array.isArray(request.images)) {
+              // Format mới: object
+              if (request.images.violations || request.images.receipts) {
+                request.images = Array.isArray(request.images.violations) ? request.images.violations : [];
+                // Chỉ set receipt_images nếu backend chưa trả về
+                if (receiptImages === undefined) {
+                  request.receipt_images = Array.isArray(request.images.receipts) ? request.images.receipts : [];
+                } else {
+                  request.receipt_images = receiptImages;
+                }
+              } else {
+                request.images = [];
+                request.receipt_images = receiptImages || [];
+              }
             } else {
-              // Nếu không phải string và không phải array, chuyển thành array
               console.warn(`Request #${request.request_id}: images is not string or array:`, typeof request.images, request.images);
               request.images = [];
+              request.receipt_images = receiptImages || [];
             }
           } else {
             request.images = [];
+            request.receipt_images = receiptImages || [];
+          }
+          
+          // Đảm bảo receipt_images luôn là array
+          if (!Array.isArray(request.receipt_images)) {
+            request.receipt_images = [];
           }
           
           // Debug: log để kiểm tra
           console.log(`Request #${request.request_id} processed:`, {
             hasImages: request.images && request.images.length > 0,
             imageCount: request.images?.length || 0,
+            hasReceiptImages: request.receipt_images && request.receipt_images.length > 0,
+            receiptImageCount: request.receipt_images?.length || 0,
             images: request.images,
+            receipt_images: request.receipt_images,
             requestType: request.request_type,
-            firstImageUrl: request.images?.[0] || 'none'
+            firstImageUrl: request.images?.[0] || 'none',
+            firstReceiptUrl: request.receipt_images?.[0] || 'none',
+            // Log raw data từ backend
+            rawReceiptImages: request.receipt_images
           });
           
           return request;
@@ -558,35 +617,71 @@ const TrafficFineApproval = () => {
               )}
 
               {request.request_type !== 'delete' && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hình ảnh:</p>
-                  {request.images && Array.isArray(request.images) && request.images.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {request.images
-                        .filter(img => {
-                          const isValid = img && typeof img === 'string' && img.trim().length > 0;
-                          if (!isValid) {
-                            console.warn(`Invalid image URL in request #${request.request_id}:`, img);
-                          }
-                          return isValid;
-                        })
-                        .map((imageUrl, index) => (
-                          <ImageThumbnail 
-                            key={index}
-                            imageUrl={imageUrl.trim()}
-                            index={index}
-                            onImageClick={() => setImageModal(imageUrl.trim())}
-                          />
-                        ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                      {!request.images ? 'Không có hình ảnh' : 
-                       !Array.isArray(request.images) ? `Hình ảnh không hợp lệ (type: ${typeof request.images})` :
-                       'Không có hình ảnh'}
+                <>
+                  {/* Hình ảnh phạt nguội */}
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Hình ảnh phạt nguội:
                     </p>
-                  )}
-                </div>
+                    {request.images && Array.isArray(request.images) && request.images.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {request.images
+                          .filter(img => {
+                            const isValid = img && typeof img === 'string' && img.trim().length > 0;
+                            if (!isValid) {
+                              console.warn(`Invalid image URL in request #${request.request_id}:`, img);
+                            }
+                            return isValid;
+                          })
+                          .map((imageUrl, index) => (
+                            <ImageThumbnail 
+                              key={index}
+                              imageUrl={imageUrl.trim()}
+                              index={index}
+                              onImageClick={() => setImageModal(imageUrl.trim())}
+                            />
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                        {!request.images ? 'Không có hình ảnh' : 
+                         !Array.isArray(request.images) ? `Hình ảnh không hợp lệ (type: ${typeof request.images})` :
+                         'Không có hình ảnh'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hình ảnh hóa đơn nộp phạt */}
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Hóa đơn nộp phạt:
+                    </p>
+                    {request.receipt_images && Array.isArray(request.receipt_images) && request.receipt_images.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {request.receipt_images
+                          .filter(img => {
+                            const isValid = img && typeof img === 'string' && img.trim().length > 0;
+                            if (!isValid) {
+                              console.warn(`Invalid receipt image URL in request #${request.request_id}:`, img);
+                            }
+                            return isValid;
+                          })
+                          .map((imageUrl, index) => (
+                            <ImageThumbnail 
+                              key={`receipt-${index}`}
+                              imageUrl={imageUrl.trim()}
+                              index={index}
+                              onImageClick={() => setImageModal(imageUrl.trim())}
+                            />
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                        Không có hình ảnh hóa đơn
+                      </p>
+                    )}
+                  </div>
+                </>
               )}
 
               {request.status === 'pending' && (
@@ -644,8 +739,14 @@ const TrafficFineApproval = () => {
 
       {/* Reject Modal */}
       {rejectModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div 
+          className="fixed inset-0 bg-gray-500/30 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setRejectModal({ open: false, requestId: null })}
+        >
+          <div 
+            className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Từ chối yêu cầu</h3>
               <button
@@ -688,10 +789,13 @@ const TrafficFineApproval = () => {
       {/* Image Modal */}
       {imageModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-gray-500/30 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setImageModal(null)}
         >
-          <div className="max-w-4xl max-h-[90vh] mx-4 relative">
+          <div 
+            className="max-w-4xl max-h-[90vh] mx-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setImageModal(null)}
               className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"

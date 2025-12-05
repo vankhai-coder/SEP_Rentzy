@@ -69,7 +69,10 @@ router.get("/traffic-fine-search/captcha", getTrafficFineCaptcha);
 router.post("/traffic-fine-search", searchTrafficFine);
 
 // 7. Quản lý phí phạt nguội
-router.post("/bookings/:id/traffic-fine", upload.array("images", 10), addTrafficFine);
+router.post("/bookings/:id/traffic-fine", upload.fields([
+  { name: "images", maxCount: 10 },
+  { name: "receipt_images", maxCount: 5 }
+]), addTrafficFine);
 router.post("/bookings/:id/traffic-fine/delete-request", requestDeleteTrafficFine);
 // Trích xuất thông tin từ ảnh phạt nguội bằng AI
 router.post("/extract-traffic-fine-info", upload.single("image"), extractTrafficFineInfo);
