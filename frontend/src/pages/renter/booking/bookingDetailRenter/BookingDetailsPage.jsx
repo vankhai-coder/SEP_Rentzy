@@ -100,6 +100,75 @@ const BookingDetailsPage = () => {
     }).format(amount);
   };
 
+  const parseTrafficFineImages = (raw) => {
+    let violations = [];
+    let receipts = [];
+    if (!raw) return { violations, receipts };
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        if (parsed.violations || parsed.receipts) {
+          violations = Array.isArray(parsed.violations) ? parsed.violations : [];
+          receipts = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+        } else {
+          violations = Object.values(parsed).filter((v) => typeof v === "string");
+        }
+      } else if (Array.isArray(parsed)) {
+        violations = parsed;
+      }
+    } catch (e) {
+      if (Array.isArray(raw)) {
+        violations = raw;
+      }
+    }
+    return { violations, receipts };
+  };
+
+  const parseTrafficFineDescription = (desc) => {
+    if (!desc || typeof desc !== "string") return [];
+    const normalized = desc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = normalized.split("\n").map((l) => l.trim()).filter(Boolean);
+    const items = [];
+    for (const line of lines) {
+      const splitIndex = line.indexOf(":");
+      if (splitIndex === -1) continue;
+      const label = line.slice(0, splitIndex).trim();
+      const value = line.slice(splitIndex + 1).trim();
+      const parts = value.split(";").map((p) => p.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        for (const part of parts) {
+          const subIndex = part.indexOf(":");
+          if (subIndex !== -1) {
+            const subLabel = part.slice(0, subIndex).trim();
+            const subValue = part.slice(subIndex + 1).trim();
+            items.push({ label: subLabel, value: subValue });
+          } else {
+            items.push({ label, value: part });
+          }
+        }
+      } else {
+        items.push({ label, value });
+      }
+    }
+    return items;
+  };
+
+  const orderTrafficDescItems = (items) => {
+    const priority = [
+      "Ngày vi phạm",
+      "Biển số (màu biển số)",
+      "Hành vi vi phạm",
+      "Lý do",
+      "Địa điểm vi phạm",
+      "Địa điểm",
+    ];
+    const index = (label) => {
+      const i = priority.findIndex((p) => label.toLowerCase().startsWith(p.toLowerCase()));
+      return i === -1 ? priority.length + 1 : i;
+    };
+    return items.slice().sort((a, b) => index(a.label) - index(b.label));
+  };
+
   // Xử lý thanh toán PayOS
   // Tạo link PayOS cho ĐẶT CỌC (30%) khi status = confirmed
   const handlePayOSDepositPayment = async () => {
@@ -175,6 +244,34 @@ const BookingDetailsPage = () => {
       alert(errorMessage);
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handlePayOSTrafficFinePayment = async () => {
+    try {
+      const currentUrl = window.location.origin;
+      const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
+      const cancelUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
+      const response = await axiosInstance.post(
+        "/api/payment/payos/traffic-fine-link",
+        {
+          bookingId: booking.booking_id,
+          returnUrl,
+          cancelUrl,
+        }
+      );
+      if (response.data?.payUrl) {
+        window.location.href = response.data.payUrl;
+      } else {
+        alert(
+          response.data?.error || "Không thể tạo link thanh toán phí phạt nguội"
+        );
+      }
+    } catch (error) {
+      alert(
+        error.response?.data?.error ||
+          "Có lỗi xảy ra khi tạo link thanh toán phí phạt nguội"
+      );
     }
   };
 
@@ -642,56 +739,94 @@ const BookingDetailsPage = () => {
         </Dialog>
 
         {/* Thông tin phạt nguội */}
-        {booking.traffic_fine_amount > 0 && (
-          <div className="traffic-fine-section">
-            <h3>Phí phạt nguội</h3>
-            <div className="traffic-fine-details">
-              <div className="traffic-fine-row">
-                <span className="traffic-fine-label">Số tiền phạt:</span>
-                <span className="traffic-fine-value">
-                  {formatCurrency(booking.traffic_fine_amount)}
-                </span>
-              </div>
-              {booking.traffic_fine_paid > 0 && (
+        {(() => {
+          const tfAmountRaw =
+            booking.traffic_fine_amount ?? booking.trafficFineAmount ?? 0;
+          const tfPaidRaw =
+            booking.traffic_fine_paid ?? booking.trafficFinePaid ?? 0;
+          const tfImagesRaw =
+            booking.traffic_fine_images ?? booking.trafficFineImages ?? [];
+          const tfAmount = parseFloat(tfAmountRaw) || 0;
+          const tfPaid = parseFloat(tfPaidRaw) || 0;
+          const { violations, receipts } = parseTrafficFineImages(tfImagesRaw);
+          const remainingFine = tfAmount - tfPaid;
+          if (tfAmount <= 0) return null;
+          return (
+            <div className="traffic-fine-section">
+              <h3>Phí phạt nguội</h3>
+              <div className="traffic-fine-details">
                 <div className="traffic-fine-row">
-                  <span className="traffic-fine-label">Đã thanh toán:</span>
-                  <span className="traffic-fine-value paid">
-                    {formatCurrency(booking.traffic_fine_paid)}
-                  </span>
-                </div>
-              )}
-              {booking.traffic_fine_amount - (booking.traffic_fine_paid || 0) >
-                0 && (
-                <div className="traffic-fine-row">
-                  <span className="traffic-fine-label">Còn lại:</span>
-                  <span className="traffic-fine-value remaining">
-                    {formatCurrency(
-                      booking.traffic_fine_amount -
-                        (booking.traffic_fine_paid || 0)
-                    )}
-                  </span>
-                </div>
-              )}
-              {booking.traffic_fine_description && (
-                <div className="traffic-fine-description">
-                  <span className="traffic-fine-label">Lý do:</span>
+                  <span className="traffic-fine-label">Số tiền phạt:</span>
                   <span className="traffic-fine-value">
-                    {booking.traffic_fine_description}
+                    {formatCurrency(tfAmount)}
                   </span>
                 </div>
-              )}
-              {booking.traffic_fine_images &&
-                booking.traffic_fine_images.length > 0 && (
-                  <div className="traffic-fine-images">
-                    <span className="traffic-fine-label">
-                      Hình ảnh phạt nguội:
+                {tfPaid > 0 && (
+                  <div className="traffic-fine-row">
+                    <span className="traffic-fine-label">Đã thanh toán:</span>
+                    <span className="traffic-fine-value paid">
+                      {formatCurrency(tfPaid)}
                     </span>
+                  </div>
+                )}
+                {remainingFine > 0 && (
+                  <div className="traffic-fine-row">
+                    <span className="traffic-fine-label">Còn lại:</span>
+                    <span className="traffic-fine-value remaining">
+                      {formatCurrency(remainingFine)}
+                    </span>
+                  </div>
+                )}
+                {remainingFine > 0 && (
+                  <div className="traffic-fine-action">
+                    <button
+                      type="button"
+                      className="payment-button primary"
+                      onClick={handlePayOSTrafficFinePayment}
+                    >
+                      Thanh toán phí phạt nguội
+                    </button>
+                  </div>
+                )}
+                {(() => {
+                  const tfDescRaw =
+                    booking.traffic_fine_description ??
+                    booking.trafficFineDescription ??
+                    "";
+                  if (!tfDescRaw) return null;
+                  const descItems = parseTrafficFineDescription(
+                    tfDescRaw
+                  );
+                  const ordered = orderTrafficDescItems(descItems);
+                  return ordered.length ? (
+                    <div className="traffic-fine-description">
+                      <div className="traffic-fine-description-grid">
+                        {ordered.map((item, idx) => (
+                          <div className="traffic-fine-block" key={`desc-${idx}`}>
+                            <div className="traffic-fine-label">{item.label}</div>
+                            <div className="traffic-fine-value">{item.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="traffic-fine-description">
+                      <span className="traffic-fine-label">Mô tả:</span>
+                      <span className="traffic-fine-value">
+                        {tfDescRaw}
+                      </span>
+                    </div>
+                  );
+                })()}
+                {violations.length > 0 && (
+                  <div className="traffic-fine-images">
+                    <span className="traffic-fine-label">Hình ảnh vi phạm:</span>
                     <div className="traffic-fine-images-grid">
-                      {booking.traffic_fine_images.map((imageUrl, index) => (
+                      {violations.map((imageUrl, index) => (
                         <img
-                          key={index}
+                          key={`violation-${index}`}
                           src={imageUrl}
-                          alt={`Phạt nguội ${index + 1}`}
+                          alt={`Vi phạm ${index + 1}`}
                           className="traffic-fine-image"
                           onClick={() => window.open(imageUrl, "_blank")}
                         />
@@ -699,9 +834,31 @@ const BookingDetailsPage = () => {
                     </div>
                   </div>
                 )}
+                {receipts.length > 0 && (
+                  <div className="traffic-fine-images">
+                    <span className="traffic-fine-label">Hóa đơn nộp phạt:</span>
+                    <div className="traffic-fine-images-grid">
+                      {receipts.map((imageUrl, index) => (
+                        <img
+                          key={`receipt-${index}`}
+                          src={imageUrl}
+                          alt={`Hóa đơn ${index + 1}`}
+                          className="traffic-fine-image"
+                          onClick={() => window.open(imageUrl, "_blank")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="traffic-fine-note">
+                  <span>
+                    * Phí phạt nguội được thanh toán riêng, không nằm trong tổng tiền thuê.
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Lịch sử giao dịch */}
         <div className="transaction-section">

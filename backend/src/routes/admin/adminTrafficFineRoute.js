@@ -5,6 +5,7 @@ import {
   getTrafficFineRequestStats,
   approveTrafficFineRequest,
   rejectTrafficFineRequest,
+
 } from "../../controllers/admin/adminTrafficFineController.js";
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.patch("/:id/approve", approveTrafficFineRequest);
 
 // PATCH /api/admin/traffic-fine-requests/:id/reject
 router.patch("/:id/reject", rejectTrafficFineRequest);
+
 
 export default router;
 

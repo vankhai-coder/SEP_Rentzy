@@ -8,6 +8,7 @@ const {
   User,
   Vehicle,
   Notification,
+  Transaction,
 } = db;
 
 // GET /api/admin/traffic-fine-requests - Lấy danh sách yêu cầu phạt nguội
@@ -198,6 +199,84 @@ export const getTrafficFineRequestStats = async (req, res) => {
       success: false,
       message: "Lỗi khi lấy thống kê",
     });
+  }
+};
+
+// GET /api/admin/traffic-fine-requests/payouts
+export const getTrafficFinePayouts = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = {};
+    if (search) {
+      whereClause[Op.or] = [
+        { booking_id: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await Booking.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          include: [{ model: User, as: "owner", attributes: ["user_id", "full_name", "email"] }],
+          attributes: ["vehicle_id", "model", "license_plate"],
+        },
+      ],
+      order: [["updated_at", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    const payouts = await Promise.all(
+      rows.map(async (booking) => {
+        const totalPaidFine = parseFloat(booking.traffic_fine_paid || 0);
+        const totalFine = parseFloat(booking.traffic_fine_amount || 0);
+        const transferredSum = await Transaction.sum("amount", {
+          where: {
+            booking_id: booking.booking_id,
+            type: "COMPENSATION",
+            status: "COMPLETED",
+            note: { [Op.like]: `%TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}%` },
+          },
+        });
+        const alreadyTransferred = parseFloat(transferredSum || 0);
+        const remainingToTransfer = Math.max(totalPaidFine - alreadyTransferred, 0);
+
+        return {
+          booking_id: booking.booking_id,
+          renter: booking.renter,
+          owner: booking.vehicle?.owner || null,
+          vehicle: { model: booking.vehicle?.model, license_plate: booking.vehicle?.license_plate },
+          traffic_fine_amount: totalFine,
+          traffic_fine_paid: totalPaidFine,
+          transferred: alreadyTransferred,
+          remaining_to_transfer: remainingToTransfer,
+          updated_at: booking.updated_at,
+        };
+      })
+    );
+
+    const filtered = payouts.filter((p) => p.remaining_to_transfer > 0);
+
+    return res.json({
+      success: true,
+      data: {
+        payouts: filtered,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(count / limit),
+          totalItems: count,
+          itemsPerPage: parseInt(limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error getting traffic fine payouts:", error);
+    return res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách chuyển tiền phạt nguội", error: error.message });
   }
 };
 
@@ -656,3 +735,88 @@ export const rejectTrafficFineRequest = async (req, res) => {
   }
 };
 
+export const transferTrafficFineToOwner = async (req, res) => {
+  const t = await db.sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findOne({
+      where: { booking_id: id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          include: [
+            { model: User, as: "owner", attributes: ["user_id", "full_name", "email"] },
+          ],
+        },
+      ],
+      transaction: t,
+    });
+
+    if (!booking) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: "Không tìm thấy đơn thuê" });
+    }
+
+    const totalPaidFine = parseFloat(booking.traffic_fine_paid || 0);
+    if (totalPaidFine <= 0) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Chưa có tiền phạt nguội đã thanh toán" });
+    }
+
+    const transferredSum = await Transaction.sum("amount", {
+      where: {
+        booking_id: booking.booking_id,
+        type: "COMPENSATION",
+        status: "COMPLETED",
+        note: { [Op.like]: `%TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}%` },
+      },
+      transaction: t,
+    });
+
+    const alreadyTransferred = parseFloat(transferredSum || 0);
+    const remainingToTransfer = totalPaidFine - alreadyTransferred;
+
+    if (remainingToTransfer <= 0) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Không còn số tiền phạt nguội cần chuyển" });
+    }
+
+    const ownerId = booking.vehicle?.owner?.user_id;
+    if (!ownerId) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Thiếu thông tin chủ xe" });
+    }
+
+    await Transaction.create(
+      {
+        booking_id: booking.booking_id,
+        from_user_id: null,
+        to_user_id: ownerId,
+        amount: remainingToTransfer,
+        type: "COMPENSATION",
+        status: "COMPLETED",
+        payment_method: "BANK_TRANSFER",
+        processed_at: new Date(),
+        note: `TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}`,
+      },
+      { transaction: t }
+    );
+
+    await Notification.create(
+      {
+        user_id: ownerId,
+        title: "Nhận chuyển tiền phạt nguội",
+        content: `Bạn đã nhận ${remainingToTransfer.toLocaleString("vi-VN")} VNĐ tiền phạt nguội cho đơn #${booking.booking_id}.`,
+        type: "payout",
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    return res.json({ success: true, message: "Đã chuyển tiền phạt nguội cho chủ xe", data: { booking_id: booking.booking_id, amount: remainingToTransfer } });
+  } catch (error) {
+    await t.rollback();
+    return res.status(500).json({ success: false, message: "Lỗi khi chuyển tiền phạt nguội", error: error.message });
+  }
+};
