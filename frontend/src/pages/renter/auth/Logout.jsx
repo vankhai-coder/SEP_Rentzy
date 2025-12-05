@@ -11,6 +11,10 @@ const Logout = () => {
     const { loading } = useSelector((state) => state.userStore)
 
     useEffect(() => {
+        // Xóa dark mode khi logout
+        localStorage.removeItem('theme');
+        document.documentElement.classList.remove('dark');
+        
         dispatch(logoutUser())
         navigate("/")
     }, [dispatch, navigate])
