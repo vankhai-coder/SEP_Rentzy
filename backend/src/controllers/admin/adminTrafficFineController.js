@@ -453,7 +453,7 @@ export const approveTrafficFineRequest = async (req, res) => {
                   <div class="container">
                     <h2>Thông báo phí phạt nguội</h2>
                     <p>Xin chào${renter.full_name ? ` ${renter.full_name}` : ""},</p>
-                    <p>Đơn thuê #${request.booking.booking_id} của bạn đã có phí phạt nguội được admin duyệt.</p>
+                    <p>Đơn thuê #${request.booking.booking_id} của bạn vừa có 1 phí phạt nguội.</p>
                     <div class="details">
                       <div class="row"><span class="label">Mã đơn thuê:</span><span class="value">#${request.booking.booking_id}</span></div>
                       <div class="row"><span class="label">Số tiền phạt:</span><span class="value">${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ</span></div>
