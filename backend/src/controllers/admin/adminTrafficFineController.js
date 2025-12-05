@@ -144,7 +144,9 @@ export const getTrafficFineRequests = async (req, res) => {
       // Log kết quả
       console.log(`Request #${requestData.request_id} processed:`, {
         images_count: requestData.images?.length || 0,
-        images: requestData.images
+        images: requestData.images,
+        receipt_images_count: requestData.receipt_images?.length || 0,
+        receipt_images: requestData.receipt_images
       });
       
       return requestData;

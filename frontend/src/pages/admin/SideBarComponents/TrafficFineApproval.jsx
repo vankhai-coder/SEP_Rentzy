@@ -153,8 +153,15 @@ const TrafficFineApproval = () => {
             request_id: request.request_id,
             images_raw: request.images,
             images_type: typeof request.images,
+            receipt_images_raw: request.receipt_images,
+            receipt_images_type: typeof request.receipt_images,
             request_type: request.request_type
           });
+          
+          // Nếu backend đã trả về receipt_images riêng (đã parse), sử dụng nó trước
+          let receiptImages = request.receipt_images && Array.isArray(request.receipt_images) 
+            ? request.receipt_images 
+            : undefined;
           
           // Backend đã parse images rồi, nhưng đảm bảo nó được xử lý đúng
           // Hỗ trợ cả format mới: {violations: [...], receipts: [...]} và format cũ: array
@@ -167,19 +174,24 @@ const TrafficFineApproval = () => {
                   if (parsed.violations || parsed.receipts) {
                     // Format mới
                     request.images = Array.isArray(parsed.violations) ? parsed.violations : [];
-                    request.receipt_images = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+                    // Chỉ set receipt_images nếu backend chưa trả về
+                    if (receiptImages === undefined) {
+                      request.receipt_images = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+                    } else {
+                      request.receipt_images = receiptImages;
+                    }
                   } else {
                     // Object nhưng không phải format mới
                     request.images = Object.values(parsed).filter(v => typeof v === 'string');
-                    request.receipt_images = [];
+                    request.receipt_images = receiptImages || [];
                   }
                 } else if (Array.isArray(parsed)) {
                   // Format cũ: array đơn giản
                   request.images = parsed;
-                  request.receipt_images = [];
+                  request.receipt_images = receiptImages || [];
                 } else {
                   request.images = [];
-                  request.receipt_images = [];
+                  request.receipt_images = receiptImages || [];
                 }
               } catch (e) {
                 console.error('Error parsing images string:', e, 'Raw images:', request.images);
@@ -189,28 +201,33 @@ const TrafficFineApproval = () => {
             } else if (Array.isArray(request.images)) {
               // Format cũ: array đơn giản
               request.images = request.images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
-              request.receipt_images = [];
+              request.receipt_images = receiptImages || [];
             } else if (typeof request.images === 'object' && !Array.isArray(request.images)) {
               // Format mới: object
               if (request.images.violations || request.images.receipts) {
                 request.images = Array.isArray(request.images.violations) ? request.images.violations : [];
-                request.receipt_images = Array.isArray(request.images.receipts) ? request.images.receipts : [];
+                // Chỉ set receipt_images nếu backend chưa trả về
+                if (receiptImages === undefined) {
+                  request.receipt_images = Array.isArray(request.images.receipts) ? request.images.receipts : [];
+                } else {
+                  request.receipt_images = receiptImages;
+                }
               } else {
                 request.images = [];
-                request.receipt_images = [];
+                request.receipt_images = receiptImages || [];
               }
             } else {
               console.warn(`Request #${request.request_id}: images is not string or array:`, typeof request.images, request.images);
               request.images = [];
-              request.receipt_images = [];
+              request.receipt_images = receiptImages || [];
             }
           } else {
             request.images = [];
-            request.receipt_images = [];
+            request.receipt_images = receiptImages || [];
           }
           
-          // Nếu backend đã trả về receipt_images riêng, sử dụng nó
-          if (request.receipt_images === undefined) {
+          // Đảm bảo receipt_images luôn là array
+          if (!Array.isArray(request.receipt_images)) {
             request.receipt_images = [];
           }
           
@@ -223,7 +240,10 @@ const TrafficFineApproval = () => {
             images: request.images,
             receipt_images: request.receipt_images,
             requestType: request.request_type,
-            firstImageUrl: request.images?.[0] || 'none'
+            firstImageUrl: request.images?.[0] || 'none',
+            firstReceiptUrl: request.receipt_images?.[0] || 'none',
+            // Log raw data từ backend
+            rawReceiptImages: request.receipt_images
           });
           
           return request;
