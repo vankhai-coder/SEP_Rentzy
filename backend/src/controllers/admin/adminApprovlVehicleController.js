@@ -131,6 +131,20 @@ export const approveVehicle = async (req, res) => {
       updated_at: new Date()
     });
 
+    try {
+      await Notification.create({
+        user_id: vehicle.owner?.user_id,
+        title: "Xe đã được duyệt",
+        content: `Xe ${vehicle.model} (${vehicle.license_plate}) đã được admin duyệt. Bạn có thể bắt đầu cho thuê xe.`,
+        type: "alert",
+        is_read: false,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    } catch (e) {
+      console.error("Error creating notification for approved vehicle:", e);
+    }
+
     res.json({
       success: true,
       message: "Xe đã được chấp nhận",

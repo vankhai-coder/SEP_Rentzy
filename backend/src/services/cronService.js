@@ -467,6 +467,17 @@ const autoApprovePendingVehicles = async () => {
           });
         } else {
           await v.update({ approvalStatus: "approved", updated_at: new Date() });
+          try {
+            await Notification.create({
+              user_id: v.owner?.user_id,
+              title: "Xe đã được duyệt",
+              content: `Xe ${v.model} (${v.license_plate}) đã được hệ thống duyệt tự động.`,
+              type: "alert",
+              is_read: false,
+            });
+          } catch (e) {
+            console.error("[CRON] Error creating notification for approved vehicle:", e.message);
+          }
         }
       } catch (e) {
         console.error("[CRON] Auto-approve vehicle error:", e.message);
