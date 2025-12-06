@@ -9,7 +9,7 @@ import {
 } from "../../utils/email/templates/emailTemplate.js";
 import { sendContractForBookingServerSide } from "../docusign/docusignController.js";
 
-const { Booking, Transaction, User, Notification, BookingContract } = db;
+const { Booking, Transaction, User, Notification, BookingContract, TrafficFineRequest } = db;
 
 const payOS = new PayOS({
   clientId: process.env.PAYOS_CLIENT_ID,
@@ -279,6 +279,16 @@ const handlePayOSWebhook = async (req, res) => {
           content: `Bạn đã thanh toán phí phạt nguội cho booking #${booking.booking_id}. Số tiền: ${Number(data.amount).toLocaleString('vi-VN')} VNĐ.`,
           type: "rental",
         });
+
+        try {
+          const tfReq = await TrafficFineRequest.findOne({
+            where: { booking_id: booking.booking_id, status: "approved" },
+            order: [["reviewed_at", "DESC"]],
+          });
+          if (tfReq && tfReq.transfer_status !== "approved") {
+            await tfReq.update({ transfer_status: "pending" });
+          }
+        } catch {}
 
         return res.json({
           success: true,

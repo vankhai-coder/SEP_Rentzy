@@ -202,39 +202,55 @@ export const getTrafficFineRequestStats = async (req, res) => {
   }
 };
 
-// GET /api/admin/traffic-fine-requests/payouts
 export const getTrafficFinePayouts = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = {};
+    const whereCondition = { transfer_status: "pending" };
     if (search) {
-      whereClause[Op.or] = [
-        { booking_id: { [Op.like]: `%${search}%` } },
-      ];
+      whereCondition[Op.or] = [{ booking_id: { [Op.like]: `%${search}%` } }];
     }
 
-    const { count, rows } = await Booking.findAndCountAll({
-      where: whereClause,
+    const { count, rows } = await TrafficFineRequest.findAndCountAll({
+      where: whereCondition,
       include: [
-        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
         {
-          model: Vehicle,
-          as: "vehicle",
-          include: [{ model: User, as: "owner", attributes: ["user_id", "full_name", "email"] }],
-          attributes: ["vehicle_id", "model", "license_plate"],
+          model: Booking,
+          as: "booking",
+          include: [
+            { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
+            {
+              model: Vehicle,
+              as: "vehicle",
+              include: [
+                { 
+                  model: User, 
+                  as: "owner", 
+                  attributes: ["user_id", "full_name", "email", "phone_number"],
+                  include: [
+                    { model: db.Bank, as: "banks", where: { is_primary: true }, required: false, attributes: ["bank_name", "account_number", "account_holder_name", "qr_code_url", "is_primary"] }
+                  ]
+                },
+              ],
+              attributes: ["vehicle_id", "model", "license_plate"],
+            },
+          ],
         },
+        { model: User, as: "owner", attributes: ["user_id", "full_name", "email", "phone_number"] },
       ],
-      order: [["updated_at", "DESC"]],
+      order: [["reviewed_at", "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset),
+      distinct: true,
     });
 
     const payouts = await Promise.all(
-      rows.map(async (booking) => {
-        const totalPaidFine = parseFloat(booking.traffic_fine_paid || 0);
-        const totalFine = parseFloat(booking.traffic_fine_amount || 0);
+      rows.map(async (reqItem) => {
+        const booking = reqItem.booking;
+        const totalPaidFine = parseFloat(booking?.traffic_fine_paid || 0);
+        const totalFine = parseFloat(booking?.traffic_fine_amount || 0);
+        const requestAmount = parseFloat(reqItem.amount || 0);
         const transferredSum = await Transaction.sum("amount", {
           where: {
             booking_id: booking.booking_id,
@@ -244,17 +260,29 @@ export const getTrafficFinePayouts = async (req, res) => {
           },
         });
         const alreadyTransferred = parseFloat(transferredSum || 0);
-        const remainingToTransfer = Math.max(totalPaidFine - alreadyTransferred, 0);
+        const payableBase = Math.min(totalPaidFine, requestAmount || totalFine || 0);
+        const remainingToTransfer = Math.max(payableBase - alreadyTransferred, 0);
+
+        const ownerUser = booking.vehicle?.owner || reqItem.owner || null;
+        const primaryBank = ownerUser?.banks?.[0] || null;
 
         return {
+          request_id: reqItem.request_id,
           booking_id: booking.booking_id,
           renter: booking.renter,
-          owner: booking.vehicle?.owner || null,
+          owner: ownerUser,
+          owner_bank: primaryBank ? {
+            bank_name: primaryBank.bank_name,
+            account_number: primaryBank.account_number,
+            account_holder_name: primaryBank.account_holder_name,
+            qr_code_url: primaryBank.qr_code_url,
+          } : null,
           vehicle: { model: booking.vehicle?.model, license_plate: booking.vehicle?.license_plate },
           traffic_fine_amount: totalFine,
           traffic_fine_paid: totalPaidFine,
           transferred: alreadyTransferred,
           remaining_to_transfer: remainingToTransfer,
+          transfer_status: reqItem.transfer_status,
           updated_at: booking.updated_at,
         };
       })
@@ -277,6 +305,95 @@ export const getTrafficFinePayouts = async (req, res) => {
   } catch (error) {
     console.error("Error getting traffic fine payouts:", error);
     return res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách chuyển tiền phạt nguội", error: error.message });
+  }
+};
+
+// Lấy tất cả traffic fine requests cho admin
+export const getAllTrafficFineRequests = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      request_type,
+      transfer_status,
+      search,
+      sort_by = "created_at",
+      order = "DESC",
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    // Build where clause
+    const whereClause = {};
+
+    // Filter by status
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // Filter by request_type
+    if (request_type) {
+      whereClause.request_type = request_type;
+    }
+
+    // Filter by transfer_status
+    if (transfer_status) {
+      whereClause.transfer_status = transfer_status;
+    }
+
+    // Search by booking_id or owner_id
+    if (search) {
+      whereClause[Op.or] = [
+        { booking_id: { [Op.like]: `%${search}%` } },
+        { owner_id: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // Count total records
+    const totalRecords = await TrafficFineRequest.count({
+      where: whereClause,
+    });
+
+    // Fetch requests with pagination
+    const requests = await TrafficFineRequest.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [[sort_by, order.toUpperCase()]],
+    });
+
+    // Parse images JSON for each request
+    const parsedRequests = requests.map((request) => {
+      const requestData = request.toJSON();
+      if (requestData.images) {
+        try {
+          requestData.images = JSON.parse(requestData.images);
+        } catch (e) {
+          requestData.images = [];
+        }
+      }
+      return requestData;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: parsedRequests,
+      pagination: {
+        total: totalRecords,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(totalRecords / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching traffic fine requests:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách yêu cầu phạt nguội",
+      error: error.message,
+    });
   }
 };
 
@@ -342,6 +459,7 @@ export const approveTrafficFineRequest = async (req, res) => {
         reviewed_by: adminId,
         reviewed_at: now,
         updated_at: now,
+        transfer_status: "none",
       },
       { transaction }
     );
@@ -812,6 +930,15 @@ export const transferTrafficFineToOwner = async (req, res) => {
       },
       { transaction: t }
     );
+
+    const tfReq = await TrafficFineRequest.findOne({
+      where: { booking_id: booking.booking_id, status: "approved" },
+      order: [["reviewed_at", "DESC"]],
+      transaction: t,
+    });
+    if (tfReq) {
+      await tfReq.update({ transfer_status: "approved" }, { transaction: t });
+    }
 
     await t.commit();
     return res.json({ success: true, message: "Đã chuyển tiền phạt nguội cho chủ xe", data: { booking_id: booking.booking_id, amount: remainingToTransfer } });
