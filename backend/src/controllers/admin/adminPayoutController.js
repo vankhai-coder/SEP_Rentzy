@@ -92,7 +92,7 @@ export const approvePayout = async (req, res) => {
           "vi-VN"
         )} VND cho booking #${
           payout.booking_id
-        } đã được admin duyệt. Tiền sẽ được chuyển về tài khoản của bạn trong 3-5 ngày làm việc.`,
+        } đã được admin duyệt. Số tiền giải ngân đã được chuyển vào tài khoản của bạn.`,
         type: "payout",
         is_read: false,
       },

@@ -154,7 +154,9 @@ export const getBookingHistory = async (req, res) => {
         vehicle_type: booking.vehicle.vehicle_type,
       },
       start_date: booking.start_date,
+      start_time: booking.start_time,
       end_date: booking.end_date,
+      end_time: booking.end_time,
       total_amount: parseFloat(booking.total_amount || 0),
       total_paid: parseFloat(booking.total_paid || 0),
       remaining_amount: parseFloat(
@@ -260,7 +262,9 @@ export const getBookingDetail = async (req, res) => {
       booking: {
         booking_id: booking.booking_id,
         start_date: booking.start_date,
+        start_time: booking.start_time,
         end_date: booking.end_date,
+        end_time: booking.end_time,
         total_amount: parseFloat(booking.total_amount),
         status: booking.status,
         // Thêm fields khác nếu cần

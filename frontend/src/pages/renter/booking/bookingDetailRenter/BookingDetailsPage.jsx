@@ -713,7 +713,7 @@ const BookingDetailsPage = () => {
 
           {booking.remaining_paid_by_cash_status === "pending" && (
             <div className="payment-action">
-              <h1>Vui lòng chờ chủ xe xác nhận thanh toán tiền mặt.</h1>
+              <h1>Vui lòng chờ chủ xe xác nhận thanh toán tiền còn lại.</h1>
             </div>
           )}
         </div>

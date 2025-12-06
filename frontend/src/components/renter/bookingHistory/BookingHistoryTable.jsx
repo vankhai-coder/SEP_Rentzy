@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Star, Eye, Car, X, FileText } from "lucide-react";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+ 
 import CancelBookingModal from "../bookingCancel/CancelBookingModal";
 
 const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }) => {
@@ -11,7 +10,29 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
   const [selectedBookingId, setSelectedBookingId] = useState(null);
 
   const formatDateTime = (dateString) => {
-    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    const s = d.toLocaleString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return s.replace(",", "");
+  };
+
+  const formatDateWithTime = (dateString, timeString) => {
+    if (!dateString) return "";
+    const datePart = new Date(dateString).toLocaleDateString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const timePart = typeof timeString === "string" && timeString.length >= 5 ? timeString.slice(0, 5) : "";
+    return timePart ? `${datePart} ${timePart}` : formatDateTime(dateString);
   };
 
   const handleCancelClick = (bookingId) => {
@@ -196,14 +217,14 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                 {/* Ngày nhận */}
                 <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
                   <div className="text-xs sm:text-sm font-medium text-gray-900">
-                    {formatDateTime(booking.start_date)}
+                    {formatDateWithTime(booking.start_date, booking.start_time)}
                   </div>
                 </td>
 
                 {/* Ngày trả */}
                 <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
                   <div className="text-xs sm:text-sm font-medium text-gray-900">
-                    {formatDateTime(booking.end_date)}
+                    {formatDateWithTime(booking.end_date, booking.end_time)}
                   </div>
                 </td>
 
