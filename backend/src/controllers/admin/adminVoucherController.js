@@ -75,7 +75,8 @@ export const getVouchersWithFilter = async (req, res) => {
         if (nameOrDescOrCodeOrTitle && nameOrDescOrCodeOrTitle.trim()) {
             whereClause[Op.or] = [
                 { description: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } },
-                { title: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } }
+                { title: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } },
+                { code: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } },
             ];
         }
 
