@@ -13,6 +13,7 @@ import {
   MdAdd,
   MdEdit,
   MdDelete,
+  MdClose,
 } from "react-icons/md";
 import {
   Dialog,
@@ -32,13 +33,19 @@ const BookingDetail = () => {
   const [signUrl, setSignUrl] = useState("");
   const [showTrafficFineModal, setShowTrafficFineModal] = useState(false);
   const [trafficFineAmount, setTrafficFineAmount] = useState("");
-  const [trafficFineDescription, setTrafficFineDescription] = useState("");
+  const [trafficFineViolationDate, setTrafficFineViolationDate] = useState("");
+  const [trafficFineLicensePlate, setTrafficFineLicensePlate] = useState("");
+  const [trafficFineViolation, setTrafficFineViolation] = useState("");
+  const [trafficFineReason, setTrafficFineReason] = useState("");
+  const [trafficFineLocation, setTrafficFineLocation] = useState("");
   const [trafficFineImages, setTrafficFineImages] = useState([]);
+  const [trafficFineReceiptImages, setTrafficFineReceiptImages] = useState([]);
   const [submittingTrafficFine, setSubmittingTrafficFine] = useState(false);
   const [showDeleteTrafficFineModal, setShowDeleteTrafficFineModal] = useState(false);
   const [deleteTrafficFineReason, setDeleteTrafficFineReason] = useState("");
   const [submittingDeleteTrafficFine, setSubmittingDeleteTrafficFine] = useState(false);
   const [extractingInfo, setExtractingInfo] = useState(false);
+  const [imageModal, setImageModal] = useState(null);
 
   useEffect(() => {
     fetchBookingDetail();
@@ -217,15 +224,48 @@ const BookingDetail = () => {
       return;
     }
 
+    if (trafficFineReceiptImages.length === 0) {
+      toast.error("Vui lòng thêm ít nhất một hình ảnh hóa đơn nộp phạt");
+      return;
+    }
+
     try {
       setSubmittingTrafficFine(true);
       const formData = new FormData();
       formData.append("amount", parseFloat(trafficFineAmount));
-      if (trafficFineDescription) {
-        formData.append("description", trafficFineDescription);
+      
+      // Tạo description từ các trường riêng biệt
+      let description = "";
+      if (trafficFineViolationDate) {
+        description += `Ngày vi phạm: ${trafficFineViolationDate}`;
+      }
+      if (trafficFineLicensePlate) {
+        if (description) description += "\n";
+        description += `Biển số (màu biển số): ${trafficFineLicensePlate}`;
+      }
+      if (trafficFineViolation) {
+        if (description) description += "\n";
+        description += `Hành vi vi phạm: ${trafficFineViolation}`;
+      }
+      if (trafficFineReason) {
+        if (description) description += "\n";
+        description += `Lý do: ${trafficFineReason}`;
+      }
+      if (trafficFineLocation) {
+        if (description) description += "\n";
+        description += `Địa điểm vi phạm: ${trafficFineLocation}`;
+      }
+      
+      if (description) {
+        formData.append("description", description);
       }
       trafficFineImages.forEach((image) => {
         formData.append("images", image.file);
+      });
+      
+      // Thêm ảnh hóa đơn nộp phạt
+      trafficFineReceiptImages.forEach((image) => {
+        formData.append("receipt_images", image.file);
       });
 
       const response = await axiosInstance.post(
@@ -242,8 +282,13 @@ const BookingDetail = () => {
         toast.success("Đã thêm phí phạt nguội thành công");
         setShowTrafficFineModal(false);
         setTrafficFineAmount("");
-        setTrafficFineDescription("");
+        setTrafficFineViolationDate("");
+        setTrafficFineLicensePlate("");
+        setTrafficFineViolation("");
+        setTrafficFineReason("");
+        setTrafficFineLocation("");
         setTrafficFineImages([]);
+        setTrafficFineReceiptImages([]);
         await fetchBookingDetail();
       } else {
         toast.error(response.data.message || "Không thể thêm phí phạt nguội");
@@ -338,6 +383,48 @@ const BookingDetail = () => {
     });
   };
 
+  const handleTrafficFineReceiptImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`File ${file.name} không phải là ảnh`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File ${file.name} quá lớn (tối đa 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (trafficFineReceiptImages.length + validFiles.length > 5) {
+      toast.error("Chỉ được upload tối đa 5 ảnh hóa đơn");
+      return;
+    }
+
+    const newImages = validFiles.map((file) => {
+      const preview = URL.createObjectURL(file);
+      return {
+        id: Date.now() + Math.random(),
+        file,
+        preview,
+        name: file.name,
+      };
+    });
+
+    setTrafficFineReceiptImages((prev) => [...prev, ...newImages]);
+  };
+
+  const removeTrafficFineReceiptImage = (imageId) => {
+    setTrafficFineReceiptImages((prev) => {
+      const imageToRemove = prev.find((img) => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter((img) => img.id !== imageId);
+    });
+  };
+
   // Hàm trích xuất thông tin từ ảnh phạt nguội bằng AI
   const handleExtractTrafficFineInfo = async () => {
     if (trafficFineImages.length === 0) {
@@ -373,62 +460,36 @@ const BookingDetail = () => {
           console.log("[ExtractTrafficFine] Set fine amount:", extractedData.fineAmount);
         }
         
-        // Tạo mô tả chi tiết với tất cả thông tin
-        let description = "";
-        
-        // Ngày vi phạm
+        // Điền thông tin vào các trường riêng biệt
         if (extractedData.violationDate) {
-          description += `Ngày vi phạm: ${extractedData.violationDate}`;
+          setTrafficFineViolationDate(extractedData.violationDate);
         }
         
         // Biển số xe và màu
         if (extractedData.licensePlate) {
-          if (description) description += "\n";
-          description += `Biển số (màu biển số): ${extractedData.licensePlate}`;
+          let licensePlateText = extractedData.licensePlate;
           if (extractedData.licensePlateColor) {
-            description += ` (${extractedData.licensePlateColor})`;
+            licensePlateText += ` (${extractedData.licensePlateColor})`;
           }
+          setTrafficFineLicensePlate(licensePlateText);
         }
         
-        // Tốc độ tối đa cho phép
-        if (extractedData.maxAllowedSpeed) {
-          if (description) description += "\n";
-          description += `Tốc độ tối đa cho phép: ${extractedData.maxAllowedSpeed}`;
-        }
-        
-        // Hành vi vi phạm (chi tiết)
+        // Hành vi vi phạm
         if (extractedData.violationBehavior) {
-          if (description) description += "\n";
-          description += `Hành vi vi phạm: ${extractedData.violationBehavior}`;
+          setTrafficFineViolation(extractedData.violationBehavior);
         }
         
-        // Lý do vi phạm (tóm tắt)
+        // Lý do vi phạm
         if (extractedData.violationReason) {
-          if (description) description += "\n";
-          description += `Lý do: ${extractedData.violationReason}`;
+          setTrafficFineReason(extractedData.violationReason);
         }
         
         // Địa điểm vi phạm
         if (extractedData.violationLocation) {
-          if (description) description += "\n";
-          description += `Địa điểm vi phạm: ${extractedData.violationLocation}`;
+          setTrafficFineLocation(extractedData.violationLocation);
         }
         
-        // Đơn vị vận hành hệ thống
-        if (extractedData.operatingUnit) {
-          if (description) description += "\n";
-          description += `Đơn vị vận hành hệ thống: ${extractedData.operatingUnit}`;
-        }
-        
-        console.log("[ExtractTrafficFine] Generated description:", description);
-        
-        if (description) {
-          setTrafficFineDescription(description);
-          console.log("[ExtractTrafficFine] Set description to form");
-        } else {
-          console.warn("[ExtractTrafficFine] No description generated - all fields are null or empty");
-          toast.warning("Không tìm thấy thông tin trong ảnh. Vui lòng nhập thủ công.");
-        }
+        console.log("[ExtractTrafficFine] Set individual fields to form");
 
         toast.success("Đã đọc thông tin từ ảnh thành công! Vui lòng kiểm tra và chỉnh sửa nếu cần.");
       } else {
@@ -632,8 +693,14 @@ const BookingDetail = () => {
                       <button
                         onClick={() => {
                           setTrafficFineAmount(booking.traffic_fine_amount || "");
-                          setTrafficFineDescription(booking.traffic_fine_description || "");
+                          // Reset các trường khi mở modal edit
+                          setTrafficFineViolationDate("");
+                          setTrafficFineLicensePlate("");
+                          setTrafficFineViolation("");
+                          setTrafficFineReason("");
+                          setTrafficFineLocation("");
                           setTrafficFineImages([]);
+                          setTrafficFineReceiptImages([]);
                           setShowTrafficFineModal(true);
                         }}
                         className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
@@ -688,29 +755,145 @@ const BookingDetail = () => {
                         {formatCurrency((booking.traffic_fine_amount || 0) - (booking.traffic_fine_paid || 0))}
                       </span>
                     </div>
-                    {booking.traffic_fine_description && (
-                      <div className="mt-3 p-3 bg-white rounded border border-orange-200">
-                        <p className="text-sm font-medium text-gray-700 mb-1">Lý do phạt nguội:</p>
-                        <p className="text-sm text-gray-600">{booking.traffic_fine_description}</p>
-                      </div>
-                    )}
-                    {booking.traffic_fine_images && booking.traffic_fine_images.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Hình ảnh phạt nguội:</p>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {booking.traffic_fine_images.map((imageUrl, index) => (
-                            <div key={index} className="relative group">
-                              <img
-                                src={imageUrl}
-                                alt={`Phạt nguội ${index + 1}`}
-                                className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(imageUrl, "_blank")}
-                              />
+                    {booking.traffic_fine_description && (() => {
+                      // Parse description thành các trường riêng
+                      const description = booking.traffic_fine_description;
+                      const fields = {
+                        violationDate: "",
+                        licensePlate: "",
+                        violation: "",
+                        reason: "",
+                        location: ""
+                      };
+                      
+                      // Parse từ format: "Ngày vi phạm: ...\nBiển số: ..."
+                      const lines = description.split('\n');
+                      lines.forEach(line => {
+                        if (line.includes('Ngày vi phạm:')) {
+                          fields.violationDate = line.replace('Ngày vi phạm:', '').trim();
+                        } else if (line.includes('Biển số')) {
+                          fields.licensePlate = line.replace(/Biển số.*?:/, '').trim();
+                        } else if (line.includes('Hành vi vi phạm:')) {
+                          fields.violation = line.replace('Hành vi vi phạm:', '').trim();
+                        } else if (line.includes('Lý do:')) {
+                          fields.reason = line.replace('Lý do:', '').trim();
+                        } else if (line.includes('Địa điểm vi phạm:')) {
+                          fields.location = line.replace('Địa điểm vi phạm:', '').trim();
+                        }
+                      });
+                      
+                      return (
+                        <div className="mt-3 p-3 bg-white rounded border border-orange-200 space-y-2">
+                          <p className="text-sm font-medium text-gray-700 mb-2">Lý do phạt nguội:</p>
+                          {fields.violationDate && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Ngày vi phạm: </span>
+                              <span className="text-sm text-gray-700">{fields.violationDate}</span>
                             </div>
-                          ))}
+                          )}
+                          {fields.licensePlate && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Biển số (màu biển số): </span>
+                              <span className="text-sm text-gray-700">{fields.licensePlate}</span>
+                            </div>
+                          )}
+                          {fields.violation && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Hành vi vi phạm: </span>
+                              <span className="text-sm text-gray-700">{fields.violation}</span>
+                            </div>
+                          )}
+                          {fields.reason && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Lý do: </span>
+                              <span className="text-sm text-gray-700">{fields.reason}</span>
+                            </div>
+                          )}
+                          {fields.location && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-600">Địa điểm vi phạm: </span>
+                              <span className="text-sm text-gray-700">{fields.location}</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
+                    {(() => {
+                      // Parse images từ format mới hoặc cũ
+                      let violationImages = [];
+                      let receiptImages = [];
+                      
+                      if (booking.traffic_fine_images) {
+                        try {
+                          // Kiểm tra xem có phải là string JSON không
+                          let parsed;
+                          if (typeof booking.traffic_fine_images === 'string') {
+                            parsed = JSON.parse(booking.traffic_fine_images);
+                          } else {
+                            parsed = booking.traffic_fine_images;
+                          }
+                          
+                          // Kiểm tra format mới: {violations: [...], receipts: [...]}
+                          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            if (parsed.violations || parsed.receipts) {
+                              violationImages = Array.isArray(parsed.violations) ? parsed.violations : [];
+                              receiptImages = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+                            } else {
+                              // Object nhưng không phải format mới, thử convert thành array
+                              violationImages = Object.values(parsed).filter(v => typeof v === 'string');
+                            }
+                          } else if (Array.isArray(parsed)) {
+                            // Format cũ: array đơn giản
+                            violationImages = parsed;
+                          }
+                        } catch (e) {
+                          console.error('Error parsing traffic fine images:', e);
+                          // Fallback: nếu parse lỗi, thử dùng trực tiếp nếu là array
+                          if (Array.isArray(booking.traffic_fine_images)) {
+                            violationImages = booking.traffic_fine_images;
+                          }
+                        }
+                      }
+                      
+                      return (
+                        <>
+                          {violationImages.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm font-medium text-gray-700 mb-2">Hình ảnh phạt nguội:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {violationImages.map((imageUrl, index) => (
+                                  <div key={index} className="relative group">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`Phạt nguội ${index + 1}`}
+                                      className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                      onClick={() => setImageModal(imageUrl)}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {receiptImages.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm font-medium text-gray-700 mb-2">Hóa đơn nộp phạt:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {receiptImages.map((imageUrl, index) => (
+                                  <div key={`receipt-${index}`} className="relative group">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`Hóa đơn ${index + 1}`}
+                                      className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                      onClick={() => setImageModal(imageUrl)}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div className="mt-3 pt-3 border-t border-orange-200">
                       <p className="text-xs text-gray-500 italic">
                         * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
@@ -1005,134 +1188,167 @@ const BookingDetail = () => {
 
         {/* Traffic Fine Modal */}
         <Dialog open={showTrafficFineModal} onOpenChange={setShowTrafficFineModal}>
-          <DialogContent className="max-w-2xl w-full">
-            <DialogHeader>
+          <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col p-0">
+            <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
               <DialogTitle className="flex items-center gap-2">
                 <MdWarning className="text-orange-600" />
                 {booking?.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4 px-6 overflow-y-auto flex-1 min-h-0">
               {/* Hình ảnh - Đầu tiên */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Hình ảnh phạt nguội <span className="text-red-500">*</span>
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  <label className="cursor-pointer">
-                    <div className="text-center">
-                      <svg
-                        className="mx-auto h-10 w-10 text-gray-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                  {trafficFineImages.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Grid hiển thị ảnh đã upload */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {trafficFineImages.map((image) => (
+                          <div key={image.id} className="relative group">
+                            <img
+                              src={image.preview}
+                              alt={image.name}
+                              className="w-full h-32 object-cover rounded border border-gray-300"
+                            />
+                            <button
+                              onClick={() => removeTrafficFineImage(image.id)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Xóa ảnh"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Nút thêm ảnh */}
+                      <label className="block cursor-pointer">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-gray-400 transition-colors">
+                          <svg
+                            className="mx-auto h-6 w-6 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <p className="mt-1 text-xs text-gray-600">
+                            Thêm ảnh
+                          </p>
+                        </div>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleTrafficFineImageSelect}
+                          className="hidden"
                         />
-                      </svg>
-                      <p className="mt-2 text-sm text-gray-600">
-                        Nhấp để chọn ảnh hoặc kéo thả ảnh vào đây
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        PNG, JPG, GIF tối đa 5MB mỗi file. Tối đa 10 ảnh.
-                      </p>
+                      </label>
                     </div>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleTrafficFineImageSelect}
-                      className="hidden"
-                    />
-                  </label>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <div className="text-center">
+                        <svg
+                          className="mx-auto h-10 w-10 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Nhấp để chọn ảnh hoặc kéo thả ảnh vào đây
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, GIF tối đa 5MB mỗi file. Tối đa 10 ảnh.
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleTrafficFineImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
                 {trafficFineImages.length > 0 && (
-                  <>
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={handleExtractTrafficFineInfo}
-                        disabled={extractingInfo}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {extractingInfo ? (
-                          <>
-                            <svg
-                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Đang xử lý...
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            Đọc thông tin từ ảnh (AI)
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {trafficFineImages.map((image) => (
-                        <div key={image.id} className="relative group">
-                          <img
-                            src={image.preview}
-                            alt={image.name}
-                            className="w-full h-32 object-cover rounded border border-gray-300"
-                          />
-                          <button
-                            onClick={() => removeTrafficFineImage(image.id)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Xóa ảnh"
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={handleExtractTrafficFineInfo}
+                      disabled={extractingInfo}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {extractingInfo ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
                               stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          Đọc thông tin từ ảnh (AI)
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
                 {trafficFineImages.length === 0 && (
                   <p className="mt-2 text-xs text-red-500">
@@ -1141,24 +1357,80 @@ const BookingDetail = () => {
                 )}
               </div>
 
-              {/* Mô tả - Thứ hai */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả / Lý do phạt nguội
-                </label>
-                <textarea
-                  value={trafficFineDescription}
-                  onChange={(e) => setTrafficFineDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="4"
-                  placeholder="Ví dụ: Vi phạm tốc độ tại đường ABC, ngày DD/MM/YYYY..."
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Mô tả chi tiết về vi phạm giao thông (tùy chọn)
-                </p>
+              {/* Thông tin chi tiết phạt nguội */}
+              <div className="space-y-4">
+                {/* Ngày vi phạm */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày vi phạm
+                  </label>
+                  <input
+                    type="text"
+                    value={trafficFineViolationDate}
+                    onChange={(e) => setTrafficFineViolationDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ví dụ: 24/04/2023"
+                  />
+                </div>
+
+                {/* Biển số xe */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Biển số xe (màu biển số)
+                  </label>
+                  <input
+                    type="text"
+                    value={trafficFineLicensePlate}
+                    onChange={(e) => setTrafficFineLicensePlate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ví dụ: 98B3-797.30 (Trắng)"
+                  />
+                </div>
+
+                {/* Hành vi vi phạm */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hành vi vi phạm
+                  </label>
+                  <input
+                    type="text"
+                    value={trafficFineViolation}
+                    onChange={(e) => setTrafficFineViolation(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ví dụ: Không chấp hành hiệu lệnh của đèn tín hiệu giao thông"
+                  />
+                </div>
+
+                {/* Lý do */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lý do
+                  </label>
+                  <textarea
+                    value={trafficFineReason}
+                    onChange={(e) => setTrafficFineReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="2"
+                    placeholder="Mô tả lý do vi phạm..."
+                  />
+                </div>
+
+                {/* Địa điểm */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Địa điểm vi phạm
+                  </label>
+                  <input
+                    type="text"
+                    value={trafficFineLocation}
+                    onChange={(e) => setTrafficFineLocation(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ví dụ: Đường ABC, Quận XYZ, TP.HCM"
+                  />
+                </div>
               </div>
 
-              {/* Số tiền - Cuối cùng */}
+              {/* Số tiền */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
@@ -1179,6 +1451,115 @@ const BookingDetail = () => {
                 )}
               </div>
 
+              {/* Hóa đơn nộp phạt */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hóa đơn nộp phạt <span className="text-red-500">*</span>
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  {trafficFineReceiptImages.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Grid hiển thị ảnh đã upload */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {trafficFineReceiptImages.map((image) => (
+                          <div key={image.id} className="relative group">
+                            <img
+                              src={image.preview}
+                              alt={image.name}
+                              className="w-full h-32 object-cover rounded border border-gray-300"
+                            />
+                            <button
+                              onClick={() => removeTrafficFineReceiptImage(image.id)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Xóa ảnh"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Nút thêm ảnh */}
+                      <label className="block cursor-pointer">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-gray-400 transition-colors">
+                          <svg
+                            className="mx-auto h-6 w-6 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <p className="mt-1 text-xs text-gray-600">
+                            Thêm ảnh hóa đơn
+                          </p>
+                        </div>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleTrafficFineReceiptImageSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <div className="text-center">
+                        <svg
+                          className="mx-auto h-10 w-10 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Nhấp để chọn ảnh hóa đơn hoặc kéo thả ảnh vào đây
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, GIF tối đa 5MB mỗi file. Tối đa 5 ảnh.
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleTrafficFineReceiptImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+                {trafficFineReceiptImages.length === 0 && (
+                  <p className="mt-2 text-xs text-red-500">
+                    * Vui lòng thêm ít nhất một hình ảnh hóa đơn nộp phạt
+                  </p>
+                )}
+              </div>
+
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                 <p className="text-sm text-blue-800">
                   <strong>Lưu ý:</strong> Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
@@ -1190,27 +1571,32 @@ const BookingDetail = () => {
                 </p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  onClick={() => {
-                    setShowTrafficFineModal(false);
-                    setTrafficFineAmount("");
-                    setTrafficFineDescription("");
-                    setTrafficFineImages([]);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  disabled={submittingTrafficFine}
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleAddTrafficFine}
-                  disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0 || trafficFineImages.length === 0}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
-                </button>
-              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 pb-6 px-6 border-t mt-4 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowTrafficFineModal(false);
+                  setTrafficFineAmount("");
+                  setTrafficFineViolationDate("");
+                  setTrafficFineLicensePlate("");
+                  setTrafficFineViolation("");
+                  setTrafficFineReason("");
+                  setTrafficFineLocation("");
+                  setTrafficFineImages([]);
+                  setTrafficFineReceiptImages([]);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                disabled={submittingTrafficFine}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleAddTrafficFine}
+                disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0 || trafficFineImages.length === 0 || trafficFineReceiptImages.length === 0}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
+              </button>
             </div>
           </DialogContent>
         </Dialog>
@@ -1284,6 +1670,31 @@ const BookingDetail = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Image Modal */}
+        {imageModal && (
+          <div
+            className="fixed inset-0 bg-gray-500/30 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setImageModal(null)}
+          >
+            <div 
+              className="max-w-4xl max-h-[90vh] mx-4 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setImageModal(null)}
+                className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 z-10"
+              >
+                <MdClose className="w-6 h-6" />
+              </button>
+              <img
+                src={imageModal}
+                alt="Xem ảnh"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

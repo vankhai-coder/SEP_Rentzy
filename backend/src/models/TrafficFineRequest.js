@@ -47,6 +47,12 @@ const TrafficFineRequest = sequelize.define(
       type: DataTypes.ENUM("pending", "approved", "rejected"),
       defaultValue: "pending",
     },
+    // Trạng thái chuyển tiền phạt nguội cho owner: none, pending, approved, rejected
+    transfer_status: {
+      type: DataTypes.ENUM("none", "pending", "approved", "rejected"),
+      defaultValue: "none",
+      allowNull: false,
+    },
     // Lý do từ chối (nếu bị reject)
     rejection_reason: {
       type: DataTypes.TEXT,

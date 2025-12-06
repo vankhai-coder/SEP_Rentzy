@@ -346,6 +346,12 @@ const userSlice = createSlice({
                 state.isLoadingResetPassword = false;
                 state.isResetPasswordSuccess = false;
                 state.errorResetPassword = ''
+                
+                // Reset dark mode khi logout
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('theme');
+                    document.documentElement.classList.remove('dark');
+                }
 
             })
             .addCase(logoutUser.rejected, (state, action) => {

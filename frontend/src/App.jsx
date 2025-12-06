@@ -65,6 +65,7 @@ import SystemSettingManagement from "./pages/admin/SideBarComponents/SystemSetti
 import OverViewAdminDashboard from "./pages/admin/SideBarComponents/OverViewAdminDashboard.jsx";
 import TrafficFineApproval from "./pages/admin/SideBarComponents/TrafficFineApproval.jsx";
 import UserChart from "./pages/admin/SideBarComponents/UserChart.jsx";
+import TrafficFinePayoutManagement from "./pages/admin/SideBarComponents/TrafficFinePayoutManagement.jsx";
 
 // Test pages
 
@@ -201,6 +202,11 @@ const App = () => {
             <Route
               path="systemSettings"
               element={<SystemSettingManagement />}
+            />
+
+            <Route
+              path="trafficFinePayout"
+              element={<TrafficFinePayoutManagement />}
             />
 
             <Route

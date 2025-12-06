@@ -1816,11 +1816,21 @@ export const addTrafficFine = async (req, res) => {
       });
     }
 
-    // Validate images - bắt buộc phải có ít nhất 1 ảnh
-    if (!req.files || req.files.length === 0) {
+    // Validate images - bắt buộc phải có ít nhất 1 ảnh phạt nguội và 1 ảnh hóa đơn
+    const trafficFineImages = req.files?.images || [];
+    const receiptImages = req.files?.receipt_images || [];
+    
+    if (trafficFineImages.length === 0) {
       return res.status(400).json({
         success: false,
         message: "Vui lòng thêm ít nhất một hình ảnh phạt nguội",
+      });
+    }
+
+    if (receiptImages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng thêm ít nhất một hình ảnh hóa đơn nộp phạt",
       });
     }
 
@@ -1855,13 +1865,13 @@ export const addTrafficFine = async (req, res) => {
 
     const trafficFineAmount = parseFloat(amount);
 
-    // Upload images to Cloudinary
-    const uploadPromises = req.files.map((file) => {
+    // Upload traffic fine images to Cloudinary
+    const trafficFineUploadPromises = trafficFineImages.map((file) => {
       return new Promise((resolve, reject) => {
         cloudinary.uploader
           .upload_stream(
             {
-              folder: `traffic-fines/${booking.booking_id}`,
+              folder: `traffic-fines/${booking.booking_id}/violations`,
               resource_type: "image",
             },
             (error, result) => {
@@ -1876,15 +1886,45 @@ export const addTrafficFine = async (req, res) => {
       });
     });
 
-    const imageUrls = await Promise.all(uploadPromises);
+    // Upload receipt images to Cloudinary
+    const receiptUploadPromises = receiptImages.map((file) => {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: `traffic-fines/${booking.booking_id}/receipts`,
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result.secure_url);
+              }
+            }
+          )
+          .end(file.buffer);
+      });
+    });
+
+    const [trafficFineImageUrls, receiptImageUrls] = await Promise.all([
+      Promise.all(trafficFineUploadPromises),
+      Promise.all(receiptUploadPromises)
+    ]);
 
     // Tạo yêu cầu phạt nguội chờ duyệt thay vì cập nhật trực tiếp
+    // Lưu cả ảnh phạt nguội và ảnh hóa đơn vào images (JSON format)
+    const allImages = {
+      violations: trafficFineImageUrls,
+      receipts: receiptImageUrls
+    };
+
     const trafficFineRequest = await TrafficFineRequest.create({
       booking_id: booking.booking_id,
       owner_id: ownerId,
       amount: trafficFineAmount,
       description: description || null,
-      images: JSON.stringify(imageUrls),
+      images: JSON.stringify(allImages),
       status: "pending",
     });
 

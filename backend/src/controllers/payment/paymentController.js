@@ -272,6 +272,14 @@ const handlePayOSWebhook = async (req, res) => {
           });
         }
 
+        // Thông báo cho người thuê
+        await db.Notification.create({
+          user_id: booking.renter_id,
+          title: "Thanh toán phí phạt nguội thành công",
+          content: `Bạn đã thanh toán phí phạt nguội cho booking #${booking.booking_id}. Số tiền: ${Number(data.amount).toLocaleString('vi-VN')} VNĐ.`,
+          type: "rental",
+        });
+
         return res.json({
           success: true,
           message: "Thanh toán phí phạt nguội thành công",

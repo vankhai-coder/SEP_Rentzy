@@ -209,6 +209,15 @@ const ContractBooking = () => {
       handleRefreshStatus();
       setShowSignModal(false);
       setSignUrl("");
+      try {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      } catch (err) {
+        console.error("Error replacing history state:", err);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
@@ -223,6 +232,26 @@ const ContractBooking = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.contract?.contract_number, location.search]);
+
+  useEffect(() => {
+    const p = new URLSearchParams(location.search || "");
+    if (
+      p.has("code") ||
+      p.has("status") ||
+      p.has("orderCode") ||
+      p.has("cancel")
+    ) {
+      try {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      } catch (err) {
+        console.error("Error replacing history state:", err);
+      }
+    }
+  }, [location.search]);
 
   // NEW: Khi envelope xuất hiện sau khi booking load xong, tự động gọi getStatus để đồng bộ DB
   useEffect(() => {
@@ -290,9 +319,19 @@ const ContractBooking = () => {
         // Không ràng buộc đường dẫn cụ thể, miễn là đã quay về cùng origin
         setShowSignModal(false);
         setSignUrl("");
+        try {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        } catch (err) {
+          console.error("Error replacing history state:", err);
+        }
         handleRefreshStatus();
       }
-    } catch {
+    } catch (err) {
+      console.error("Error in handleIFrameLoad:", err);
       // ignore cross-origin while on DocuSign
     }
   };

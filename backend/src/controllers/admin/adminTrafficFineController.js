@@ -1,5 +1,6 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
+import { sendEmail } from "../../utils/email/sendEmail.js";
 
 const {
   TrafficFineRequest,
@@ -7,6 +8,7 @@ const {
   User,
   Vehicle,
   Notification,
+  Transaction,
 } = db;
 
 // GET /api/admin/traffic-fine-requests - Lấy danh sách yêu cầu phạt nguội
@@ -96,28 +98,57 @@ export const getTrafficFineRequests = async (req, res) => {
       
       if (requestData.images) {
         try {
-          // Nếu đã là array, giữ nguyên
-          if (Array.isArray(requestData.images)) {
+          let parsed;
+          // Nếu đã là object hoặc array, giữ nguyên
+          if (typeof requestData.images === 'object' && !Array.isArray(requestData.images)) {
+            parsed = requestData.images;
+          } else if (Array.isArray(requestData.images)) {
+            // Format cũ: array đơn giản
             requestData.images = requestData.images;
+            requestData.receipt_images = [];
+            return requestData;
           } else if (typeof requestData.images === 'string') {
             // Parse từ JSON string
-            const parsed = JSON.parse(requestData.images);
-            requestData.images = Array.isArray(parsed) ? parsed : [];
+            parsed = JSON.parse(requestData.images);
+          } else {
+            parsed = null;
+          }
+          
+          // Kiểm tra format mới: {violations: [...], receipts: [...]}
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (parsed.violations || parsed.receipts) {
+              // Format mới
+              requestData.images = Array.isArray(parsed.violations) ? parsed.violations : [];
+              requestData.receipt_images = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+            } else {
+              // Object nhưng không phải format mới, thử convert thành array
+              requestData.images = Object.values(parsed).filter(v => typeof v === 'string');
+              requestData.receipt_images = [];
+            }
+          } else if (Array.isArray(parsed)) {
+            // Format cũ: array đơn giản
+            requestData.images = parsed;
+            requestData.receipt_images = [];
           } else {
             requestData.images = [];
+            requestData.receipt_images = [];
           }
         } catch (e) {
           console.error(`Error parsing images for request #${requestData.request_id}:`, e);
           requestData.images = [];
+          requestData.receipt_images = [];
         }
       } else {
         requestData.images = [];
+        requestData.receipt_images = [];
       }
       
       // Log kết quả
       console.log(`Request #${requestData.request_id} processed:`, {
         images_count: requestData.images?.length || 0,
-        images: requestData.images
+        images: requestData.images,
+        receipt_images_count: requestData.receipt_images?.length || 0,
+        receipt_images: requestData.receipt_images
       });
       
       return requestData;
@@ -171,6 +202,84 @@ export const getTrafficFineRequestStats = async (req, res) => {
   }
 };
 
+// GET /api/admin/traffic-fine-requests/payouts
+export const getTrafficFinePayouts = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = {};
+    if (search) {
+      whereClause[Op.or] = [
+        { booking_id: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows } = await Booking.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: User, as: "renter", attributes: ["user_id", "full_name", "email"] },
+        {
+          model: Vehicle,
+          as: "vehicle",
+          include: [{ model: User, as: "owner", attributes: ["user_id", "full_name", "email"] }],
+          attributes: ["vehicle_id", "model", "license_plate"],
+        },
+      ],
+      order: [["updated_at", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    const payouts = await Promise.all(
+      rows.map(async (booking) => {
+        const totalPaidFine = parseFloat(booking.traffic_fine_paid || 0);
+        const totalFine = parseFloat(booking.traffic_fine_amount || 0);
+        const transferredSum = await Transaction.sum("amount", {
+          where: {
+            booking_id: booking.booking_id,
+            type: "COMPENSATION",
+            status: "COMPLETED",
+            note: { [Op.like]: `%TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}%` },
+          },
+        });
+        const alreadyTransferred = parseFloat(transferredSum || 0);
+        const remainingToTransfer = Math.max(totalPaidFine - alreadyTransferred, 0);
+
+        return {
+          booking_id: booking.booking_id,
+          renter: booking.renter,
+          owner: booking.vehicle?.owner || null,
+          vehicle: { model: booking.vehicle?.model, license_plate: booking.vehicle?.license_plate },
+          traffic_fine_amount: totalFine,
+          traffic_fine_paid: totalPaidFine,
+          transferred: alreadyTransferred,
+          remaining_to_transfer: remainingToTransfer,
+          updated_at: booking.updated_at,
+        };
+      })
+    );
+
+    const filtered = payouts.filter((p) => p.remaining_to_transfer > 0);
+
+    return res.json({
+      success: true,
+      data: {
+        payouts: filtered,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(count / limit),
+          totalItems: count,
+          itemsPerPage: parseInt(limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error getting traffic fine payouts:", error);
+    return res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách chuyển tiền phạt nguội", error: error.message });
+  }
+};
+
 // PATCH /api/admin/traffic-fine-requests/:id/approve - Duyệt yêu cầu phạt nguội
 export const approveTrafficFineRequest = async (req, res) => {
   const transaction = await db.sequelize.transaction();
@@ -190,6 +299,17 @@ export const approveTrafficFineRequest = async (req, res) => {
               model: User,
               as: "renter",
               attributes: ["user_id", "full_name", "email"],
+            },
+            {
+              model: Vehicle,
+              as: "vehicle",
+              include: [
+                {
+                  model: User,
+                  as: "owner",
+                  attributes: ["user_id", "full_name", "email"],
+                },
+              ],
             },
           ],
         },
@@ -264,27 +384,57 @@ export const approveTrafficFineRequest = async (req, res) => {
         );
       }
     } else {
-      // Xử lý request thêm/sửa phạt nguội (logic cũ)
-      // Parse images
+      // Xử lý request thêm/sửa phạt nguội
+      // Parse images - hỗ trợ cả format mới và format cũ
       let imageUrls = [];
+      let receiptImageUrls = [];
+      
       if (request.images) {
         try {
-          imageUrls = JSON.parse(request.images);
+          const parsed = typeof request.images === 'string' 
+            ? JSON.parse(request.images) 
+            : request.images;
+          
+          // Kiểm tra format mới: {violations: [...], receipts: [...]}
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (parsed.violations || parsed.receipts) {
+              // Format mới
+              imageUrls = Array.isArray(parsed.violations) ? parsed.violations : [];
+              receiptImageUrls = Array.isArray(parsed.receipts) ? parsed.receipts : [];
+            } else {
+              // Object nhưng không phải format mới
+              imageUrls = Object.values(parsed).filter(v => typeof v === 'string');
+            }
+          } else if (Array.isArray(parsed)) {
+            // Format cũ: array đơn giản
+            imageUrls = parsed;
+          }
         } catch (e) {
+          console.error('Error parsing images in approve:', e);
           imageUrls = [];
         }
       }
+
+      // Lưu cả violations và receipts vào traffic_fine_images với format mới
+      const allImages = {
+        violations: imageUrls,
+        receipts: receiptImageUrls
+      };
 
       // Cập nhật booking với thông tin phạt nguội
       await request.booking.update(
         {
           traffic_fine_amount: parseFloat(request.amount),
           traffic_fine_description: request.description,
-          traffic_fine_images: JSON.stringify(imageUrls),
+          traffic_fine_images: JSON.stringify(allImages),
           updated_at: now,
         },
         { transaction }
       );
+
+      // Lấy thông tin owner và renter
+      const owner = request.booking?.vehicle?.owner;
+      const renter = request.booking?.renter;
 
       // Tạo notification cho owner
       await Notification.create(
@@ -297,8 +447,56 @@ export const approveTrafficFineRequest = async (req, res) => {
         { transaction }
       );
 
+      // Gửi email cho owner
+      if (owner?.email) {
+        try {
+          const emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="UTF-8" />
+                <style>
+                  body { font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
+                  .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; }
+                  h2 { color: #333333; margin: 0 0 12px 0; }
+                  p { color: #555555; font-size: 15px; line-height: 1.6; margin: 6px 0; }
+                  .details { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+                  .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
+                  .row:last-child { border-bottom: none; }
+                  .label { color: #64748b; }
+                  .value { color: #334155; font-weight: 500; }
+                  .footer { margin-top: 24px; font-size: 12px; color: #888888; text-align: center; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <h2>Yêu cầu phạt nguội đã được duyệt</h2>
+                  <p>Xin chào${owner.full_name ? ` ${owner.full_name}` : ""},</p>
+                  <p>Yêu cầu ${request.description ? 'thêm/sửa' : 'thêm'} phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt.</p>
+                  <div class="details">
+                    <div class="row"><span class="label">Mã đơn thuê:</span><span class="value">#${request.booking.booking_id}</span></div>
+                    <div class="row"><span class="label">Số tiền phạt:</span><span class="value">${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ</span></div>
+                    ${request.description ? `<div class="row"><span class="label">Lý do:</span><span class="value">${request.description}</span></div>` : ''}
+                  </div>
+                  <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+                </div>
+              </body>
+            </html>
+          `;
+          await sendEmail({
+            from: process.env.GMAIL_USER,
+            to: owner.email,
+            subject: `Yêu cầu phạt nguội đã được duyệt - Booking #${request.booking.booking_id}`,
+            html: emailHtml,
+          });
+          console.log("Email sent to owner:", owner.email);
+        } catch (emailError) {
+          console.error("Error sending email to owner:", emailError);
+        }
+      }
+
       // Tạo notification cho renter
-      if (request.booking.renter_id) {
+      if (request.booking.renter_id && renter) {
         await Notification.create(
           {
             user_id: request.booking.renter_id,
@@ -308,6 +506,55 @@ export const approveTrafficFineRequest = async (req, res) => {
           },
           { transaction }
         );
+
+        // Gửi email cho renter
+        if (renter.email) {
+          try {
+            const emailHtml = `
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <meta charset="UTF-8" />
+                  <style>
+                    body { font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; }
+                    h2 { color: #333333; margin: 0 0 12px 0; }
+                    p { color: #555555; font-size: 15px; line-height: 1.6; margin: 6px 0; }
+                    .details { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+                    .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
+                    .row:last-child { border-bottom: none; }
+                    .label { color: #64748b; }
+                    .value { color: #334155; font-weight: 500; }
+                    .footer { margin-top: 24px; font-size: 12px; color: #888888; text-align: center; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <h2>Thông báo phí phạt nguội</h2>
+                    <p>Xin chào${renter.full_name ? ` ${renter.full_name}` : ""},</p>
+                    <p>Đơn thuê #${request.booking.booking_id} của bạn vừa có 1 phí phạt nguội.</p>
+                    <div class="details">
+                      <div class="row"><span class="label">Mã đơn thuê:</span><span class="value">#${request.booking.booking_id}</span></div>
+                      <div class="row"><span class="label">Số tiền phạt:</span><span class="value">${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ</span></div>
+                      ${request.description ? `<div class="row"><span class="label">Lý do:</span><span class="value">${request.description}</span></div>` : ''}
+                    </div>
+                    <p>Vui lòng thanh toán phí phạt nguội theo thỏa thuận với chủ xe.</p>
+                    <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+                  </div>
+                </body>
+              </html>
+            `;
+            await sendEmail({
+              from: process.env.GMAIL_USER,
+              to: renter.email,
+              subject: `Thông báo phí phạt nguội - Booking #${request.booking.booking_id}`,
+              html: emailHtml,
+            });
+            console.log("Email sent to renter:", renter.email);
+          } catch (emailError) {
+            console.error("Error sending email to renter:", emailError);
+          }
+        }
       }
     }
 
@@ -404,6 +651,9 @@ export const rejectTrafficFineRequest = async (req, res) => {
       { transaction }
     );
 
+    // Lấy thông tin owner
+    const owner = request.booking?.vehicle?.owner;
+
     // Tạo notification cho owner
     const requestTypeLabel = request.request_type === "delete" ? "xóa phạt nguội" : "phạt nguội";
     await Notification.create(
@@ -415,6 +665,54 @@ export const rejectTrafficFineRequest = async (req, res) => {
       },
       { transaction }
     );
+
+    // Gửi email cho owner (chỉ owner, không gửi cho renter)
+    if (owner?.email) {
+      try {
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <style>
+                body { font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; }
+                h2 { color: #dc2626; margin: 0 0 12px 0; }
+                p { color: #555555; font-size: 15px; line-height: 1.6; margin: 6px 0; }
+                .details { background: #fef2f2; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 4px solid #dc2626; }
+                .row { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
+                .row:last-child { border-bottom: none; }
+                .label { color: #64748b; }
+                .value { color: #334155; font-weight: 500; }
+                .footer { margin-top: 24px; font-size: 12px; color: #888888; text-align: center; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h2>Yêu cầu ${requestTypeLabel} bị từ chối</h2>
+                <p>Xin chào${owner.full_name ? ` ${owner.full_name}` : ""},</p>
+                <p>Yêu cầu ${requestTypeLabel} cho đơn thuê #${request.booking_id} đã bị admin từ chối.</p>
+                <div class="details">
+                  <div class="row"><span class="label">Mã đơn thuê:</span><span class="value">#${request.booking_id}</span></div>
+                  ${rejection_reason ? `<div class="row"><span class="label">Lý do từ chối:</span><span class="value">${rejection_reason}</span></div>` : ''}
+                </div>
+                <p>Vui lòng kiểm tra lại thông tin và gửi yêu cầu mới nếu cần.</p>
+                <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+              </div>
+            </body>
+          </html>
+        `;
+        await sendEmail({
+          from: process.env.GMAIL_USER,
+          to: owner.email,
+          subject: `Yêu cầu ${requestTypeLabel} bị từ chối - Booking #${request.booking_id}`,
+          html: emailHtml,
+        });
+        console.log("Email sent to owner:", owner.email);
+      } catch (emailError) {
+        console.error("Error sending email to owner:", emailError);
+      }
+    }
 
     await transaction.commit();
 
@@ -437,3 +735,88 @@ export const rejectTrafficFineRequest = async (req, res) => {
   }
 };
 
+export const transferTrafficFineToOwner = async (req, res) => {
+  const t = await db.sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findOne({
+      where: { booking_id: id },
+      include: [
+        {
+          model: Vehicle,
+          as: "vehicle",
+          include: [
+            { model: User, as: "owner", attributes: ["user_id", "full_name", "email"] },
+          ],
+        },
+      ],
+      transaction: t,
+    });
+
+    if (!booking) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: "Không tìm thấy đơn thuê" });
+    }
+
+    const totalPaidFine = parseFloat(booking.traffic_fine_paid || 0);
+    if (totalPaidFine <= 0) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Chưa có tiền phạt nguội đã thanh toán" });
+    }
+
+    const transferredSum = await Transaction.sum("amount", {
+      where: {
+        booking_id: booking.booking_id,
+        type: "COMPENSATION",
+        status: "COMPLETED",
+        note: { [Op.like]: `%TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}%` },
+      },
+      transaction: t,
+    });
+
+    const alreadyTransferred = parseFloat(transferredSum || 0);
+    const remainingToTransfer = totalPaidFine - alreadyTransferred;
+
+    if (remainingToTransfer <= 0) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Không còn số tiền phạt nguội cần chuyển" });
+    }
+
+    const ownerId = booking.vehicle?.owner?.user_id;
+    if (!ownerId) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: "Thiếu thông tin chủ xe" });
+    }
+
+    await Transaction.create(
+      {
+        booking_id: booking.booking_id,
+        from_user_id: null,
+        to_user_id: ownerId,
+        amount: remainingToTransfer,
+        type: "COMPENSATION",
+        status: "COMPLETED",
+        payment_method: "BANK_TRANSFER",
+        processed_at: new Date(),
+        note: `TRAFFIC_FINE_PAYOUT booking #${booking.booking_id}`,
+      },
+      { transaction: t }
+    );
+
+    await Notification.create(
+      {
+        user_id: ownerId,
+        title: "Nhận chuyển tiền phạt nguội",
+        content: `Bạn đã nhận ${remainingToTransfer.toLocaleString("vi-VN")} VNĐ tiền phạt nguội cho đơn #${booking.booking_id}.`,
+        type: "payout",
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    return res.json({ success: true, message: "Đã chuyển tiền phạt nguội cho chủ xe", data: { booking_id: booking.booking_id, amount: remainingToTransfer } });
+  } catch (error) {
+    await t.rollback();
+    return res.status(500).json({ success: false, message: "Lỗi khi chuyển tiền phạt nguội", error: error.message });
+  }
+};
