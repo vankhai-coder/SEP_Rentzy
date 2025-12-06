@@ -18,12 +18,15 @@ import {
   CardSimIcon,
   AlertTriangle,
   ChartArea,
+  Backpack,
+  ArrowBigLeft,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useEffect, useRef, useState } from "react";
 import { MdAnalytics } from "react-icons/md";
 import { BiMoneyWithdraw } from "react-icons/bi";
 import axiosInstance from "@/config/axiosInstance";
+import { FaBackspace } from "react-icons/fa";
 
 const AdminPage = () => {
 
@@ -234,13 +237,12 @@ const AdminPage = () => {
       >
         {/* Rentzy Logo :  */}
         <div className="flex items-center h-16 px-4 border-b border-secondary-200 dark:border-secondary-800 justify-between">
-          <a href="/rentzy" className="flex items-center gap-3">
+          <a href="/" className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-
-              T
+             <ArrowBigLeft />
             </div>
             <span className="text-xl font-bold text-secondary-900 dark:text-white transition-opacity">
-              TailPanel
+              Rentzy
             </span>
           </a>
           <button onClick={() => { setIsOpenMenuSideBar(false) }} className="lg:hidden p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800">

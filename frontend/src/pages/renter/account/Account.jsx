@@ -19,7 +19,6 @@ import {
   User,
   Star,
   ArrowRightLeft,
-  TicketXIcon,
   AlertCircle,
   CreditCard,
   LayoutDashboard,
@@ -28,7 +27,6 @@ import {
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
-import { useEffect } from "react";
 import axiosInstance from "@/config/axiosInstance";
 import { useQuery } from "@tanstack/react-query";
 
@@ -53,9 +51,9 @@ const Account = () => {
       enabled: !!userId, // only run this query if userId exists
     });
 
-    console.log("isEmailAuth:", isEmailAuth);
-    console.log("isLoadingCheckIfUserAuthMethodIsEmail:", isLoadingCheckIfUserAuthMethodIsEmail);
-    console.log("isErrorCheckIfUserAuthMethodIsEmail:", isErrorCheckIfUserAuthMethodIsEmail);
+  console.log("isEmailAuth:", isEmailAuth);
+  console.log("isLoadingCheckIfUserAuthMethodIsEmail:", isLoadingCheckIfUserAuthMethodIsEmail);
+  console.log("isErrorCheckIfUserAuthMethodIsEmail:", isErrorCheckIfUserAuthMethodIsEmail);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,7 +88,7 @@ const Account = () => {
     if (pathname.startsWith("/owner")) {
       return "Bảng điều khiển chủ xe";
     }
-    
+
     const pageMap = {
       "/account": "Tài khoản của tôi",
       "/notifications": "Thông báo",
@@ -114,7 +112,7 @@ const Account = () => {
   };
 
   const currentPageName = getPageName(location.pathname);
-  
+
   // Check if current pathname matches any valid route
   const getSelectValue = () => {
     if (location.pathname === "/logout") {
@@ -136,11 +134,11 @@ const Account = () => {
 
   const activeClass = "border-l-4 border-l-green-500  font-semibold bg-gray-50";
 
-  useEffect(() => {
-    if (role === "admin") {
-      navigate("/admin", { replace: true });
-    }
-  }, [role, navigate]);
+  // useEffect(() => {
+  //   if (role === "admin") {
+  //     navigate("/admin", { replace: true });
+  //   }
+  // }, [role, navigate]);
 
   if (!userId) {
     return (
@@ -154,15 +152,15 @@ const Account = () => {
     );
   }
 
-  if (role === "admin") {
-    navigate("/admin", { replace: true });
-    return null;
-  }
+  // if (role === "admin") {
+  //   navigate("/admin", { replace: true });
+  //   return null;
+  // }
 
   return (
     <div className="p-2 xs:px-4 sm:px-8 md:px-12 lg:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16 w-full max-w-full overflow-x-hidden box-border">
       {/* mobile: nav list */}
-      <Select 
+      <Select
         onValueChange={(value) => {
           navigate(value);
         }}
@@ -198,12 +196,23 @@ const Account = () => {
               <Star /> Đánh giá của tôi
             </SelectItem>
             {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
-            <SelectItem
-              className={"border-b-1 py-2 text-md font-medium"}
-              value={role === "owner" ? "/owner" : "/register_owner"}
-            >
-              <LayoutDashboard /> Bảng điều khiển chủ xe
-            </SelectItem>
+            {role === "owner" &&
+              <SelectItem
+                className={"border-b-1 py-2 text-md font-medium"}
+                value={'/owner'}
+              >
+                <LayoutDashboard /> Bảng điều khiển chủ xe
+              </SelectItem>
+            }
+            {/* Bảng điều khiển admin */}
+            {role === "admin" &&
+              <SelectItem
+                className={"border-b-1 py-2 text-md font-medium"}
+                value={"/admin"}
+              >
+                <LayoutDashboard /> Bảng điều khiển quản trị viên
+              </SelectItem>
+            }
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
               value="/favorites"
@@ -337,14 +346,30 @@ const Account = () => {
             </NavLink>
 
             {/* Bảng điều khiển chủ xe ở vị trí thứ 5 */}
-            <NavLink
-              to={role === "owner" ? "/owner" : "/register_owner"}
-              className={({ isActive }) =>
-                isActive ? `${baseClass} ${activeClass}` : baseClass
-              }
-            >
-              <LayoutDashboard /> Bảng điều khiển chủ xe
-            </NavLink>
+            {
+              role === "owner" &&
+              <NavLink
+                to={"/owner"}
+                className={({ isActive }) =>
+                  isActive ? `${baseClass} ${activeClass}` : baseClass
+                }
+              >
+                <LayoutDashboard /> Bảng điều khiển chủ xe
+              </NavLink>
+            }
+
+            {/* Bảng điều khiển admin */}
+            {
+              role === "admin" &&
+              <NavLink
+                to={"/admin"}
+                className={({ isActive }) =>
+                  isActive ? `${baseClass} ${activeClass}` : baseClass
+                }
+              >
+                <LayoutDashboard /> Bảng điều khiển quản trị viên
+              </NavLink>
+            }
 
             <NavLink
               to="/transactions"

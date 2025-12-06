@@ -3,7 +3,6 @@ import React, { useEffect } from "react";
 import AOS from "aos"; // [THÊM AOS: Import thư viện]
 import "aos/dist/aos.css"; // [THÊM AOS: Import CSS global]
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { fetchBrands } from "@/redux/features/renter/brand/brandSlice";
 import Hero from "@/components/common/Hero";
 import RecommendationSection from "@/components/renter/recommendation/RecommendationSection";
@@ -16,10 +15,9 @@ import RentalGuide from "@/components/common/RentalGuide";
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { role, loading: userLoading } = useSelector(
+  const {  loading: userLoading } = useSelector(
     (state) => state.userStore
   );
-  const navigate = useNavigate();
 
   const {
     brands,
@@ -27,10 +25,10 @@ const Home = () => {
     error: brandError,
   } = useSelector((state) => state.brandStore);
 
-  useEffect(() => {
-    if (role === "admin") navigate("/admin");
-    // Removed auto-redirect for owner to allow manual navigation via account page
-  }, [role, navigate]);
+  // useEffect(() => {
+  //   if (role === "admin") navigate("/admin");
+  //   // Removed auto-redirect for owner to allow manual navigation via account page
+  // }, [role, navigate]);
 
   useEffect(() => {
     dispatch(fetchBrands("car"));

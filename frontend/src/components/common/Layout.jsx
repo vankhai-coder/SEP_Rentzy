@@ -3,13 +3,12 @@ import Footer from "./Footer.jsx";
 import Header from "./Header.jsx";
 import { useEffect } from "react";
 import ChatBox from "../chat/ChatBox.jsx";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { checkAuth } from "@/redux/features/auth/authSlice.js";
 
 const Layout = ({ children }) => {
   const { role } = useSelector((state) => state.userStore);
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const location = useLocation();
@@ -37,11 +36,11 @@ const Layout = ({ children }) => {
   // Removed auto-redirect for owner to allow manual navigation via account page
 
   // redirect admin to /admin when landing on home after auth
-  useEffect(() => {
-    if (role === 'admin' && location.pathname === '/') {
-      navigate('/admin', { replace: true });
-    }
-  }, [role, location.pathname, navigate]);
+  // useEffect(() => {
+  //   if (role === 'admin' && location.pathname === '/') {
+  //     navigate('/admin', { replace: true });
+  //   }
+  // }, [role, location.pathname, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
