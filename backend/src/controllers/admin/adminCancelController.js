@@ -69,7 +69,7 @@ export const approveRefund = async (req, res) => {
               "vi-VN"
             )} VND cho booking #${
               cancellation.booking_id
-            } đã được admin duyệt. Tiền sẽ được chuyển về tài khoản của bạn trong 3-5 ngày làm việc.`,
+            } đã được admin duyệt. Tiền sẽ được chuyển về tài khoản của bạn .`,
             type: "refund",
             is_read: false,
           },

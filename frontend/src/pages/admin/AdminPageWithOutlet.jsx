@@ -560,7 +560,7 @@ const AdminPage = () => {
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-semibold flex-shrink-0">AS</div>
             <div className="flex-1 transition-opacity">
               <p className="text-sm font-medium text-secondary-900 dark:text-white">Admin User</p>
-              <p cl></p>
+              <p className="text-xs text-secondary-500 dark:text-secondary-400">admin@example.com</p>
             </div>
           </div>
         </div>

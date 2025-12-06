@@ -635,7 +635,7 @@ export const signRecipientView = async (req, res) => {
       ""
     ).trim();
     const originToUse = /^https:\/\//.test(rawOrigin) ? rawOrigin : null;
-    const normalizedReturnUrl = (returnUrl || "").trim();
+    const normalizedReturnUrl = (returnUrl || "").trim().replace(/[`'\"]/g, "");
     const redirectUrlCandidate =
       normalizedReturnUrl && /^http:\/\//.test(normalizedReturnUrl)
         ? normalizedReturnUrl
@@ -653,9 +653,47 @@ export const signRecipientView = async (req, res) => {
       });
     }
 
+    let effectiveClientUserId = String(signerClientUserId || signerEmail || "123");
+    try {
+      const recipientsUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/recipients`;
+      const recResp = await axios.get(recipientsUrl, {
+        headers: { Authorization: `Bearer ${docusignAccessToken}` },
+      });
+      const signers = Array.isArray(recResp.data?.signers) ? recResp.data.signers : [];
+      const targetRole = String(role || "").toLowerCase();
+      const targetEmail = String(signerEmail || "").toLowerCase();
+      let matched = signers.find((s) => {
+        const sEmail = String(s.email || "").toLowerCase();
+        const sRole = String(s.roleName || "").toLowerCase();
+        return (targetEmail && sEmail === targetEmail) || (targetRole && sRole === targetRole);
+      });
+      if (!matched) {
+        matched = targetRole === "owner"
+          ? signers.find((s) => String(s.routingOrder || "") === "2") || signers[1]
+          : signers.find((s) => String(s.routingOrder || "") === "1") || signers[0];
+      }
+      if (matched && matched.clientUserId) {
+        effectiveClientUserId = String(matched.clientUserId);
+        signerName = matched.name || signerName;
+        signerEmail = matched.email || signerEmail;
+      } else if (matched && !matched.clientUserId) {
+        return res.status(400).json({
+          errorCode: "EMBEDDED_CLIENT_USER_ID_REQUIRED",
+          message:
+            "Recipient view yêu cầu clientUserId đã được thiết lập cho người nhận trong envelope. Hãy tạo lại envelope với clientUserId cho người ký.",
+          recipient: {
+            name: matched.name,
+            email: matched.email,
+            roleName: matched.roleName,
+            routingOrder: matched.routingOrder,
+          },
+        });
+      }
+    } catch (resolveErr) {}
+
     const recipientViewRequest = {
       authenticationMethod: "none",
-      clientUserId: String(signerClientUserId || signerEmail || "123"),
+      clientUserId: effectiveClientUserId,
       userName: signerName,
       email: signerEmail,
       returnUrl: redirectUrlCandidate,
@@ -1052,8 +1090,8 @@ async function buildContractHtmlByBookingId(bookingId) {
     license_plate: safe(booking.vehicle?.license_plate, ""),
     price_per_day: formatCurrency(booking.vehicle?.price_per_day),
     days_count: String(daysBetween(booking.start_date, booking.end_date)),
-    start_date: new Date(booking.start_date).toLocaleString("vi-VN"),
-    end_date: new Date(booking.end_date).toLocaleString("vi-VN"),
+    start_datetime_display: `${new Date(booking.start_date).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" })} ${String(booking.start_time || "").slice(0, 5)}`,
+    end_datetime_display: `${new Date(booking.end_date).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" })} ${String(booking.end_time || "").slice(0, 5)}`,
     total_price: formatCurrency(booking.total_amount),
     deposit_paid: formatCurrency(
       booking.status === "deposit_paid"
@@ -1061,7 +1099,7 @@ async function buildContractHtmlByBookingId(bookingId) {
         : Math.round(Number(booking.total_amount || 0) * 0.3)
     ),
     booking_status: safe(booking.status, ""),
-    generated_at: new Date().toLocaleString("vi-VN"),
+    generated_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
   };
   return render(template, data);
 }

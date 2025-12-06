@@ -5,7 +5,9 @@ import {
   getTrafficFineRequestStats,
   approveTrafficFineRequest,
   rejectTrafficFineRequest,
-
+  transferTrafficFineToOwner,
+  getTrafficFinePayouts,
+  getAllTrafficFineRequests,
 } from "../../controllers/admin/adminTrafficFineController.js";
 
 const router = express.Router();
@@ -29,12 +31,21 @@ router.get("/stats", getTrafficFineRequestStats);
 // GET /api/admin/traffic-fine-requests
 router.get("/", getTrafficFineRequests);
 
+// GET /api/admin/traffic-fine-requests/all
+router.get("/all", getAllTrafficFineRequests);
+
+
 // PATCH /api/admin/traffic-fine-requests/:id/approve
 router.patch("/:id/approve", approveTrafficFineRequest);
 
 // PATCH /api/admin/traffic-fine-requests/:id/reject
 router.patch("/:id/reject", rejectTrafficFineRequest);
 
+// GET /api/admin/traffic-fine-requests/payouts
+router.get("/payouts", getTrafficFinePayouts);
+
+// PATCH /api/admin/traffic-fine-requests/bookings/:id/transfer
+router.patch("/bookings/:id/transfer", transferTrafficFineToOwner);
+
 
 export default router;
-
