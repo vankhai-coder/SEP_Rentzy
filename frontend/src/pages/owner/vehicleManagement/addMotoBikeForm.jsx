@@ -595,7 +595,7 @@ const AddMotoBikeForm = () => {
               {/* Extra Images */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hình ảnh bổ sung (tối đa 5 ảnh)
+                  Hình ảnh bổ sung (tối thiểu 5 ảnh)
                 </label>
                 <input
                   type="file"

@@ -280,7 +280,7 @@ const AddCarForm = () => {
 
       // Kiểm tra cả status code và success field
       if (response.status === 201 && response.data.success) {
-        toast.success('Đăng xe thành công!');
+        toast.success('Đăng xe thành công đợi duyệt!');
         navigate('/owner/vehicle-management');
       } else {
         // Nếu có response nhưng không thành công
@@ -645,7 +645,7 @@ const AddCarForm = () => {
             {/* Main Image */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh chính *
+                Hình ảnh chính *
               </label>
               <input
                 type="file"
@@ -668,7 +668,7 @@ const AddCarForm = () => {
             {/* Extra Images */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh phụ
+                Hình ảnh bổ sung (Tối thiểu 5 ảnh)
               </label>
               <input
                 type="file"
