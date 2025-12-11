@@ -140,7 +140,7 @@ export const generateCarDescription = async (req, res) => {
 
   } catch (error) {
     console.error("generateCarDescription error:", error?.response?.data || error?.message || error);
-    const status = error?.response?.status || 500;
+    const status = error?.response?.status ?? error?.status ?? 500;
 
     if (status === 402 || status === 429) {
       const { brand, model, year } = req.body || {};
@@ -229,7 +229,7 @@ export const generateMotoBikeDescription = async (req, res) => {
         return res.json({ success: true, description });
     } catch (error) {
         console.error("generateMotoBikeDescription error:", error?.response?.data || error?.message || error);
-        const status = error?.response?.status || 500;
+        const status = error?.response?.status ?? error?.status ?? 500;
         const message = error?.response?.data?.error?.message || 
                         error?.response?.data?.message || 
                         (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
