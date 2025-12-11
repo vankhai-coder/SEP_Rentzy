@@ -300,10 +300,12 @@ export const createVehicle = async (req, res) => {
 
     // Upload additional images if provided
     if (req.files && req.files.extra_images) {
-      for (const file of req.files.extra_images) {
-        const imageResult = await uploadImageToCloudinary(file);
-        additional_images.push(imageResult.url);
-      }
+      const results = await Promise.allSettled(
+        req.files.extra_images.map((file) => uploadImageToCloudinary(file))
+      );
+      additional_images = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => r.value.url);
     }
 
     let vehicleData = {
@@ -471,11 +473,12 @@ export const updateVehicle = async (req, res) => {
 
     // Upload new additional images if provided
     if (req.files && req.files.extra_images) {
-      additional_images = []; // Replace all extra images with new ones
-      for (const file of req.files.extra_images) {
-        const imageResult = await uploadImageToCloudinary(file);
-        additional_images.push(imageResult.url);
-      }
+      const results = await Promise.allSettled(
+        req.files.extra_images.map((file) => uploadImageToCloudinary(file))
+      );
+      additional_images = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => r.value.url);
     }
 
     let updateData = {

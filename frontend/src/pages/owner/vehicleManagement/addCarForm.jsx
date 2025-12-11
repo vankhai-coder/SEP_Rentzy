@@ -252,6 +252,36 @@ const AddCarForm = () => {
       }
       const submitData = new FormData();
 
+      const compressImage = (file, maxWidth = 1600, quality = 0.75) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            img.onload = () => {
+              const scale = Math.min(1, maxWidth / img.width);
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return reject(new Error("Compress failed"));
+                  const name =
+                    file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                  resolve(new File([blob], name, { type: "image/jpeg" }));
+                },
+                "image/jpeg",
+                quality
+              );
+            };
+            img.onerror = reject;
+            img.src = ev.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
       // Add form data
       submitData.append('vehicle_type', 'car');
       submitData.append('brand', formData.brand);
@@ -274,12 +304,17 @@ const AddCarForm = () => {
 
       // Add images
       if (mainImage) {
-        submitData.append("main_image", mainImage);
+        let cMain = mainImage;
+        try { cMain = await compressImage(mainImage); } catch { /* empty */ }
+        submitData.append("main_image", cMain);
       }
 
-      extraImages.forEach((image) => {
-        submitData.append("extra_images", image);
-      });
+      const compressedExtras = await Promise.all(
+        extraImages.map(async (image) => {
+          try { return await compressImage(image); } catch { return image; }
+        })
+      );
+      compressedExtras.forEach((image) => submitData.append("extra_images", image));
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
