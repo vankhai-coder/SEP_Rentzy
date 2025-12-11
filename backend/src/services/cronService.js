@@ -4,6 +4,7 @@ import Vehicle from "../models/Vehicle.js";
 import User from "../models/User.js";
 import Notification from "../models/Notification.js";
 import FeatureFlag from "../models/FeatureFlag.js";
+import Brand from "../models/Brand.js";
 import { checkVehicleInfoCore } from "../controllers/ai/generateCarDescription.js";
 import { Op } from "sequelize";
 
@@ -444,6 +445,7 @@ const autoApprovePendingVehicles = async () => {
       where: { approvalStatus: "pending" },
       include: [
         { model: User, as: "owner", attributes: ["user_id", "full_name", "email"] },
+        { model: Brand, as: "brand", attributes: ["brand_id", "name"] },
       ],
       order: [["created_at", "ASC"]],
       limit: 20,
@@ -471,8 +473,8 @@ const autoApprovePendingVehicles = async () => {
             await Notification.create({
               user_id: v.owner?.user_id,
               title: "Xe đã được duyệt",
-              content: `Xe ${v.model} (${v.license_plate}) đã được hệ thống duyệt tự động.`,
-              type: "alert",
+              content: `Xe ${v.model} (${v.license_plate}) đã được duyệt, bây giờ người dùng có thể thuê.`,
+              type: "rental",
               is_read: false,
             });
           } catch (e) {
