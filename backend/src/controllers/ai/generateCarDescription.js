@@ -394,9 +394,17 @@ export const checkVehicleInfo = async (req, res) => {
               const ok = allowedBodyTypes.includes(bt);
               const guide = knownModelGuides[brandModelKey];
               if (!ok) {
-                pushBase("Dáng xe", "fail", `${src.body_type}. Gợi ý: chọn một trong ${allowedBodyTypes.join(", ")}${guide ? ` (mẫu: ${guide.body_type})` : ""}`);
+                pushBase(
+                  "Dáng xe",
+                  "fail",
+                  `${src.body_type}. Gợi ý: chọn một trong ${allowedBodyTypes.join(", ")}${guide ? ` (mẫu: ${guide.body_type})` : ""}`
+                );
               } else if (guide && bt !== guide.body_type) {
-                pushBase("Dáng xe", "fail", `${src.body_type}. Gợi ý: mẫu ${guide.body_type} cho ${src.brand} ${src.model}`);
+                pushBase(
+                  "Dáng xe",
+                  "fail",
+                  `${src.body_type} không phù hợp với ${src.brand} ${src.model}. Gợi ý: mẫu ${guide.body_type} cho ${src.brand} ${src.model}`
+                );
               } else {
                 pushBase("Dáng xe", "pass", src.body_type);
               }
@@ -476,23 +484,26 @@ export const checkVehicleInfo = async (req, res) => {
               pushBase("Dung tích", "warn", "Thiếu. Gợi ý: nhập dung tích (ví dụ: 125 cc)");
             }
           }
-          if (src.fuel_type) {
-            const f = fuelAlias(src.fuel_type);
-            const ok = allowedFuelTypes.includes(f);
-            pushBase("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric`);
-          } else {
-            pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
-          }
-          if (src.fuel_consumption) {
-            const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
-            if (Number.isFinite(fc)) {
-              const ok = fc >= 3 && fc <= 20;
-              pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+          // Tránh lặp: chỉ thêm Nhiên liệu/Mức tiêu thụ ở khối chung nếu KHÔNG phải ô tô
+          if (src.vehicle_type !== "car") {
+            if (src.fuel_type) {
+              const f = fuelAlias(src.fuel_type);
+              const ok = allowedFuelTypes.includes(f);
+              pushBase("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric`);
             } else {
-              pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+              pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
             }
-          } else {
-            pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+            if (src.fuel_consumption) {
+              const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+              if (Number.isFinite(fc)) {
+                const ok = fc >= 3 && fc <= 20;
+                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+              } else {
+                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+              }
+            } else {
+              pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+            }
           }
           
 

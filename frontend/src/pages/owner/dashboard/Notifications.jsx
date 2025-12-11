@@ -420,9 +420,12 @@ const Notifications = () => {
                       )}
                     </div>
                     
-                    <p className={`text-sm mb-3 ${
-                      !notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600 dark:text-gray-400'
-                    }`}>
+                    <p
+                      className={`text-sm mb-3 ${
+                        !notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      style={{ whiteSpace: 'pre-line' }}
+                    >
                       {notification.content}
                     </p>
 

@@ -675,3 +675,122 @@ export const changePasswordSuccessTemplate = () => {
   </html>
   `;
 };
+
+export const vehicleApprovalNotificationTemplate = ({
+  ownerName = "",
+  vehicleModel = "",
+  licensePlate = "",
+  dashboardLink = "",
+  detailsText = "",
+}) => {
+  const safe = (v = "") => String(v || "");
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Xe đã được duyệt</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f9fafb; margin:0; padding:0; }
+        .container { max-width:600px; margin:40px auto; background:#ffffff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:28px; }
+        h2 { color:#111827; margin:0 0 12px; }
+        p { color:#374151; font-size:15px; line-height:1.6; margin:8px 0; }
+        .card { background:#f3f4f6; border-radius:8px; padding:16px; margin:16px 0; }
+        .row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #e5e7eb; }
+        .row:last-child { border-bottom:none; }
+        .label { color:#6b7280; }
+        .value { color:#111827; font-weight:600; }
+        .btn { display:inline-block; margin-top:16px; padding:12px 18px; background:#2563eb; color:#ffffff !important; text-decoration:none; border-radius:8px; font-weight:600; }
+        .footer { margin-top:22px; font-size:12px; color:#9ca3af; text-align:center; }
+        .details { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; margin-top:12px; white-space:pre-line; color:#111827; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Xe của bạn đã được duyệt</h2>
+        <p>Xin chào ${safe(ownerName)},</p>
+        <p>Xe của bạn đã được duyệt và sẵn sàng để cho thuê trên Rentzy.</p>
+        <div class="card">
+          <div class="row">
+            <span class="label">Mẫu xe</span>
+            <span class="value">${safe(vehicleModel)}</span>
+          </div>
+          <div class="row">
+            <span class="label">Biển số</span>
+            <span class="value">${safe(licensePlate)}</span>
+          </div>
+          <div class="row">
+            <span class="label">Trạng thái</span>
+            <span class="value">Đã duyệt</span>
+          </div>
+        </div>
+        ${detailsText ? `<div class="details">${safe(detailsText)}</div>` : ""}
+        ${dashboardLink ? `<a class="btn" href="${safe(dashboardLink)}" target="_blank">Quản lý xe</a>` : ""}
+        <p>Cảm ơn bạn đã tin tưởng sử dụng Rentzy.</p>
+        <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+      </div>
+    </body>
+  </html>
+  `;
+};
+
+export const vehicleRejectionNotificationTemplate = ({
+  ownerName = "",
+  vehicleModel = "",
+  licensePlate = "",
+  dashboardLink = "",
+  reason = "",
+  detailsText = "",
+}) => {
+  const safe = (v = "") => String(v || "");
+  return `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Xe bị từ chối</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f9fafb; margin:0; padding:0; }
+        .container { max-width:600px; margin:40px auto; background:#ffffff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:28px; }
+        h2 { color:#b91c1c; margin:0 0 12px; }
+        p { color:#374151; font-size:15px; line-height:1.6; margin:8px 0; }
+        .card { background:#fef2f2; border:1px solid #fee2e2; border-radius:8px; padding:16px; margin:16px 0; }
+        .row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #fee2e2; }
+        .row:last-child { border-bottom:none; }
+        .label { color:#6b7280; }
+        .value { color:#111827; font-weight:600; }
+        .reason { background:#fff7ed; border:1px solid #ffedd5; border-radius:8px; padding:12px; margin-top:12px; color:#7c2d12; }
+        .btn { display:inline-block; margin-top:16px; padding:12px 18px; background:#2563eb; color:#ffffff !important; text-decoration:none; border-radius:8px; font-weight:600; }
+        .footer { margin-top:22px; font-size:12px; color:#9ca3af; text-align:center; }
+        .details { background:#fff7ed; border:1px solid #ffedd5; border-radius:8px; padding:12px; margin-top:12px; white-space:pre-line; color:#7c2d12; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Xe của bạn đã bị từ chối</h2>
+        <p>Xin chào ${safe(ownerName)},</p>
+        <p>Rất tiếc, xe của bạn chưa đáp ứng yêu cầu duyệt trên Rentzy.</p>
+        <div class="card">
+          <div class="row">
+            <span class="label">Mẫu xe</span>
+            <span class="value">${safe(vehicleModel)}</span>
+          </div>
+          <div class="row">
+            <span class="label">Biển số</span>
+            <span class="value">${safe(licensePlate)}</span>
+          </div>
+          <div class="row">
+            <span class="label">Trạng thái</span>
+            <span class="value">Bị từ chối</span>
+          </div>
+        </div>
+        ${reason ? `<div class="reason"><strong>Lý do:</strong> ${safe(reason)}</div>` : ""}
+        ${detailsText ? `<div class="details">${safe(detailsText)}</div>` : ""}
+        ${dashboardLink ? `<a class="btn" href="${safe(dashboardLink)}" target="_blank">Quản lý xe</a>` : ""}
+        <p>Bạn có thể cập nhật lại thông tin và gửi yêu cầu duyệt lần nữa.</p>
+        <div class="footer">© ${new Date().getFullYear()} Rentzy. Mọi quyền được bảo lưu.</div>
+      </div>
+    </body>
+  </html>
+  `;
+};

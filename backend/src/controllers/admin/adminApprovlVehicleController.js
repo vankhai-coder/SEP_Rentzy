@@ -1,5 +1,10 @@
 import db from "../../models/index.js";
 import { Op } from "sequelize";
+import { sendEmail } from "../../utils/email/sendEmail.js";
+import {
+  vehicleApprovalNotificationTemplate,
+  vehicleRejectionNotificationTemplate,
+} from "../../utils/email/templates/emailTemplate.js";
 
 const { Vehicle, User, Brand, Notification, FeatureFlag } = db;
 
@@ -106,8 +111,13 @@ export const approveVehicle = async (req, res) => {
         {
           model: User,
           as: "owner",
-          attributes: ["user_id", "full_name", "email"],
+          attributes: ["user_id", "full_name", "email", "updatedEmail"],
         },
+        {
+          model: Brand,
+          as: "brand",
+          attributes: ["name"]
+        }
       ],
     });
 
@@ -145,6 +155,53 @@ export const approveVehicle = async (req, res) => {
       console.error("Error creating notification for approved vehicle:", e);
     }
 
+    try {
+      const to = (vehicle.owner?.email || vehicle.owner?.updatedEmail || "").trim();
+      if (to) {
+        const dashboardLink = `${process.env.CLIENT_ORIGIN}/owner/vehicle-management`;
+        const v = vehicle?.toJSON ? vehicle.toJSON() : vehicle;
+        const detailsText = [
+          `- Loại phương tiện: ${v.vehicle_type || ""}`,
+          `- Hãng xe: ${v.brand?.name || ""}`,
+          `- Mẫu xe: ${v.model || ""}`,
+          `- Biển số: ${v.license_plate || ""}`,
+          `- Năm sản xuất: ${v.year || ""}`,
+          `- Giá/ngày: ${typeof v.price_per_day !== "undefined" ? Number(v.price_per_day).toLocaleString("vi-VN") + " VNĐ" : ""}`,
+          `- Vị trí: ${v.location || ""}`,
+          `- Truyền động: ${v.transmission || ""}`,
+          `- Kiểu thân xe: ${v.body_type || ""}`,
+          `- Số chỗ ngồi: ${typeof v.seats !== "undefined" ? v.seats : ""}`,
+          `- Nhiên liệu: ${v.fuel_type || ""}`,
+          `- Loại xe máy: ${v.bike_type || ""}`,
+          `- Dung tích động cơ: ${typeof v.engine_capacity !== "undefined" ? v.engine_capacity : ""}`,
+          `- Mức tiêu thụ: ${v.fuel_consumption || ""}`,
+          `- Yêu cầu chủ xe xác nhận: ${v.require_owner_confirmation ? "Có" : "Không"}`,
+          `- Trạng thái: ${v.status || ""}`,
+          `- Trạng thái duyệt: ${v.approvalStatus || ""}`,
+          `- Số lượt thuê: ${typeof v.rent_count !== "undefined" ? v.rent_count : 0}`,
+          `- Tọa độ: ${[v.latitude, v.longitude].filter((x) => typeof x !== "undefined" && x !== null).join(", ")}`,
+          `- Tính năng: ${Array.isArray(v.features) ? v.features.join(", ") : (typeof v.features === "object" ? JSON.stringify(v.features) : (v.features || ""))}`,
+        ].filter(Boolean).join("\n");
+        const html = vehicleApprovalNotificationTemplate({
+          ownerName: vehicle.owner?.full_name || "",
+          vehicleModel: vehicle.model || "",
+          licensePlate: vehicle.license_plate || "",
+          dashboardLink,
+          detailsText,
+        });
+        await sendEmail({
+          from: process.env.GMAIL_USER,
+          to,
+          subject: "Xe của bạn đã được duyệt",
+          html,
+        });
+      } else {
+        console.warn("Owner email is missing. Skipped sending approval email for vehicle:", id);
+      }
+    } catch (emailErr) {
+      console.error("Error sending approval email:", emailErr);
+    }
+
     res.json({
       success: true,
       message: "Xe đã được chấp nhận",
@@ -176,8 +233,13 @@ export const rejectVehicle = async (req, res) => {
         {
           model: User,
           as: "owner",
-          attributes: ["user_id", "full_name", "email"],
+          attributes: ["user_id", "full_name", "email", "updatedEmail"],
         },
+        {
+          model: Brand,
+          as: "brand",
+          attributes: ["name"]
+        }
       ],
     });
 
@@ -205,7 +267,9 @@ export const rejectVehicle = async (req, res) => {
       await Notification.create({
         user_id: vehicle.owner?.user_id,
         title: "Xe bị từ chối",
-        content: `Xe ${vehicle.model} (${vehicle.license_plate}) đã bị từ chối. Lý do: ${reason || "không cung cấp"}.`,
+        content: `Xe ${vehicle.model} (${vehicle.license_plate}) đã bị từ chối.\n${(reason || "")
+          .replace(/\s*-\s*/g, '\n- ')
+          .trim()}`,
         type: "alert",
         is_read: false,
         created_at: new Date(),
@@ -213,6 +277,54 @@ export const rejectVehicle = async (req, res) => {
       });
     } catch (e) {
       console.error("Error creating notification for rejected vehicle:", e);
+    }
+
+    try {
+      const to = (vehicle.owner?.email || vehicle.owner?.updatedEmail || "").trim();
+      if (to) {
+        const dashboardLink = `${process.env.CLIENT_ORIGIN}/owner/vehicle-management`;
+        const v = vehicle?.toJSON ? vehicle.toJSON() : vehicle;
+        const detailsText = [
+          `- Loại phương tiện: ${v.vehicle_type || ""}`,
+          `- Hãng xe: ${v.brand?.name || ""}`,
+          `- Mẫu xe: ${v.model || ""}`,
+          `- Biển số: ${v.license_plate || ""}`,
+          `- Năm sản xuất: ${v.year || ""}`,
+          `- Giá/ngày: ${typeof v.price_per_day !== "undefined" ? Number(v.price_per_day).toLocaleString("vi-VN") + " VNĐ" : ""}`,
+          `- Vị trí: ${v.location || ""}`,
+          `- Truyền động: ${v.transmission || ""}`,
+          `- Kiểu thân xe: ${v.body_type || ""}`,
+          `- Số chỗ ngồi: ${typeof v.seats !== "undefined" ? v.seats : ""}`,
+          `- Nhiên liệu: ${v.fuel_type || ""}`,
+          `- Loại xe máy: ${v.bike_type || ""}`,
+          `- Dung tích động cơ: ${typeof v.engine_capacity !== "undefined" ? v.engine_capacity : ""}`,
+          `- Mức tiêu thụ: ${v.fuel_consumption || ""}`,
+          `- Yêu cầu chủ xe xác nhận: ${v.require_owner_confirmation ? "Có" : "Không"}`,
+          `- Trạng thái: ${v.status || ""}`,
+          `- Trạng thái duyệt: ${v.approvalStatus || ""}`,
+          `- Số lượt thuê: ${typeof v.rent_count !== "undefined" ? v.rent_count : 0}`,
+          `- Tọa độ: ${[v.latitude, v.longitude].filter((x) => typeof x !== "undefined" && x !== null).join(", ")}`,
+          `- Tính năng: ${Array.isArray(v.features) ? v.features.join(", ") : (typeof v.features === "object" ? JSON.stringify(v.features) : (v.features || ""))}`,
+        ].filter(Boolean).join("\n");
+        const html = vehicleRejectionNotificationTemplate({
+          ownerName: vehicle.owner?.full_name || "",
+          vehicleModel: vehicle.model || "",
+          licensePlate: vehicle.license_plate || "",
+          dashboardLink,
+          reason: (reason || "").replace(/\s*-\s*/g, '\n- ').trim(),
+          detailsText,
+        });
+        await sendEmail({
+          from: process.env.GMAIL_USER,
+          to,
+          subject: "Xe của bạn đã bị từ chối",
+          html,
+        });
+      } else {
+        console.warn("Owner email is missing. Skipped sending rejection email for vehicle:", id);
+      }
+    } catch (emailErr) {
+      console.error("Error sending rejection email:", emailErr);
     }
 
     res.json({
