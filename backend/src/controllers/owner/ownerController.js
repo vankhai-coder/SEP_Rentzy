@@ -264,6 +264,30 @@ export const createVehicle = async (req, res) => {
       require_owner_confirmation,
     } = req.body;
 
+    const parsedYear = parseInt(year);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(parsedYear) || parsedYear > currentYear) {
+      return res.status(400).json({
+        success: false,
+        message: `Năm sản xuất phải nhỏ hơn hoặc bằng ${currentYear}`,
+      });
+    }
+
+    const mainImageCount = (req.files && req.files.main_image) ? req.files.main_image.length : 0;
+    if (mainImageCount !== 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Hình ảnh chính bắt buộc và chỉ được chọn 1 ảnh",
+      });
+    }
+    const extraImageCount = (req.files && req.files.extra_images) ? req.files.extra_images.length : 0;
+    if (extraImageCount < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Phần hình ảnh bổ sung phải có tối thiểu 5 ảnh",
+      });
+    }
+
     // Handle image uploads
     let main_image_url = null;
     let additional_images = [];

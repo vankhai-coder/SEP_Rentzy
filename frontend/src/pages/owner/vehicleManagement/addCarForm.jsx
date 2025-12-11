@@ -240,6 +240,16 @@ const AddCarForm = () => {
     setLoading(true);
 
     try {
+      if (!mainImage) {
+        toast.error('Vui lòng chọn 1 hình ảnh chính');
+        setLoading(false);
+        return;
+      }
+      if (extraImages.length < 5) {
+        toast.error('Phần hình ảnh bổ sung phải có tối thiểu 5 ảnh');
+        setLoading(false);
+        return;
+      }
       const submitData = new FormData();
 
       // Add form data
@@ -486,7 +496,7 @@ const AddCarForm = () => {
                   placeholder="VD: 2023"
                   required
                   min="1900"
-                  max="2030"
+                  max={new Date().getFullYear()}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
