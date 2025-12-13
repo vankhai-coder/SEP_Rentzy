@@ -111,6 +111,14 @@ const VehicleDetail = () => {
     }
   };
 
+  const normalizeApprovalStatus = (v) => {
+    const raw = v?.approvalStatus ?? v?.approval_status ?? 'none';
+    const s = String(raw).toLowerCase();
+    if (s === 'accepted' || s === 'accept') return 'approved';
+    if (s === 'deny' || s === 'denied' || s === 'refused') return 'rejected';
+    return ['approved', 'pending', 'rejected', 'none'].includes(s) ? s : 'none';
+  };
+
   // Create combined images array with main image first
   const getAllImages = () => {
     if (!vehicle) return [];
@@ -441,9 +449,9 @@ const VehicleDetail = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Trạng thái duyệt:</span>
                   <div className="flex items-center gap-2">
-                    {getApprovalIcon(vehicle.approvalStatus)}
-                    <span className={getApprovalBadge(vehicle.approvalStatus)}>
-                      {getApprovalText(vehicle.approvalStatus)}
+                    {getApprovalIcon(normalizeApprovalStatus(vehicle))}
+                    <span className={getApprovalBadge(normalizeApprovalStatus(vehicle))}>
+                      {getApprovalText(normalizeApprovalStatus(vehicle))}
                     </span>
                   </div>
                 </div>
