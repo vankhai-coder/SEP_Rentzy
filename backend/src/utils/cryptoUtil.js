@@ -1,5 +1,8 @@
 // utils/cryptoUtil.js
 import crypto from "crypto";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 /**
  * Encrypts plaintext using AES-256-GCM with a passphrase.
