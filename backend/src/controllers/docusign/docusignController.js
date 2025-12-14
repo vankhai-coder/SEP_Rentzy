@@ -834,23 +834,25 @@ export const getStatus = async (req, res) => {
       });
 
       if (dbContract) {
-        bookingIdForNoti = dbContract.booking_id;
-        const bookingRec = await Booking.findByPk(dbContract.booking_id, {
-          include: [
-            { model: User, as: "renter", attributes: ["email", "user_id"] },
-            {
-              model: Vehicle,
-              as: "vehicle",
-              attributes: [],
-              include: [{ model: User, as: "owner", attributes: ["email", "user_id"] }],
-            },
-          ],
-        });
-        renterEmail = bookingRec?.renter?.email?.toLowerCase() || null;
-        ownerEmail = bookingRec?.vehicle?.owner?.email?.toLowerCase() || null;
-        renterId = bookingRec?.renter?.user_id || null;
-        ownerId = bookingRec?.vehicle?.owner?.user_id || null;
-      }
+          bookingIdForNoti = dbContract.booking_id;
+          const bookingRec = await Booking.findByPk(dbContract.booking_id, {
+            include: [
+              { model: User, as: "renter", attributes: ["email", "user_id"] },
+              {
+                model: Vehicle,
+                as: "vehicle",
+                // attributes: [], // Removed optimization to ensure owner join works
+                include: [{ model: User, as: "owner", attributes: ["email", "user_id"] }],
+              },
+            ],
+          });
+          renterEmail = bookingRec?.renter?.email?.toLowerCase() || null;
+          ownerEmail = bookingRec?.vehicle?.owner?.email?.toLowerCase() || null;
+          renterId = bookingRec?.renter?.user_id || null;
+          ownerId = bookingRec?.vehicle?.owner?.user_id || null;
+          
+          console.log("DEBUG: getStatus resolved emails:", { renterEmail, ownerEmail, renterId, ownerId });
+        }
     } catch (dbErr) {
       console.warn("Pre-fetch DB contract failed:", dbErr);
     }
@@ -971,6 +973,7 @@ export const getStatus = async (req, res) => {
       if (dbContract) {
         // 1. Renter just signed -> Notify Owner
         if (updates.renter_signed_at) {
+          console.log("DEBUG: Renter signed. Notifying owner:", ownerId);
           if (ownerId) {
             try {
               await Notification.create({
@@ -983,10 +986,13 @@ export const getStatus = async (req, res) => {
             } catch (notiErr) {
               console.error("Failed to send notification to Owner:", notiErr);
             }
+          } else {
+            console.warn("DEBUG: ownerId is null, cannot notify owner.");
           }
         }
         // 2. Owner just signed -> Notify Renter (Contract completed)
         if (updates.owner_signed_at) {
+          console.log("DEBUG: Owner signed. Notifying renter:", renterId);
           if (renterId) {
             try {
               await Notification.create({
@@ -999,8 +1005,12 @@ export const getStatus = async (req, res) => {
             } catch (notiErr) {
               console.error("Failed to send notification to Renter:", notiErr);
             }
+          } else {
+             console.warn("DEBUG: renterId is null, cannot notify renter.");
           }
         }
+      } else {
+        console.warn("DEBUG: dbContract is null, skipping notifications.");
       }
 
       const totalSigners = signers.length;

@@ -9,7 +9,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import "./BookingDetailsPage.scss";
 
 const BookingDetailsPage = () => {
@@ -22,6 +24,14 @@ const BookingDetailsPage = () => {
   const [showSignModal, setShowSignModal] = useState(false);
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
+
+  const [paymentConfirmModal, setPaymentConfirmModal] = useState({
+    isOpen: false,
+    type: null, // 'payos_remaining' | 'cash_remaining'
+    title: "",
+    message: "",
+    amount: 0,
+  });
 
   useEffect(() => {
     fetchBookingDetails();
@@ -208,15 +218,8 @@ const BookingDetailsPage = () => {
     }
   };
 
-  // Tạo link PayOS cho PHẦN CÒN LẠI (70%) khi status = deposit_paid
-  const handlePayOSRemainingPayment = async () => {
+  const executePayOSRemainingPayment = async () => {
     try {
-      if (booking.status !== "deposit_paid") return;
-      const userConfirmed = window.confirm(
-        "Bạn có muốn thanh toán phần còn lại (70%) không?"
-      );
-      if (!userConfirmed) return;
-
       setPaymentLoading(true);
       const currentUrl = window.location.origin;
       const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
@@ -245,6 +248,57 @@ const BookingDetailsPage = () => {
       toast.error(errorMessage);
     } finally {
       setPaymentLoading(false);
+      setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  // Tạo link PayOS cho PHẦN CÒN LẠI (70%) khi status = deposit_paid
+  const handlePayOSRemainingPayment = async () => {
+    if (booking.status !== "deposit_paid") return;
+    const { remaining } = calculatePaymentDetails();
+
+    setPaymentConfirmModal({
+      isOpen: true,
+      type: "payos_remaining",
+      title: "Xác nhận thanh toán",
+      message: "Bạn có muốn thanh toán phần còn lại (70%) không?",
+      amount: remaining,
+    });
+  };
+
+  const executePaymentRemainingByCash = async () => {
+    try {
+      const response = await axiosInstance.patch(
+        `/api/payment/byCash/${booking.booking_id}`
+      );
+      console.log("API Response:", response.data);
+
+      toast.success("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+      fetchBookingDetails();
+    } catch (err) {
+      console.log("có lỗi", err);
+      toast.error("Có lỗi xảy ra khi thanh toán tiền mặt");
+    } finally {
+      setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handlePaymentRemainingByCash = async () => {
+    const { nextPaymentAmount } = calculatePaymentDetails();
+    setPaymentConfirmModal({
+      isOpen: true,
+      type: "cash_remaining",
+      title: "Xác nhận thanh toán tiền mặt",
+      message: "Bạn xác nhận thanh toán TIỀN MẶT trực tiếp cho CHỦ XE?",
+      amount: nextPaymentAmount,
+    });
+  };
+
+  const handleConfirmPayment = () => {
+    if (paymentConfirmModal.type === "payos_remaining") {
+      executePayOSRemainingPayment();
+    } else if (paymentConfirmModal.type === "cash_remaining") {
+      executePaymentRemainingByCash();
     }
   };
 
@@ -411,30 +465,7 @@ const BookingDetailsPage = () => {
       </div>
     );
   }
-  const handlePaymentRemainingByCash = async () => {
-    try {
-      const proceed = window.confirm(
-        `Bạn xác nhận thanh toán TIỀN MẶT trực tiếp cho CHỦ XE với số tiền ${formatCurrency(
-          nextPaymentAmount
-        )}"`
-      );
-      if (!proceed) return;
 
-      const response = await axiosInstance.patch(
-        `/api/payment/byCash/${booking.booking_id}`
-      );
-      console.log("API Response:", response.data);
-
-      if (!response) {
-        console.log("yêu cầu thanh toán thành công");
-      }
-
-      alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
-      fetchBookingDetails();
-    } catch (err) {
-      console.log("có lỗi", err);
-    }
-  };
 
   return (
     <div className="booking-details-container">
@@ -582,7 +613,7 @@ const BookingDetailsPage = () => {
         </div>
 
         {/* Trạng thái hợp đồng DocuSign - tách riêng */}
-        {booking.contract && (
+        {/* {booking.contract && (
           <div className="contract-section">
             <h3>Trạng thái hợp đồng</h3>
             <div className="contract-status">
@@ -600,7 +631,7 @@ const BookingDetailsPage = () => {
                 )}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Thông tin thanh toán */}
         <div className="payment-section">
@@ -917,6 +948,44 @@ const BookingDetailsPage = () => {
             </div>
           )}
         </div>
+
+        {/* Payment Confirmation Modal */}
+        <Dialog
+          open={paymentConfirmModal.isOpen}
+          onOpenChange={(open) =>
+            setPaymentConfirmModal((prev) => ({ ...prev, isOpen: open }))
+          }
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{paymentConfirmModal.title}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-500 mb-4">
+                {paymentConfirmModal.message}
+              </p>
+              {paymentConfirmModal.amount > 0 && (
+                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                  <span className="font-medium text-gray-700">Số tiền:</span>
+                  <span className="font-bold text-blue-600 text-lg">
+                    {formatCurrency(paymentConfirmModal.amount)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }))
+                }
+              >
+                Hủy bỏ
+              </Button>
+              <Button onClick={handleConfirmPayment}>Xác nhận</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
