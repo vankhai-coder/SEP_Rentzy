@@ -42,6 +42,11 @@ const safeDecryptPhoneNumber = (encryptedPhone) => {
 
 export const verifyDriverLicenseCard = async (req, res) => {
     try {
+        // get type from query params : (typeOfDriverLicense is driver-license-for-motobike or driver-license-for-car )
+        const typeOfDriverLicense = req.query.typeOfDriverLicense;
+        if (!typeOfDriverLicense || (typeOfDriverLicense !== 'driver-license-for-motobike' && typeOfDriverLicense !== 'driver-license-for-car')) {
+            return res.status(400).json({ message: 'type query parameter is required and must be either driver-license-for-motobike or driver-license-for-car' });
+        }
 
         if (!req.file) return res.status(400).json({ message: 'No file send!' });
 
@@ -64,12 +69,56 @@ export const verifyDriverLicenseCard = async (req, res) => {
                 maxBodyLength: Infinity,
             }
         );
+        // sample response :
+        //{
+        //     "errorCode": 0,
+        //     "errorMessage": "",
+        //     "data": [{
+        //         "id": "xxxx",
+        //         "id_prob": "xxxx",
+        //         "name": "xxxx",
+        //         "name_prob": "xxxx",
+        //         "dob": "xxxx",
+        //         "dob_prob": "xxxx",
+        //         "nation": "xxxx",
+        //         "nation_prob": "xxxx",
+        //         "address": "xxxx",
+        //         "address_prob": "xxxx",
+        //         "place_issue": "xxxx",
+        //         "place_issue_prob": "xxxx",
+        //         "date": "xxxx",
+        //         "date_prob": "xxxx",
+        //         "class": "xxxx",
+        //         "class_prob": "xxxx",
+        //         "doe": "xxxx",
+        //         "doe_prob": "xxxx"
+        //         "type": "xxxx"
+        //     }]
+        // }
+
+        // class for motobike 	A1, A2, A3
+        // class for car	B1, B2, C, D, E, F
+
         // if FPT ai can read data , but it is not a driver license : 
         const data = response.data.data?.[0];
         const isDriverLicense = data.class && data.place_issue && !data.sex && !data.nationality;
 
         if (!isDriverLicense) {
             return res.status(400).json({ message: 'Ảnh này không phải bằng lái xe hoặc bạn chụp chưa rõ' })
+        }
+
+        // check if type match class :
+        const driverClass = data.class.toUpperCase();
+        if (typeOfDriverLicense === 'driver-license-for-motobike') {
+            const validMotobikeClasses = ['A1', 'A2', 'A3', 'A'];
+            if (!validMotobikeClasses.includes(driverClass)) {
+                return res.status(400).json({ message: `Bằng lái xe không phải hạng xe máy. Vui lòng tải lên bằng lái xe máy (hạng A1, A2, A3).` })
+            }
+        }else{
+            const validCarClasses = ['B1', 'B2', 'C', 'D', 'E', 'F'];
+            if (!validCarClasses.includes(driverClass)) {
+                return res.status(400).json({ message: `Bằng lái xe không phải hạng ô tô. Vui lòng tải lên bằng lái xe ô tô (hạng B1, B2, C, D, E, F).` })
+            }
         }
 
         // if success : 
@@ -136,6 +185,12 @@ export const check2FaceMatchAndSaveDriverLicenseToAWS = async (req, res) => {
                 user_id: req.user?.userId
             }
         });
+
+        // get type from query params : (typeOfDriverLicense is driver-license-for-motobike or driver-license-for-car )
+        const typeOfDriverLicense = req.query.typeOfDriverLicense;
+        if (!typeOfDriverLicense || (typeOfDriverLicense !== 'driver-license-for-motobike' && typeOfDriverLicense !== 'driver-license-for-car')) {
+            return res.status(400).json({ message: 'type query parameter is required and must be either driver-license-for-motobike or driver-license-for-car' });
+        }
 
         const { driverLicenseName, driverLicenseDob, driverLicenseNumber, driverLicenseClass } = req.query;
         // Check if any parameter is missing
@@ -223,20 +278,33 @@ export const check2FaceMatchAndSaveDriverLicenseToAWS = async (req, res) => {
             console.error("Error uploading to S3:", err);
             return res.status(500).json({ message: "Upload to S3 failed" });
         }
-        // save fileName to db : 
-        user.driver_license_image_url = fileName
-        user.driver_license_status = 'approved'
-        // hash and save other field : 
-        user.driver_license_number = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
-        user.driver_license_name = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
-        user.driver_license_dob = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
-        user.driver_class = driverLicenseClass
-
-        await user.save()
-
-        // return to client : 
-        return res.status(200).json(response.data)
-
+        // check type to save to correct field in db :
+        if (typeOfDriverLicense === 'driver-license-for-motobike') {
+            // save fileName to db :
+            user.driver_license_image_url_for_motobike = fileName
+            user.driver_license_status_for_motobike = 'approved'
+            // hash and save other field for motobike:
+            user.driver_license_number_for_motobike = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
+            user.driver_license_name_for_motobike = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
+            user.driver_license_dob_for_motobike = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
+            user.driver_class_for_motobike = driverLicenseClass
+            await user.save()
+            console.log("Saved driver license for motobike to db");
+            // return to client :
+            return res.status(200).json(response.data)
+        } else {
+            // save fileName to db :
+            user.driver_license_image_url_for_car = fileName
+            user.driver_license_status_for_car = 'approved'
+            // hash and save other field for car:
+            user.driver_license_number_for_car = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
+            user.driver_license_name_for_car = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
+            user.driver_license_dob_for_car = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
+            await user.save()
+            console.log("Saved driver license for car to db");
+            // return to client :
+            return res.status(200).json(response.data)
+        }
     } catch (error) {
         console.error("Error checking 2 face match :", error.response?.data || error.message);
         return res.status(500).json(error.response?.data);
@@ -425,11 +493,19 @@ export const getBasicUserInformation = async (req, res) => {
             where: { user_id: userId },
             attributes: [
                 "points",
-                "driver_class",
-                "driver_license_image_url",
-                "driver_license_dob",
-                "driver_license_name",
-                "driver_license_number",
+                // driver license for motobike : 
+                "driver_class_for_motobike",
+                "driver_license_image_url_for_motobike",
+                "driver_license_dob_for_motobike",
+                "driver_license_name_for_motobike",
+                "driver_license_number_for_motobike",
+                // driver license for car :
+                "driver_license_image_url_for_car",
+                "driver_license_dob_for_car",
+                "driver_license_name_for_car",
+                "driver_license_number_for_car",
+                "driver_class_for_car",
+                // 
                 "avatar_url",
                 "phone_number",
                 "email",
@@ -447,20 +523,35 @@ export const getBasicUserInformation = async (req, res) => {
 
         // Decrypt and modify
         // modify data : hash => normal , format date :
-        userData.driver_license_number = userData.driver_license_number
-            ? decryptWithSecret(userData.driver_license_number, process.env.ENCRYPT_KEY)
+        userData.driver_license_number_for_motobike = userData.driver_license_number_for_motobike
+            ? decryptWithSecret(userData.driver_license_number_for_motobike, process.env.ENCRYPT_KEY)
             : null;
 
-        userData.driver_license_dob = userData.driver_license_dob
-            ? decryptWithSecret(userData.driver_license_dob, process.env.ENCRYPT_KEY)
+        userData.driver_license_dob_for_motobike = userData.driver_license_dob_for_motobike
+            ? decryptWithSecret(userData.driver_license_dob_for_motobike, process.env.ENCRYPT_KEY)
             : null;
 
-        userData.driver_license_name = userData.driver_license_name
-            ? decryptWithSecret(userData.driver_license_name, process.env.ENCRYPT_KEY)
+        userData.driver_license_name_for_motobike = userData.driver_license_name_for_motobike
+            ? decryptWithSecret(userData.driver_license_name_for_motobike, process.env.ENCRYPT_KEY)
             : null;
 
-        userData.driver_license_image_url = userData.driver_license_name
-            ? await getTemporaryImageUrl(userData.driver_license_image_url)
+        userData.driver_license_image_url_for_motobike = userData.driver_license_image_url_for_motobike
+            ? await getTemporaryImageUrl(userData.driver_license_image_url_for_motobike)
+            : null;
+
+        // for car :
+        userData.driver_license_number_for_car = userData.driver_license_number_for_car
+            ? decryptWithSecret(userData.driver_license_number_for_car, process.env.ENCRYPT_KEY)
+            : null;
+        userData.driver_license_dob_for_car = userData.driver_license_dob_for_car
+            ? decryptWithSecret(userData.driver_license_dob_for_car, process.env.ENCRYPT_KEY)
+            : null;
+        userData.driver_license_name_for_car = userData.driver_license_name_for_car
+
+            ? decryptWithSecret(userData.driver_license_name_for_car, process.env.ENCRYPT_KEY)
+            : null;
+        userData.driver_license_image_url_for_car = userData.driver_license_image_url_for_car
+            ? await getTemporaryImageUrl(userData.driver_license_image_url_for_car)
             : null;
 
         // Safe phone number decryption with validation
