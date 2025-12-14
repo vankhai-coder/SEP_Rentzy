@@ -156,7 +156,8 @@ export const getBookingById = async (req, res) => {
                 "phone_number",
                 "avatar_url",
                 "role",
-                "driver_license_status",
+                "driver_license_status_for_car",
+                "driver_license_status_for_motobike",
                 "national_id_status",
                 "points",
                 "is_active",
@@ -174,7 +175,8 @@ export const getBookingById = async (req, res) => {
             "phone_number",
             "email",
             "avatar_url",
-            "driver_license_status",
+            "driver_license_status_for_car",
+            "driver_license_status_for_motobike",
             "national_id_status",
             "points",
           ],
@@ -306,7 +308,9 @@ export const getBookingById = async (req, res) => {
                   avatar_url: booking.vehicle.owner.avatar_url,
                   role: booking.vehicle.owner.role,
                   driver_license_status:
-                    booking.vehicle.owner.driver_license_status,
+                    booking.vehicle.vehicle_type === "car"
+                      ? booking.vehicle.owner.driver_license_status_for_car
+                      : booking.vehicle.owner.driver_license_status_for_motobike,
                   national_id_status: booking.vehicle.owner.national_id_status,
                   points: booking.vehicle.owner.points,
                   is_active: booking.vehicle.owner.is_active,
@@ -323,7 +327,10 @@ export const getBookingById = async (req, res) => {
             phone_number: booking.renter.phone_number,
             email: booking.renter.email,
             avatar_url: booking.renter.avatar_url,
-            driver_license_status: booking.renter.driver_license_status,
+            driver_license_status:
+              booking.vehicle.vehicle_type === "car"
+                ? booking.renter.driver_license_status_for_car
+                : booking.renter.driver_license_status_for_motobike,
             national_id_status: booking.renter.national_id_status,
             points: booking.renter.points,
           }

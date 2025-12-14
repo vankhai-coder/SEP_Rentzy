@@ -109,14 +109,14 @@ const ContractOwner = () => {
         toast.error("Không có thông tin hợp đồng để ký.");
         return;
       }
-      const fePublic =
-        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
-      const currentPath = window.location.pathname;
-      const returnUrl = `${fePublic}${currentPath}`;
+      // const fePublic =
+      //   import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      // const currentPath = window.location.pathname;
+      // const returnUrl = `${fePublic}${currentPath}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
         params: {
           role: "owner",
-          returnUrl,
+          // returnUrl, // Let backend default to /api/docusign/return
           otp,
           email: ownerEmail,
           clientUserId: ownerEmail || "owner",
@@ -207,6 +207,24 @@ const ContractOwner = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
+
+  // Listen for postMessage from backend return page (iframe/popup)
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data === 'signing_complete') {
+        console.log("Received signing_complete message");
+        // Force refresh regardless of current booking state closure
+        // We can fetch from ID in URL if booking is stale, or use functional state updates
+        // But simplest is to ensure this effect has fresh dependencies
+        handleRefreshStatus();
+        setShowSignModal(false);
+        setSignUrl("");
+        toast.success("Đã hoàn tất ký hợp đồng!");
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [booking, handleRefreshStatus]);
 
   // Khi có event và đã có envelope
   useEffect(() => {
@@ -503,6 +521,11 @@ const ContractOwner = () => {
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !otpVerifying && otp) {
+                      verifyOtpAndOpenSigning();
+                    }
+                  }}
                   placeholder="Nhập mã OTP"
                   className="flex-1 border rounded px-3 py-2"
                 />

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaInfoCircle } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 import HandoverImageViewer from "@/components/common/HandoverImageViewer";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ const BookingDetailsPage = () => {
     if (paymentStatus === "success") {
       // Hiển thị thông báo thành công và refresh data
       setTimeout(() => {
-        alert("Xác nhận thanh toán thành công! Vui lòng chờ chủ xe xác nhận.");
+        toast.success("Xác nhận thanh toán thành công! Vui lòng chờ chủ xe xác nhận.");
         fetchBookingDetails();
       }, 1000);
 
@@ -201,7 +202,7 @@ const BookingDetailsPage = () => {
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setPaymentLoading(false);
     }
@@ -241,7 +242,7 @@ const BookingDetailsPage = () => {
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setPaymentLoading(false);
     }
@@ -263,12 +264,12 @@ const BookingDetailsPage = () => {
       if (response.data?.payUrl) {
         window.location.href = response.data.payUrl;
       } else {
-        alert(
+        toast.error(
           response.data?.error || "Không thể tạo link thanh toán phí phạt nguội"
         );
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.error ||
           "Có lỗi xảy ra khi tạo link thanh toán phí phạt nguội"
       );
@@ -279,7 +280,7 @@ const BookingDetailsPage = () => {
   const handleSignContract = async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      if (!envelopeId) return toast.error("Không có thông tin hợp đồng để ký.");
       const fePublic =
         import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       const currentPath = window.location.pathname;
@@ -292,11 +293,11 @@ const BookingDetailsPage = () => {
         setSignUrl(url);
         setShowSignModal(true);
       } else {
-        alert("Không thể tạo URL ký hợp đồng.");
+        toast.error("Không thể tạo URL ký hợp đồng.");
       }
     } catch (err) {
       console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+      toast.error(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
     }
   };
 

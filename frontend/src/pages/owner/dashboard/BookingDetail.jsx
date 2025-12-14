@@ -20,7 +20,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "../../../components/ui/dialog.jsx";
+import { Button } from "../../../components/ui/button.jsx";
 import { toast } from "sonner";
 
 const BookingDetail = () => {
@@ -46,6 +49,12 @@ const BookingDetail = () => {
   const [submittingDeleteTrafficFine, setSubmittingDeleteTrafficFine] = useState(false);
   const [extractingInfo, setExtractingInfo] = useState(false);
   const [imageModal, setImageModal] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    type: null, // "APPROVE_REMAINING" | "ACCEPT_BOOKING"
+    title: "",
+    message: "",
+  });
 
   useEffect(() => {
     fetchBookingDetail();
@@ -71,30 +80,14 @@ const BookingDetail = () => {
     }
   };
   // owner xác nhận tiền mà renter đã trả
-  const approveRemainingByOwner = async () => {
-    const isConfirmed = window.confirm(
-      "Bạn có chắc chắn muốn xác nhận rằng người thuê đã chuyển khoản phần còn lại (70%) không?"
-    );
-
-    if (!isConfirmed) return; // dừng lại nếu người dùng bấm “Hủy”
-    try {
-      setLoading(true);
-      const response = await axiosInstance.patch(
-        `/api/payment/approveRemainingByOwner/${id}`
-      );
-
-      if (response.status === 200) {
-        alert(" Xác nhận thanh toán thành công!");
-        await fetchBookingDetail();
-      } else {
-        alert("Không thể xác nhận thanh toán. Vui lòng thử lại!");
-      }
-    } catch (err) {
-      console.error("Error approving remaining payment:", err);
-      alert(" Có lỗi xảy ra khi xác nhận thanh toán!");
-    } finally {
-      setLoading(false);
-    }
+  const approveRemainingByOwner = () => {
+    setConfirmDialog({
+      isOpen: true,
+      type: "APPROVE_REMAINING",
+      title: "Xác nhận thanh toán",
+      message:
+        "Bạn có chắc chắn muốn xác nhận rằng người thuê đã chuyển khoản phần còn lại (70%) không?",
+    });
   };
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -154,39 +147,69 @@ const BookingDetail = () => {
   };
 
   // Owner accept booking (chuyển từ pending -> confirmed)
-  const handleAcceptBooking = async () => {
-    const isConfirmed = window.confirm(
-      "Bạn có chắc chắn muốn chấp nhận đơn đặt xe này? Sau khi chấp nhận, người thuê sẽ có thể tiếp tục thanh toán đặt cọc 30%."
-    );
+  const handleAcceptBooking = () => {
+    setConfirmDialog({
+      isOpen: true,
+      type: "ACCEPT_BOOKING",
+      title: "Chấp nhận đơn đặt xe",
+      message:
+        "Bạn có chắc chắn muốn chấp nhận đơn đặt xe này? Sau khi chấp nhận, người thuê sẽ có thể tiếp tục thanh toán đặt cọc 30%.",
+    });
+  };
 
-    if (!isConfirmed) return;
+  const handleConfirm = async () => {
+    setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
 
-    try {
-      setLoading(true);
-      const response = await axiosInstance.patch(
-        `/api/owner/dashboard/bookings/${id}/accept`
-      );
+    if (confirmDialog.type === "APPROVE_REMAINING") {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.patch(
+          `/api/payment/approveRemainingByOwner/${id}`
+        );
 
-      if (response.data.success) {
-        toast.success("Đã chấp nhận đơn đặt xe thành công!");
-        await fetchBookingDetail();
-      } else {
-        toast.error(response.data.message || "Không thể chấp nhận đơn đặt xe");
+        if (response.status === 200) {
+          toast.success("Xác nhận thanh toán thành công!");
+          await fetchBookingDetail();
+        } else {
+          toast.error("Không thể xác nhận thanh toán. Vui lòng thử lại!");
+        }
+      } catch (err) {
+        console.error("Error approving remaining payment:", err);
+        toast.error("Có lỗi xảy ra khi xác nhận thanh toán!");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error accepting booking:", err);
-      toast.error(
-        err.response?.data?.message || "Có lỗi xảy ra khi chấp nhận đơn đặt xe"
-      );
-    } finally {
-      setLoading(false);
+    } else if (confirmDialog.type === "ACCEPT_BOOKING") {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.patch(
+          `/api/owner/dashboard/bookings/${id}/accept`
+        );
+
+        if (response.data.success) {
+          toast.success("Đã chấp nhận đơn đặt xe thành công!");
+          await fetchBookingDetail();
+        } else {
+          toast.error(
+            response.data.message || "Không thể chấp nhận đơn đặt xe"
+          );
+        }
+      } catch (err) {
+        console.error("Error accepting booking:", err);
+        toast.error(
+          err.response?.data?.message ||
+            "Có lỗi xảy ra khi chấp nhận đơn đặt xe"
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleSignContractOwner = async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      if (!envelopeId) return toast.error("Không có thông tin hợp đồng để ký.");
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
         params: { role: "owner" },
       });
@@ -195,21 +218,21 @@ const BookingDetail = () => {
         setSignUrl(url);
         setShowSignModal(true);
       } else {
-        alert("Không thể tạo URL ký hợp đồng.");
+        toast.error("Không thể tạo URL ký hợp đồng.");
       }
     } catch (err) {
       console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
+      toast.error(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
     }
   };
 
   const handleViewContractPdf = () => {
     try {
-      if (!booking?.booking_id) return alert("Không có hợp đồng để xem.");
+      if (!booking?.booking_id) return toast.error("Không có hợp đồng để xem.");
       navigate(`/owner/contract/${booking.booking_id}`);
     } catch (err) {
       console.error("Error navigating to contract page:", err);
-      alert("Không thể mở trang hợp đồng.");
+      toast.error("Không thể mở trang hợp đồng.");
     }
   };
 
@@ -1668,6 +1691,26 @@ const BookingDetail = () => {
                 </button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, isOpen: open }))}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{confirmDialog.title}</DialogTitle>
+              <DialogDescription>
+                {confirmDialog.message}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
+                Hủy
+              </Button>
+              <Button onClick={handleConfirm} className="bg-green-600 hover:bg-green-700">
+                Xác nhận
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
