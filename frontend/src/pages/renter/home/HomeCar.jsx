@@ -41,7 +41,7 @@ const HomeCar = () => {
   // get "isToggleLoginDialog" from query params to open login dialog when redirected from other pages
   React.useEffect(() => {
     const isToggleLoginDialog = searchParams.get("isToggleLoginDialog");
-    if (isToggleLoginDialog !== "") {
+    if (isToggleLoginDialog) {
       setLoginOpen(true);
     }
   }, [searchParams]);

@@ -12,6 +12,19 @@ import {
   resetReportState,
 } from "../../../../redux/features/renter/vehicleReport/vehicleReportSlice";
 import VehicleReportModal from "../../../../components/renter/vehicleReport/VehicleReportModal";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import LoginWithPhoneNumber from '../../../../pages/renter/auth/LoginWithPhoneNumber.jsx'
+import RegisterWithPhoneNumber from '../../../../pages/renter/auth/RegisterWithPhoneNumber.jsx'
+import Register from '../../../../pages/renter/auth/Register.jsx'
+import Login from '../../../../pages/renter/auth/Login.jsx'
 
 function BookingForm({ vehicle, prefillParams }) {
   const navigate = useNavigate();
@@ -42,6 +55,16 @@ function BookingForm({ vehicle, prefillParams }) {
   const [agreedTerms, setAgreedTerms] = useState(false);
 
   const { isReported } = useSelector((state) => state.vehicleReport);
+
+  // retrieve userId from userStore
+  const { userId } = useSelector((state) => state.userStore || {});
+
+  // state for login and register with phone Dialog :
+  const [isLoginWithPhoneOpen, setIsLoginWithPhoneOpen] = React.useState(false)
+  const [isRegisterWithPhoneOpen, setIsRegisterWithPhoneOpen] = React.useState(false)
+  // state for login and register with email Dialog :
+  const [loginOpen, setLoginOpen] = React.useState(false)
+  const [registerOpen, setRegisterOpen] = React.useState(false)
 
   // Fetch user points
   useEffect(() => {
@@ -356,9 +379,17 @@ function BookingForm({ vehicle, prefillParams }) {
           </h4>
           <button
             type="button"
-            onClick={() => setShowDateTimeSelector(true)}
+            onClick={() => {
+              if (!userId) {
+                setLoginOpen(true);
+                return;
+              } else {
+                setShowDateTimeSelector(true)
+              }
+            }
+            }
             className="w-full p-4 border-2 border-gray-200 rounded-lg text-left bg-white hover:border-blue-500 hover:shadow-md transition-all duration-200"
-            aria-label="Chọn thời gian thuê xe"
+            aria-label="Chọn thời gian thuê xe d"
           >
             {formatDateTime()}
           </button>
@@ -371,11 +402,10 @@ function BookingForm({ vehicle, prefillParams }) {
           </h4>
           <div className="space-y-3">
             <div
-              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                bookingData.deliveryOption === "pickup"
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-green-300"
-              }`}
+              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${bookingData.deliveryOption === "pickup"
+                ? "border-green-500 bg-green-50"
+                : "border-gray-200 hover:border-green-300"
+                }`}
               onClick={() => handleDeliveryOptionChange("pickup")}
               onKeyDown={(e) =>
                 e.key === "Enter" && handleDeliveryOptionChange("pickup")
@@ -394,12 +424,19 @@ function BookingForm({ vehicle, prefillParams }) {
               )}
             </div>
             <div
-              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                bookingData.deliveryOption === "delivery"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-blue-300"
-              }`}
-              onClick={() => handleDeliveryOptionChange("delivery")}
+              className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${bookingData.deliveryOption === "delivery"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-200 hover:border-blue-300"
+                }`}
+              onClick={() => {
+
+                if (!userId) {
+                  setLoginOpen(true);
+                  return;
+                }
+                toast.success("Chọn địa chỉ giao nhận xe");
+                handleDeliveryOptionChange("delivery")
+              }}
               onKeyDown={(e) =>
                 e.key === "Enter" && handleDeliveryOptionChange("delivery")
               }
@@ -507,11 +544,10 @@ function BookingForm({ vehicle, prefillParams }) {
 
           {/* Points Discount with Slide Animation */}
           <div
-            className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              usePoints && pointsDiscount > 0
-                ? "max-h-12 opacity-100 translate-y-0"
-                : "max-h-0 opacity-0 translate-y-2"
-            }`}
+            className={`overflow-hidden transition-all duration-500 ease-in-out ${usePoints && pointsDiscount > 0
+              ? "max-h-12 opacity-100 translate-y-0"
+              : "max-h-0 opacity-0 translate-y-2"
+              }`}
           >
             <div className="flex justify-between text-sm px-4 mb-3">
               <span>Giảm giá bằng điểm</span>
@@ -639,6 +675,93 @@ function BookingForm({ vehicle, prefillParams }) {
           />,
           document.body
         )}
+
+      {/* Login and Register Dialogs */}
+      <div className='min-h-screen'>
+
+        {/* Login with Phone */}
+        <Dialog open={isLoginWithPhoneOpen} onOpenChange={setIsLoginWithPhoneOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng nhập với số điện thoại
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <LoginWithPhoneNumber setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} setLoginOpen={setLoginOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Register with Phone */}
+        <Dialog open={isRegisterWithPhoneOpen} onOpenChange={setIsRegisterWithPhoneOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng ký với số điện thoại
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <RegisterWithPhoneNumber setRegisterOpen={setRegisterOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Register with email button: */}
+        <Dialog open={registerOpen} onOpenChange={setRegisterOpen} >
+          {/* <DialogTrigger>
+          <a
+            className={"p-6"}
+          >
+            Đăng Ký
+          </a>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Login with email Button */}
+        <Dialog open={loginOpen} onOpenChange={setLoginOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng Nhập
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+      </div>
     </div>
   );
 }
