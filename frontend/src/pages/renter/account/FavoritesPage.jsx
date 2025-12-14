@@ -1,14 +1,17 @@
 // src/pages/renter/FavoritesPage.jsx
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchFavorites,
   removeFavorite,
 } from "../../../redux/features/renter/favorite/favoriteSlice";
+import { compareVehicles } from "../../../redux/features/renter/compare/compareSlice";
 import VehicleCard from "../../../components/renter/vehicles/VehicleCard";
 import Pagination from "../../../components/common/Pagination";
-import { Settings, Users, Fuel, Bike, Gauge } from "lucide-react";
+import CompareModal from "../../../components/renter/vehicles/compare/CompareModal";
+import { Settings, Users, Fuel, Bike, Gauge, Scale } from "lucide-react";
+import { toast } from "react-toastify";
 
 const FavoritesPage = () => {
   const dispatch = useDispatch();
@@ -16,7 +19,9 @@ const FavoritesPage = () => {
     (state) => state.favoriteStore
   );
 
+  const { compareList } = useSelector((state) => state.compareStore);
   const { currentPage, totalPages } = pagination;
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchFavorites(currentPage));
@@ -24,6 +29,23 @@ const FavoritesPage = () => {
 
   const handlePageChange = (page) => {
     dispatch(fetchFavorites(page));
+  };
+
+  const handleOpenCompare = () => {
+    if (compareList.length < 2) {
+      toast.warn("Chọn ít nhất 2 xe để so sánh!");
+      return;
+    }
+
+    const types = compareList.map((item) => item.type);
+    const uniqueTypes = [...new Set(types)];
+    if (uniqueTypes.length > 1) {
+      toast.error("Chỉ có thể so sánh xe cùng loại (ô tô hoặc xe máy)!");
+      return;
+    }
+
+    dispatch(compareVehicles());
+    setShowModal(true);
   };
 
   // Format helpers
@@ -101,7 +123,20 @@ const FavoritesPage = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Danh Sách Yêu Thích</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Danh Sách Yêu Thích</h1>
+        {compareList.length > 0 && (
+          <button
+            onClick={handleOpenCompare}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            disabled={compareList.length < 2}
+            title="So sánh xe đã chọn"
+          >
+            <Scale size={16} />
+            <span>So sánh ({compareList.length})</span>
+          </button>
+        )}
+      </div>
 
       {favorites.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 rounded-lg">
@@ -120,6 +155,7 @@ const FavoritesPage = () => {
                 <VehicleCard
                   key={fav.favorite_id}
                   vehicle={vehicle}
+                  type={vehicle.vehicle_type}
                   iconSpecs={getIconSpecs(vehicle)}
                   features={vehicle.features || []}
                   isFavorite={true}
@@ -138,6 +174,14 @@ const FavoritesPage = () => {
             onPageChange={handlePageChange}
           />
         </>
+      )}
+
+      {showModal && (
+        <CompareModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          compareList={compareList}
+        />
       )}
     </div>
   );
