@@ -456,15 +456,23 @@ export const checkVehicleInfo = async (req, res) => {
               pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
             }
             if (src.fuel_consumption) {
-              const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+              const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+              const fc = m ? parseFloat(m[0]) : NaN;
               if (Number.isFinite(fc)) {
-                const ok = fc >= 3 && fc <= 20;
-                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+                const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+                const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
+                const unit = isEV ? "kWh/100km" : "l/100km";
+                const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
+                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
               } else {
-                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+                const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+                const unit = isEV ? "kWh/100km" : "l/100km";
+                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
               }
             } else {
-              pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+              const isEV = fuelAlias(src.fuel_type) === "electric";
+              const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
+              pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
             }
             const ec = parseFloat(String(src.engine_capacity || "").replace(/[^\d\.]+/g, ""));
             if (Number.isFinite(ec)) {
@@ -494,15 +502,23 @@ export const checkVehicleInfo = async (req, res) => {
               pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
             }
             if (src.fuel_consumption) {
-              const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+              const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+              const fc = m ? parseFloat(m[0]) : NaN;
               if (Number.isFinite(fc)) {
-                const ok = fc >= 3 && fc <= 20;
-                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+                const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+                const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
+                const unit = isEV ? "kWh/100km" : "l/100km";
+                const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
+                pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
               } else {
-                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+                const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+                const unit = isEV ? "kWh/100km" : "l/100km";
+                pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
               }
             } else {
-              pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+              const isEV = fuelAlias(src.fuel_type) === "electric";
+              const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
+              pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
             }
           }
           
@@ -715,15 +731,23 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
           pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
         }
         if (src.fuel_consumption) {
-          const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+          const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+          const fc = m ? parseFloat(m[0]) : NaN;
           if (Number.isFinite(fc)) {
-            const ok = fc >= 3 && fc <= 20;
-            pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+            const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+            const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
+            const unit = isEV ? "kWh/100km" : "l/100km";
+            const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
+            pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
           } else {
-            pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+            const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+            const unit = isEV ? "kWh/100km" : "l/100km";
+            pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
           }
         } else {
-          pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+          const isEV = fuelAlias(src.fuel_type) === "electric";
+          const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
+          pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
         }
         const ec = parseFloat(String(src.engine_capacity || "").replace(/[^\d\.]+/g, ""));
         if (Number.isFinite(ec)) {
@@ -751,15 +775,23 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
         pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
       }
       if (src.fuel_consumption) {
-        const fc = parseFloat(String(src.fuel_consumption).replace(/[^\d\.]+/g, ""));
+        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+        const fc = m ? parseFloat(m[0]) : NaN;
         if (Number.isFinite(fc)) {
-          const ok = fc >= 3 && fc <= 20;
-          pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x l/100km' trong khoảng 3–20 l/100km`);
+          const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+          const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
+          const unit = isEV ? "kWh/100km" : "l/100km";
+          const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
+          pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
         } else {
-          pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x l/100km'`);
+          const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+          const unit = isEV ? "kWh/100km" : "l/100km";
+          pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
         }
       } else {
-        pushBase("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (ví dụ: 6.5 l/100km)");
+        const isEV = fuelAlias(src.fuel_type) === "electric";
+        const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
+        pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
       }
     }
 
