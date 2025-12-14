@@ -235,6 +235,14 @@ const fetchVehicles = useCallback(async () => {
     }
   };
 
+  const normalizeApprovalStatus = (v) => {
+    const raw = v?.approvalStatus ?? v?.approval_status ?? 'none';
+    const s = String(raw).toLowerCase();
+    if (s === 'accepted' || s === 'accept') return 'approved';
+    if (s === 'deny' || s === 'denied' || s === 'refused') return 'rejected';
+    return ['approved', 'pending', 'rejected', 'none'].includes(s) ? s : 'none';
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -364,8 +372,8 @@ const fetchVehicles = useCallback(async () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={getApprovalBadge(vehicle.approvalStatus)}>
-                        {getApprovalText(vehicle.approvalStatus)}
+                      <span className={getApprovalBadge(normalizeApprovalStatus(vehicle))}>
+                        {getApprovalText(normalizeApprovalStatus(vehicle))}
                       </span>
                     </td>
                     <td className="px-4 py-3">

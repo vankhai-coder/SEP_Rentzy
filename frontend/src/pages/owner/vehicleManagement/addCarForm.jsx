@@ -216,6 +216,15 @@ const AddCarForm = () => {
     }));
   };
 
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setFormData((prev) => ({
+      ...prev,
+      price_per_day: formatted,
+    }));
+  };
+
   const handleFeatureToggle = (feature) => {
     setSelectedFeatures((prev) =>
       prev.includes(feature)
@@ -290,7 +299,7 @@ const AddCarForm = () => {
       submitData.append('location', formData.location);
       if (formData.latitude) submitData.append('latitude', formData.latitude);
       if (formData.longitude) submitData.append('longitude', formData.longitude);
-      submitData.append('price_per_day', formData.price_per_day);
+      submitData.append('price_per_day', String(formData.price_per_day).replace(/\./g, ''));
       submitData.append('seats', formData.seats);
       submitData.append('year', formData.year);
       submitData.append('transmission', formData.transmission);
@@ -438,7 +447,7 @@ const AddCarForm = () => {
                   name="license_plate"
                   value={formData.license_plate}
                   onChange={handleInputChange}
-                  placeholder="VD: 30A-123.45"
+                  placeholder="VD: 36A-12345"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -488,13 +497,13 @@ const AddCarForm = () => {
                   Giá mỗi ngày (VND) *
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="price_per_day"
                   value={formData.price_per_day}
-                  onChange={handleInputChange}
+                  onChange={handlePriceChange}
                   placeholder="VD: 500000"
                   required
-                  min="0"
+                  inputMode="numeric"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>

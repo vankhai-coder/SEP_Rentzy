@@ -66,7 +66,7 @@ export const getOverviewStats = async (req, res) => {
     // Đếm tổng số xe đã được phê duyệt
     const totalVehicles = await Vehicle.count({
       where: {
-        vehicle_id: vehicleIds, // Lọc theo danh sách ID
+        vehicle_id: { [Op.in]: vehicleIds },
         approvalStatus: 'approved'
       }
     });
