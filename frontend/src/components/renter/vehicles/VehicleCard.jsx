@@ -9,7 +9,7 @@ import {
   removeFromCompare,
 } from "../../../redux/features/renter/compare/compareSlice"; // Thêm removeFromCompare
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useState } from "react";
 
 const formatCurrency = (value) => {
@@ -34,8 +34,10 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
     e.stopPropagation();
 
     if (!userId) {
-      toast.info("Vui lòng đăng nhập để thêm yêu thích!");
-      navigate("/renter/auth/login");
+      // create ramdom string : 
+      const ramdomString = Math.random().toString(36).substring(2, 15);
+      // toast.info("Vui lòng đăng nhập để thêm yêu thích!");
+      navigate(`/cars?isToggleLoginDialog=${ramdomString}`);
       return;
     }
 

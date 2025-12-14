@@ -1,5 +1,5 @@
 // src/pages/renter/vehicles/HomeCar.jsx (hoặc tương tự)
-import { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchVehicles } from "../../../redux/features/renter/vehicles/vehicleSlice";
 import { fetchBrands } from "../../../redux/features/renter/brand/brandSlice";
@@ -13,12 +13,38 @@ import { compareVehicles } from "../../../redux/features/renter/compare/compareS
 import { Scale } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import LoginWithPhoneNumber from '../../../pages/renter/auth/LoginWithPhoneNumber.jsx'
+import RegisterWithPhoneNumber from '../../../pages/renter/auth/RegisterWithPhoneNumber.jsx'
+import Register from '../../../pages/renter/auth/Register.jsx'
+import Login from '../../../pages/renter/auth/Login.jsx'
 
 const HomeCar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = Object.fromEntries(searchParams.entries());
+  // state for login and register with phone Dialog :
+  const [isLoginWithPhoneOpen, setIsLoginWithPhoneOpen] = React.useState(false)
+  const [isRegisterWithPhoneOpen, setIsRegisterWithPhoneOpen] = React.useState(false)
+  // state for login and register with email Dialog :
+  const [loginOpen, setLoginOpen] = React.useState(false)
+  const [registerOpen, setRegisterOpen] = React.useState(false)
+
+  // get "isToggleLoginDialog" from query params to open login dialog when redirected from other pages
+  React.useEffect(() => {
+    const isToggleLoginDialog = searchParams.get("isToggleLoginDialog");
+    if (isToggleLoginDialog !== "") {
+      setLoginOpen(true);
+    }
+  }, [searchParams]);
 
   const {
     vehicles,
@@ -130,6 +156,92 @@ const HomeCar = () => {
           compareList={compareList}
         />
       )}
+      <div className='min-h-screen'>
+
+        {/* Login with Phone */}
+        <Dialog open={isLoginWithPhoneOpen} onOpenChange={setIsLoginWithPhoneOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng nhập với số điện thoại
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <LoginWithPhoneNumber setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} setLoginOpen={setLoginOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Register with Phone */}
+        <Dialog open={isRegisterWithPhoneOpen} onOpenChange={setIsRegisterWithPhoneOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng ký với số điện thoại
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <RegisterWithPhoneNumber setRegisterOpen={setRegisterOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Register with email button: */}
+        <Dialog open={registerOpen} onOpenChange={setRegisterOpen} >
+          {/* <DialogTrigger>
+          <a
+            className={"p-6"}
+          >
+            Đăng Ký
+          </a>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <Register setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Login with email Button */}
+        <Dialog open={loginOpen} onOpenChange={setLoginOpen} >
+          {/* <DialogTrigger asChild>
+          <Button
+            className={"p-6 border border-black"}
+            variant={"outline"}
+
+          >
+            Đăng Nhập
+          </Button>
+        </DialogTrigger> */}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle></DialogTitle>
+              <DialogDescription>
+                <Login setRegisterOpen={setRegisterOpen} setLoginOpen={setLoginOpen} setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen} />
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+
     </div>
   );
 };
