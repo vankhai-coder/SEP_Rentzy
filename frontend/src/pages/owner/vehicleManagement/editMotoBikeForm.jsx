@@ -55,7 +55,7 @@ const EditMotoBikeForm = () => {
           location: vehicle.location || "",
           latitude: vehicle.latitude || "",
           longitude: vehicle.longitude || "",
-          price_per_day: vehicle.price_per_day || "",
+          price_per_day: formatWithDots(vehicle.price_per_day),
           year: vehicle.year || "",
           bike_type: vehicle.bike_type || "",
           engine_capacity: vehicle.engine_capacity || "",
@@ -207,6 +207,19 @@ const EditMotoBikeForm = () => {
     }));
   };
 
+  const formatWithDots = (str) => {
+    const raw = String(str || "").replace(/\D/g, "");
+    return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handlePriceChange = (e) => {
+    const formatted = formatWithDots(e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      price_per_day: formatted
+    }));
+  };
+
   const handleFeatureToggle = (feature) => {
     setSelectedFeatures(prev => 
       prev.includes(feature) 
@@ -242,7 +255,7 @@ const EditMotoBikeForm = () => {
       submitData.append('location', formData.location);
       if (formData.latitude) submitData.append('latitude', formData.latitude);
       if (formData.longitude) submitData.append('longitude', formData.longitude);
-      submitData.append('price_per_day', formData.price_per_day);
+      submitData.append('price_per_day', String(formData.price_per_day).replace(/\./g, ''));
       submitData.append('year', formData.year);
       submitData.append('bike_type', formData.bike_type);
       submitData.append('engine_capacity', formData.engine_capacity);
@@ -412,13 +425,13 @@ const EditMotoBikeForm = () => {
                     Giá thuê/ngày (VNĐ) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="price_per_day"
                     value={formData.price_per_day}
-                    onChange={handleInputChange}
+                    onChange={handlePriceChange}
                     placeholder="VD: 100000"
                     required
-                    min="0"
+                    inputMode="numeric"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>

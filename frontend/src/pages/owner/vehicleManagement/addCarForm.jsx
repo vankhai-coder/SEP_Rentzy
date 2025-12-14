@@ -216,6 +216,15 @@ const AddCarForm = () => {
     }));
   };
 
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setFormData((prev) => ({
+      ...prev,
+      price_per_day: formatted,
+    }));
+  };
+
   const handleFeatureToggle = (feature) => {
     setSelectedFeatures((prev) =>
       prev.includes(feature)
@@ -240,7 +249,47 @@ const AddCarForm = () => {
     setLoading(true);
 
     try {
+      if (!mainImage) {
+        toast.error('Vui lòng chọn 1 hình ảnh chính');
+        setLoading(false);
+        return;
+      }
+      if (extraImages.length < 5) {
+        toast.error('Phần hình ảnh bổ sung phải có tối thiểu 5 ảnh');
+        setLoading(false);
+        return;
+      }
       const submitData = new FormData();
+
+      const compressImage = (file, maxWidth = 1600, quality = 0.75) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            img.onload = () => {
+              const scale = Math.min(1, maxWidth / img.width);
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return reject(new Error("Compress failed"));
+                  const name =
+                    file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                  resolve(new File([blob], name, { type: "image/jpeg" }));
+                },
+                "image/jpeg",
+                quality
+              );
+            };
+            img.onerror = reject;
+            img.src = ev.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
       // Add form data
       submitData.append('vehicle_type', 'car');
@@ -250,7 +299,7 @@ const AddCarForm = () => {
       submitData.append('location', formData.location);
       if (formData.latitude) submitData.append('latitude', formData.latitude);
       if (formData.longitude) submitData.append('longitude', formData.longitude);
-      submitData.append('price_per_day', formData.price_per_day);
+      submitData.append('price_per_day', String(formData.price_per_day).replace(/\./g, ''));
       submitData.append('seats', formData.seats);
       submitData.append('year', formData.year);
       submitData.append('transmission', formData.transmission);
@@ -264,12 +313,17 @@ const AddCarForm = () => {
 
       // Add images
       if (mainImage) {
-        submitData.append("main_image", mainImage);
+        let cMain = mainImage;
+        try { cMain = await compressImage(mainImage); } catch { /* empty */ }
+        submitData.append("main_image", cMain);
       }
 
-      extraImages.forEach((image) => {
-        submitData.append("extra_images", image);
-      });
+      const compressedExtras = await Promise.all(
+        extraImages.map(async (image) => {
+          try { return await compressImage(image); } catch { return image; }
+        })
+      );
+      compressedExtras.forEach((image) => submitData.append("extra_images", image));
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
@@ -280,7 +334,7 @@ const AddCarForm = () => {
 
       // Kiểm tra cả status code và success field
       if (response.status === 201 && response.data.success) {
-        toast.success('Đăng xe thành công!');
+        toast.success('Đăng xe thành công đợi duyệt!');
         navigate('/owner/vehicle-management');
       } else {
         // Nếu có response nhưng không thành công
@@ -393,7 +447,7 @@ const AddCarForm = () => {
                   name="license_plate"
                   value={formData.license_plate}
                   onChange={handleInputChange}
-                  placeholder="VD: 30A-123.45"
+                  placeholder="VD: 36A-12345"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -443,13 +497,13 @@ const AddCarForm = () => {
                   Giá mỗi ngày (VND) *
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="price_per_day"
                   value={formData.price_per_day}
-                  onChange={handleInputChange}
+                  onChange={handlePriceChange}
                   placeholder="VD: 500000"
                   required
-                  min="0"
+                  inputMode="numeric"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -486,7 +540,7 @@ const AddCarForm = () => {
                   placeholder="VD: 2023"
                   required
                   min="1900"
-                  max="2030"
+                  max={new Date().getFullYear()}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -645,7 +699,7 @@ const AddCarForm = () => {
             {/* Main Image */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh chính *
+                Hình ảnh chính *
               </label>
               <input
                 type="file"
@@ -668,7 +722,7 @@ const AddCarForm = () => {
             {/* Extra Images */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh phụ
+                Hình ảnh bổ sung (Tối thiểu 5 ảnh)
               </label>
               <input
                 type="file"

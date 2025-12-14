@@ -659,7 +659,6 @@ export const registerWithPhoneNumber = async (req, res) => {
                 phone_number: {
                     [Op.ne]: null
                 },
-                phone_verified: true,
             }
         }
     );
@@ -673,46 +672,59 @@ export const registerWithPhoneNumber = async (req, res) => {
     }
     // log : 
     console.log("Phone number is available for registration:", formattedPhoneNumber);
-    // 5. send otp using twilio :
-    // add try catch to import twilio error
-    try {
-        const twilio = await import('twilio');
-        const client = twilio.default(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
 
-        await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verifications
-            .create({ to: formattedPhoneNumber, channel: 'sms' });
-    } catch (error) {
-        console.error("Twilio error:", error);
-        return res.status(500).json({
-            success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
-        });
-    }
-    // log : 
-    console.log("OTP sent successfully to:", formattedPhoneNumber);
-
-    // 6. create new user with phone number only (phone_verified is false by default) :
+    // 5. create otp and save to db resetPasswordToken field :
+    // generate 6 digit otp : 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("Generated OTP:", otp);
+    // save otp to db in resetPasswordToken field :
     try {
-        const newUser = await db.User.create({
+        // create new user with phone number only (phone_verified is false by default) :
+        const tempUser = await db.User.create({
             phone_number: encryptWithSecret(formattedPhoneNumber, process.env.ENCRYPT_KEY),
+            resetPasswordToken: otp,
             authMethod: "phone",
             phone_verified: false
         });
-
-        return res.status(201).json({
-            success: true,
-            message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
-        });
+        // log temp user created :
+        console.log("Temporary user created with ID:", tempUser.user_id);
     } catch (error) {
-        console.error("Register with phone number error:", error);
+        console.error("Save OTP to temp user error:", error);
         return res.status(500).json({
             success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
         });
     }
+    // send otp using mocean sms api with MOCEAN_TOKEN : 
+    try {
+        const response = await fetch("https://rest.moceanapi.com/rest/2/sms", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.MOCEAN_API_TOKEN}`,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            },
+            body: new URLSearchParams({
+                "mocean-from": "RENTZY",
+                "mocean-to": formattedPhoneNumber, // 84xxxxxxxxx
+                "mocean-text": `RENTZY OTP: ${otp}. Khong chia se.`
+            })
+        });
 
+        const data = await response.json();
+        // log mocean response :
+        console.log("Mocean SMS response:", data);
+        return res.status(201).json({
+            success: true,
+            message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
+        });
+
+    } catch (err) {
+        console.error("Mocean SMS exception:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Không thể gửi mã OTP."
+        });
+    }
 
 }
 
@@ -759,36 +771,14 @@ export const verifyPhoneNumberForRegistration = async (req, res) => {
         return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
     }
 
+    // 5. verify otp using field resetPasswordToken in db :
 
-    // 5. verify otp using twilio :
-    let verificationCheck;
-    try {
-        const twilio = await import('twilio');
-        const client = twilio.default(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
-
-        verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verificationChecks
-            .create({ to: formattedPhoneNumber, code: otp });
-    } catch (error) {
-        console.error("Twilio error while verifying OTP:", error.message);
-        return res.status(500).json({
-            success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
-        });
-    }
-
-    if (verificationCheck.status !== 'approved') {
-        return res.status(400).json({
-            success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
-        });
-    }
     // 6. if otp is valid :
-    if (verificationCheck.status === 'approved') {
+    if (foundUser.resetPasswordToken === otp) {
         // 5. update user phone_verified to true
         try {
             foundUser.phone_verified = true;
+            foundUser.resetPasswordToken = null; // clear otp
             await foundUser.save();
 
             // create cookie
@@ -864,33 +854,10 @@ export const loginWithPhoneNumber = async (req, res) => {
         });
     }
 
-    // 5. verify otp using twilio :
-    let verificationCheck;
-    try {
-        const twilio = await import('twilio');
-        const client = twilio.default(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
-
-        verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verificationChecks
-            .create({ to: formattedPhoneNumber, code: otp });
-    } catch (error) {
-        console.error("Twilio error while verifying OTP:", error.message);
-        return res.status(500).json({
-            success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
-        });
+    // 5. verify otp using field resetPasswordToken in db :
+    if (foundUser.resetPasswordToken !== otp) {
+        return res.status(400).json({ message: "Mã OTP không hợp lệ!" });
     }
-
-    if (verificationCheck.status !== 'approved') {
-        return res.status(400).json({
-            success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
-        });
-    }
-
-
-
     // 6. create cookie 
     createCookie(res, foundUser.user_id, foundUser.role, foundUser.avatar_url, foundUser.email)
 
@@ -949,22 +916,56 @@ export const requestLoginWithPhoneNumber = async (req, res) => {
         return res.status(400).json({ message: "Số điện thoại này chưa được đăng ký!" });
     }
 
-    // 5. send otp using twilio :
-    // add try catch to import twilio error
-    try {
-        const twilio = await import('twilio');
-        const client = twilio.default(
-            process.env.TWILIO_ACCOUNT_SID,
-            process.env.TWILIO_AUTH_TOKEN
-        );
+    // 5. send otp using mocean sms api with MOCEAN_TOKEN :
+    // generate 6 digit otp : 
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("Generated OTP for login:", code);
 
-        await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verifications
-            .create({ to: formattedPhoneNumber, channel: 'sms' });
+    // save otp to db in resetPasswordToken field for that user :
+    try {
+        // find user again to update otp :
+        for (const user of users) {
+            if (user.phone_number) {
+                const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
+                if (decryptedPhoneNumber === formattedPhoneNumber) {
+                    user.resetPasswordToken = code;
+                    await user.save();
+                    console.log("Saved OTP to user ID:", user.user_id);
+                    break;
+                }
+            }
+        }
     } catch (error) {
-        console.error("Twilio error:", error);
+        console.error("Save OTP to user error:", error);
         return res.status(500).json({
-            success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
+            success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+        });
+    }
+
+    // send otp via mocean sms api :
+    try {
+        const response = await fetch("https://rest.moceanapi.com/rest/2/sms", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.MOCEAN_API_TOKEN}`,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            },
+            body: new URLSearchParams({
+                "mocean-from": "RENTZY",
+                "mocean-to": formattedPhoneNumber, // 84xxxxxxxxx
+                "mocean-text": `RENTZY OTP: ${code}. Khong chia se.`
+            })
+        });
+
+        const data = await response.json();
+        // log mocean response :
+        console.log("Mocean SMS response for login OTP:", data);
+    } catch (err) {
+        console.error("Mocean SMS exception for login OTP:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Không thể gửi mã OTP."
         });
     }
 

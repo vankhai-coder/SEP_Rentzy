@@ -38,7 +38,7 @@ export default function CounterSection() {
                 </svg>
               </div>
               <Counter
-                to={120}
+                to={30}
                 className="block text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-1"
                 duration={2500}
                 loopDelay={5000} // [SỬA: 5s loop]
@@ -68,7 +68,7 @@ export default function CounterSection() {
                 </svg>
               </div>
               <Counter
-                to={1200}
+                to={20}
                 className="block text-2xl md:text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent mb-1"
                 duration={2500}
                 loopDelay={5000} // [SỬA: 5s loop]
@@ -98,7 +98,7 @@ export default function CounterSection() {
                 </svg>
               </div>
               <Counter
-                to={350}
+                to={8}
                 className="block text-2xl md:text-4xl font-bold bg-gradient-to-r from-green-500 to-teal-600 bg-clip-text text-transparent mb-1"
                 duration={2500}
                 loopDelay={5000} // [SỬA: 5s loop]
@@ -128,7 +128,7 @@ export default function CounterSection() {
                 </svg>
               </div>
               <Counter
-                to={99}
+                to={25}
                 className="block text-2xl md:text-4xl font-bold bg-gradient-to-r from-yellow-500 to-orange-600 bg-clip-text text-transparent mb-1"
                 duration={2500}
                 loopDelay={5000} // [SỬA: 5s loop]
@@ -158,7 +158,7 @@ export default function CounterSection() {
                 </svg>
               </div>
               <Counter
-                to={50}
+                to={20}
                 className="block text-2xl md:text-4xl font-bold bg-gradient-to-r from-indigo-500 to-blue-600 bg-clip-text text-transparent mb-1"
                 duration={2500}
                 loopDelay={5000} // [SỬA: 5s loop]
