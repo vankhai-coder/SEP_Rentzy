@@ -33,6 +33,8 @@ const BookingDetailsPage = () => {
     amount: 0,
   });
 
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+
   useEffect(() => {
     fetchBookingDetails();
 
@@ -127,7 +129,7 @@ const BookingDetailsPage = () => {
       } else if (Array.isArray(parsed)) {
         violations = parsed;
       }
-    } catch (e) {
+    } catch {
       if (Array.isArray(raw)) {
         violations = raw;
       }
@@ -302,6 +304,16 @@ const BookingDetailsPage = () => {
     }
   };
 
+  const handleReviewNavigation = () => {
+    setShowReviewPrompt(false);
+    navigate(`/booking-review/${booking.booking_id}`);
+  };
+
+  const handlePostRentalConfirmSuccess = async () => {
+    await fetchBookingDetails();
+    setShowReviewPrompt(true);
+  };
+
   const handlePayOSTrafficFinePayment = async () => {
     try {
       const currentUrl = window.location.origin;
@@ -327,31 +339,6 @@ const BookingDetailsPage = () => {
         error.response?.data?.error ||
           "Có lỗi xảy ra khi tạo link thanh toán phí phạt nguội"
       );
-    }
-  };
-
-  // Tạo URL ký hợp đồng cho người thuê (Embedded Signing DocuSign)
-  const handleSignContract = async () => {
-    try {
-      const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return toast.error("Không có thông tin hợp đồng để ký.");
-      const fePublic =
-        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
-      const currentPath = window.location.pathname;
-      const returnUrl = `${fePublic}${currentPath}`;
-      const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter", returnUrl },
-      });
-      const url = resp.data?.url;
-      if (url) {
-        setSignUrl(url);
-        setShowSignModal(true);
-      } else {
-        toast.error("Không thể tạo URL ký hợp đồng.");
-      }
-    } catch (err) {
-      console.error("Error creating recipient view:", err);
-      toast.error(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
     }
   };
 
@@ -425,7 +412,6 @@ const BookingDetailsPage = () => {
     remaining,
     showDepositButton,
     showRemainingButton,
-    nextPaymentAmount,
   } = calculatePaymentDetails();
 
   if (loading) {
@@ -548,7 +534,7 @@ const BookingDetailsPage = () => {
                 booking={booking}
                 userRole="renter"
                 imageType="post-rental"
-                onConfirmSuccess={fetchBookingDetails}
+                onConfirmSuccess={handlePostRentalConfirmSuccess}
                 handoverData={booking.handover || {}}
               />
             </div>
@@ -983,6 +969,30 @@ const BookingDetailsPage = () => {
                 Hủy bỏ
               </Button>
               <Button onClick={handleConfirmPayment}>Xác nhận</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal hỏi đánh giá */}
+        <Dialog open={showReviewPrompt} onOpenChange={setShowReviewPrompt}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Đánh giá chuyến đi</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">
+                Chuyến đi đã hoàn thành. Bạn có muốn đánh giá chuyến đi này
+                không?
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewPrompt(false)}
+              >
+                Để sau
+              </Button>
+              <Button onClick={handleReviewNavigation}>Đánh giá ngay</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
