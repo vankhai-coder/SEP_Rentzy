@@ -855,7 +855,7 @@ export const createBooking = async (req, res) => {
       try {
         const notif = await Notification.create({
           user_id: vehicle.owner_id,
-          title: "Có booking mới",
+          title: "Có booking mới cho xe của bạn . Vui lòng kiểm tra ngay !" ,
           content: `Booking #${booking.booking_id} cho xe ${vehicle.model}`,
           type: "rental",
           is_read: false,
