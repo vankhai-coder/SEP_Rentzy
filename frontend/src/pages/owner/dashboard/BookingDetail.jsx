@@ -103,6 +103,19 @@ const BookingDetail = () => {
     }).format(amount);
   };
 
+  const parseTrafficFineAmount = (value) => {
+    const digitsOnly = (value || "").toString().replace(/[^\d]/g, "");
+    const trimmed = digitsOnly.replace(/^0+/, "");
+    return trimmed ? parseInt(trimmed, 10) : 0;
+  };
+
+  const formatTrafficFineAmountInput = (value) => {
+    const digitsOnly = (value || "").toString().replace(/[^\d]/g, "");
+    const trimmed = digitsOnly.replace(/^0+/, "");
+    if (!trimmed) return "";
+    return trimmed.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   const formatDateTime = (date, time) => {
     const dateObj = new Date(date);
     const formattedDate = dateObj.toLocaleDateString("vi-VN");
@@ -214,7 +227,9 @@ const BookingDetail = () => {
   };
 
   const handleAddTrafficFine = async () => {
-    if (!trafficFineAmount || parseFloat(trafficFineAmount) <= 0) {
+    const normalizedTrafficFineAmount = parseTrafficFineAmount(trafficFineAmount);
+
+    if (normalizedTrafficFineAmount <= 0) {
       toast.error("Vui lòng nhập số tiền phạt nguội hợp lệ");
       return;
     }
@@ -232,7 +247,7 @@ const BookingDetail = () => {
     try {
       setSubmittingTrafficFine(true);
       const formData = new FormData();
-      formData.append("amount", parseFloat(trafficFineAmount));
+      formData.append("amount", normalizedTrafficFineAmount);
       
       // Tạo description từ các trường riêng biệt
       let description = "";
@@ -1436,17 +1451,21 @@ const BookingDetail = () => {
                   Số tiền phạt nguội (VNĐ) <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={trafficFineAmount}
-                  onChange={(e) => setTrafficFineAmount(e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9.]*"
+                  value={formatTrafficFineAmountInput(trafficFineAmount)}
+                  onChange={(e) => {
+                    const rawDigits = e.target.value.replace(/[^\d]/g, "");
+                    const trimmed = rawDigits.replace(/^0+/, "");
+                    setTrafficFineAmount(trimmed);
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập số tiền phạt nguội"
                 />
-                {trafficFineAmount && (
+                {parseTrafficFineAmount(trafficFineAmount) > 0 && (
                   <p className="mt-1 text-sm text-gray-600">
-                    {formatCurrency(parseFloat(trafficFineAmount) || 0)}
+                    {formatCurrency(parseTrafficFineAmount(trafficFineAmount))}
                   </p>
                 )}
               </div>
@@ -1592,7 +1611,7 @@ const BookingDetail = () => {
               </button>
               <button
                 onClick={handleAddTrafficFine}
-                disabled={submittingTrafficFine || !trafficFineAmount || parseFloat(trafficFineAmount) <= 0 || trafficFineImages.length === 0 || trafficFineReceiptImages.length === 0}
+                disabled={submittingTrafficFine || parseTrafficFineAmount(trafficFineAmount) <= 0 || trafficFineImages.length === 0 || trafficFineReceiptImages.length === 0}
                 className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {submittingTrafficFine ? "Đang xử lý..." : booking?.traffic_fine_amount > 0 ? "Cập nhật" : "Thêm phí phạt"}
