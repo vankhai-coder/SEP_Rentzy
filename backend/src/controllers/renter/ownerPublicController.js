@@ -45,7 +45,7 @@ export const getOwnerPublicProfile = async (req, res) => {
     });
 
     const tripsCompleted = await Booking.count({
-      include: [{ model: Vehicle, as: "vehicle", where: { owner_id: id } }],
+      include: [{ model: Vehicle, as: "vehicle", where: { owner_id: id }, required: true }],
       where: { status: "completed" },
     });
 
@@ -56,8 +56,16 @@ export const getOwnerPublicProfile = async (req, res) => {
           model: Booking,
           as: "booking",
           attributes: ["vehicle_id", "renter_id"],
+          required: true,
+          where: { status: "completed" },
           include: [
-            { model: Vehicle, as: "vehicle", attributes: [], where: { owner_id: id }, required: true },
+            {
+              model: Vehicle,
+              as: "vehicle",
+              attributes: ["model"],
+              where: { owner_id: id },
+              required: true,
+            },
             { model: User, as: "renter", attributes: ["user_id", "full_name", "avatar_url"] },
           ],
         },
