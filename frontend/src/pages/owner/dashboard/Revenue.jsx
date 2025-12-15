@@ -487,24 +487,19 @@ const Revenue = () => {
                   />
                 </BarChart>
               ) : (
-                <LineChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+                <BarChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis tickFormatter={(value) => formatCompactCurrency(value)} width={70} />
                   <Tooltip 
                     formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                   />
-                  <Line 
-                    type="monotone" 
+                  <Bar 
                     dataKey="revenue" 
-                    stroke="#14B8A6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#14B8A6', strokeWidth: 2, r: 5 }}
-                    activeDot={{ r: 7 }}
-                    connectNulls={false}
+                    fill="#14B8A6" 
                     name="Doanh thu"
                   />
-                </LineChart>
+                </BarChart>
               )}
             </ResponsiveContainer>
           </div>
@@ -547,24 +542,19 @@ const Revenue = () => {
                   />
                 </BarChart>
               ) : (
-                <LineChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+                <BarChart data={prepareChartData()} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis allowDecimals={false} width={70} />
                   <Tooltip 
                     formatter={(value) => [value, 'Số đơn']}
                   />
-                  <Line 
-                    type="monotone" 
+                  <Bar 
                     dataKey="bookings" 
-                    stroke="#10B981" 
-                    strokeWidth={3}
-                    dot={{ fill: '#10B981', strokeWidth: 2, r: 5 }}
-                    activeDot={{ r: 7 }}
-                    connectNulls={false}
+                    fill="#10B981" 
                     name="Số đơn"
                   />
-                </LineChart>
+                </BarChart>
               )}
             </ResponsiveContainer>
           </div>
