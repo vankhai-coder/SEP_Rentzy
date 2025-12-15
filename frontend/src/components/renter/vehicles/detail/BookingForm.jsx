@@ -676,7 +676,7 @@ function BookingForm({ vehicle, prefillParams }) {
         )}
 
       {/* Login and Register Dialogs */}
-      <div className='min-h-screen'>
+      <div>
 
         {/* Login with Phone */}
         <Dialog open={isLoginWithPhoneOpen} onOpenChange={setIsLoginWithPhoneOpen} >
