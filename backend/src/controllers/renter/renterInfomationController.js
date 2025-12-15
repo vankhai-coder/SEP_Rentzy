@@ -652,7 +652,7 @@ export const updateAvatarToCloudinary = async (req, res) => {
 };
 
 // sending otp using twilio :
-export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
+export const sendOTPUsingMoceanForUpdatePhoneNumber = async (req, res) => {
     try {
         const { phoneNumber } = req.body || {};
 
@@ -753,7 +753,7 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error("sendOTPUsingTwilioForUpdatePhoneNumber error:", error);
+        console.error("sendOTPUsingMoceanForUpdatePhoneNumber error:", error);
         return res.status(500).json({
             success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
         });
@@ -761,7 +761,7 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
 }
 
 // verify OTP using twilio :
-export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
+export const verifyOTPUsingMoceanForUpdatePhoneNumber = async (req, res) => {
     try {
         // check if user exist : 
         const user = await db.User.findOne({
@@ -820,7 +820,7 @@ export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
 
         }
     } catch (error) {
-        console.error("verifyOTPUsingTwilioForUpdatePhoneNumber error:", error);
+        console.error("verifyOTPUsingMoceanForUpdatePhoneNumber error:", error);
         return res.status(500).json({
             success: false, message: "Có lỗi xảy ra từ hệ thống, vui lòng thử lại sau."
         });
