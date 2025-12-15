@@ -43,7 +43,7 @@ const BookingReviewForm = ({ bookingDetail }) => {
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl border border-teal-200/50">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-        Đánh giá chuyến đi
+        Đánh giá xe
       </h2>
 
       {bookingDetail && (
