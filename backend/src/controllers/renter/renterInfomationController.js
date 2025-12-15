@@ -8,6 +8,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { v2 as cloudinary } from 'cloudinary';
 import RegisterOwner from '../../models/RegisterOwner.js';
+import { createCookie } from '../../utils/createCookie.js';
 
 // Helper function to safely decrypt phone number
 const safeDecryptPhoneNumber = (encryptedPhone) => {
@@ -114,7 +115,7 @@ export const verifyDriverLicenseCard = async (req, res) => {
             if (!validMotobikeClasses.includes(driverClass)) {
                 return res.status(400).json({ message: `Bằng lái xe không phải hạng xe máy. Vui lòng tải lên bằng lái xe máy (hạng A1, A2, A3).` })
             }
-        }else{
+        } else {
             const validCarClasses = ['B1', 'B2', 'C', 'D', 'E', 'F'];
             if (!validCarClasses.includes(driverClass)) {
                 return res.status(400).json({ message: `Bằng lái xe không phải hạng ô tô. Vui lòng tải lên bằng lái xe ô tô (hạng B1, B2, C, D, E, F).` })
@@ -300,6 +301,7 @@ export const check2FaceMatchAndSaveDriverLicenseToAWS = async (req, res) => {
             user.driver_license_number_for_car = encryptWithSecret(driverLicenseNumber, process.env.ENCRYPT_KEY)
             user.driver_license_name_for_car = encryptWithSecret(driverLicenseName, process.env.ENCRYPT_KEY)
             user.driver_license_dob_for_car = encryptWithSecret(driverLicenseDob, process.env.ENCRYPT_KEY)
+            user.driver_class_for_car = driverLicenseClass
             await user.save()
             console.log("Saved driver license for car to db");
             // return to client :
@@ -654,6 +656,17 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
     try {
         const { phoneNumber } = req.body || {};
 
+        // 0. get user : 
+        const user = await db.User.findOne({
+            where: {
+                user_id: req.user?.userId
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Không tìm thấy người dùng cho số điện thoại này theo id=' + req.user?.userId + '!' })
+        }
+
         // 1. Validate input
         if (!phoneNumber) {
             return res.status(400).json({
@@ -677,6 +690,9 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
                 user_id: { [Op.ne]: req.user?.userId } // exclude current user
             }
         });
+
+        console.log("usersWithPhoneNumber:", usersWithPhoneNumber);
+
         for (const user of usersWithPhoneNumber) {
             if (user.phone_number) {
                 const decryptedPhoneNumber = decryptWithSecret(user.phone_number, process.env.ENCRYPT_KEY);
@@ -692,29 +708,50 @@ export const sendOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
         console.log("Sending OTP to phone number:", formattedPhoneNumber);
 
         // 2. Send OTP using Twilio Verify Service
-        // add try catch to import twilio error
-        try {
-            const twilio = await import('twilio');
-            const client = twilio.default(
-                process.env.TWILIO_ACCOUNT_SID,
-                process.env.TWILIO_AUTH_TOKEN
-            );
+        // 5. create otp and save to db resetPasswordToken field :
+        // generate 6 digit otp : 
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log("Generated OTP:", otp);
+        // save otp to db in resetPasswordToken field :
 
-            await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-                .verifications
-                .create({ to: formattedPhoneNumber, channel: 'sms' });
-        } catch (error) {
-            console.error("Twilio error:", error);
+        user.resetPasswordToken = otp;
+        user.phone_number = encryptWithSecret(formattedPhoneNumber, process.env.ENCRYPT_KEY);
+        await user.save();
+
+        console.log('user : ', user.user_id, user.phone_number, user.resetPasswordToken);
+
+        // user.phoneNumber
+        // send otp using mocean sms api with MOCEAN_TOKEN : 
+        try {
+            const response = await fetch("https://rest.moceanapi.com/rest/2/sms", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.MOCEAN_API_TOKEN}`,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json"
+                },
+                body: new URLSearchParams({
+                    "mocean-from": "RENTZY",
+                    "mocean-to": formattedPhoneNumber, // 84xxxxxxxxx
+                    "mocean-text": `RENTZY OTP: ${otp}. Khong chia se.`
+                })
+            });
+
+            const data = await response.json();
+            // log mocean response :
+            console.log("Mocean SMS response:", data);
+            return res.status(201).json({
+                success: true,
+                message: "Mã OTP đã được gửi đến số điện thoại của bạn. Vui lòng kiểm tra tin nhắn."
+            });
+
+        } catch (err) {
+            console.error("Mocean SMS exception:", err);
             return res.status(500).json({
-                success: false, message: "Không thể gửi mã OTP. Vui lòng kiểm tra số điện thoại và thử lại."
+                success: false,
+                message: "Không thể gửi mã OTP."
             });
         }
-
-        // 3. Response
-        return res.status(200).json({
-            success: true,
-            message: "Mã OTP đã được gửi đến số điện thoại của bạn.",
-        });
     } catch (error) {
         console.error("sendOTPUsingTwilioForUpdatePhoneNumber error:", error);
         return res.status(500).json({
@@ -756,45 +793,32 @@ export const verifyOTPUsingTwilioForUpdatePhoneNumber = async (req, res) => {
         // log : 
         console.log("Verifying OTP for phone number:", formattedPhoneNumber, "with OTP:", otpCode);
 
-        // 2. Verify OTP using Twilio Verify Service
-        let verificationCheck;
-        try {
-            const twilio = await import('twilio');
-            const client = twilio.default(
-                process.env.TWILIO_ACCOUNT_SID,
-                process.env.TWILIO_AUTH_TOKEN
-            );
+        // 2. Verify OTP using MoceanSMS Verify Service
+        // 6. if otp is valid :
+        if (user.resetPasswordToken === otpCode) {
+            // 5. update user phone_verified to true
+            try {
+                user.phone_verified = true;
+                user.resetPasswordToken = null; // clear otp
+                await user.save();
 
-            verificationCheck = await client.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-                .verificationChecks
-                .create({ to: formattedPhoneNumber, code: otpCode });
-        } catch (error) {
-            console.error("Twilio error:", error.message);
-            return res.status(500).json({
-                success: false, message: "Không thể xác minh mã OTP. Vui lòng thử lại."
-            });
+                // create cookie
+                createCookie(res, user.user_id, user.role, user.avatar_url, user.email);
+
+                return res.status(200).json({
+                    success: true,
+                    message: "Xác minh số điện thoại thành công!",
+                    phone_number: formattedPhoneNumber
+                });
+
+            } catch (error) {
+                console.error("Verify phone number error:", error);
+                return res.status(500).json({
+                    success: false, message: "Lỗi hệ thống, vui lòng thử lại sau!"
+                });
+            }
+
         }
-
-        if (verificationCheck.status !== 'approved') {
-            return res.status(400).json({
-                success: false, message: "Mã OTP không hợp lệ hoặc đã hết hạn."
-            });
-        }
-
-        // 2.1 save phone number to user db
-        // encrypt phone number before save to db
-        const encryptedPhoneNumber = encryptWithSecret(formattedPhoneNumber, process.env.ENCRYPT_KEY)
-        user.phone_number = encryptedPhoneNumber
-        user.phone_verified = true
-
-        await user.save()
-
-        // 3. Response
-        return res.status(200).json({
-            success: true,
-            message: "Xác minh mã OTP thành công.",
-            phone_number: formattedPhoneNumber
-        });
     } catch (error) {
         console.error("verifyOTPUsingTwilioForUpdatePhoneNumber error:", error);
         return res.status(500).json({
