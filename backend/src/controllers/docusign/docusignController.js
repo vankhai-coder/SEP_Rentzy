@@ -1221,9 +1221,19 @@ async function buildContractHtmlByBookingId(bookingId) {
     owner_name: safe(booking.vehicle?.owner?.full_name, ""),
     owner_phone: safe(booking.vehicle?.owner?.phone_number, ""),
     owner_email: safe(booking.vehicle?.owner?.email, ""),
-    owner_cccd: safe(booking.vehicle?.owner?.national_id_number, ""),
+    owner_cccd: booking.vehicle?.owner?.national_id_number
+      ? decryptWithSecret(
+          booking.vehicle.owner.national_id_number,
+          process.env.ENCRYPT_KEY
+        ) || ""
+      : "",
     vehicle_brand_id: safe(booking.vehicle?.brand_id, ""),
-    vehicle_type: safe(booking.vehicle?.vehicle_type, ""),
+    vehicle_type: ((type) => {
+      const t = String(type || "").toLowerCase();
+      if (t === "car") return "Xe ô tô";
+      if (t === "motorbike") return "Xe máy";
+      return type;
+    })(booking.vehicle?.vehicle_type),
     vehicle_model: safe(booking.vehicle?.model, ""),
     vehicle_year: safe(booking.vehicle?.year, ""),
     license_plate: safe(booking.vehicle?.license_plate, ""),

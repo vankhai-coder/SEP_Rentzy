@@ -92,13 +92,13 @@ const User = sequelize.define(
 
     // National ID information
     national_id_number: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.TEXT,
     },
     national_id_name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.TEXT,
     },
     national_id_dob: {
-      type: DataTypes.STRING(20),
+      type: DataTypes.TEXT,
     },
     national_id_image_url: {
       type: DataTypes.STRING(255),

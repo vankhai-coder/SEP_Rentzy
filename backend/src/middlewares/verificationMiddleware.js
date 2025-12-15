@@ -54,19 +54,6 @@ export const checkVerificationForBooking = async (req, res, next) => {
       });
     }
 
-    // 3. Kiểm tra xác minh số điện thoại
-    if (!user.phone_verified) {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn cần xác minh số điện thoại trước khi đặt xe",
-        error_code: "PHONE_NOT_VERIFIED",
-        required_verification: {
-          phone_verified: false,
-          phone_number: user.phone_number,
-        },
-      });
-    }
-
     // 4. Kiểm tra xác minh GPLX theo loại xe
     let licenseStatus = "pending";
     let licenseNumber = "";
