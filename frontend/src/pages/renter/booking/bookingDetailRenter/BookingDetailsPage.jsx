@@ -886,7 +886,9 @@ const BookingDetailsPage = () => {
           <h3>Lịch sử giao dịch</h3>
           {booking.transactions && booking.transactions.length > 0 ? (
             <div className="transaction-list">
-              {booking.transactions.map((transaction, index) => (
+              {booking.transactions
+                .filter(t => t.transaction_type !== "COMPENSATION")
+                .map((transaction, index) => (
                 <div
                   key={transaction.transaction_id || index}
                   className="transaction-card"
