@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../../config/axiosInstance";
+import { toast } from "sonner";
 
 const HandoverImageViewer = ({
   bookingId,
@@ -57,7 +58,7 @@ const HandoverImageViewer = ({
           imageType === "pre-rental"
             ? "Xác nhận ảnh xe trước bàn giao thành công!"
             : "Xác nhận ảnh xe sau trả xe thành công!";
-        alert(message);
+        toast.success(message);
         if (onConfirmSuccess) {
           onConfirmSuccess();
         }
