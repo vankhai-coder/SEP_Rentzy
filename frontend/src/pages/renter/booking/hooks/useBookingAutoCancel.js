@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import axiosInstance from '../../../../config/axiosInstance';
 
 export const useBookingAutoCancel = (booking) => {

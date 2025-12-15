@@ -77,7 +77,7 @@ const ContractBooking = () => {
       setOtpSending(true);
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) {
-        alert("Không có thông tin hợp đồng để ký.");
+        toast.error("Không có thông tin hợp đồng để ký.");
         return;
       }
       await axiosInstance.post(`/api/docusign/sign/send-otp`, {
@@ -100,7 +100,7 @@ const ContractBooking = () => {
       setOtpError("");
       setOtpVerifying(true);
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
+      if (!envelopeId) return toast.error("Không có thông tin hợp đồng để ký.");
       // const fePublic =
       //   import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
       // const returnUrl = `${fePublic}/contract/${booking.booking_id}`;

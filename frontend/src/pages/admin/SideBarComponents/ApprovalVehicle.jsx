@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axiosInstance from '../../../config/axiosInstance';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { 
   MdRefresh,
   MdCheckCircle,
