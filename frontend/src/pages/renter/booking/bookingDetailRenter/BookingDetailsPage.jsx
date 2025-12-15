@@ -34,6 +34,7 @@ const BookingDetailsPage = () => {
   });
 
   const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  const [viewImage, setViewImage] = useState(null);
 
   useEffect(() => {
     fetchBookingDetails();
@@ -846,7 +847,8 @@ const BookingDetailsPage = () => {
                           src={imageUrl}
                           alt={`Vi phạm ${index + 1}`}
                           className="traffic-fine-image"
-                          onClick={() => window.open(imageUrl, "_blank")}
+                          onClick={() => setViewImage(imageUrl)}
+                          style={{ cursor: "pointer" }}
                         />
                       ))}
                     </div>
@@ -862,7 +864,8 @@ const BookingDetailsPage = () => {
                           src={imageUrl}
                           alt={`Hóa đơn ${index + 1}`}
                           className="traffic-fine-image"
-                          onClick={() => window.open(imageUrl, "_blank")}
+                          onClick={() => setViewImage(imageUrl)}
+                          style={{ cursor: "pointer" }}
                         />
                       ))}
                     </div>
@@ -970,6 +973,27 @@ const BookingDetailsPage = () => {
               </Button>
               <Button onClick={handleConfirmPayment}>Xác nhận</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Image Viewer Modal */}
+        <Dialog open={!!viewImage} onOpenChange={(open) => !open && setViewImage(null)}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden flex justify-center items-center bg-transparent border-none shadow-none">
+            <div className="relative">
+              <img
+                src={viewImage}
+                alt="Full view"
+                className="max-w-full max-h-[90vh] object-contain rounded-md"
+              />
+              <button 
+                onClick={() => setViewImage(null)}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
 
