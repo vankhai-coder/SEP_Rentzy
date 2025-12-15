@@ -1,5 +1,5 @@
 import express from "express";
-import { oauthLogin, oauthCallback, requireToken, sendContract, signRecipientView, getStatus, getCombinedDocuments, contractTemplate, bookingSend, webhook, sendSigningOtp, verifySigningOtpAndCreateView } from "../../controllers/docusign/docusignController.js";
+import { oauthLogin, oauthCallback, requireToken, sendContract, signRecipientView, getStatus, getCombinedDocuments, contractTemplate, bookingSend, webhook, sendSigningOtp, verifySigningOtpAndCreateView, docusignReturn } from "../../controllers/docusign/docusignController.js";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -8,6 +8,7 @@ const router = express.Router();
 router.get("/oauth/login", oauthLogin);
 router.get("/oauth/callback", oauthCallback);
 router.post("/send-contract", verifyJWTToken, requireToken, sendContract);
+router.get("/return", docusignReturn);
 router.get("/sign/:envelopeId", verifyJWTToken, requireToken, signRecipientView);
 // OTP signing flow
 router.post("/sign/send-otp", verifyJWTToken, requireToken, sendSigningOtp);

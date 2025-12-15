@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { toast } from "sonner";
 
 // Constants
 const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org";
@@ -233,7 +234,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
   // Get current user location
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      alert("Trình duyệt không hỗ trợ định vị.");
+      toast.error("Trình duyệt không hỗ trợ định vị.");
       return;
     }
 
@@ -249,7 +250,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       },
       (err) => {
         console.error("Geolocation error:", err);
-        alert("Không thể lấy vị trí hiện tại.");
+        toast.error("Không thể lấy vị trí hiện tại.");
       },
       { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
@@ -287,7 +288,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
   // Handle manual address input and confirm location
   const handleManualAddress = useCallback(async () => {
     if (!addressInput.trim()) {
-      alert("Vui lòng nhập địa chỉ cụ thể.");
+      toast.error("Vui lòng nhập địa chỉ cụ thể.");
       return;
     }
 
@@ -301,7 +302,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       setAddressInput(addr);
       setSuggestions([]);
     } else {
-      alert("Không tìm thấy địa chỉ. Vui lòng thử lại với địa chỉ chi tiết hơn.");
+      toast.error("Không tìm thấy địa chỉ. Vui lòng thử lại với địa chỉ chi tiết hơn.");
     }
     setIsGeocoding(false);
   }, [addressInput]);
@@ -309,7 +310,7 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
   // Handle confirm action
   const handleConfirm = useCallback(() => {
     if (!userCoords || !userAddress) {
-      alert("Vui lòng xác định vị trí của bạn trước khi xác nhận.");
+      toast.error("Vui lòng xác định vị trí của bạn trước khi xác nhận.");
       return;
     }
     onConfirm(userAddress, userCoords, distance);

@@ -100,8 +100,9 @@ const createPayOSLink = async (req, res) => {
 // PAYOS: Webhook nhận thông báo thanh toán
 const handlePayOSWebhook = async (req, res) => {
   try {
-    console.log("PayOS webhook received");
     const { code, desc, data, signature } = req.body;
+    console.log("PayOS webhook received:", { code, desc, orderCode: data?.orderCode });
+
     // Xử lý thanh toán thành công
     if (
       (code === "00" || code === 0) &&

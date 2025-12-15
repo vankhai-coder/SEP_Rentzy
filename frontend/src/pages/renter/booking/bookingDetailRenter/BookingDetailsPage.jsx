@@ -3,12 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaInfoCircle } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 import HandoverImageViewer from "@/components/common/HandoverImageViewer";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import "./BookingDetailsPage.scss";
 
 const BookingDetailsPage = () => {
@@ -22,6 +25,16 @@ const BookingDetailsPage = () => {
   const [signUrl, setSignUrl] = useState("");
   const iframeRef = useRef(null);
 
+  const [paymentConfirmModal, setPaymentConfirmModal] = useState({
+    isOpen: false,
+    type: null, // 'payos_remaining' | 'cash_remaining'
+    title: "",
+    message: "",
+    amount: 0,
+  });
+
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+
   useEffect(() => {
     fetchBookingDetails();
 
@@ -32,7 +45,7 @@ const BookingDetailsPage = () => {
     if (paymentStatus === "success") {
       // Hiển thị thông báo thành công và refresh data
       setTimeout(() => {
-        alert("Xác nhận thanh toán thành công! Vui lòng chờ chủ xe xác nhận.");
+        toast.success("Xác nhận thanh toán thành công! Vui lòng chờ chủ xe xác nhận.");
         fetchBookingDetails();
       }, 1000);
 
@@ -116,7 +129,7 @@ const BookingDetailsPage = () => {
       } else if (Array.isArray(parsed)) {
         violations = parsed;
       }
-    } catch (e) {
+    } catch {
       if (Array.isArray(raw)) {
         violations = raw;
       }
@@ -201,21 +214,14 @@ const BookingDetailsPage = () => {
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  // Tạo link PayOS cho PHẦN CÒN LẠI (70%) khi status = deposit_paid
-  const handlePayOSRemainingPayment = async () => {
+  const executePayOSRemainingPayment = async () => {
     try {
-      if (booking.status !== "deposit_paid") return;
-      const userConfirmed = window.confirm(
-        "Bạn có muốn thanh toán phần còn lại (70%) không?"
-      );
-      if (!userConfirmed) return;
-
       setPaymentLoading(true);
       const currentUrl = window.location.origin;
       const returnUrl = `${currentUrl}/booking-history/booking-detail/${booking.booking_id}`;
@@ -241,10 +247,71 @@ const BookingDetailsPage = () => {
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setPaymentLoading(false);
+      setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }));
     }
+  };
+
+  // Tạo link PayOS cho PHẦN CÒN LẠI (70%) khi status = deposit_paid
+  const handlePayOSRemainingPayment = async () => {
+    if (booking.status !== "deposit_paid") return;
+    const { remaining } = calculatePaymentDetails();
+
+    setPaymentConfirmModal({
+      isOpen: true,
+      type: "payos_remaining",
+      title: "Xác nhận thanh toán",
+      message: "Bạn có muốn thanh toán phần còn lại (70%) không?",
+      amount: remaining,
+    });
+  };
+
+  const executePaymentRemainingByCash = async () => {
+    try {
+      const response = await axiosInstance.patch(
+        `/api/payment/byCash/${booking.booking_id}`
+      );
+      console.log("API Response:", response.data);
+
+      toast.success("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+      fetchBookingDetails();
+    } catch (err) {
+      console.log("có lỗi", err);
+      toast.error("Có lỗi xảy ra khi thanh toán tiền mặt");
+    } finally {
+      setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handlePaymentRemainingByCash = async () => {
+    const { nextPaymentAmount } = calculatePaymentDetails();
+    setPaymentConfirmModal({
+      isOpen: true,
+      type: "cash_remaining",
+      title: "Xác nhận thanh toán tiền mặt",
+      message: "Bạn xác nhận thanh toán TIỀN MẶT trực tiếp cho CHỦ XE?",
+      amount: nextPaymentAmount,
+    });
+  };
+
+  const handleConfirmPayment = () => {
+    if (paymentConfirmModal.type === "payos_remaining") {
+      executePayOSRemainingPayment();
+    } else if (paymentConfirmModal.type === "cash_remaining") {
+      executePaymentRemainingByCash();
+    }
+  };
+
+  const handleReviewNavigation = () => {
+    setShowReviewPrompt(false);
+    navigate(`/booking-review/${booking.booking_id}`);
+  };
+
+  const handlePostRentalConfirmSuccess = async () => {
+    await fetchBookingDetails();
+    setShowReviewPrompt(true);
   };
 
   const handlePayOSTrafficFinePayment = async () => {
@@ -263,40 +330,15 @@ const BookingDetailsPage = () => {
       if (response.data?.payUrl) {
         window.location.href = response.data.payUrl;
       } else {
-        alert(
+        toast.error(
           response.data?.error || "Không thể tạo link thanh toán phí phạt nguội"
         );
       }
     } catch (error) {
-      alert(
+      toast.error(
         error.response?.data?.error ||
           "Có lỗi xảy ra khi tạo link thanh toán phí phạt nguội"
       );
-    }
-  };
-
-  // Tạo URL ký hợp đồng cho người thuê (Embedded Signing DocuSign)
-  const handleSignContract = async () => {
-    try {
-      const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
-      const fePublic =
-        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
-      const currentPath = window.location.pathname;
-      const returnUrl = `${fePublic}${currentPath}`;
-      const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter", returnUrl },
-      });
-      const url = resp.data?.url;
-      if (url) {
-        setSignUrl(url);
-        setShowSignModal(true);
-      } else {
-        alert("Không thể tạo URL ký hợp đồng.");
-      }
-    } catch (err) {
-      console.error("Error creating recipient view:", err);
-      alert(err.response?.data?.error || "Không thể tạo URL ký hợp đồng.");
     }
   };
 
@@ -370,7 +412,6 @@ const BookingDetailsPage = () => {
     remaining,
     showDepositButton,
     showRemainingButton,
-    nextPaymentAmount,
   } = calculatePaymentDetails();
 
   if (loading) {
@@ -410,30 +451,7 @@ const BookingDetailsPage = () => {
       </div>
     );
   }
-  const handlePaymentRemainingByCash = async () => {
-    try {
-      const proceed = window.confirm(
-        `Bạn xác nhận thanh toán TIỀN MẶT trực tiếp cho CHỦ XE với số tiền ${formatCurrency(
-          nextPaymentAmount
-        )}"`
-      );
-      if (!proceed) return;
 
-      const response = await axiosInstance.patch(
-        `/api/payment/byCash/${booking.booking_id}`
-      );
-      console.log("API Response:", response.data);
-
-      if (!response) {
-        console.log("yêu cầu thanh toán thành công");
-      }
-
-      alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
-      fetchBookingDetails();
-    } catch (err) {
-      console.log("có lỗi", err);
-    }
-  };
 
   return (
     <div className="booking-details-container">
@@ -516,7 +534,7 @@ const BookingDetailsPage = () => {
                 booking={booking}
                 userRole="renter"
                 imageType="post-rental"
-                onConfirmSuccess={fetchBookingDetails}
+                onConfirmSuccess={handlePostRentalConfirmSuccess}
                 handoverData={booking.handover || {}}
               />
             </div>
@@ -581,7 +599,7 @@ const BookingDetailsPage = () => {
         </div>
 
         {/* Trạng thái hợp đồng DocuSign - tách riêng */}
-        {booking.contract && (
+        {/* {booking.contract && (
           <div className="contract-section">
             <h3>Trạng thái hợp đồng</h3>
             <div className="contract-status">
@@ -599,7 +617,7 @@ const BookingDetailsPage = () => {
                 )}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Thông tin thanh toán */}
         <div className="payment-section">
@@ -916,6 +934,68 @@ const BookingDetailsPage = () => {
             </div>
           )}
         </div>
+
+        {/* Payment Confirmation Modal */}
+        <Dialog
+          open={paymentConfirmModal.isOpen}
+          onOpenChange={(open) =>
+            setPaymentConfirmModal((prev) => ({ ...prev, isOpen: open }))
+          }
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{paymentConfirmModal.title}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-500 mb-4">
+                {paymentConfirmModal.message}
+              </p>
+              {paymentConfirmModal.amount > 0 && (
+                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                  <span className="font-medium text-gray-700">Số tiền:</span>
+                  <span className="font-bold text-blue-600 text-lg">
+                    {formatCurrency(paymentConfirmModal.amount)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setPaymentConfirmModal((prev) => ({ ...prev, isOpen: false }))
+                }
+              >
+                Hủy bỏ
+              </Button>
+              <Button onClick={handleConfirmPayment}>Xác nhận</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal hỏi đánh giá */}
+        <Dialog open={showReviewPrompt} onOpenChange={setShowReviewPrompt}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Đánh giá chuyến đi</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-gray-600">
+                Chuyến đi đã hoàn thành. Bạn có muốn đánh giá chuyến đi này
+                không?
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewPrompt(false)}
+              >
+                Để sau
+              </Button>
+              <Button onClick={handleReviewNavigation}>Đánh giá ngay</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

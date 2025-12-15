@@ -44,10 +44,12 @@ export const useContractBooking = (bookingId) => {
         console.log('✅ Booking data loaded successfully:', bookingData);
         console.log('✅ Owner data:', bookingData?.vehicle?.owner);
         console.log('✅ Renter data:', bookingData?.renter);
+        return bookingData;
       } else {
         const errorMessage = response?.data?.message || 'Không thể tải thông tin booking';
         setError(errorMessage);
         console.error('❌ Failed to load booking:', errorMessage);
+        return null;
       }
     } catch (err) {
       console.error('❌ Error fetching booking:', err);
@@ -70,6 +72,7 @@ export const useContractBooking = (bookingId) => {
       
       setError(errorMessage);
       toast.error(errorMessage);
+      return null;
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,7 +81,7 @@ export const useContractBooking = (bookingId) => {
 
   // Refresh booking data
   const refreshBooking = useCallback(() => {
-    fetchBooking(false);
+    return fetchBooking(false);
   }, [fetchBooking]);
 
   // Cancel booking

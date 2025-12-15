@@ -2,9 +2,8 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { vi } from "date-fns/locale";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import "react-datepicker/dist/react-datepicker.css";
-import "react-toastify/dist/ReactToastify.css";
 import "./DateTimeSelector.css";
 
 registerLocale("vi", vi);
@@ -27,6 +26,7 @@ function DateTimeSelector({
   const [pickupTime, setPickupTime] = useState(initialPickupTime || null);
   const [returnTime, setReturnTime] = useState(initialReturnTime || null);
   const [bookedDates, setBookedDates] = useState([]);
+  const [inlineError, setInlineError] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -342,17 +342,23 @@ function DateTimeSelector({
 
   // Event Handlers
   const handleDateChange = (type, date) => {
+    setInlineError(null);
     const validation = validateDateSelection(type, date);
     
     if (!validation.isValid) {
-      toast.warning(validation.message, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.warning(validation.message);
+      setInlineError(validation.message);
+      return;
+    }
+
+    // Kiểm tra xem ngày đã chọn có giờ nào trống không
+    const hours = getAvailableHours(date, type === "end");
+    const hasSlots = hours.some(h => h.isAvailable);
+
+    if (!hasSlots) {
+      const msg = "Ngày này đã kín lịch, vui lòng chọn ngày khác";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -372,18 +378,12 @@ function DateTimeSelector({
   };
 
   const handleTimeSelect = (type, time) => {
+    setInlineError(null);
     const selectedDate = type === "pickup" ? startDate : endDate;
     
     if (!selectedDate) {
       toast.warning(
-        type === "pickup" ? "Vui lòng chọn ngày nhận xe trước" : "Vui lòng chọn ngày trả xe trước", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
+        type === "pickup" ? "Vui lòng chọn ngày nhận xe trước" : "Vui lòng chọn ngày trả xe trước"
       );
       return;
     }
@@ -391,14 +391,8 @@ function DateTimeSelector({
     const validation = validateTimeSelection(type, time, selectedDate);
     
     if (!validation.isValid) {
-      toast.warning(validation.message, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.warning(validation.message);
+      setInlineError(validation.message);
       return;
     }
 
@@ -412,14 +406,7 @@ function DateTimeSelector({
         
         if (newPickupHour >= currentReturnHour) {
           setReturnTime(null);
-          toast.info("Đã reset giờ trả xe do thay đổi giờ nhận xe", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-          });
+          toast.info("Đã reset giờ trả xe do thay đổi giờ nhận xe");
         }
       }
     } else {
@@ -428,15 +415,11 @@ function DateTimeSelector({
   };
 
   const handleConfirm = () => {
+    setInlineError(null);
     if (!startDate || !endDate || !pickupTime || !returnTime) {
-      toast.error("Vui lòng chọn đầy đủ ngày và giờ nhận/trả xe", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      const msg = "Vui lòng chọn đầy đủ ngày và giờ nhận/trả xe";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -450,27 +433,17 @@ function DateTimeSelector({
     end.setHours(rh, 0, 0, 0);
 
     if (start >= end) {
-      toast.error("Thời gian trả xe phải sau thời gian nhận xe", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      const msg = "Thời gian trả xe phải sau thời gian nhận xe";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
     const conflict = checkConflict(start, end);
     if (conflict) {
-      toast.error("Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      const msg = "Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -540,6 +513,12 @@ function DateTimeSelector({
             placeholder="Chọn ngày trả xe"
           />
         </div>
+
+        {inlineError && (
+          <div className="text-red-500 text-center my-2 font-medium bg-red-50 p-2 rounded-md border border-red-100">
+            {inlineError}
+          </div>
+        )}
 
         <div className="rental-summary">
 
