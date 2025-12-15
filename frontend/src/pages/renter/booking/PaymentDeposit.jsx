@@ -25,6 +25,7 @@ import axiosInstance from "../../../config/axiosInstance";
 
 // Styles
 import "./PaymentDeposit.scss";
+import { toast } from "sonner";
 
 /**
  * PaymentDeposit Component
@@ -99,7 +100,7 @@ const PaymentDeposit = () => {
   const handlePaymentCancel = async () => {
     try {
       if (!booking?.booking_id) {
-        alert("Không tìm thấy thông tin đặt xe.");
+        toast.error("Không tìm thấy thông tin đặt xe.");
         return;
       }
 
@@ -113,7 +114,7 @@ const PaymentDeposit = () => {
       });
 
       if (response.data.success) {
-        alert("Đã hủy giao dịch thanh toán.");
+        toast.success("Đã hủy giao dịch thanh toán.");
         // Refresh booking data để cập nhật trạng thái
         fetchBooking();
       } else {
@@ -127,7 +128,7 @@ const PaymentDeposit = () => {
         errorMessage = error.response.data.error;
       }
       
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -151,7 +152,7 @@ const PaymentDeposit = () => {
     if (paymentStatus === "success") {
       // Hiển thị thông báo thành công và refresh data
       setTimeout(() => {
-        alert("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
+        toast.success("Thanh toán thành công! Thông tin đặt xe đã được cập nhật.");
         fetchBooking();
       }, 1000);
 

@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import axiosInstance from "@/config/axiosInstance";
 import "./CancelBookingModal.scss";
+import { toast } from "sonner";
 
 const CancelBookingModal = ({
   isOpen,
@@ -81,7 +82,7 @@ const CancelBookingModal = ({
       }
 
       if (response.data.success) {
-        alert("Hủy booking thành công!");
+        toast.success("Hủy booking thành công!");
         onCancelSuccess();
         onClose();
       } else {
@@ -99,7 +100,7 @@ const CancelBookingModal = ({
         errorMessage = error.response.data.message;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setConfirming(false);
     }

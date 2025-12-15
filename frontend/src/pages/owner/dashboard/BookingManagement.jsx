@@ -11,6 +11,7 @@ import {
   MdFilterList,
 } from "react-icons/md";
 import { DollarSign } from "lucide-react";
+import { toast } from "sonner";
 
 const BookingManagement = () => {
   const navigate = useNavigate();
@@ -130,11 +131,11 @@ const BookingManagement = () => {
       if (res?.data?.success) {
         await fetchBookings();
       } else {
-        alert(res?.data?.message || "Không thể duyệt đơn. Vui lòng thử lại.");
+        toast.error(res?.data?.message || "Không thể duyệt đơn. Vui lòng thử lại.");
       }
     } catch (err) {
       console.error("Error approving booking:", err);
-      alert("Có lỗi xảy ra khi duyệt đơn.");
+      toast.error("Có lỗi xảy ra khi duyệt đơn.");
     } finally {
       setActionLoading(false);
     }
@@ -166,11 +167,11 @@ const BookingManagement = () => {
         setRejectReason("");
         await fetchBookings();
       } else {
-        alert(res?.data?.message || "Không thể từ chối đơn. Vui lòng thử lại.");
+        toast.error(res?.data?.message || "Không thể từ chối đơn. Vui lòng thử lại.");
       }
     } catch (err) {
       console.error("Error rejecting booking:", err);
-      alert("Có lỗi xảy ra khi từ chối đơn.");
+      toast.error("Có lỗi xảy ra khi từ chối đơn.");
     } finally {
       setActionLoading(false);
     }
