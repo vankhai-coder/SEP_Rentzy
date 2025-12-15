@@ -3,12 +3,12 @@ import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
 import {
     agreeToTerms, check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS,
     checkIfUserIsAgreeToTerms, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard,
-    checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingMoceanForUpdatePhoneNumber, sendOTPUsingTwilioForUpdatePhoneNumber,
+    checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingMoceanForUpdatePhoneNumber,
     sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard,
     verifyOTPUsingMoceanForUpdatePhoneNumber
 } from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
-import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
+import { getBasicUserInformation, updateAvatarToCloudinary } from "../../controllers/renter/renterInfomationController.js";
 
 const router = express.Router();
 
