@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../config/axiosInstance.js";
 import VehicleCard from "../../../components/renter/vehicles/VehicleCard.jsx";
 import { MdDirectionsCar } from "react-icons/md";
-import { Bike, Users, Gauge, Settings, ChevronDown } from "lucide-react";
+import { Bike, Users, Gauge, Settings, ChevronDown, ArrowLeft } from "lucide-react";
 import "./OwnerPublicPage.scss";
 
 const OwnerPublicPage = () => {
   const { ownerId } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -92,6 +93,15 @@ const OwnerPublicPage = () => {
   return (
     <div className="owner-public-page">
       <div className="owner-public-page__container">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+        >
+          <ArrowLeft size={20} className="mr-1" />
+          Quay lại
+        </button>
+
         {/* Owner Info Card */}
         <div className="owner-card">
           <div className="owner-card__content">
@@ -107,25 +117,13 @@ const OwnerPublicPage = () => {
               <div className="owner-card__metrics">
                 <div className="owner-card__metric">
                   <MdDirectionsCar className="owner-card__icon owner-card__icon--trips" />
-                  <span>{metrics.trips || 0}+ chuyến</span>
+                  <span>{metrics.trips || 0} chuyến</span>
                 </div>
                 <div className="owner-card__metric">
                   <span className="owner-card__rating">
                     {ratingSummary.avg}
                   </span>
                   <span> ({ratingSummary.count} đánh giá)</span>
-                </div>
-                <div className="owner-card__metric">
-                  <span className="owner-card__label">Tỉ lệ phản hồi:</span>
-                  <span className="owner-card__value">
-                    {metrics.response_rate || 0}%
-                  </span>
-                </div>
-                <div className="owner-card__metric">
-                  <span className="owner-card__label">Thời gian phản hồi:</span>
-                  <span className="owner-card__value">
-                    {metrics.avg_response_minutes || 0} phút
-                  </span>
                 </div>
               </div>
             </div>
