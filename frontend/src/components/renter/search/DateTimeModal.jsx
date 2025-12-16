@@ -6,6 +6,7 @@ import "./DateTimeModal.css";
 import vi from "date-fns/locale/vi";
 import { X, Calendar, Clock, AlertCircle, ChevronDown } from "lucide-react";
 import { addDays, format, isAfter } from "date-fns";
+import { toast } from "react-toastify";
 
 registerLocale("vi", vi);
 
@@ -74,7 +75,7 @@ const DateTimeModal = ({
 
   const handleSaveTime = () => {
     if (!isValid)
-      return alert("Thời gian kết thúc phải sau thời gian bắt đầu!");
+      return toast.error("Thời gian kết thúc phải sau thời gian bắt đầu!");
 
     const fullStart = new Date(startDate);
     const [sh, sm] = startTime.split(":").map(Number);

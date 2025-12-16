@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axiosInstance from '../../../config/axiosInstance';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { 
   MdRefresh,
   MdCheckCircle,
@@ -37,6 +37,9 @@ const ApprovalVehicle = () => {
   const [autoApproveEnabled, setAutoApproveEnabled] = useState(false);
   const autoProcessingRef = useRef(false);
   const processedRef = useRef(new Set());
+  const [approvingId, setApprovingId] = useState(null);
+  const [rejecting, setRejecting] = useState(false);
+  const [approveModal, setApproveModal] = useState({ open: false, vehicleId: null, vehicleModel: '' });
 
   const buildAutoRejectReason = (vehicleId, vehicleModel) => {
     const result = checkResults[vehicleId];
@@ -136,27 +139,8 @@ const ApprovalVehicle = () => {
   };
 
   // Handle approve vehicle
-  const handleApprove = async (vehicleId, vehicleModel) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn chấp nhận xe ${vehicleModel}?`)) {
-      return;
-    }
-
-    try {
-      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${vehicleId}/approve`);
-      
-      if (response.data.success) {
-        toast.success(`Đã chấp nhận xe ${vehicleModel}`);
-        fetchVehicles(pagination.currentPage);
-        fetchStats();
-        if (expandedVehicleId === vehicleId) {
-          setExpandedVehicleId(null);
-          setSelectedVehicle(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error approving vehicle:', error);
-      toast.error('Lỗi khi chấp nhận xe');
-    }
+  const handleApprove = (vehicleId, vehicleModel) => {
+    setApproveModal({ open: true, vehicleId, vehicleModel });
   };
 
   const handleReject = (vehicleId, vehicleModel) => {
@@ -215,6 +199,13 @@ const ApprovalVehicle = () => {
       return () => { document.body.style.overflow = prevOverflow; };
     }
   }, [rejectModal.open]);
+  useEffect(() => {
+    if (approveModal.open) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prevOverflow; };
+    }
+  }, [approveModal.open]);
 
   const confirmReject = async () => {
     if (!rejectModal.vehicleId) return;
@@ -224,6 +215,7 @@ const ApprovalVehicle = () => {
     }
 
     try {
+      setRejecting(true);
       const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${rejectModal.vehicleId}/reject`, { reason: rejectReason.trim() });
       if (response.data.success) {
         toast.success(`Đã từ chối xe ${rejectModal.vehicleModel}`);
@@ -239,6 +231,30 @@ const ApprovalVehicle = () => {
     } catch (error) {
       console.error('Error rejecting vehicle:', error);
       toast.error('Lỗi khi từ chối xe');
+    } finally {
+      setRejecting(false);
+    }
+  };
+  const confirmApprove = async () => {
+    if (!approveModal.vehicleId) return;
+    try {
+      setApprovingId(approveModal.vehicleId);
+      const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${approveModal.vehicleId}/approve`);
+      if (response.data.success) {
+        toast.success(`Đã chấp nhận xe ${approveModal.vehicleModel}`);
+        fetchVehicles(pagination.currentPage);
+        fetchStats();
+        if (expandedVehicleId === approveModal.vehicleId) {
+          setExpandedVehicleId(null);
+          setSelectedVehicle(null);
+        }
+        setApproveModal({ open: false, vehicleId: null, vehicleModel: '' });
+      }
+    } catch (error) {
+      console.error('Error approving vehicle:', error);
+      toast.error('Lỗi khi chấp nhận xe');
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -547,11 +563,25 @@ const ApprovalVehicle = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleApprove(vehicle.vehicle_id, vehicle.model); }}
-                          className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded text-sm hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors flex items-center gap-1"
+                          onClick={(e) => { e.stopPropagation(); approvingId ? null : handleApprove(vehicle.vehicle_id, vehicle.model); }}
+                          disabled={approvingId === vehicle.vehicle_id}
+                          className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                            approvingId === vehicle.vehicle_id
+                              ? 'bg-green-200 dark:bg-green-900/60 text-green-700 dark:text-green-300 cursor-not-allowed opacity-70'
+                              : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60'
+                          }`}
                         >
-                          <MdCheckCircle className="w-4 h-4" />
-                          Chấp nhận
+                          {approvingId === vehicle.vehicle_id ? (
+                            <>
+                              <span className="inline-block w-3 h-3 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></span>
+                              <span>Đang duyệt...</span>
+                            </>
+                          ) : (
+                            <>
+                              <MdCheckCircle className="w-4 h-4" />
+                              <span>Chấp nhận</span>
+                            </>
+                          )}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReject(vehicle.vehicle_id, vehicle.model); }}
@@ -832,15 +862,62 @@ const ApprovalVehicle = () => {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
               <button
                 onClick={() => setRejectModal({ open: false, vehicleId: null, vehicleModel: '' })}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                disabled={rejecting}
+                className={`px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${rejecting ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 Hủy
               </button>
               <button
                 onClick={confirmReject}
-                className="px-5 py-2 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-800"
+                disabled={rejecting}
+                className={`px-5 py-2 text-white rounded ${rejecting ? 'bg-red-400 dark:bg-red-800 cursor-not-allowed' : 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800'}`}
               >
-                Xác nhận
+                {rejecting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Đang xử lý...</span>
+                  </span>
+                ) : (
+                  'Xác nhận'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {approveModal.open && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">Xác nhận chấp nhận</div>
+              <button onClick={() => setApproveModal({ open: false, vehicleId: null, vehicleModel: '' })} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                <MdClose className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <div className="text-sm text-gray-700 dark:text-gray-300">Bạn có chắc chắn muốn chấp nhận xe {approveModal.vehicleModel}?</div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setApproveModal({ open: false, vehicleId: null, vehicleModel: '' })}
+                disabled={approvingId === approveModal.vehicleId}
+                className={`px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 ${approvingId === approveModal.vehicleId ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmApprove}
+                disabled={approvingId === approveModal.vehicleId}
+                className={`px-5 py-2 text-white rounded ${approvingId === approveModal.vehicleId ? 'bg-green-400 dark:bg-green-800 cursor-not-allowed' : 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800'}`}
+              >
+                {approvingId === approveModal.vehicleId ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Đang xử lý...</span>
+                  </span>
+                ) : (
+                  'Xác nhận'
+                )}
               </button>
             </div>
           </div>

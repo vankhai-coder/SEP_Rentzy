@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+// import React, { useState } from "react";
 
 const VehicleInfo = ({ vehicle }) => {
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [showCopySuccess, setShowCopySuccess] = useState(false);
+  // const [isFavorited, setIsFavorited] = useState(false);
+  // const [showCopySuccess, setShowCopySuccess] = useState(false);
 
   if (!vehicle) return null;
 
@@ -109,20 +109,20 @@ const VehicleInfo = ({ vehicle }) => {
     },
   ].filter((spec) => spec.value);
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setShowCopySuccess(true);
-      setTimeout(() => setShowCopySuccess(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy link:", err);
-    }
-  };
+  // const handleCopyLink = async () => {
+  //   try {
+  //     await navigator.clipboard.writeText(window.location.href);
+  //     setShowCopySuccess(true);
+  //     setTimeout(() => setShowCopySuccess(false), 2000);
+  //   } catch (err) {
+  //     console.error("Failed to copy link:", err);
+  //   }
+  // };
 
-  const handleToggleFavorite = () => {
-    setIsFavorited(!isFavorited);
-    // TODO: Implement API call to add/remove from favorites
-  };
+  // const handleToggleFavorite = () => {
+  //   setIsFavorited(!isFavorited);
+  //   // TODO: Implement API call to add/remove from favorites
+  // };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -143,11 +143,12 @@ const VehicleInfo = ({ vehicle }) => {
               <span>•</span>
               <span>{vehicle.location || "Phường Linh Đông, TP Thủ Đức"}</span>
             </div>
-            <div className="inline-flex items-center gap-2 bg-green-600 px-3 py-1 rounded-full text-sm">
+            <div className="inline-flex items-center gap-2 bg-green-600 px-3 py-1 rounded-full text-sm margin-bottom-2">
               <span className="w-2 h-2 bg-green-300 rounded-full"></span>
-              <span>Miễn thế chấp</span>
+              <span>Miễn thế chấp </span>
+          
             </div>
-
+   
             <div>
               {/* Require Owner Confirmation */}
               {vehicle.require_owner_confirmation && (
@@ -168,7 +169,7 @@ const VehicleInfo = ({ vehicle }) => {
           {/* Action Buttons */}
           <div className="flex gap-2 ml-4">
             {/* Share Button */}
-            <button
+            {/* <button
               onClick={handleCopyLink}
               className="relative p-2 bg-gray-300 hover:bg-gray-600 rounded-lg transition-colors duration-200"
               title="Chia sẻ"
@@ -191,10 +192,10 @@ const VehicleInfo = ({ vehicle }) => {
                   Đã sao chép!
                 </div>
               )}
-            </button>
+            </button> */}
 
             {/* Favorite Button */}
-            <button
+            {/* <button
               onClick={handleToggleFavorite}
               className={`p-2 rounded-lg transition-colors duration-200 ${
                 isFavorited
@@ -216,7 +217,7 @@ const VehicleInfo = ({ vehicle }) => {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
               </svg>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

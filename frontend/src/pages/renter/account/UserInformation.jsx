@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import UpdatePhone from "@/components/renter/PersonalInformation/UpdatePhone"
 import { setAvatar } from "@/redux/features/auth/authSlice"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const UserInformation = () => {
 
@@ -432,9 +433,20 @@ const UserInformation = () => {
 
       </div>
 
-      {/* Verify driver license : */}
-      <DriverLicenseVerify />
-
+      <Tabs defaultValue="motobike" className="">
+        <TabsList>
+          <TabsTrigger value="motobike">Xác thực bằng xe máy</TabsTrigger>
+          <TabsTrigger value="car">Xác thực bằng xe ô tô</TabsTrigger>
+        </TabsList>
+        <TabsContent value="motobike">
+          {/* Verify driver license : */}
+          <DriverLicenseVerify typeOfDriverLicense="driver-license-for-motobike" />
+        </TabsContent>
+        <TabsContent value="car">
+          {/* Verify driver license : */}
+          <DriverLicenseVerify typeOfDriverLicense="driver-license-for-car" />
+        </TabsContent>
+      </Tabs>
 
       {/* Verify identity card : */}
       {/* <IdentityCardVerify /> */}

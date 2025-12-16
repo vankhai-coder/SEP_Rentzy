@@ -157,6 +157,15 @@ const AddMotoBikeForm = () => {
     }));
   };
 
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setFormData(prev => ({
+      ...prev,
+      price_per_day: formatted
+    }));
+  };
+
   // AI create description for motorbike
   const generateDescription = async () => {
     try {
@@ -212,7 +221,38 @@ const AddMotoBikeForm = () => {
     setLoading(true);
 
     try {
+      const compressImage = (file, maxWidth = 1600, quality = 0.75) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            img.onload = () => {
+              const scale = Math.min(1, maxWidth / img.width);
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return reject(new Error("Compress failed"));
+                  const name =
+                    file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                  resolve(new File([blob], name, { type: "image/jpeg" }));
+                },
+                "image/jpeg",
+                quality
+              );
+            };
+            img.onerror = reject;
+            img.src = ev.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
       const submitData = new FormData();
+      
       
       // Add form data
       submitData.append('vehicle_type', 'motorbike');
@@ -222,7 +262,7 @@ const AddMotoBikeForm = () => {
       submitData.append('location', formData.location);
       if (formData.latitude) submitData.append('latitude', formData.latitude);
       if (formData.longitude) submitData.append('longitude', formData.longitude);
-      submitData.append('price_per_day', formData.price_per_day);
+      submitData.append('price_per_day', String(formData.price_per_day).replace(/\./g, ''));
       submitData.append('year', formData.year);
       submitData.append('bike_type', formData.bike_type);
       submitData.append('engine_capacity', formData.engine_capacity);
@@ -235,12 +275,17 @@ const AddMotoBikeForm = () => {
 
       // Add images - required for new vehicle
       if (mainImage) {
-        submitData.append('main_image', mainImage);
+        let cMain = mainImage;
+        try { cMain = await compressImage(mainImage); } catch { /* empty */ }
+        submitData.append('main_image', cMain);
       }
       
-      extraImages.forEach((image) => {
-        submitData.append('extra_images', image);
-      });
+      const compressedExtras = await Promise.all(
+        extraImages.map(async (image) => {
+          try { return await compressImage(image); } catch { return image; }
+        })
+      );
+      compressedExtras.forEach((image) => submitData.append('extra_images', image));
 
       const response = await axiosInstance.post('/api/owner/vehicles', submitData, {
         headers: {
@@ -350,7 +395,7 @@ const AddMotoBikeForm = () => {
                     name="license_plate"
                     value={formData.license_plate}
                     onChange={handleInputChange}
-                    placeholder="VD: 30A1-123.45"
+                    placeholder="VD: 36A-12345"
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -390,13 +435,13 @@ const AddMotoBikeForm = () => {
                     Giá thuê/ngày (VNĐ) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="price_per_day"
                     value={formData.price_per_day}
-                    onChange={handleInputChange}
+                    onChange={handlePriceChange}
                     placeholder="VD: 100000"
                     required
-                    min="0"
+                    inputMode="numeric"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>

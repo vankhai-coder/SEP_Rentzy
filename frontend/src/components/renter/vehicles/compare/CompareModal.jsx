@@ -7,6 +7,7 @@ import {
 } from "../../../../redux/features/renter/compare/compareSlice";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // ==================== COMPONENT CON: BẢNG SO SÁNH ====================
 const CompareTable = ({ data, type }) => {
@@ -185,7 +186,7 @@ const AIRecommendSection = ({
   const handleRecommend = () => {
     const hasSelection = Object.values(survey).some((v) => v === true);
     if (!hasSelection) {
-      alert("Vui lòng chọn ít nhất 1 tiêu chí ưu tiên!");
+      toast.error("Vui lòng chọn ít nhất 1 tiêu chí ưu tiên!");
       return;
     }
     onRecommend(survey);
@@ -369,7 +370,7 @@ const CompareModal = ({ isOpen, onClose }) => {
       navigate(`/detail/${vehicleId}`);
       onClose();
     } else {
-      alert("Không tìm thấy xe được gợi ý. Vui lòng thử lại!");
+      toast.error("Không tìm thấy xe được gợi ý. Vui lòng thử lại!");
     }
   };
 

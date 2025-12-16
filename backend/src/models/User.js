@@ -48,36 +48,57 @@ const User = sequelize.define(
       defaultValue: "renter",
     },
 
-    // Driver's License information
-    driver_license_number: {  // will be hashed
+    // Driver's License information (for motobike )
+    driver_license_number_for_motobike: {  // will be hashed
       type: DataTypes.TEXT,
     },
-    driver_license_name: { // will be hashed
+    driver_license_name_for_motobike: { // will be hashed
       type: DataTypes.TEXT,
     },
-    driver_license_dob: { // will be hashed
+    driver_license_dob_for_motobike: { // will be hashed
       type: DataTypes.TEXT,
     },
-    driver_license_image_url: { // store key to aws s3 
+    driver_license_image_url_for_motobike: { // store key to aws s3 
       type: DataTypes.STRING(255),
     },
-    driver_license_status: {
+    driver_license_status_for_motobike: {
       type: DataTypes.ENUM("pending", "approved", "rejected"),
       defaultValue: "pending",
     },
-    driver_class: {
+    driver_class_for_motobike: {
+      type: DataTypes.STRING(10)
+    },
+
+        // Driver's License information (for car )
+    driver_license_number_for_car: {  // will be hashed
+      type: DataTypes.TEXT,
+    },
+    driver_license_name_for_car: { // will be hashed
+      type: DataTypes.TEXT,
+    },
+    driver_license_dob_for_car: { // will be hashed
+      type: DataTypes.TEXT,
+    },
+    driver_license_image_url_for_car: { // store key to aws s3 
+      type: DataTypes.STRING(255),
+    },
+    driver_license_status_for_car: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "pending",
+    },
+    driver_class_for_car: {
       type: DataTypes.STRING(10)
     },
 
     // National ID information
     national_id_number: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.TEXT,
     },
     national_id_name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.TEXT,
     },
     national_id_dob: {
-      type: DataTypes.STRING(20),
+      type: DataTypes.TEXT,
     },
     national_id_image_url: {
       type: DataTypes.STRING(255),

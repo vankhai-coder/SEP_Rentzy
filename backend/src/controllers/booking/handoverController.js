@@ -172,6 +172,15 @@ export const confirmOwnerHandover = async (req, res) => {
       });
     }
 
+    // Tạo thông báo cho renter
+    await Notification.create({
+      user_id: booking.renter_id,
+      title: "Chủ xe đã xác nhận bàn giao",
+      content: `Chủ xe đã xác nhận bàn giao xe ${booking.vehicle.model}. Vui lòng kiểm tra ảnh và xác nhận nhận xe.`,
+      type: "rental",
+      is_read: false,
+    });
+
     // Nếu renter đã xác nhận và đủ điều kiện, chuyển booking sang in_progress
     const latestHandover = await BookingHandover.findOne({
       where: { booking_id: bookingId },
@@ -217,6 +226,10 @@ export const confirmRenterHandover = async (req, res) => {
         model: User,
         as: "renter",
         where: { user_id: renterId },
+      },
+      {
+        model: Vehicle,
+        as: "vehicle",
       },
     ],
   });
@@ -274,6 +287,15 @@ export const confirmRenterHandover = async (req, res) => {
       });
     }
   }
+
+  // Tạo thông báo cho chủ xe
+  await Notification.create({
+    user_id: booking.vehicle.owner_id,
+    title: "Khách thuê đã xác nhận nhận xe",
+    content: `Khách thuê đã xác nhận nhận xe ${booking.vehicle.model}. Chuyến đi đã bắt đầu.`,
+    type: "rental",
+    is_read: false,
+  });
 
   res.status(200).json({
     success: true,
@@ -486,6 +508,15 @@ export const confirmOwnerReturn = async (req, res) => {
             : handover.late_return_fee_description,
       });
     }
+
+    // Tạo thông báo cho renter
+    await Notification.create({
+      user_id: booking.renter_id,
+      title: "Chủ xe đã xác nhận nhận lại xe",
+      content: `Chủ xe đã xác nhận nhận lại xe ${booking.vehicle.model}. Vui lòng kiểm tra và xác nhận hoàn thành chuyến đi.`,
+      type: "rental",
+      is_read: false,
+    });
 
     // Không cần cleanup vì sử dụng memory storage
 

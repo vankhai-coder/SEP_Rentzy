@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { MdCloudUpload, MdDelete, MdPhoto, MdZoomIn } from 'react-icons/md';
+import { toast } from 'sonner'
 
-const VehicleInspectionImages = ({ 
-  beforeImages = [], 
-  afterImages = [], 
-  onBeforeImagesChange, 
+const VehicleInspectionImages = ({
+  beforeImages = [],
+  afterImages = [],
+  onBeforeImagesChange,
   onAfterImagesChange,
   readOnly = false,
   minImages = 5,
@@ -20,12 +21,12 @@ const VehicleInspectionImages = ({
   // Handle file upload
   const handleFileUpload = (files, type) => {
     const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(file => 
+    const validFiles = fileArray.filter(file =>
       file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024 // 10MB limit
     );
 
     if (validFiles.length !== fileArray.length) {
-      alert('Một số file không hợp lệ. Chỉ chấp nhận file ảnh dưới 10MB.');
+      toast.error('Một số file không hợp lệ. Chỉ chấp nhận file ảnh dưới 10MB.');
     }
 
     const newImages = validFiles.map(file => ({
@@ -70,11 +71,11 @@ const VehicleInspectionImages = ({
   // Render upload area
   const renderUploadArea = (type, images, inputRef) => {
     const isMinimumMet = images.length >= minImages;
-    
+
     return (
       <div className="space-y-4">
         {!readOnly && (
-          <div 
+          <div
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
               ${isMinimumMet ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-gray-400'}
             `}
@@ -113,7 +114,7 @@ const VehicleInspectionImages = ({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
+
                 {/* Image overlay */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
@@ -164,8 +165,8 @@ const VehicleInspectionImages = ({
               </h3>
             </div>
             <div className={`ml-auto px-3 py-1 rounded-full text-xs font-medium
-              ${beforeImages.length >= minImages 
-                ? 'bg-green-100 text-green-800' 
+              ${beforeImages.length >= minImages
+                ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
               }`}>
               {beforeImages.length >= minImages ? 'Đủ ảnh' : `Thiếu ${minImages - beforeImages.length} ảnh`}
@@ -189,8 +190,8 @@ const VehicleInspectionImages = ({
               </h3>
             </div>
             <div className={`ml-auto px-3 py-1 rounded-full text-xs font-medium
-              ${afterImages.length >= minImages 
-                ? 'bg-green-100 text-green-800' 
+              ${afterImages.length >= minImages
+                ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
               }`}>
               {afterImages.length >= minImages ? 'Đủ ảnh' : `Thiếu ${minImages - afterImages.length} ảnh`}

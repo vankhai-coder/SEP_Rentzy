@@ -164,6 +164,8 @@ app.use("/api/payment", PaymentRoute);
 // bank account route
 app.use("/api/bank-accounts", BankAccountRoute);
 
+app.use("/api/docusign", DocusignRoute);
+
 // test route
 app.get("/", (req, res) => {
   res.send("Hello, Sequelize + MySQL!");
@@ -211,4 +213,4 @@ process.on("SIGINT", () => {
   });
 });
 
-app.use("/api/docusign", DocusignRoute);
+

@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { vi } from "date-fns/locale";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import "react-datepicker/dist/react-datepicker.css";
-import "react-toastify/dist/ReactToastify.css";
 import "./DateTimeSelector.css";
+
+registerLocale("vi", vi);
 
 function DateTimeSelector({
   onDateTimeChange,
@@ -24,6 +26,7 @@ function DateTimeSelector({
   const [pickupTime, setPickupTime] = useState(initialPickupTime || null);
   const [returnTime, setReturnTime] = useState(initialReturnTime || null);
   const [bookedDates, setBookedDates] = useState([]);
+  const [inlineError, setInlineError] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -189,6 +192,18 @@ function DateTimeSelector({
   }, [bookedDates]);
 
   // Validation functions
+  // Helper to check for intersection with any booked interval
+  const checkConflict = (start, end) => {
+      if (!start || !end || !bookedDates.length) return null;
+      for (const booking of bookedDates) {
+          // start/end of request vs booking.start/booking.end
+          if (start < booking.end && end > booking.start) {
+              return booking;
+          }
+      }
+      return null;
+  };
+
   const validateDateSelection = (type, date) => {
     if (!date) return { isValid: true };
 
@@ -211,6 +226,43 @@ function DateTimeSelector({
         isValid: false, 
         message: "Ngày trả xe không thể trước ngày nhận xe" 
       };
+    }
+
+    // Check conflict for intermediate days
+    if (type === "end" && startDate && date > startDate) {
+         const checkStart = new Date(startDate);
+         checkStart.setHours(23, 59, 59, 999);
+         
+         const checkEnd = new Date(date);
+         checkEnd.setHours(0, 0, 0, 0);
+         
+         if (checkStart < checkEnd) {
+             const conflict = checkConflict(checkStart, checkEnd);
+             if (conflict) {
+                 return {
+                     isValid: false,
+                     message: "Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác"
+                 };
+             }
+         }
+    }
+
+    if (type === "start" && endDate && date < endDate) {
+         const checkStart = new Date(date);
+         checkStart.setHours(23, 59, 59, 999);
+         
+         const checkEnd = new Date(endDate);
+         checkEnd.setHours(0, 0, 0, 0);
+         
+         if (checkStart < checkEnd) {
+             const conflict = checkConflict(checkStart, checkEnd);
+             if (conflict) {
+                 return {
+                     isValid: false,
+                     message: "Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác"
+                 };
+             }
+         }
     }
 
     return { isValid: true };
@@ -251,15 +303,62 @@ function DateTimeSelector({
       }
     }
 
+    // Full range check if we have enough info
+    let sDate = startDate;
+    let eDate = endDate;
+    let pTime = pickupTime;
+    let rTime = returnTime;
+    
+    if (type === 'pickup') {
+        pTime = time;
+        sDate = selectedDate; 
+    } else if (type === 'return') {
+        rTime = time;
+        eDate = selectedDate;
+    }
+    
+    if (sDate && eDate && pTime && rTime) {
+        const start = new Date(sDate);
+        const [ph] = pTime.split(":").map(Number);
+        start.setHours(ph, 0, 0, 0);
+        
+        const end = new Date(eDate);
+        const [rh] = rTime.split(":").map(Number);
+        end.setHours(rh, 0, 0, 0);
+        
+        if (start < end) {
+             const conflict = checkConflict(start, end);
+             if (conflict) {
+                 return {
+                     isValid: false,
+                     message: "Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác"
+                 };
+             }
+        }
+    }
+
     return { isValid: true };
   };
 
   // Event Handlers
   const handleDateChange = (type, date) => {
+    setInlineError(null);
     const validation = validateDateSelection(type, date);
     
     if (!validation.isValid) {
       toast.warning(validation.message);
+      setInlineError(validation.message);
+      return;
+    }
+
+    // Kiểm tra xem ngày đã chọn có giờ nào trống không
+    const hours = getAvailableHours(date, type === "end");
+    const hasSlots = hours.some(h => h.isAvailable);
+
+    if (!hasSlots) {
+      const msg = "Ngày này đã kín lịch, vui lòng chọn ngày khác";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -279,6 +378,7 @@ function DateTimeSelector({
   };
 
   const handleTimeSelect = (type, time) => {
+    setInlineError(null);
     const selectedDate = type === "pickup" ? startDate : endDate;
     
     if (!selectedDate) {
@@ -292,6 +392,7 @@ function DateTimeSelector({
     
     if (!validation.isValid) {
       toast.warning(validation.message);
+      setInlineError(validation.message);
       return;
     }
 
@@ -314,8 +415,11 @@ function DateTimeSelector({
   };
 
   const handleConfirm = () => {
+    setInlineError(null);
     if (!startDate || !endDate || !pickupTime || !returnTime) {
-      toast.error("Vui lòng chọn đầy đủ ngày và giờ nhận/trả xe");
+      const msg = "Vui lòng chọn đầy đủ ngày và giờ nhận/trả xe";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -329,7 +433,17 @@ function DateTimeSelector({
     end.setHours(rh, 0, 0, 0);
 
     if (start >= end) {
-      toast.error("Thời gian trả xe phải sau thời gian nhận xe");
+      const msg = "Thời gian trả xe phải sau thời gian nhận xe";
+      toast.error(msg);
+      setInlineError(msg);
+      return;
+    }
+
+    const conflict = checkConflict(start, end);
+    if (conflict) {
+      const msg = "Đã có người thuê trong khoảng thời gian này, vui lòng chọn ngày khác";
+      toast.error(msg);
+      setInlineError(msg);
       return;
     }
 
@@ -400,6 +514,12 @@ function DateTimeSelector({
           />
         </div>
 
+        {inlineError && (
+          <div className="text-red-500 text-center my-2 font-medium bg-red-50 p-2 rounded-md border border-red-100">
+            {inlineError}
+          </div>
+        )}
+
         <div className="rental-summary">
 
           {startDate && endDate && pickupTime && returnTime && (
@@ -459,6 +579,7 @@ const DateSection = ({
       selected={date}
       onChange={handleDate}
       dateFormat="dd/MM/yyyy"
+      locale="vi"
       placeholderText={placeholder}
       highlightDates={highlightDates}
       className="date-picker-input"

@@ -1,41 +1,76 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axiosInstance from "../../../config/axiosInstance.js";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import "./TransactionManagement.scss";
 import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
 import { createThemeUtils } from "@/utils/themeUtils";
 import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
   CreditCard,
-  Wallet,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   Filter,
   Search,
-  Clock,
-  CheckCircle,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
   XCircle,
-  AlertCircle,
-  Calendar,
-  User,
-  Car,
   ChevronUp,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import "./TransactionManagement.scss";
+
+const transactionTypeLabels = {
+  income: "Thu nhập",
+  compensation: "Bồi thường",
+  payout: "Thanh toán",
+  deposit: "Đặt cọc",
+  rental_payment: "Thanh toán thuê",
+  refund: "Hoàn tiền",
+  cancellation_fee: "Phí hủy",
+  platform_fee: "Phí nền tảng",
+  payment: "Thanh toán",
+  booking: "Đặt xe",
+};
+
+const transactionStatusLabels = {
+  pending: "Chờ xử lý",
+  completed: "Hoàn thành",
+  processing: "Đang xử lý",
+  failed: "Thất bại",
+  cancelled: "Đã hủy",
+  success: "Thành công",
+};
+
+const statusStyles = {
+  pending: "bg-yellow-100 text-yellow-800",
+  processing: "bg-blue-100 text-blue-800",
+  completed: "bg-green-100 text-green-800",
+  success: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
+  cancelled: "bg-gray-100 text-gray-800",
+};
+
+const statusIcons = {
+  pending: Clock,
+  processing: Clock,
+  completed: CheckCircle,
+  success: CheckCircle,
+  failed: XCircle,
+  cancelled: AlertCircle,
+};
 
 const TransactionManagement = () => {
   const theme = useOwnerTheme();
   const themeUtils = createThemeUtils(theme);
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -47,28 +82,6 @@ const TransactionManagement = () => {
     moneyIn: 0,
     moneyOut: 0,
   });
-
-  const transactionTypeLabels = {
-    income: "Thu nhập",
-    compensation: "Bồi thường",
-    payout: "Thanh toán",
-    deposit: "Đặt cọc",
-    rental_payment: "Thanh toán thuê",
-    refund: "Hoàn tiền",
-    cancellation_fee: "Phí hủy",
-    platform_fee: "Phí nền tảng",
-    payment: "Thanh toán",
-    booking: "Đặt xe",
-  };
-
-  const transactionStatusLabels = {
-    pending: "Chờ xử lý",
-    completed: "Hoàn thành",
-    processing: "Đang xử lý",
-    failed: "Thất bại",
-    cancelled: "Đã hủy",
-    success: "Thành công",
-  };
 
   const fetchTransactions = async () => {
     try {
@@ -95,22 +108,21 @@ const TransactionManagement = () => {
         setTransactions(txs);
         setTotalPages(response.data.data.pagination?.totalPages || 1);
 
-        // Sử dụng thống kê từ backend (tổng số, không chỉ trang hiện tại)
         if (response.data.data.statistics) {
           setStatistics({
-            totalTransactions: response.data.data.statistics.totalTransactions || 0,
+            totalTransactions:
+              response.data.data.statistics.totalTransactions || 0,
             totalAmount: response.data.data.statistics.totalAmount || 0,
             moneyIn: response.data.data.statistics.moneyIn || 0,
             moneyOut: response.data.data.statistics.moneyOut || 0,
           });
         } else {
-          // Fallback: tính toán từ transactions hiện tại nếu backend chưa có statistics
           const stats = txs.reduce(
             (acc, t) => {
-              acc.totalTransactions++;
-              const amt = parseFloat(t.amount) || 0;
+              acc.totalTransactions += 1;
+              const amt = Number(t.amount) || 0;
               acc.totalAmount += amt;
-              if (amt > 0) acc.moneyIn += amt;
+              if (amt >= 0) acc.moneyIn += amt;
               else acc.moneyOut += Math.abs(amt);
               return acc;
             },
@@ -132,7 +144,15 @@ const TransactionManagement = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+  }, [
+    currentPage,
+    itemsPerPage,
+    searchTerm,
+    statusFilter,
+    typeFilter,
+    sortBy,
+    sortOrder,
+  ]);
 
   const filteredTransactions = useMemo(() => {
     if (!searchTerm) return transactions;
@@ -150,143 +170,110 @@ const TransactionManagement = () => {
       currency: "VND",
     }).format(amt);
 
-  const formatDate = (dateStr) =>
-    format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: vi });
-
-  const statusInfo = (status) => {
-    const map = {
-      pending: { icon: Clock, color: "pending", label: "Chờ xử lý" },
-      completed: { icon: CheckCircle, color: "completed", label: "Hoàn thành" },
-      failed: { icon: XCircle, color: "failed", label: "Thất bại" },
-      cancelled: { icon: AlertCircle, color: "cancelled", label: "Đã hủy" },
-      processing: { icon: Clock, color: "pending", label: "Đang xử lý" },
-      success: { icon: CheckCircle, color: "completed", label: "Thành công" },
-    };
-    return (
-      map[status] || { icon: AlertCircle, color: "neutral", label: status }
-    );
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    return format(new Date(dateStr), "dd/MM/yyyy HH:mm", { locale: vi });
   };
 
-  // const typeInfo = (type) => {
-  //   const map = {
-  //     income: { icon: TrendingUp, color: "income", label: "Thu nhập" },
-  //     compensation: {
-  //       icon: DollarSign,
-  //       color: "compensation",
-  //       label: "Bồi thường",
-  //     },
-  //     payout: { icon: TrendingUp, color: "payout", label: "Thanh toán" },
-  //     deposit: { icon: Wallet, color: "deposit", label: "Đặt cọc" },
-  //     rental_payment: {
-  //       icon: CreditCard,
-  //       color: "income",
-  //       label: "Thanh toán thuê",
-  //     },
-  //     refund: { icon: TrendingDown, color: "refund", label: "Hoàn tiền" },
-  //     cancellation_fee: { icon: XCircle, color: "failed", label: "Phí hủy" },
-  //     platform_fee: {
-  //       icon: DollarSign,
-  //       color: "neutral",
-  //       label: "Phí nền tảng",
-  //     },
-  //     payment: { icon: CreditCard, color: "income", label: "Thanh toán" },
-  //     booking: { icon: Car, color: "deposit", label: "Đặt xe" },
-  //   };
-  //   return map[type] || { icon: DollarSign, color: "neutral", label: type };
-  // };
+  const statusInfo = (status) => {
+    const key = status?.toString().toLowerCase();
+    const Icon = statusIcons[key] || AlertCircle;
+    return {
+      Icon,
+      label: transactionStatusLabels[key] || status || "Không xác định",
+      badgeClass:
+        statusStyles[key] ||
+        "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
+    };
+  };
 
   const handleSort = (field) => {
-    if (sortBy === field) setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    else {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
       setSortBy(field);
       setSortOrder("desc");
     }
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (value) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleTypeChange = (value) => {
+    setTypeFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleLimitChange = (value) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page) => setCurrentPage(page);
 
+  const renderSortIcon = (field) => {
+    if (sortBy !== field) return null;
+    return sortOrder === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="transaction-history">
-        <div className="error-container">
-          <XCircle size={48} />
-          <h3>Có lỗi xảy ra</h3>
-          <p>{error}</p>
-          <button onClick={fetchTransactions} className="retry-button">
-            Thử lại
-          </button>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
 
   return (
-    <div className={`transaction-history min-h-screen ${themeUtils.bgMain}`}>
-      {/* Header */}
-      <div className={`page-header ${themeUtils.textPrimary}`}>
-        <h1 className={themeUtils.textPrimary}>
+    <div
+      className={`transaction-page p-4 lg:p-6 min-h-screen ${themeUtils.bgMain}`}
+    >
+      <div className="mb-6">
+        <h1
+          className={`text-2xl font-bold mb-2 flex items-center gap-2 ${themeUtils.textPrimary}`}
+        >
           <Wallet size={28} /> Quản lý giao dịch
         </h1>
-        <p className={themeUtils.textSecondary}>Theo dõi và quản lý tất cả giao dịch của bạn</p>
+        <p className={themeUtils.textSecondary}>
+          Theo dõi và quản lý các giao dịch của bạn
+        </p>
       </div>
 
-      {/* Statistics */}
-      <div className="stats-grid">
-        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <CreditCard size={24} className="dark:text-white" />
-          <div>
-            <h3 className="dark:text-gray-300">Tổng giao dịch</h3>
-            <p className="dark:text-white">{statistics.totalTransactions}</p>
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 mb-6">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <Filter className="text-gray-500 dark:text-gray-400" size={18} />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Bộ lọc:
+            </span>
           </div>
-        </div>
-        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-            <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <h3 className="dark:text-gray-300">Tổng tiền</h3>
-            <p className="dark:text-white">{formatCurrency(statistics.totalAmount)}</p>
-          </div>
-        </div>
-        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <TrendingUp size={24} className="dark:text-green-400" />
-          <div>
-            <h3 className="dark:text-gray-300">Tiền vào</h3>
-            <p className="income dark:text-green-400">{formatCurrency(statistics.moneyIn)}</p>
-          </div>
-        </div>
-        <div className="stat-card dark:bg-secondary-800 dark:border-secondary-700">
-          <TrendingDown size={24} className="dark:text-red-400" />
-          <div>
-            <h3 className="dark:text-gray-300">Tiền ra</h3>
-            <p className="expense dark:text-red-400">{formatCurrency(statistics.moneyOut)}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="filters-section dark:bg-secondary-800 dark:border-secondary-700">
-        <div className="filters-content">
-          <div className="search-box">
-            <Search size={18} className="dark:text-gray-400" />
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm kiếm..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Tìm kiếm mã, khách thuê, biển số"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-secondary-600 rounded-md text-sm bg-white dark:bg-secondary-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tất cả trạng thái</option>
             {Object.keys(transactionStatusLabels).map((k) => (
@@ -295,10 +282,11 @@ const TransactionManagement = () => {
               </option>
             ))}
           </select>
+
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="dark:bg-secondary-700 dark:text-white dark:border-secondary-600"
+            onChange={(e) => handleTypeChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tất cả loại</option>
             {Object.keys(transactionTypeLabels).map((k) => (
@@ -307,104 +295,286 @@ const TransactionManagement = () => {
               </option>
             ))}
           </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => handleSort(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="createdAt">Mới nhất</option>
+            <option value="amount">Số tiền</option>
+            <option value="id">ID giao dịch</option>
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(e) => {
+              setSortOrder(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="desc">Giảm dần</option>
+            <option value="asc">Tăng dần</option>
+          </select>
+
+          <select
+            value={itemsPerPage}
+            onChange={(e) => handleLimitChange(Number(e.target.value))}
+            className="px-3 py-2 border border-gray-300 dark:border-secondary-600 dark:bg-secondary-700 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={5}>5 giao dịch/trang</option>
+            <option value={10}>10 giao dịch/trang</option>
+            <option value={20}>20 giao dịch/trang</option>
+          </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="table-scroll dark:bg-secondary-800">
-        <table className="dark:text-white">
-          <thead className="dark:bg-secondary-900">
-            <tr>
-              <th onClick={() => handleSort("id")} className="dark:text-gray-300">
-                ID{" "}
-                {sortBy === "id" ? (
-                  sortOrder === "asc" ? (
-                    <ChevronUp size={14} />
-                  ) : (
-                    <ChevronDown size={14} />
-                  )
-                ) : null}
-              </th>
-              <th className="dark:text-gray-300">Mã đặt xe</th>
-              <th className="dark:text-gray-300">Người thuê</th>
-              <th className="dark:text-gray-300">Xe</th>
-              <th onClick={() => handleSort("amount")} className="dark:text-gray-300">
-                Số tiền{" "}
-                {sortBy === "amount" ? (
-                  sortOrder === "asc" ? (
-                    <ChevronUp size={14} />
-                  ) : (
-                    <ChevronDown size={14} />
-                  )
-                ) : null}
-              </th>
-              {/* <th>Loại</th> */}
-              <th className="dark:text-gray-300">Trạng thái</th>
-              <th onClick={() => handleSort("createdAt")} className="dark:text-gray-300">
-                Ngày{" "}
-                {sortBy === "createdAt" ? (
-                  sortOrder === "asc" ? (
-                    <ChevronUp size={14} />
-                  ) : (
-                    <ChevronDown size={14} />
-                  )
-                ) : null}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="dark:bg-secondary-800">
-            {filteredTransactions.map((tx) => {
-              const status = statusInfo(tx.paymentStatus);
-              // const type = typeInfo(tx.type);
-              return (
-                <tr key={tx.id} className="dark:hover:bg-secondary-700">
-                  <td className="dark:text-white">{tx.id}</td>
-                  <td className="dark:text-white">{tx.bookingCode}</td>
-                  <td className="dark:text-white">{tx.renter?.name || "-"}</td>
-                  <td>{tx.vehicle?.licensePlate || "-"}</td>
-                  <td>{formatCurrency(tx.amount)}</td>
-                  {/* <td className={`type-badge ${type.color}`}>
-                    <type.icon size={16} /> {type.label}
-                  </td> */}
-                  <td>
-                    <span className={`status-badge ${status.color}`}>
-                      <status.icon size={16} /> {status.label}
-                    </span>
-                  </td>
-                  <td>{formatDate(tx.createdAt)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 flex items-center">
+          <div className="stat-icon bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+            <CreditCard className="h-6 w-6" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tổng giao dịch
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {statistics.totalTransactions}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 flex items-center">
+          <div className="stat-icon bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400">
+            <DollarSign className="h-6 w-6" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tổng tiền
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white stat-amount">
+              {formatCurrency(statistics.totalAmount)}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 flex items-center">
+          <div className="stat-icon bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400">
+            <TrendingUp className="h-6 w-6" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tiền vào
+            </p>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 stat-amount">
+              {formatCurrency(statistics.moneyIn)}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 p-4 flex items-center">
+          <div className="stat-icon bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400">
+            <TrendingDown className="h-6 w-6" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Tiền ra
+            </p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400 stat-amount">
+              {formatCurrency(statistics.moneyOut)}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Pagination */}
-      <div className="pagination">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => handlePageChange(currentPage - 1)}
-        >
-          <ChevronLeft />
-        </button>
-        {[...Array(totalPages)].map((_, i) => {
-          const page = i + 1;
-          return (
+      <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm border border-gray-200 dark:border-secondary-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-secondary-700 flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            Danh sách giao dịch
+          </h3>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Trang {currentPage}/{Math.max(totalPages, 1)}
+          </span>
+        </div>
+
+        {error && (
+          <div className="px-6 py-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 flex items-center gap-2 text-red-700 dark:text-red-300">
+            <AlertCircle className="h-5 w-5" />
+            <span>{error}</span>
             <button
-              key={page}
-              className={page === currentPage ? "active" : ""}
-              onClick={() => handlePageChange(page)}
+              onClick={fetchTransactions}
+              className="ml-auto text-sm font-medium text-blue-600 hover:underline"
             >
-              {page}
+              Thử lại
             </button>
-          );
-        })}
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => handlePageChange(currentPage + 1)}
-        >
-          <ChevronRight />
-        </button>
+          </div>
+        )}
+
+        {filteredTransactions.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <CreditCard className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 empty-state-icon" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+              Chưa có giao dịch nào
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Bạn chưa có giao dịch phù hợp với bộ lọc hiện tại.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-secondary-700">
+              <thead className="bg-gray-50 dark:bg-secondary-900">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <button
+                      onClick={() => handleSort("id")}
+                      className="inline-flex items-center gap-1"
+                    >
+                      Mã GD {renderSortIcon("id")}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Mã đặt xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Khách hàng
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <button
+                      onClick={() => handleSort("amount")}
+                      className="inline-flex items-center gap-1"
+                    >
+                      Số tiền {renderSortIcon("amount")}
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <button
+                      onClick={() => handleSort("createdAt")}
+                      className="inline-flex items-center gap-1"
+                    >
+                      Ngày {renderSortIcon("createdAt")}
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-700">
+                {filteredTransactions.map((tx) => {
+                  const status = statusInfo(tx.paymentStatus || tx.status);
+                  const typeLabel =
+                    transactionTypeLabels[tx.type?.toLowerCase?.()] ||
+                    transactionTypeLabels[tx.type] ||
+                    tx.type;
+                  return (
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          #{tx.id}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {tx.bookingCode || "N/A"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {tx.renter?.name || "N/A"}
+                        </div>
+                        {tx.renter?.email && (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {tx.renter.email}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {tx.vehicle?.model || tx.vehicle?.name || "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {tx.vehicle?.licensePlate || "N/A"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(Number(tx.amount) || 0)}
+                        </div>
+                        {typeLabel && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {typeLabel}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`status-chip inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${status.badgeClass}`}
+                        >
+                          <status.Icon className="h-4 w-4" />
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(tx.createdAt || tx.created_at)}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-secondary-700">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                Hiển thị trang {currentPage} trên {totalPages}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="px-3 py-1 text-sm border border-gray-300 dark:border-secondary-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-secondary-700"
+                >
+                  Trước
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-1 text-sm border rounded-md ${
+                        page === currentPage
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : "border-gray-300 dark:border-secondary-600 hover:bg-gray-50 dark:hover:bg-secondary-700 text-gray-700 dark:text-gray-200"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="px-3 py-1 text-sm border border-gray-300 dark:border-secondary-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-secondary-700"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

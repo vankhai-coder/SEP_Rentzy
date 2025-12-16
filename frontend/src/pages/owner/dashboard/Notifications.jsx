@@ -4,6 +4,7 @@ import axiosInstance from '../../../config/axiosInstance.js';
 import { MdNotifications, MdNotificationsActive, MdMarkEmailRead, MdMarkEmailUnread, MdFilterList } from 'react-icons/md';
 import { useOwnerTheme } from "@/contexts/OwnerThemeContext";
 import { createThemeUtils } from "@/utils/themeUtils";
+import { toast } from 'sonner';
 
 const Notifications = () => {
   const theme = useOwnerTheme();
@@ -71,7 +72,7 @@ const Notifications = () => {
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      alert('Có lỗi xảy ra khi đánh dấu thông báo');
+      toast.error('Có lỗi xảy ra khi đánh dấu thông báo');
     }
   };
 
@@ -88,7 +89,7 @@ const Notifications = () => {
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra khi đánh dấu tất cả thông báo';
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -420,9 +421,12 @@ const Notifications = () => {
                       )}
                     </div>
                     
-                    <p className={`text-sm mb-3 ${
-                      !notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600 dark:text-gray-400'
-                    }`}>
+                    <p
+                      className={`text-sm mb-3 ${
+                        !notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      style={{ whiteSpace: 'pre-line' }}
+                    >
                       {notification.content}
                     </p>
 

@@ -8,6 +8,7 @@ import {
   MdFilterList,
 } from "react-icons/md";
 import Pagination from "@/components/common/Pagination.jsx";
+import { toast } from "sonner";
 
 const RenterNotifications = () => {
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ const RenterNotifications = () => {
       }
     } catch (err) {
       console.error("Error marking notification as read:", err);
-      alert("Có lỗi xảy ra khi đánh dấu thông báo");
+      toast.error("Có lỗi xảy ra khi đánh dấu thông báo");
     }
   };
 
@@ -130,11 +131,11 @@ const RenterNotifications = () => {
       if (response.data.success) {
         setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
         setUnreadCount(0);
-        alert("Đã đánh dấu tất cả thông báo là đã đọc");
+        toast.success("Đã đánh dấu tất cả thông báo là đã đọc");
       }
     } catch (err) {
       console.error("Error marking all notifications as read:", err);
-      alert("Có lỗi xảy ra khi đánh dấu tất cả thông báo");
+      toast.error("Có lỗi xảy ra khi đánh dấu tất cả thông báo");
     }
   };
 

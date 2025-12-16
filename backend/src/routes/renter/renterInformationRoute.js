@@ -1,8 +1,14 @@
 import express from "express";
 import { verifyJWTToken } from '../../middlewares/authMiddleware.js'
-import { agreeToTerms, check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS, checkIfUserIsAgreeToTerms, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard, checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingTwilioForUpdatePhoneNumber, sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard } from "../../controllers/renter/renterInfomationController.js";
+import {
+    agreeToTerms, check2FaceMatchAndSaveDriverLicenseToAWS, check2FaceMatchAndSaveIdentityCardToAWS,
+    checkIfUserIsAgreeToTerms, checkIfUserIsVerifyEmail, checkIfUserIsVerifyIdentityCard,
+    checkIfUserRegisterBankAccount, checkStatusForRequestToBecomeOwner, sendOTPUsingMoceanForUpdatePhoneNumber,
+    sendRequestToBecomeOwner, updateFullName, verifyDriverLicenseCard, verifyIdentityCard,
+    verifyOTPUsingMoceanForUpdatePhoneNumber
+} from "../../controllers/renter/renterInfomationController.js";
 import upload from '../../middlewares/multerConfig.js'
-import { getBasicUserInformation, updateAvatarToCloudinary, verifyOTPUsingTwilioForUpdatePhoneNumber } from "../../controllers/renter/renterInfomationController.js";
+import { getBasicUserInformation, updateAvatarToCloudinary } from "../../controllers/renter/renterInfomationController.js";
 
 const router = express.Router();
 
@@ -49,9 +55,9 @@ router.post('/get-basic-user-information', verifyJWTToken, getBasicUserInformati
 router.post('/update-avatar', verifyJWTToken, upload.single("avatarImage"), updateAvatarToCloudinary);
 
 // sending opt using twilio :
-router.post('/send-otp', verifyJWTToken, sendOTPUsingTwilioForUpdatePhoneNumber);
+router.post('/send-otp', verifyJWTToken, sendOTPUsingMoceanForUpdatePhoneNumber);
 
 // verify otp code using twilio :
-router.post('/verify-otp', verifyJWTToken, verifyOTPUsingTwilioForUpdatePhoneNumber);
+router.post('/verify-otp', verifyJWTToken, verifyOTPUsingMoceanForUpdatePhoneNumber);
 
 export default router;

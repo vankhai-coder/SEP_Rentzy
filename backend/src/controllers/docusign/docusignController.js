@@ -13,7 +13,7 @@ import {
 } from "../../utils/email/templates/emailTemplate.js";
 import { createOtp, verifyOtp, hasOtp } from "../../utils/otp/otpStore.js";
 
-const { BookingContract, Booking, Vehicle, User } = db;
+const { BookingContract, Booking, Vehicle, User, Notification } = db;
 
 const DOCUSIGN_CLIENT_ID = process.env.DOCUSIGN_CLIENT_ID;
 const DOCUSIGN_CLIENT_SECRET = process.env.DOCUSIGN_CLIENT_SECRET;
@@ -182,6 +182,62 @@ export const oauthCallback = async (req, res) => {
       details: err.response?.data || err.message,
     });
   }
+};
+
+export const docusignReturn = async (req, res) => {
+  const { event, envelopeId } = req.query;
+  
+  // Nếu ký thành công, chủ động cập nhật trạng thái (giống webhook)
+  if (event === 'signing_complete' && envelopeId) {
+    console.log(`[docusignReturn] Signing complete for envelope ${envelopeId}. Triggering status update...`);
+    try {
+      // Gọi lại logic của getStatus để đồng bộ dữ liệu ngay lập tức
+      // Mock req, res objects
+      const mockReq = { params: { id: envelopeId } };
+      const mockRes = {
+        status: () => ({ json: () => {}, send: () => {} }),
+        json: () => {},
+        send: () => {}
+      };
+      // Chạy async không cần await nếu muốn phản hồi nhanh, 
+      // hoặc await để đảm bảo xong mới hiện thông báo
+      await getStatus(mockReq, mockRes);
+      console.log(`[docusignReturn] Status update triggered successfully.`);
+    } catch (err) {
+      console.error(`[docusignReturn] Error triggering status update:`, err);
+    }
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Ký thành công</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f9f9f9; }
+          .success { color: #4CAF50; font-size: 24px; margin-bottom: 20px; }
+          .message { color: #555; font-size: 16px; margin-bottom: 30px; }
+        </style>
+      </head>
+      <body>
+        <h1 class="success">✓ Ký hợp đồng thành công!</h1>
+        <p class="message">Hệ thống đang xử lý, cửa sổ này sẽ tự động đóng lại...</p>
+        <script>
+          // Gửi message cho window cha (nếu là popup/iframe)
+          const target = window.opener || window.parent;
+          if (target && target !== window) {
+            target.postMessage('signing_complete', '*');
+          }
+          // Tự đóng sau 2s
+          setTimeout(() => {
+            window.close();
+          }, 2000);
+        </script>
+      </body>
+    </html>
+  `;
+  res.send(html);
 };
 
 /**
@@ -572,7 +628,8 @@ export const signRecipientView = async (req, res) => {
               "full_name",
               "phone_number",
               "email",
-              "driver_license_number",
+              "driver_license_number_for_car",
+              "driver_license_number_for_motobike",
             ],
           },
         ],
@@ -636,20 +693,32 @@ export const signRecipientView = async (req, res) => {
     ).trim();
     const originToUse = /^https:\/\//.test(rawOrigin) ? rawOrigin : null;
     const normalizedReturnUrl = (returnUrl || "").trim().replace(/[`'\"]/g, "");
+    
+    // Use generic backend return endpoint if no specific returnUrl is provided
+    const appBaseUrl = process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`; 
+    const defaultReturnUrl = `${appBaseUrl}/api/docusign/return?envelopeId=${envelopeId}`;
+
+    // Cho phép cả http và https trong returnUrl (đặc biệt khi chạy localhost)
     const redirectUrlCandidate =
-      normalizedReturnUrl && /^http:\/\//.test(normalizedReturnUrl)
+      normalizedReturnUrl && /^https?:\/\//.test(normalizedReturnUrl)
         ? normalizedReturnUrl
+        : defaultReturnUrl
+        ? defaultReturnUrl
         : booking && booking.booking_id && originToUse
         ? `${originToUse}/contract/${booking.booking_id}`
         : originToUse
         ? `${originToUse}/contract/return`
         : "";
 
-    if (!/^https:\/\//.test(redirectUrlCandidate)) {
+    // Nới lỏng check HTTPS: cho phép http://localhost hoặc https://...
+    if (
+      !/^https:\/\//.test(redirectUrlCandidate) &&
+      !/^http:\/\/localhost/.test(redirectUrlCandidate)
+    ) {
       return res.status(400).json({
         errorCode: "HTTPS_REQUIRED_FOR_RETURN_URL",
         message:
-          "Recipient View returnUrl phải là HTTPS public. Hãy đặt CLIENT_ORIGIN/FRONTEND_ORIGIN/APP_BASE_URL = https://<your-ngrok>.ngrok-free.dev (không có khoảng trắng) hoặc truyền ?returnUrl=https://...",
+          "Recipient View returnUrl phải là HTTPS public hoặc localhost. Hãy kiểm tra tham số returnUrl hoặc biến môi trường FRONTEND_ORIGIN.",
       });
     }
 
@@ -744,6 +813,50 @@ export const signRecipientView = async (req, res) => {
 export const getStatus = async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Fetch current DB state first
+    let dbContract = null;
+    let bookingIdForNoti = null;
+    let renterEmail = null;
+    let ownerEmail = null;
+    let renterId = null;
+    let ownerId = null;
+
+    try {
+      dbContract = await BookingContract.findOne({
+        where: { contract_number: id },
+        attributes: [
+          "contract_id",
+          "booking_id", 
+          "contract_status",
+          "renter_signed_at", 
+          "owner_signed_at"
+        ],
+      });
+
+      if (dbContract) {
+          bookingIdForNoti = dbContract.booking_id;
+          const bookingRec = await Booking.findByPk(dbContract.booking_id, {
+            include: [
+              { model: User, as: "renter", attributes: ["email", "user_id"] },
+              {
+                model: Vehicle,
+                as: "vehicle",
+                // attributes: [], // Removed optimization to ensure owner join works
+                include: [{ model: User, as: "owner", attributes: ["email", "user_id"] }],
+              },
+            ],
+          });
+          renterEmail = bookingRec?.renter?.email?.toLowerCase() || null;
+          ownerEmail = bookingRec?.vehicle?.owner?.email?.toLowerCase() || null;
+          renterId = bookingRec?.renter?.user_id || null;
+          ownerId = bookingRec?.vehicle?.owner?.user_id || null;
+          
+          console.log("DEBUG: getStatus resolved emails:", { renterEmail, ownerEmail, renterId, ownerId });
+        }
+    } catch (dbErr) {
+      console.warn("Pre-fetch DB contract failed:", dbErr);
+    }
+
     const ok = await ensureAccessTokenJWT();
     if (!ok) {
       return res
@@ -771,54 +884,24 @@ export const getStatus = async (req, res) => {
         : undefined;
 
     const mappedStatus = mapStatus(status);
+    const updates = {};
 
-    if (mappedStatus) {
-      await BookingContract.update(
-        { contract_status: mappedStatus, updated_at: now },
-        { where: { contract_number: envelopeId } }
-      );
+    // Only update status if changed
+    if (mappedStatus && dbContract && mappedStatus !== dbContract.contract_status) {
+       updates.contract_status = mappedStatus;
+    } else if (mappedStatus && !dbContract) {
+       // Should handle case where DB contract not found but that's rare here
     }
 
     // Truy vấn recipients để cập nhật thời điểm ký và suy ra trạng thái
-    let derivedStatus; // đảm bảo biến tồn tại ngoài khối try
+    let derivedStatus; 
     try {
       const recipientsUrl = `${DOCUSIGN_BASE_PATH}/v2.1/accounts/${DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/recipients`;
       const recResp = await axios.get(recipientsUrl, {
         headers: { Authorization: `Bearer ${docusignAccessToken}` },
       });
       const signers = recResp.data?.signers || [];
-      const updates = {};
       signerSummaries = [];
-
-      // Resolve renter/owner emails from booking to match signers when clientUserId is missing
-      let renterEmail = null;
-      let ownerEmail = null;
-      try {
-        const contractRecord = await BookingContract.findOne({
-          where: { contract_number: envelopeId },
-          attributes: ["booking_id"],
-        });
-        if (contractRecord) {
-          const bookingRec = await Booking.findByPk(contractRecord.booking_id, {
-            include: [
-              { model: User, as: "renter", attributes: ["email"] },
-              {
-                model: Vehicle,
-                as: "vehicle",
-                attributes: [],
-                include: [{ model: User, as: "owner", attributes: ["email"] }],
-              },
-            ],
-          });
-          renterEmail = bookingRec?.renter?.email?.toLowerCase() || null;
-          ownerEmail = bookingRec?.vehicle?.owner?.email?.toLowerCase() || null;
-        }
-      } catch (resolveErr) {
-        console.warn(
-          "Resolve booking emails for status update failed:",
-          resolveErr.message || resolveErr
-        );
-      }
 
       for (const s of signers) {
         const clientId = String(s.clientUserId || "").toLowerCase();
@@ -851,11 +934,16 @@ export const getStatus = async (req, res) => {
           const isRenterByRole = roleName === "renter";
           const isOwnerByRole = roleName === "owner";
 
-          if (isRenterByEmail || isRenterByClientId || isRenterByRole) {
-            updates.renter_signed_at = updates.renter_signed_at || signedAt;
+          // ONLY update if DB value is missing
+          if ((isRenterByEmail || isRenterByClientId || isRenterByRole)) {
+             if (!dbContract || !dbContract.renter_signed_at) {
+                updates.renter_signed_at = updates.renter_signed_at || signedAt;
+             }
           }
-          if (isOwnerByEmail || isOwnerByClientId || isOwnerByRole) {
-            updates.owner_signed_at = updates.owner_signed_at || signedAt;
+          if ((isOwnerByEmail || isOwnerByClientId || isOwnerByRole)) {
+             if (!dbContract || !dbContract.owner_signed_at) {
+                updates.owner_signed_at = updates.owner_signed_at || signedAt;
+             }
           }
         }
       }
@@ -866,7 +954,8 @@ export const getStatus = async (req, res) => {
         const anyOwnerCompleted = signers.some(
           (s) => String(s.roleName || "").toLowerCase() === "owner" && String(s.status || "").toLowerCase() === "completed"
         );
-        if (anyOwnerCompleted && !updates.owner_signed_at) {
+        // Only if DB missing AND updates missing
+        if (anyOwnerCompleted && (!dbContract || !dbContract.owner_signed_at) && !updates.owner_signed_at) {
           const ownerSigner = signers.find(
             (s) => String(s.roleName || "").toLowerCase() === "owner" && String(s.status || "").toLowerCase() === "completed"
           );
@@ -877,6 +966,69 @@ export const getStatus = async (req, res) => {
         }
       } catch (fallbackErr) {
         console.warn("Owner signed fallback failed:", fallbackErr.message || fallbackErr);
+      }
+
+      // Check for status changes to send notifications
+      // Notification logic: rely on updates object which only has NEW values
+      if (dbContract) {
+        // 1. Renter just signed -> Notify Owner
+        if (updates.renter_signed_at) {
+          console.log("DEBUG: Renter signed. Notifying owner:", ownerId);
+          if (ownerId) {
+            try {
+              await Notification.create({
+                user_id: ownerId,
+                title: "Người thuê đã ký hợp đồng",
+                content: `Người thuê đã ký hợp đồng cho đơn thuê #${bookingIdForNoti}. Vui lòng kiểm tra và ký xác nhận.`,
+                type: "rental",
+              });
+              console.log(`Notification sent to Owner (${ownerId}) about Renter signing.`);
+            } catch (notiErr) {
+              console.error("Failed to send notification to Owner:", notiErr);
+            }
+          } else {
+            console.warn("DEBUG: ownerId is null, cannot notify owner.");
+          }
+        }
+        // 2. Owner just signed -> Notify Renter (Contract completed)
+        if (updates.owner_signed_at) {
+          console.log("DEBUG: Owner signed. Notifying renter:", renterId);
+          if (renterId) {
+            try {
+              await Notification.create({
+                user_id: renterId,
+                title: "Hợp đồng hoàn tất",
+                content: `Chủ xe đã ký hợp đồng cho đơn thuê #${bookingIdForNoti}. Hợp đồng đã có hiệu lực.`,
+                type: "rental",
+              });
+              console.log(`Notification sent to Renter (${renterId}) about Owner signing.`);
+            } catch (notiErr) {
+              console.error("Failed to send notification to Renter:", notiErr);
+            }
+          } else {
+             console.warn("DEBUG: renterId is null, cannot notify renter.");
+          }
+        }
+      } else {
+        console.warn("DEBUG: dbContract is null, skipping notifications.");
+      }
+
+      const totalSigners = signers.length;
+      const completedSigners = signers.filter(
+        (s) => s.status === "completed"
+      ).length;
+      if (status === "voided") {
+        derivedStatus = "terminated";
+      } else if (totalSigners > 0 && completedSigners === totalSigners) {
+        derivedStatus = "completed";
+      } else if (completedSigners > 0) {
+        derivedStatus = "signed"; // đã có ít nhất một bên ký
+      } else if (status === "sent") {
+        derivedStatus = "pending_signatures";
+      }
+
+      if (derivedStatus && dbContract && derivedStatus !== dbContract.contract_status) {
+         updates.contract_status = derivedStatus;
       }
 
       if (Object.keys(updates).length > 0) {
@@ -894,26 +1046,6 @@ export const getStatus = async (req, res) => {
         );
       }
 
-      const totalSigners = signers.length;
-      const completedSigners = signers.filter(
-        (s) => s.status === "completed"
-      ).length;
-      if (status === "voided") {
-        derivedStatus = "terminated";
-      } else if (totalSigners > 0 && completedSigners === totalSigners) {
-        derivedStatus = "completed";
-      } else if (completedSigners > 0) {
-        derivedStatus = "signed"; // đã có ít nhất một bên ký
-      } else if (status === "sent") {
-        derivedStatus = "pending_signatures";
-      }
-
-      if (derivedStatus) {
-        await BookingContract.update(
-          { contract_status: derivedStatus, updated_at: now },
-          { where: { contract_number: envelopeId } }
-        );
-      }
     } catch (innerErr) {
       console.error(
         "Get status recipients query error:",
@@ -1059,7 +1191,8 @@ async function buildContractHtmlByBookingId(bookingId) {
           "full_name",
           "phone_number",
           "email",
-          "driver_license_number",
+          "driver_license_number_for_car",
+          "driver_license_number_for_motobike",
         ],
       },
     ],
@@ -1068,23 +1201,39 @@ async function buildContractHtmlByBookingId(bookingId) {
   const contract = await BookingContract.findOne({
     where: { booking_id: bookingId },
   });
+
+  const isCar = String(booking.vehicle?.vehicle_type || "").toLowerCase() === "car";
+  const rawLicense = isCar 
+    ? booking.renter?.driver_license_number_for_car 
+    : booking.renter?.driver_license_number_for_motobike;
+
   const data = {
     contract_number_display: safe(contract?.contract_number, "(chưa cấp)"),
     renter_name: safe(booking.renter?.full_name, ""),
     renter_phone: safe(booking.renter?.phone_number, ""),
     renter_email: safe(booking.renter?.email, ""),
-    renter_driver_license: booking.renter?.driver_license_number
+    renter_driver_license: rawLicense
       ? decryptWithSecret(
-          booking.renter.driver_license_number,
+          rawLicense,
           process.env.ENCRYPT_KEY
         )
       : "",
     owner_name: safe(booking.vehicle?.owner?.full_name, ""),
     owner_phone: safe(booking.vehicle?.owner?.phone_number, ""),
     owner_email: safe(booking.vehicle?.owner?.email, ""),
-    owner_cccd: safe(booking.vehicle?.owner?.national_id_number, ""),
+    owner_cccd: booking.vehicle?.owner?.national_id_number
+      ? decryptWithSecret(
+          booking.vehicle.owner.national_id_number,
+          process.env.ENCRYPT_KEY
+        ) || ""
+      : "",
     vehicle_brand_id: safe(booking.vehicle?.brand_id, ""),
-    vehicle_type: safe(booking.vehicle?.vehicle_type, ""),
+    vehicle_type: ((type) => {
+      const t = String(type || "").toLowerCase();
+      if (t === "car") return "Xe ô tô";
+      if (t === "motorbike") return "Xe máy";
+      return type;
+    })(booking.vehicle?.vehicle_type),
     vehicle_model: safe(booking.vehicle?.model, ""),
     vehicle_year: safe(booking.vehicle?.year, ""),
     license_plate: safe(booking.vehicle?.license_plate, ""),
@@ -1155,6 +1304,7 @@ export const webhook = async (req, res) => {
   try {
     const event = req.body;
     const { envelopeId, status } = event || {};
+    console.log("DocuSign webhook received:", { envelopeId, status });
 
     // 1) Cập nhật trạng thái hợp đồng từ sự kiện webhook
     if (envelopeId && status) {
@@ -1200,7 +1350,7 @@ export const webhook = async (req, res) => {
         if (contractRecord) {
           booking = await Booking.findByPk(contractRecord.booking_id, {
             include: [
-              { model: User, as: "renter", attributes: ["full_name", "email"] },
+              { model: User, as: "renter", attributes: ["full_name", "email", "user_id"] },
               {
                 model: Vehicle,
                 as: "vehicle",
@@ -1209,7 +1359,7 @@ export const webhook = async (req, res) => {
                   {
                     model: User,
                     as: "owner",
-                    attributes: ["full_name", "email"],
+                    attributes: ["full_name", "email", "user_id"],
                   },
                 ],
               },
@@ -1284,6 +1434,17 @@ export const webhook = async (req, res) => {
                         signedAt: (updates.renter_signed_at || now).toLocaleString("vi-VN"),
                       }),
                     });
+
+                    // Add Notification for Owner
+                    if (booking?.vehicle?.owner?.user_id) {
+                       await Notification.create({
+                          user_id: booking.vehicle.owner.user_id,
+                          title: "Người thuê đã ký hợp đồng",
+                          content: `Người thuê đã ký hợp đồng cho đơn thuê #${booking.booking_id}. Vui lòng kiểm tra và ký xác nhận.`,
+                          type: "rental"
+                       });
+                    }
+
                   } catch (e) {
                     console.error("Email owner notify error:", e.message || e);
                   }
@@ -1330,6 +1491,17 @@ export const webhook = async (req, res) => {
                         signedAt: (updates.owner_signed_at || now).toLocaleString("vi-VN"),
                       }),
                     });
+
+                    // Add Notification for Renter
+                    if (booking?.renter?.user_id) {
+                       await Notification.create({
+                          user_id: booking.renter.user_id,
+                          title: "Hợp đồng hoàn tất",
+                          content: `Chủ xe đã ký hợp đồng cho đơn thuê #${booking.booking_id}. Hợp đồng đã có hiệu lực.`,
+                          type: "rental"
+                       });
+                    }
+
                   } catch (e) {
                     console.error("Email renter notify error:", e.message || e);
                   }
@@ -1419,7 +1591,8 @@ export async function sendContractForBookingServerSide(bookingId) {
           "full_name",
           "phone_number",
           "email",
-          "driver_license_number",
+          "driver_license_number_for_car",
+          "driver_license_number_for_motobike",
         ],
       },
     ],
@@ -1623,11 +1796,8 @@ export async function getRecipientViewUrlServerSide(
     ? booking.vehicle?.owner?.email || "owner"
     : booking.renter?.email || "renter";
 
-  const feOrigin =
-    process.env.CLIENT_ORIGIN ||
-    process.env.CLIENT_ORIGIN ||
-    "http://localhost:5173";
-  const redirectUrl = returnUrl || `${feOrigin}/contract/${booking.booking_id}`;
+  const appBaseUrl = process.env.APP_BASE_URL || process.env.FRONTEND_ORIGIN || "http://localhost:3000";
+  const redirectUrl = returnUrl || `${appBaseUrl}/api/docusign/return`;
 
   const viewReq = {
     returnUrl: redirectUrl,

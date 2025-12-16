@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useContractBooking } from "./hooks/useContractBooking";
 import "./ContractBooking.scss";
 import axiosInstance from "@/config/axiosInstance";
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogContent,
@@ -52,17 +53,22 @@ const ContractBooking = () => {
   // ===== Actions =====
   // handlePrint removed (unused after removing buttons)
 
-  const handleRefreshStatus = async () => {
+  const handleRefreshStatus = useCallback(async () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return refreshBooking();
+      if (!envelopeId) {
+        console.warn("handleRefreshStatus: No envelopeId, refreshing booking anyway.");
+        return await refreshBooking();
+      }
+      console.log("handleRefreshStatus: Calling DocuSign status for", envelopeId);
       await axiosInstance.get(`/api/docusign/status/${envelopeId}`);
+      console.log("handleRefreshStatus: DocuSign status updated, refreshing booking...");
       await refreshBooking();
     } catch (err) {
       console.error("Refresh status error:", err);
       await refreshBooking();
     }
-  };
+  }, [booking, refreshBooking]);
 
   const sendOtp = async () => {
     try {
@@ -71,7 +77,7 @@ const ContractBooking = () => {
       setOtpSending(true);
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) {
-        alert("Không có thông tin hợp đồng để ký.");
+        toast.error("Không có thông tin hợp đồng để ký.");
         return;
       }
       await axiosInstance.post(`/api/docusign/sign/send-otp`, {
@@ -94,12 +100,12 @@ const ContractBooking = () => {
       setOtpError("");
       setOtpVerifying(true);
       const envelopeId = booking?.contract?.contract_number;
-      if (!envelopeId) return alert("Không có thông tin hợp đồng để ký.");
-      const fePublic =
-        import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
-      const returnUrl = `${fePublic}/contract/${booking.booking_id}`;
+      if (!envelopeId) return toast.error("Không có thông tin hợp đồng để ký.");
+      // const fePublic =
+      //   import.meta.env.VITE_FRONTEND_PUBLIC_URL || window.location.origin;
+      // const returnUrl = `${fePublic}/contract/${booking.booking_id}`;
       const resp = await axiosInstance.get(`/api/docusign/sign/${envelopeId}`, {
-        params: { role: "renter", returnUrl, otp },
+        params: { role: "renter", otp }, // returnUrl removed
       });
       const url = resp.data?.url;
       if (url) {
@@ -196,6 +202,22 @@ const ContractBooking = () => {
       fetchCombinedPdf();
     });
   }, [booking?.status, booking?.contract?.contract_number]);
+
+  // Listen for postMessage from backend return page (iframe/popup)
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data === 'signing_complete') {
+        console.log("Received signing_complete message (Renter)");
+        // Trigger refresh
+        handleRefreshStatus();
+        setShowSignModal(false);
+        setSignUrl("");
+        toast.success("Đã hoàn tất ký hợp đồng!");
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [handleRefreshStatus]);
 
   // Auto refresh DB status when arriving from DocuSign returnUrl (no auto-open)
   useEffect(() => {
@@ -372,7 +394,7 @@ const ContractBooking = () => {
                   booking.contract?.status ||
                   "unknown";
                 const map = {
-                  pending_signatures: "Đang chờ ký",
+                  pending_signatures: "Đang chờ chủ xe  ký",
                   completed: "Hoàn tất",
                   sent: "Đã gửi",
                   created: "Đã tạo",

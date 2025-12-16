@@ -59,7 +59,7 @@ const Header = () => {
           <Link to={"/about"} className="hover:text-green-500 hidden lg:block ">
             Về Rentzy
           </Link>
-          {role !== "owner" || role!== 'admin' &&
+          {(role !== "owner" && role!== 'admin' ) &&
             <Link to={"/register_owner"} className="hover:text-green-500 hidden lg:block ">
               Trở thành chủ xe
             </Link>
