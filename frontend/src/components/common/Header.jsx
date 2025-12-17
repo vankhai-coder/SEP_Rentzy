@@ -46,7 +46,7 @@ const Header = () => {
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200"
           >
             <img
-              src="./rentzy_logo.png"
+              src="/rentzy_logo.png"
               alt="rentzy-logo"
               className="size-8 md:size-12"
             />
