@@ -1,5 +1,5 @@
 import React from "react";
-import { Car, Bike, Users } from "lucide-react";
+import { Car, Bike, Users, Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -60,7 +60,7 @@ const Footer = () => {
             <h4 className="text-lg font-semibold mb-4 text-white">Liên Hệ</h4>
             <ul className="space-y-3">
               <li className="flex items-center space-x-3">
-                <span className="text-blue-300">📧</span>
+                <Mail className="w-4 h-4 text-blue-300" />
                 <a
                   href="mailto:rentzy.vehicle@gmail.com"
                   className="text-gray-200 hover:text-white transition-colors duration-200"
@@ -69,7 +69,7 @@ const Footer = () => {
                 </a>
               </li>
               <li className="flex items-center space-x-3">
-                <span className="text-blue-300">📞</span>
+                <Phone className="w-4 h-4 text-blue-300" />
                 <a
                   href="tel:+84815909549"
                   className="text-gray-200 hover:text-white transition-colors duration-200"
@@ -78,7 +78,7 @@ const Footer = () => {
                 </a>
               </li>
               <li className="flex items-start space-x-3 pt-1">
-                <span className="text-blue-300 mt-0.5">📍</span>
+                <MapPin className="w-4 h-4 text-blue-300 mt-0.5" />
                 <p className="text-gray-200 text-sm">Đà Nẵng, Việt Nam</p>
               </li>
             </ul>
