@@ -1050,7 +1050,7 @@ const getBookingByIdContract = async (req, res) => {
 
 export { getBookingByIdContract };
 
-// ==================== DELETE BOOKING ====================
+
 export const deleteBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -1095,8 +1095,8 @@ export const deleteBooking = async (req, res) => {
       });
     }
 
-    // Kiểm tra trạng thái booking - chỉ cho phép hủy booking ở trạng thái pending
-    if (booking.status !== "pending") {
+    // Kiểm tra trạng thái booking - chỉ cho phép hủy booking ở trạng thái chờ thanh toán 
+    if ( booking.status !== "confirmed") {
       return res.status(400).json({
         success: false,
         message: "Chỉ có thể hủy booking ở trạng thái chờ xác nhận",

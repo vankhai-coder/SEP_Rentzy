@@ -120,19 +120,21 @@ const handlePayOSWebhook = async (req, res) => {
         },
       });
 
-      // Nếu không tìm thấy, có thể là thanh toán phí phạt nguội
+      let isTrafficFine = false;
+
+      // Nếu không tìm thấy, có thể là thanh toán phí phạt nguội (parse orderCode để lấy bookingId)
       if (!booking) {
-        const trafficFineTx = await Transaction.findOne({
-          where: {
-            type: "TRAFFIC_FINE",
-            status: "PENDING",
-            payment_method: "PAYOS",
-            note: { [Op.like]: `%TRAFFIC_FINE_ORDERCODE:${data.orderCode}%` },
-          },
-        });
-        
-        if (trafficFineTx && trafficFineTx.booking_id) {
-          booking = await Booking.findByPk(trafficFineTx.booking_id);
+        const orderCodeStr = String(data.orderCode);
+        // Format: bookingId + 8 số cuối của timestamp
+        if (orderCodeStr.length > 8) {
+          const possibleBookingId = orderCodeStr.slice(0, -8);
+          if (!isNaN(possibleBookingId)) {
+            const b = await Booking.findByPk(possibleBookingId);
+            if (b) {
+              booking = b;
+              isTrafficFine = true;
+            }
+          }
         }
       }
 
@@ -232,74 +234,92 @@ const handlePayOSWebhook = async (req, res) => {
         }
       }
 
-      // Kiểm tra xem đã có transaction COMPLETED cho orderCode này chưa
-      // Kiểm tra xem có phải thanh toán phí phạt nguội không
-      const trafficFineTransaction = await Transaction.findOne({
+    // Xử lý Traffic Fine (dựa vào flag isTrafficFine)
+    let transactionType;
+
+    if (isTrafficFine) {
+      transactionType = "TRAFFIC_FINE";
+
+      // Kiểm tra duplicate (đã có transaction COMPLETED với orderCode này chưa)
+      // Transaction model không có order_code, kiểm tra trong note
+      const existingTx = await Transaction.findOne({
         where: {
           booking_id: booking.booking_id,
           type: "TRAFFIC_FINE",
-          status: "PENDING",
+          status: "COMPLETED",
           payment_method: "PAYOS",
-          note: { [Op.like]: `%TRAFFIC_FINE_ORDERCODE:${data.orderCode}%` },
+          note: { [Op.like]: `%${data.orderCode}%` },
         },
       });
 
-      let transactionType;
-      if (trafficFineTransaction) {
-        // Đây là thanh toán phí phạt nguội
-        transactionType = "TRAFFIC_FINE";
-        
-        // Cập nhật traffic_fine_paid
-        const currentPaid = parseFloat(booking.traffic_fine_paid || 0);
-        const newPaid = currentPaid + Number(data.amount);
-        await booking.update({
-          traffic_fine_paid: newPaid,
-        });
-
-        // Cập nhật transaction
-        await trafficFineTransaction.update({
-          status: "COMPLETED",
-          processed_at: new Date(),
-        });
-
-        // Tạo notification cho owner
-        const vehicle = await db.Vehicle.findByPk(booking.vehicle_id);
-        if (vehicle) {
-          await db.Notification.create({
-            user_id: vehicle.owner_id,
-            title: "Thanh toán phí phạt nguội",
-            content: `Người thuê đã thanh toán phí phạt nguội cho đơn thuê #${booking.booking_id}. Số tiền: ${Number(data.amount).toLocaleString('vi-VN')} VNĐ.`,
-            type: "rental",
-          });
-        }
-
-        // Thông báo cho người thuê
-        await db.Notification.create({
-          user_id: booking.renter_id,
-          title: "Thanh toán phí phạt nguội thành công",
-          content: `Bạn đã thanh toán phí phạt nguội cho booking #${booking.booking_id}. Số tiền: ${Number(data.amount).toLocaleString('vi-VN')} VNĐ.`,
-          type: "rental",
-        });
-
-        try {
-          const tfReq = await TrafficFineRequest.findOne({
-            where: { booking_id: booking.booking_id, status: "approved" },
-            order: [["reviewed_at", "DESC"]],
-          });
-          if (tfReq && tfReq.transfer_status !== "approved") {
-            await tfReq.update({ transfer_status: "pending" });
-          }
-        } catch {}
-
+      if (existingTx) {
         return res.json({
           success: true,
-          message: "Thanh toán phí phạt nguội thành công",
+          message: "Transaction already processed, duplicate webhook ignored.",
         });
-      } else {
-        // Thanh toán bình thường (deposit hoặc rental)
-        transactionType =
-          booking.order_code === data.orderCode ? "DEPOSIT" : "RENTAL";
       }
+
+      // Cập nhật traffic_fine_paid
+      const currentPaid = parseFloat(booking.traffic_fine_paid || 0);
+      const newPaid = currentPaid + Number(data.amount);
+      await booking.update({
+        traffic_fine_paid: newPaid,
+      });
+
+      // Tạo transaction mới
+      await Transaction.create({
+        booking_id: booking.booking_id,
+        from_user_id: booking.renter_id,
+        amount: data.amount,
+        type: "TRAFFIC_FINE",
+        status: "COMPLETED",
+        payment_method: "PAYOS",
+        processed_at: new Date(),
+        note: `Thanh toán phí phạt nguội qua PayOS (OrderCode: ${data.orderCode})`,
+      });
+
+      // Tạo notification cho owner
+      const vehicle = await db.Vehicle.findByPk(booking.vehicle_id);
+      if (vehicle) {
+        await db.Notification.create({
+          user_id: vehicle.owner_id,
+          title: "Thanh toán phí phạt nguội",
+          content: `Người thuê đã thanh toán phí phạt nguội cho đơn thuê #${
+            booking.booking_id
+          }. Số tiền: ${Number(data.amount).toLocaleString("vi-VN")} VNĐ.`,
+          type: "rental",
+        });
+      }
+
+      // Thông báo cho người thuê
+      await db.Notification.create({
+        user_id: booking.renter_id,
+        title: "Thanh toán phí phạt nguội thành công",
+        content: `Bạn đã thanh toán phí phạt nguội cho booking #${
+          booking.booking_id
+        }. Số tiền: ${Number(data.amount).toLocaleString("vi-VN")} VNĐ.`,
+        type: "rental",
+      });
+
+      try {
+        const tfReq = await TrafficFineRequest.findOne({
+          where: { booking_id: booking.booking_id, status: "approved" },
+          order: [["reviewed_at", "DESC"]],
+        });
+        if (tfReq && tfReq.transfer_status !== "approved") {
+          await tfReq.update({ transfer_status: "pending" });
+        }
+      } catch {}
+
+      return res.json({
+        success: true,
+        message: "Thanh toán phí phạt nguội thành công",
+      });
+    } else {
+      // Thanh toán bình thường (deposit hoặc rental)
+      transactionType =
+        booking.order_code === data.orderCode ? "DEPOSIT" : "RENTAL";
+    }
 
       const existingTransaction = await Transaction.findOne({
         where: {
@@ -327,6 +347,7 @@ const handlePayOSWebhook = async (req, res) => {
         type: transactionType,
         status: "COMPLETED",
         payment_method: "PAYOS",
+        order_code: data.orderCode,
         processed_at: new Date(),
         note:
           booking.order_code === data.orderCode
@@ -564,7 +585,7 @@ const cancelPayOSTransaction = async (req, res) => {
     }
 
     const timestamp = new Date().toISOString();
-    console.log(`🚫 [${timestamp}] User cancelled PayOS session:`, {
+    console.log(` [${timestamp}] User cancelled PayOS session:`, {
       bookingId,
       transactionId: transaction
         ? transaction.transaction_id
@@ -747,16 +768,8 @@ const createPayOSLinkForTrafficFine = async (req, res) => {
     // Tạo order code cho phí phạt nguội (sử dụng booking_id + timestamp để unique)
     const orderCode = Number(String(bookingId) + String(Date.now()).slice(-8));
 
-    // Tạo transaction với status PENDING để track, lưu orderCode trong note
-    const pendingTransaction = await Transaction.create({
-      booking_id: bookingId,
-      from_user_id: renterId,
-      amount: remainingFine,
-      type: "TRAFFIC_FINE",
-      status: "PENDING",
-      payment_method: "PAYOS",
-      note: `TRAFFIC_FINE_ORDERCODE:${orderCode}`,
-    });
+    // Không tạo transaction PENDING nữa (theo yêu cầu mới)
+    // Transaction sẽ được tạo khi thanh toán thành công trong webhook
 
     const description = `Phí phạt nguội đơn #${bookingId}`;
     const body = {

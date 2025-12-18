@@ -202,7 +202,7 @@ export const confirmCancellation = async (req, res) => {
     }
 
     // Kiểm tra trạng thái booking có thể hủy
-    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid"];
+    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid","confirm"];
     if (!cancellableStatuses.includes(booking.status)) {
       await transaction.rollback();
       return res.status(400).json({

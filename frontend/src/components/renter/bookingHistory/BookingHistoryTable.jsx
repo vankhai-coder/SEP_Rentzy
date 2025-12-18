@@ -277,7 +277,7 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
                     )}
                     
                     {/* Nút Hợp đồng - hiện khi đã đặt cọc, thanh toán toàn bộ hoặc hoàn thành */}
-                    {(booking.status === "deposit_paid" || booking.status === "fully_paid" || booking.status === "completed") && (
+                    {(booking.status === "deposit_paid" ||booking.status === "in_progress" || booking.status === "fully_paid" || booking.status === "completed") && (
                       <Link
                         to={`/contract/${booking.booking_id}`}
                         className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"

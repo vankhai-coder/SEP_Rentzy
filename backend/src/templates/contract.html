@@ -115,11 +115,14 @@
 
     /* Hiển thị anchor text theo kiểu “trắng trên trắng” để DocuSign nhận diện */
     .signature-anchor-text {
-      color: #ffffff; /* nền trang là trắng */
-      font-size: 1px; /* vẫn hiển thị nhưng cực nhỏ */
+      color: #ffffff;
+      /* nền trang là trắng */
+      font-size: 1px;
+      /* vẫn hiển thị nhưng cực nhỏ */
       line-height: 1px;
       user-select: none;
-      position: absolute; /* cố định toạ độ trong khung ký */
+      position: absolute;
+      /* cố định toạ độ trong khung ký */
       left: 24px;
       top: 36px;
       display: block;
@@ -140,21 +143,36 @@
     .first-page {
       line-height: 1.2;
     }
-    .first-page .section { margin: 10px 0; }
-    .first-page .box { padding: 8px; }
-    .first-page .row { margin: 2px 0; gap: 8px; }
-    .first-page .bullet { margin: 2px 0; }
+
+    .first-page .section {
+      margin: 10px 0;
+    }
+
+    .first-page .box {
+      padding: 8px;
+    }
+
+    .first-page .row {
+      margin: 2px 0;
+      gap: 8px;
+    }
+
+    .first-page .bullet {
+      margin: 2px 0;
+    }
 
     /* Khung ký để đặt vị trí ký rõ ràng */
     .signature-pad {
       display: inline-block;
       width: 100%;
       min-height: 100px;
-      border: none; /* bỏ viền khung ký */
+      border: none;
+      /* bỏ viền khung ký */
       border-radius: 4px;
       margin-top: 8px;
       position: relative;
     }
+
     .signature-pad .anchor-text {
       position: absolute;
       left: 8px;
@@ -162,10 +180,14 @@
       font-size: 10px;
       color: #333;
     }
+
     .page-break {
       page-break-before: always;
     }
-    .signatures-section { page-break-inside: avoid; }
+
+    .signatures-section {
+      page-break-inside: avoid;
+    }
   </style>
 </head>
 
@@ -177,124 +199,124 @@
     <div class="title">HỢP ĐỒNG THUÊ XE Ô TÔ TỰ LÁI</div>
 
     <div class="first-page">
-    <div class="section box">
-      <div class="terms">
-        <div class="bullet">- Căn cứ Bộ luật Dân sự năm 2015;</div>
-        <div class="bullet">- Căn cứ Luật Giao thông đường bộ và các văn bản liên quan;</div>
-        <div class="bullet">- Căn cứ nhu cầu và khả năng của hai bên.</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">BÊN CHO THUÊ (Bên A)</div>
-      <div class="box">
-        <div class="row">
-          <div class="label">Ông/Bà</div>
-          <div class="value">{{owner_name}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Số CCCD</div>
-          <div class="value">{{owner_cccd}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Điện thoại</div>
-          <div class="value">{{owner_phone}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Email</div>
-          <div class="value">{{owner_email}}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">BÊN THUÊ (Bên B)</div>
-      <div class="box">
-        <div class="row">
-          <div class="label">Ông/Bà</div>
-          <div class="value">{{renter_name}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Số GPLX</div>
-          <div class="value">{{renter_driver_license}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Điện thoại</div>
-          <div class="value">{{renter_phone}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Email</div>
-          <div class="value">{{renter_email}}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Điều 1. Xe cho thuê và thông tin cơ bản</div>
-      <div class="box">
-        <div class="row">
-          <div class="label">Loại xe</div>
-          <div class="value">{{vehicle_type}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Mẫu xe</div>
-          <div class="value">{{vehicle_model}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Năm sản xuất</div>
-          <div class="value">{{vehicle_year}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Biển số</div>
-          <div class="value">{{license_plate}}</div>
-        </div>
-        <div class="row">
-          <div class="label">Đơn giá</div>
-          <div class="value">{{price_per_day}}/ngày</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Điều 2. Thời hạn thuê</div>
-      <div class="box">
-        <div class="row">
-          <div class="label">Thời gian</div>
-          <div class="value">{{days_count}} ngày (từ {{start_datetime_display}} đến {{end_datetime_display}})</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Điều 3. Giá trị hợp đồng và thanh toán</div>
-      <div class="box">
-        <div class="row">
-          <div class="label">Số ngày thuê</div>
-          <div class="value">{{days_count}} ngày</div>
-        </div>
-        <div class="row">
-          <div class="label">Đơn giá</div>
-          <div class="value">{{price_per_day}}/ngày</div>
-        </div>
-        <div class="row">
-          <div class="label">Tổng giá trị hợp đồng</div>
-          <div class="value">{{total_price}} VND</div>
-        </div>
+      <div class="section box">
         <div class="terms">
-          <div class="bullet">- Tổng giá trị hợp đồng bao gồm tiền thuê xe theo đơn giá/ngày, có thể cộng thêm các
-            khoản phí/thuế theo quy định pháp luật hoặc quy định nền tảng (nếu có).</div>
-          <div class="bullet">- Đặt cọc: Bên B có thể được yêu cầu đặt cọc theo thỏa thuận giữa hai bên hoặc theo
-            quy định nền tảng; khoản đặt cọc sẽ được hoàn trả/khấu trừ theo biên bản hoàn trả và tình trạng xe thực
-            tế.</div>
-          <div class="bullet">- Phương thức thanh toán: thông qua nền tảng, chuyển khoản hoặc tiền mặt theo thỏa
-            thuận; chứng từ/biên nhận điện tử có giá trị như chứng từ giấy.</div>
-          <div class="bullet">- Lịch thanh toán: Bên B thanh toán trước khi nhận xe hoặc theo tiến độ đã thỏa thuận;
-            việc chậm thanh toán có thể bị hủy/chuyển lịch hoặc phát sinh phụ phí theo quy định.</div>
-          <div class="bullet">- Hoàn/huỷ: Trường hợp huỷ chuyến/hoàn tiền được xử lý theo chính sách của nền tảng và
-            thỏa thuận giữa các bên; các chi phí đã phát sinh hợp pháp không thuộc diện hoàn.</div>
+          <div class="bullet">- Căn cứ Bộ luật Dân sự năm 2015;</div>
+          <div class="bullet">- Căn cứ Luật Giao thông đường bộ và các văn bản liên quan;</div>
+          <div class="bullet">- Căn cứ nhu cầu và khả năng của hai bên.</div>
         </div>
       </div>
-    </div>
+
+      <div class="section">
+        <div class="section-title">BÊN CHO THUÊ (Bên A)</div>
+        <div class="box">
+          <div class="row">
+            <div class="label">Ông/Bà</div>
+            <div class="value">{{owner_name}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Số CCCD</div>
+            <div class="value">{{owner_cccd}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Điện thoại</div>
+            <div class="value">{{owner_phone}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Email</div>
+            <div class="value">{{owner_email}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">BÊN THUÊ (Bên B)</div>
+        <div class="box">
+          <div class="row">
+            <div class="label">Ông/Bà</div>
+            <div class="value">{{renter_name}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Số GPLX</div>
+            <div class="value">{{renter_driver_license}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Điện thoại</div>
+            <div class="value">{{renter_phone}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Email</div>
+            <div class="value">{{renter_email}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Điều 1. Xe cho thuê và thông tin cơ bản</div>
+        <div class="box">
+          <div class="row">
+            <div class="label">Loại xe</div>
+            <div class="value">{{vehicle_type}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Mẫu xe</div>
+            <div class="value">{{vehicle_model}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Năm sản xuất</div>
+            <div class="value">{{vehicle_year}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Biển số</div>
+            <div class="value">{{license_plate}}</div>
+          </div>
+          <div class="row">
+            <div class="label">Đơn giá</div>
+            <div class="value">{{price_per_day}}/ngày</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Điều 2. Thời hạn thuê</div>
+        <div class="box">
+          <div class="row">
+            <div class="label">Thời gian</div>
+            <div class="value">{{days_count}} ngày (từ {{start_datetime_display}} đến {{end_datetime_display}})</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Điều 3. Giá trị hợp đồng và thanh toán</div>
+        <div class="box">
+          <div class="row">
+            <div class="label">Số ngày thuê</div>
+            <div class="value">{{days_count}} ngày</div>
+          </div>
+          <div class="row">
+            <div class="label">Đơn giá</div>
+            <div class="value">{{price_per_day}}/ngày</div>
+          </div>
+          <div class="row">
+            <div class="label">Tổng giá trị hợp đồng</div>
+            <div class="value">{{total_price}} VND</div>
+          </div>
+          <div class="terms">
+            <div class="bullet">- Tổng giá trị hợp đồng bao gồm tiền thuê xe theo đơn giá/ngày, có thể cộng thêm các
+              khoản phí/thuế theo quy định pháp luật hoặc quy định nền tảng (nếu có).</div>
+            <div class="bullet">- Đặt cọc: Bên B có thể được yêu cầu đặt cọc theo thỏa thuận giữa hai bên hoặc theo
+              quy định nền tảng; khoản đặt cọc sẽ được hoàn trả/khấu trừ theo biên bản hoàn trả và tình trạng xe thực
+              tế.</div>
+            <div class="bullet">- Phương thức thanh toán: thông qua nền tảng, chuyển khoản hoặc tiền mặt theo thỏa
+              thuận; chứng từ/biên nhận điện tử có giá trị như chứng từ giấy.</div>
+            <div class="bullet">- Lịch thanh toán: Bên B thanh toán trước khi nhận xe hoặc theo tiến độ đã thỏa thuận;
+              việc chậm thanh toán có thể bị hủy/chuyển lịch hoặc phát sinh phụ phí theo quy định.</div>
+            <div class="bullet">- Hoàn/huỷ: Trường hợp huỷ chuyến/hoàn tiền được xử lý theo chính sách của nền tảng và
+              thỏa thuận giữa các bên; các chi phí đã phát sinh hợp pháp không thuộc diện hoàn.</div>
+          </div>
+        </div>
+      </div>
 
     </div><!-- /first-page -->
 
@@ -404,7 +426,8 @@
       <div class="section-title">Điều 11. Bảo mật dữ liệu</div>
       <div class="box terms">
         <div class="bullet">- Thông tin cá nhân và dữ liệu giao dịch được bảo mật theo quy định pháp luật và chính sách
-          của nền tảng; chỉ được chia sẻ khi có yêu cầu hợp pháp của cơ quan có thẩm quyền hoặc để thực hiện Hợp đồng.</div>
+          của nền tảng; chỉ được chia sẻ khi có yêu cầu hợp pháp của cơ quan có thẩm quyền hoặc để thực hiện Hợp đồng.
+        </div>
       </div>
     </div>
 
@@ -428,8 +451,10 @@
     <div class="section">
       <div class="section-title">Điều 14. Phí phát sinh và phụ phí</div>
       <div class="box terms">
-        <div class="bullet">- Phụ phí trả xe trễ, vệ sinh/khử mùi, nhiên liệu thiếu, phí giao/nhận tận nơi (nếu có) áp dụng theo bảng giá hiện hành hoặc thỏa thuận.</div>
-        <div class="bullet">- Vé phạt giao thông, phí cầu đường/đậu xe phát sinh trong thời gian thuê do Bên B chịu.</div>
+        <div class="bullet">- Phụ phí trả xe trễ, vệ sinh/khử mùi, nhiên liệu thiếu, phí giao/nhận tận nơi (nếu có) áp
+          dụng theo bảng giá hiện hành hoặc thỏa thuận.</div>
+        <div class="bullet">- Vé phạt giao thông, phí phạt nguội, đậu xe phát sinh trong thời gian thuê do Bên B chịu.
+        </div>
         <div class="bullet">- Mọi chi phí hợp lý nhằm khắc phục sự cố do lỗi của Bên B sẽ do Bên B thanh toán.</div>
       </div>
     </div>
@@ -437,9 +462,11 @@
     <div class="section">
       <div class="section-title">Điều 15. Chấm dứt hợp đồng và xử lý</div>
       <div class="box terms">
-        <div class="bullet">- Hợp đồng có thể bị chấm dứt khi một bên vi phạm nghiêm trọng nghĩa vụ, sử dụng xe trái mục đích, hoặc theo yêu cầu cơ quan có thẩm quyền.</div>
-        <div class="bullet">- Trường hợp chấm dứt, các bên thực hiện bàn giao xe, quyết toán chi phí, bồi thường thiệt hại thực tế theo quy định.</div>
-        <div class="bullet">- Các khoản đặt cọc/ thanh toán sẽ được xử lý theo biên bản và thỏa thuận/ chính sách nền tảng.</div>
+        <div class="bullet">- Hợp đồng có thể bị chấm dứt khi một bên vi phạm nghiêm trọng nghĩa vụ, sử dụng xe trái mục
+          đích, hoặc theo yêu cầu cơ quan có thẩm quyền.</div>
+        <div class="bullet">- Trường hợp chấm dứt, các bên thực hiện bàn giao xe, quyết toán chi phí, bồi thường thiệt
+          hại thực tế theo quy định.</div>
+        <div class="bullet">- Hợp đồng sẽ có hết hiệu lực sau 30 ngày kể từ ngày chuyến đi hoàn thành.</div>
       </div>
     </div>
 
@@ -447,9 +474,12 @@
     <div class="section">
       <div class="section-title">Điều 16. Giải quyết tranh chấp</div>
       <div class="box terms">
-        <div class="bullet">- Mọi tranh chấp phát sinh trong quá trình thực hiện Hợp đồng ưu tiên giải quyết bằng thương lượng/hoà giải giữa các bên.</div>
-        <div class="bullet">- Nếu không đạt thoả thuận trong vòng 10 ngày, tranh chấp được đưa ra Toà án có thẩm quyền tại nơi Bên A cư trú/đăng ký kinh doanh.</div>
-        <div class="bullet">- Chi phí liên quan đến việc giải quyết tranh chấp do bên thua kiện chịu, trừ khi có thoả thuận khác hoặc theo phán quyết của Toà án.</div>
+        <div class="bullet">- Mọi tranh chấp phát sinh trong quá trình thực hiện Hợp đồng ưu tiên giải quyết bằng thương
+          lượng/hoà giải giữa các bên.</div>
+        <div class="bullet">- Nếu không đạt thoả thuận trong vòng 10 ngày, tranh chấp được đưa ra Toà án có thẩm quyền
+          tại nơi Bên A cư trú/đăng ký kinh doanh.</div>
+        <div class="bullet">- Chi phí liên quan đến việc giải quyết tranh chấp do bên thua kiện chịu, trừ khi có thoả
+          thuận khác hoặc theo phán quyết của Toà án.</div>
       </div>
     </div>
 
@@ -457,13 +487,16 @@
     <div class="section">
       <div class="section-title">Điều 17. Điều khoản chung</div>
       <div class="box terms">
-        <div class="bullet">- Hai bên cam kết cung cấp thông tin trung thực, hợp tác đầy đủ trong suốt quá trình thực hiện Hợp đồng.</div>
-        <div class="bullet">- Mọi sửa đổi, bổ sung Hợp đồng phải được lập thành văn bản hoặc xác nhận điện tử trên nền tảng và có hiệu lực khi hai bên đồng ý.</div>
-        <div class="bullet">- Trường hợp một điều khoản bị vô hiệu, các điều khoản còn lại vẫn có hiệu lực và các bên sẽ thoả thuận điều khoản thay thế phù hợp.</div>
+        <div class="bullet">- Hai bên cam kết cung cấp thông tin trung thực, hợp tác đầy đủ trong suốt quá trình thực
+          hiện Hợp đồng.</div>
+        <div class="bullet">- Mọi sửa đổi, bổ sung Hợp đồng phải được lập thành văn bản hoặc xác nhận điện tử trên nền
+          tảng và có hiệu lực khi hai bên đồng ý.</div>
+        <div class="bullet">- Trường hợp một điều khoản bị vô hiệu, các điều khoản còn lại vẫn có hiệu lực và các bên sẽ
+          thoả thuận điều khoản thay thế phù hợp.</div>
       </div>
     </div>
 
-    
+
     <div class="section signatures-section">
       <div class="section-title">Xác nhận và chữ ký</div>
       <div class="signatures">
@@ -473,6 +506,7 @@
           <div class="signature-pad">
             <span class="signature-anchor-text">SIGN_OWNER</span>
           </div>
+          <div style="margin-top: 5px; font-weight: bold;">{{owner_name}}</div>
         </div>
         <div class="signature-box">
           <div class="signature-label">Bên B (Người thuê)</div>
@@ -480,6 +514,7 @@
           <div class="signature-pad">
             <span class="signature-anchor-text">SIGN_RENTER</span>
           </div>
+          <div style="margin-top: 5px; font-weight: bold;">{{renter_name}}</div>
         </div>
       </div>
     </div>
