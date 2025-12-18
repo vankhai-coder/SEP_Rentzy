@@ -56,20 +56,21 @@ const Header = () => {
 
         {/* navigate Section */}
         <div className="flex items-center gap-6 font-semibold">
-          <Link to={"/about"} className="hover:text-green-500 hidden lg:block ">
+          <Link to={"/about"} className="hover:text-green-500 hidden lg:block" title="About Rentzy">
             Về Rentzy
           </Link>
           {(role !== "owner" && role!== 'admin' ) &&
-            <Link to={"/register_owner"} className="hover:text-green-500 hidden lg:block ">
+            <Link to={"/register_owner"} className="hover:text-green-500 hidden lg:block" title="Register as owner">
               Trở thành chủ xe
             </Link>
           }
-          <Link to={"/cars"} className="hover:text-green-500 hidden lg:block ">
+          <Link to={"/cars"} className="hover:text-green-500 hidden lg:block" title="Cars">
             Xe Ô Tô
           </Link>
           <Link
             to={"/motorbikes"}
             className="hover:text-green-500 hidden lg:block "
+            title="Motorbikes"
           >
             Xe Máy
           </Link>
@@ -77,7 +78,7 @@ const Header = () => {
           {/* Chuyen cua toi: */}
           {userId && (
             <>
-              <Link to="/" className="hover:text-green-500 hidden lg:block ">
+              <Link to="/" className="hover:text-green-500 hidden lg:block" title="My trip">
                 Chuyến của tôi
               </Link>
             </>
@@ -88,7 +89,7 @@ const Header = () => {
 
           {/* Message */}
           {userId && (
-            <button className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors">
+            <button className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors" title="Messages">
               {/* Chat Icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"

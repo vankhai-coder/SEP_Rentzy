@@ -158,6 +158,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
         <button
           className="absolute top-3 right-3 p-2 rounded-full bg-white shadow hover:bg-red-50 cursor-pointer"
           onClick={handleFavorite}
+          title={isFavoriteLocal ? "Bỏ yêu thích" : "Thêm xe yêu thích"}
         >
           <Heart
             size={20}
