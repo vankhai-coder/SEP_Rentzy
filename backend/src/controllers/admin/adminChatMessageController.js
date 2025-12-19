@@ -128,7 +128,7 @@ export const sendMessageToPartner = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        const { partnerId, content, message_type } = req.body;
+        const { partnerId, content, message_type } = req.body || {};
 
         if (!userId) {
             return res.status(400).json({ error: "User ID is required" });
@@ -149,11 +149,18 @@ export const sendMessageToPartner = async (req, res) => {
             is_read: false,
             created_at: new Date()
         });
+        console.log('send to userId:', partnerId);
         // send websocket notification to partnerId here if needed
         sendToUser(partnerId, {
             type: "NEW_MESSAGE",
+            message: {
+                message_id: newMessage.message_id,
+                sender_id: newMessage.sender_id,
+                receiver_id: newMessage.receiver_id,
+                content: newMessage.content,
+                created_at: newMessage.created_at
+            }
         });
-
         return res.status(201).json({
             success: true,
             message: {

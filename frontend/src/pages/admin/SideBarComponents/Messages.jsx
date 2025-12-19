@@ -89,31 +89,38 @@ const Messages = ({ userIdToChatWith = null }) => {
 
     // send message to partnerId using axiosInstance and mutation : 
     const mutation = useMutation({
-        mutationFn: async (newMessage) => {
-            return axiosInstance.post(`/api/admin/messages/send`, newMessage);
+        mutationFn: async () => {
+            return axiosInstance.post(`/api/admin/messages/send`, {
+                partnerId: partnerId,
+                content: sendMessage
+            });
         },
-        onSuccess: () => {
-            // clear input field
-            setSendMessage("");
+        onMutate: async () => {
 
-            // refetch conversation
-            queryClient.invalidateQueries(["conversation-with-partner", partnerId]);
+            queryClient.setQueryData(['conversation-with-partner'])
 
-            // refetch chat messages list
-            queryClient.invalidateQueries(["chat-messages-for-user"]);
+            // Update sidebar preview
+            queryClient.setQueryData(['chat-messages-for-user'])
 
-            toast.success("Message sent successfully.");
-            setIsLoadingSendMessage(false);
+            // setSendMessage("");
         },
         onError: (error) => {
+            console.error("Error sending message:", error);
             toast.error("Failed to send message.");
-            console.error("Failed to send message:", error);
+            // Optionally rollback if needed
+        },
+        onSettled: () => {
+            // Optional: refetch to sync if needed (but usually not necessary)
+            queryClient.invalidateQueries(['conversation-with-partner', partnerId]);
+            queryClient.invalidateQueries(['chat-messages-for-user']);
             setIsLoadingSendMessage(false);
+            setSendMessage("");
         },
     });
 
     // wrapper function for sending
     const sendNewMessage = () => {
+        console.log("Sending message to partnerId:", partnerId, "with message:", sendMessage);
         if (!partnerId) return;
         if (!sendMessage || sendMessage.trim() === "") {
             toast.error("Message content cannot be empty.");
@@ -121,10 +128,7 @@ const Messages = ({ userIdToChatWith = null }) => {
         }
         setIsLoadingSendMessage(true);
 
-        mutation.mutate({
-            partnerId,
-            content: sendMessage,
-        });
+        mutation.mutate();
     };
 
     // Helper function to format time ago
@@ -137,40 +141,63 @@ const Messages = ({ userIdToChatWith = null }) => {
     // Auto scroll to bottom whenever messages change
     useEffect(() => {
         if (scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+            // Or simple:
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [conversationWithPartner]);
 
+
     // 
     // Connect to your WS server
-    const base = import.meta.env.VITE_API_URL || "";
-    if (!base) return;
-    const wsUrl = base.replace(/^http/i, "ws") + "/ws";
-    let ws;
-    ws = new WebSocket(wsUrl);
+    function connectWebSocket() {
+        const base = import.meta.env.VITE_API_URL || "";
+        if (!base) return;
 
-    ws.onopen = () => {
-        console.log("Connected to WebSocket server");
-    };
+        const wsUrl = base.replace(/^http/i, "ws") + "/ws";
+        console.log("Connecting to WS URL:", wsUrl);
 
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
+        const ws = new WebSocket(wsUrl);
 
-            if (data.type === "NEW_MESSAGE") {
-                // Handle new message event
-                console.log("Received NEW_MESSAGE event:", data);
+        ws.onopen = () => {
+            console.log("Connected to WebSocket server");
+        };
 
-                // Option 1: trigger a React Query refetch
-                queryClient.invalidateQueries(["conversation-with-partner", partnerId]);
-
-                // Option 2: 
-                queryClient.invalidateQueries(["chat-messages-for-user"]);
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Received WS message:", data);
+                // handle incoming messages...
+                if (data.type === "NEW_MESSAGE") {
+                    queryClient.invalidateQueries(['conversation-with-partner', partnerId]);
+                    queryClient.invalidateQueries(['chat-messages-for-user']);
+                }
+            } catch (err) {
+                console.error("Failed to parse WS message:", err);
             }
-        } catch (err) {
-            console.error("Failed to parse WS message:", err);
-        }
-    };
+        };
+
+        ws.onerror = (error) => console.error("WebSocket error:", error);
+
+        ws.onclose = (event) => {
+            console.log("WebSocket closed:", event.code, event.reason);
+            if (event.code === 1006) {
+                // abnormal closure → reconnect after 3s
+                setTimeout(connectWebSocket, 3000);
+            }
+        };
+
+        return ws; // return the socket if you want to store it in state/ref
+    }
+
+    // Connect to WebSocket ONCE, on component mount
+    useEffect(() => {
+        const ws = connectWebSocket();
+
+        return () => {
+            ws && ws.close(); // cleanup when component unmounts
+        };
+    }, []);
 
 
     return (
@@ -354,6 +381,12 @@ const Messages = ({ userIdToChatWith = null }) => {
                                         onChange={(e) => {
                                             setSendMessage(e.target.value)
                                         }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                sendNewMessage();
+                                            }
+                                        }}
                                     />
                                 </div>
                                 <div className="flex items-center gap-4 xl:gap-5">
@@ -365,12 +398,19 @@ const Messages = ({ userIdToChatWith = null }) => {
                                     </button>
                                     {/* Made Send button visible and gave it a better size/style */}
                                     <button
-                                        disabled={mutation.isLoading || !partnerId || sendMessage.trim() === ""}
-                                        onClick={() => sendNewMessage("This is a new message!")} // Example message content
-                                        className={`flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600 ${sendMessage.trim() === "" ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        disabled={mutation.isPending || !partnerId || sendMessage.trim() === ""}
+                                        onClick={() => {
+                                            if (sendMessage.trim()) {
+                                                mutation.mutate({
+                                                    partnerId,
+                                                    content: sendMessage.trim(),
+                                                });
+                                            }
+                                        }}
+                                        className={`flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 text-white hover:bg-blue-600 ${!sendMessage.trim() || !partnerId ? 'cursor-not-allowed opacity-50' : ''
+                                            }`}
                                     >
-                                        {/* <Send className="size-5" /> */}
-                                        {isLoadingSendMessage ? (
+                                        {mutation.isPending ? (
                                             <Loader className="h-5 w-5 animate-spin text-white" />
                                         ) : (
                                             <Send className="size-5 text-white" />
