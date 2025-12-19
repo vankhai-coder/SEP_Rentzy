@@ -498,32 +498,32 @@ export const getOwnerRevenue = async (req, res) => {
       const filterYear = parseInt(year);
       const dateConditions = [
         db.sequelize.where(
-          db.sequelize.fn("YEAR", db.sequelize.col("created_at")),
+          db.sequelize.fn("YEAR", db.sequelize.col("start_date")),
           filterYear
         ),
       ];
 
-      if (quarter) {
+      if (month) {
+        const filterMonth = parseInt(month);
+        dateConditions.push(
+          db.sequelize.where(
+            db.sequelize.fn("MONTH", db.sequelize.col("start_date")),
+            filterMonth
+          )
+        );
+      } else if (quarter) {
         const filterQuarter = parseInt(quarter);
         const startMonth = (filterQuarter - 1) * 3 + 1;
         const endMonth = filterQuarter * 3;
         dateConditions.push(
           db.sequelize.where(
-            db.sequelize.fn("MONTH", db.sequelize.col("created_at")),
+            db.sequelize.fn("MONTH", db.sequelize.col("start_date")),
             { [Op.between]: [startMonth, endMonth] }
-          )
-        );
-      } else if (month) {
-        const filterMonth = parseInt(month);
-        dateConditions.push(
-          db.sequelize.where(
-            db.sequelize.fn("MONTH", db.sequelize.col("created_at")),
-            filterMonth
           )
         );
       }
 
-      revenueWhereCondition.created_at = {
+      revenueWhereCondition.start_date = {
         [Op.and]: dateConditions,
       };
     }
@@ -555,73 +555,26 @@ export const getOwnerRevenue = async (req, res) => {
     if (year) {
       const filterYear = parseInt(year);
       
-      if (quarter) {
-        // Filter theo quý (3 tháng)
-        const filterQuarter = parseInt(quarter);
-        const startMonth = (filterQuarter - 1) * 3 + 1;
-        const endMonth = filterQuarter * 3;
-        
-        dateFilter = `AND YEAR(created_at) = ${filterYear} 
-                      AND MONTH(created_at) >= ${startMonth} 
-                      AND MONTH(created_at) <= ${endMonth}`;
-        
-        // Tạo đầy đủ 3 tháng trong quý
-        const monthlyRevenueRaw = await db.sequelize.query(
-          `
-          SELECT 
-            MONTH(created_at) as month,
-            YEAR(created_at) as year,
-            SUM(total_amount) as revenue,
-            COUNT(*) as booking_count
-          FROM bookings 
-          WHERE vehicle_id IN (${vehicleIds.join(",")})
-            AND status = 'completed'
-            ${dateFilter}
-          GROUP BY YEAR(created_at), MONTH(created_at)
-          ORDER BY year ASC, month ASC
-        `,
-          { type: db.sequelize.QueryTypes.SELECT }
-        );
-
-        const revenueMap = new Map();
-        monthlyRevenueRaw.forEach(item => {
-          const key = `${item.year}-${item.month}`;
-          revenueMap.set(key, item);
-        });
-
-        for (let m = startMonth; m <= endMonth; m++) {
-          const key = `${filterYear}-${m}`;
-          if (revenueMap.has(key)) {
-            monthlyRevenue.push(revenueMap.get(key));
-          } else {
-            monthlyRevenue.push({
-              month: m,
-              year: filterYear,
-              revenue: 0,
-              booking_count: 0
-            });
-          }
-        }
-      } else if (month) {
+      if (month) {
         // Filter theo tháng cụ thể - trả về dữ liệu theo ngày
         const filterMonth = parseInt(month);
-        dateFilter = `AND YEAR(created_at) = ${filterYear} 
-                      AND MONTH(created_at) = ${filterMonth}`;
+        dateFilter = `AND YEAR(start_date) = ${filterYear} 
+                      AND MONTH(start_date) = ${filterMonth}`;
         
         // Lấy dữ liệu theo ngày trong tháng
         const dailyRevenueRaw = await db.sequelize.query(
           `
           SELECT 
-            DAY(created_at) as day,
-            MONTH(created_at) as month,
-            YEAR(created_at) as year,
+            DAY(start_date) as day,
+            MONTH(start_date) as month,
+            YEAR(start_date) as year,
             SUM(total_amount) as revenue,
             COUNT(*) as booking_count
           FROM bookings 
           WHERE vehicle_id IN (${vehicleIds.join(",")})
             AND status = 'completed'
             ${dateFilter}
-          GROUP BY YEAR(created_at), MONTH(created_at), DAY(created_at)
+          GROUP BY YEAR(start_date), MONTH(start_date), DAY(start_date)
           ORDER BY year ASC, month ASC, day ASC
         `,
           { type: db.sequelize.QueryTypes.SELECT }
@@ -652,22 +605,69 @@ export const getOwnerRevenue = async (req, res) => {
 
         // Vẫn giữ monthlyRevenue để tương thích, nhưng sẽ dùng dailyRevenue cho frontend
         monthlyRevenue = dailyRevenue;
-      } else {
-        // Filter theo cả năm (12 tháng)
-        dateFilter = `AND YEAR(created_at) = ${filterYear}`;
+      } else if (quarter) {
+        // Filter theo quý (3 tháng)
+        const filterQuarter = parseInt(quarter);
+        const startMonth = (filterQuarter - 1) * 3 + 1;
+        const endMonth = filterQuarter * 3;
         
+        dateFilter = `AND YEAR(start_date) = ${filterYear} 
+                      AND MONTH(start_date) >= ${startMonth} 
+                      AND MONTH(start_date) <= ${endMonth}`;
+        
+        // Tạo đầy đủ 3 tháng trong quý
         const monthlyRevenueRaw = await db.sequelize.query(
           `
           SELECT 
-            MONTH(created_at) as month,
-            YEAR(created_at) as year,
+            MONTH(start_date) as month,
+            YEAR(start_date) as year,
             SUM(total_amount) as revenue,
             COUNT(*) as booking_count
           FROM bookings 
           WHERE vehicle_id IN (${vehicleIds.join(",")})
             AND status = 'completed'
             ${dateFilter}
-          GROUP BY YEAR(created_at), MONTH(created_at)
+          GROUP BY YEAR(start_date), MONTH(start_date)
+          ORDER BY year ASC, month ASC
+        `,
+          { type: db.sequelize.QueryTypes.SELECT }
+        );
+
+        const revenueMap = new Map();
+        monthlyRevenueRaw.forEach(item => {
+          const key = `${item.year}-${item.month}`;
+          revenueMap.set(key, item);
+        });
+
+        for (let m = startMonth; m <= endMonth; m++) {
+          const key = `${filterYear}-${m}`;
+          if (revenueMap.has(key)) {
+            monthlyRevenue.push(revenueMap.get(key));
+          } else {
+            monthlyRevenue.push({
+              month: m,
+              year: filterYear,
+              revenue: 0,
+              booking_count: 0
+            });
+          }
+        }
+      } else {
+        // Filter theo cả năm (12 tháng)
+        dateFilter = `AND YEAR(start_date) = ${filterYear}`;
+        
+        const monthlyRevenueRaw = await db.sequelize.query(
+          `
+          SELECT 
+            MONTH(start_date) as month,
+            YEAR(start_date) as year,
+            SUM(total_amount) as revenue,
+            COUNT(*) as booking_count
+          FROM bookings 
+          WHERE vehicle_id IN (${vehicleIds.join(",")})
+            AND status = 'completed'
+            ${dateFilter}
+          GROUP BY YEAR(start_date), MONTH(start_date)
           ORDER BY year ASC, month ASC
         `,
           { type: db.sequelize.QueryTypes.SELECT }
@@ -699,15 +699,15 @@ export const getOwnerRevenue = async (req, res) => {
       const monthlyRevenueRaw = await db.sequelize.query(
         `
         SELECT 
-          MONTH(created_at) as month,
-          YEAR(created_at) as year,
+          MONTH(start_date) as month,
+          YEAR(start_date) as year,
           SUM(total_amount) as revenue,
           COUNT(*) as booking_count
         FROM bookings 
         WHERE vehicle_id IN (${vehicleIds.join(",")})
           AND status = 'completed'
-          AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-        GROUP BY YEAR(created_at), MONTH(created_at)
+          AND start_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        GROUP BY YEAR(start_date), MONTH(start_date)
         ORDER BY year DESC, month DESC
       `,
         { type: db.sequelize.QueryTypes.SELECT }
