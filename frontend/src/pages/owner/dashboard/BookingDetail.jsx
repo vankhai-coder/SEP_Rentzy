@@ -719,235 +719,327 @@ const BookingDetail = () => {
               </div>
             </div>
             {/* Traffic Fine Section - Riêng biệt với thanh toán */}
-            {(booking.traffic_fine_amount > 0 || (booking.status === "in_progress" || booking.status === "completed")) && (
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <MdWarning className="mr-2 text-orange-600" />
-                    Phí phạt nguội
-                  </h2>
-                  {(booking.status === "in_progress" || booking.status === "completed") && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setTrafficFineAmount(booking.traffic_fine_amount || "");
-                          // Reset các trường khi mở modal edit
-                          setTrafficFineViolationDate("");
-                          setTrafficFineLicensePlate("");
-                          setTrafficFineViolation("");
-                          setTrafficFineReason("");
-                          setTrafficFineLocation("");
-                          setTrafficFineImages([]);
-                          setTrafficFineReceiptImages([]);
-                          setShowTrafficFineModal(true);
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                        title={booking.traffic_fine_amount > 0 ? "Cập nhật phí phạt nguội" : "Thêm phí phạt nguội"}
-                      >
-                        {booking.traffic_fine_amount > 0 ? (
-                          <>
-                            <MdEdit className="mr-1" />
-                            Sửa
-                          </>
-                        ) : (
-                          <>
-                            <MdAdd className="mr-1" />
-                            Thêm phí phạt
-                          </>
-                        )}
-                      </button>
-                      {booking.traffic_fine_amount > 0 && (
+            {(() => {
+              const pendingAddRequest = booking.trafficFineRequests?.find(
+                (r) => r.status === "pending" && r.request_type === "add"
+              );
+              const pendingDeleteRequest = booking.trafficFineRequests?.find(
+                (r) => r.status === "pending" && r.request_type === "delete"
+              );
+
+              const hasActualFine = booking.traffic_fine_amount > 0;
+              const hasPending = !!pendingAddRequest;
+              const canInteract =
+                booking.status === "in_progress" || booking.status === "completed";
+
+              // Show if: has fine OR has pending request OR can add fine
+              if (!hasActualFine && !hasPending && !canInteract) return null;
+
+              // Data normalization
+              const displayData = hasPending ? pendingAddRequest : booking;
+              const displayAmount = hasPending
+                ? parseFloat(displayData.amount)
+                : displayData.traffic_fine_amount;
+              const displayDescription = hasPending
+                ? displayData.description
+                : displayData.traffic_fine_description;
+              const displayImages = hasPending
+                ? displayData.images
+                : displayData.traffic_fine_images;
+              const paidAmount = hasPending ? 0 : booking.traffic_fine_paid || 0;
+
+              return (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                      <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                        <MdWarning className="mr-2 text-orange-600" />
+                        Phí phạt nguội
+                      </h2>
+                      {pendingAddRequest && (
+                        <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium border border-yellow-200 w-fit">
+                          Đang chờ duyệt
+                        </span>
+                      )}
+                      {pendingDeleteRequest && (
+                        <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium border border-red-200 w-fit">
+                          Đang chờ duyệt xóa
+                        </span>
+                      )}
+                    </div>
+
+                    {canInteract && !pendingAddRequest && !pendingDeleteRequest && !hasActualFine && (
+                      <div className="flex gap-2">
                         <button
                           onClick={() => {
-                            setDeleteTrafficFineReason("");
-                            setShowDeleteTrafficFineModal(true);
+                            setTrafficFineAmount(
+                              booking.traffic_fine_amount || ""
+                            );
+                            // Reset các trường khi mở modal edit
+                            setTrafficFineViolationDate("");
+                            setTrafficFineLicensePlate("");
+                            setTrafficFineViolation("");
+                            setTrafficFineReason("");
+                            setTrafficFineLocation("");
+                            setTrafficFineImages([]);
+                            setTrafficFineReceiptImages([]);
+                            setShowTrafficFineModal(true);
                           }}
-                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          title="Xóa phí phạt nguội"
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                          title="Thêm phí phạt nguội"
                         >
-                          <MdDelete className="mr-1" />
-                          Xóa
+                          <MdAdd className="mr-1" />
+                          Thêm phí phạt
                         </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {hasActualFine || hasPending ? (
+                    <div className="space-y-3">
+                      {hasPending && (
+                        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm italic">
+                          Yêu cầu này đang được admin xem xét. Thông báo sẽ được
+                          gửi khi có kết quả.
+                        </div>
                       )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700 font-medium">
+                          Tổng phí phạt nguội:
+                        </span>
+                        <span className="font-bold text-lg text-orange-600">
+                          {formatCurrency(displayAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Đã thanh toán:</span>
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(paidAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Còn lại:</span>
+                        <span className="font-medium text-red-600">
+                          {formatCurrency((displayAmount || 0) - paidAmount)}
+                        </span>
+                      </div>
+                      {displayDescription &&
+                        (() => {
+                          // Parse description thành các trường riêng
+                          const description = displayDescription;
+                          const fields = {
+                            violationDate: "",
+                            licensePlate: "",
+                            violation: "",
+                            reason: "",
+                            location: "",
+                          };
+
+                          // Parse từ format: "Ngày vi phạm: ...\nBiển số: ..."
+                          const lines = description.split("\n");
+                          lines.forEach((line) => {
+                            if (line.includes("Ngày vi phạm:")) {
+                              fields.violationDate = line
+                                .replace("Ngày vi phạm:", "")
+                                .trim();
+                            } else if (line.includes("Biển số")) {
+                              fields.licensePlate = line
+                                .replace(/Biển số.*?:/, "")
+                                .trim();
+                            } else if (line.includes("Hành vi vi phạm:")) {
+                              fields.violation = line
+                                .replace("Hành vi vi phạm:", "")
+                                .trim();
+                            } else if (line.includes("Lý do:")) {
+                              fields.reason = line.replace("Lý do:", "").trim();
+                            } else if (line.includes("Địa điểm vi phạm:")) {
+                              fields.location = line
+                                .replace("Địa điểm vi phạm:", "")
+                                .trim();
+                            }
+                          });
+
+                          return (
+                            <div className="mt-3 p-3 bg-white rounded border border-orange-200 space-y-2">
+                              <p className="text-sm font-medium text-gray-700 mb-2">
+                                Lý do phạt nguội:
+                              </p>
+                              {fields.violationDate && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Ngày vi phạm:{" "}
+                                  </span>
+                                  <span className="text-sm text-gray-700">
+                                    {fields.violationDate}
+                                  </span>
+                                </div>
+                              )}
+                              {fields.licensePlate && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Biển số (màu biển số):{" "}
+                                  </span>
+                                  <span className="text-sm text-gray-700">
+                                    {fields.licensePlate}
+                                  </span>
+                                </div>
+                              )}
+                              {fields.violation && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Hành vi vi phạm:{" "}
+                                  </span>
+                                  <span className="text-sm text-gray-700">
+                                    {fields.violation}
+                                  </span>
+                                </div>
+                              )}
+                              {fields.reason && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Lý do:{" "}
+                                  </span>
+                                  <span className="text-sm text-gray-700">
+                                    {fields.reason}
+                                  </span>
+                                </div>
+                              )}
+                              {fields.location && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Địa điểm vi phạm:{" "}
+                                  </span>
+                                  <span className="text-sm text-gray-700">
+                                    {fields.location}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      {(() => {
+                        // Parse images từ format mới hoặc cũ
+                        let violationImages = [];
+                        let receiptImages = [];
+
+                        if (displayImages) {
+                          try {
+                            // Kiểm tra xem có phải là string JSON không
+                            let parsed;
+                            if (
+                              typeof displayImages === "string"
+                            ) {
+                              parsed = JSON.parse(displayImages);
+                            } else {
+                              parsed = displayImages;
+                            }
+
+                            // Kiểm tra format mới: {violations: [...], receipts: [...]}
+                            if (
+                              parsed &&
+                              typeof parsed === "object" &&
+                              !Array.isArray(parsed)
+                            ) {
+                              if (parsed.violations || parsed.receipts) {
+                                violationImages = Array.isArray(
+                                  parsed.violations
+                                )
+                                  ? parsed.violations
+                                  : [];
+                                receiptImages = Array.isArray(parsed.receipts)
+                                  ? parsed.receipts
+                                  : [];
+                              } else {
+                                // Object nhưng không phải format mới, thử convert thành array
+                                violationImages = Object.values(parsed).filter(
+                                  (v) => typeof v === "string"
+                                );
+                              }
+                            } else if (Array.isArray(parsed)) {
+                              // Format cũ: array đơn giản
+                              violationImages = parsed;
+                            }
+                          } catch (e) {
+                            console.error(
+                              "Error parsing traffic fine images:",
+                              e
+                            );
+                            // Fallback: nếu parse lỗi, thử dùng trực tiếp nếu là array
+                            if (
+                              Array.isArray(displayImages)
+                            ) {
+                              violationImages = displayImages;
+                            }
+                          }
+                        }
+
+                        return (
+                          <>
+                            {violationImages.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm font-medium text-gray-700 mb-2">
+                                  Hình ảnh phạt nguội:
+                                </p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {violationImages.map((imageUrl, index) => (
+                                    <div key={index} className="relative group">
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Phạt nguội ${index + 1}`}
+                                        className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                        onClick={() => setImageModal(imageUrl)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {receiptImages.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm font-medium text-gray-700 mb-2">
+                                  Hóa đơn nộp phạt:
+                                </p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {receiptImages.map((imageUrl, index) => (
+                                    <div
+                                      key={`receipt-${index}`}
+                                      className="relative group"
+                                    >
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Hóa đơn ${index + 1}`}
+                                        className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
+                                        onClick={() => setImageModal(imageUrl)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <div className="mt-3 pt-3 border-t border-orange-200">
+                        <p className="text-xs text-gray-500 italic">
+                          * Phí phạt nguội được thanh toán riêng biệt, không ảnh
+                          hưởng đến tổng tiền thuê xe.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-600 mb-2">
+                        Chưa có phí phạt nguội
+                      </p>
+                      <p className="text-xs text-gray-500 italic">
+                        * Phí phạt nguội được thanh toán riêng biệt, không ảnh
+                        hưởng đến tổng tiền thuê xe.
+                      </p>
                     </div>
                   )}
                 </div>
-
-                {booking.traffic_fine_amount > 0 ? (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-700 font-medium">Tổng phí phạt nguội:</span>
-                      <span className="font-bold text-lg text-orange-600">
-                        {formatCurrency(booking.traffic_fine_amount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Đã thanh toán:</span>
-                      <span className="font-medium text-green-600">
-                        {formatCurrency(booking.traffic_fine_paid || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Còn lại:</span>
-                      <span className="font-medium text-red-600">
-                        {formatCurrency((booking.traffic_fine_amount || 0) - (booking.traffic_fine_paid || 0))}
-                      </span>
-                    </div>
-                    {booking.traffic_fine_description && (() => {
-                      // Parse description thành các trường riêng
-                      const description = booking.traffic_fine_description;
-                      const fields = {
-                        violationDate: "",
-                        licensePlate: "",
-                        violation: "",
-                        reason: "",
-                        location: ""
-                      };
-                      
-                      // Parse từ format: "Ngày vi phạm: ...\nBiển số: ..."
-                      const lines = description.split('\n');
-                      lines.forEach(line => {
-                        if (line.includes('Ngày vi phạm:')) {
-                          fields.violationDate = line.replace('Ngày vi phạm:', '').trim();
-                        } else if (line.includes('Biển số')) {
-                          fields.licensePlate = line.replace(/Biển số.*?:/, '').trim();
-                        } else if (line.includes('Hành vi vi phạm:')) {
-                          fields.violation = line.replace('Hành vi vi phạm:', '').trim();
-                        } else if (line.includes('Lý do:')) {
-                          fields.reason = line.replace('Lý do:', '').trim();
-                        } else if (line.includes('Địa điểm vi phạm:')) {
-                          fields.location = line.replace('Địa điểm vi phạm:', '').trim();
-                        }
-                      });
-                      
-                      return (
-                        <div className="mt-3 p-3 bg-white rounded border border-orange-200 space-y-2">
-                          <p className="text-sm font-medium text-gray-700 mb-2">Lý do phạt nguội:</p>
-                          {fields.violationDate && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-600">Ngày vi phạm: </span>
-                              <span className="text-sm text-gray-700">{fields.violationDate}</span>
-                            </div>
-                          )}
-                          {fields.licensePlate && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-600">Biển số (màu biển số): </span>
-                              <span className="text-sm text-gray-700">{fields.licensePlate}</span>
-                            </div>
-                          )}
-                          {fields.violation && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-600">Hành vi vi phạm: </span>
-                              <span className="text-sm text-gray-700">{fields.violation}</span>
-                            </div>
-                          )}
-                          {fields.reason && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-600">Lý do: </span>
-                              <span className="text-sm text-gray-700">{fields.reason}</span>
-                            </div>
-                          )}
-                          {fields.location && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-600">Địa điểm vi phạm: </span>
-                              <span className="text-sm text-gray-700">{fields.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                      // Parse images từ format mới hoặc cũ
-                      let violationImages = [];
-                      let receiptImages = [];
-                      
-                      if (booking.traffic_fine_images) {
-                        try {
-                          // Kiểm tra xem có phải là string JSON không
-                          let parsed;
-                          if (typeof booking.traffic_fine_images === 'string') {
-                            parsed = JSON.parse(booking.traffic_fine_images);
-                          } else {
-                            parsed = booking.traffic_fine_images;
-                          }
-                          
-                          // Kiểm tra format mới: {violations: [...], receipts: [...]}
-                          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                            if (parsed.violations || parsed.receipts) {
-                              violationImages = Array.isArray(parsed.violations) ? parsed.violations : [];
-                              receiptImages = Array.isArray(parsed.receipts) ? parsed.receipts : [];
-                            } else {
-                              // Object nhưng không phải format mới, thử convert thành array
-                              violationImages = Object.values(parsed).filter(v => typeof v === 'string');
-                            }
-                          } else if (Array.isArray(parsed)) {
-                            // Format cũ: array đơn giản
-                            violationImages = parsed;
-                          }
-                        } catch (e) {
-                          console.error('Error parsing traffic fine images:', e);
-                          // Fallback: nếu parse lỗi, thử dùng trực tiếp nếu là array
-                          if (Array.isArray(booking.traffic_fine_images)) {
-                            violationImages = booking.traffic_fine_images;
-                          }
-                        }
-                      }
-                      
-                      return (
-                        <>
-                          {violationImages.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-sm font-medium text-gray-700 mb-2">Hình ảnh phạt nguội:</p>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {violationImages.map((imageUrl, index) => (
-                                  <div key={index} className="relative group">
-                                    <img
-                                      src={imageUrl}
-                                      alt={`Phạt nguội ${index + 1}`}
-                                      className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
-                                      onClick={() => setImageModal(imageUrl)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {receiptImages.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-sm font-medium text-gray-700 mb-2">Hóa đơn nộp phạt:</p>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {receiptImages.map((imageUrl, index) => (
-                                  <div key={`receipt-${index}`} className="relative group">
-                                    <img
-                                      src={imageUrl}
-                                      alt={`Hóa đơn ${index + 1}`}
-                                      className="w-full h-32 object-cover rounded border border-orange-200 cursor-pointer hover:opacity-80"
-                                      onClick={() => setImageModal(imageUrl)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                    <div className="mt-3 pt-3 border-t border-orange-200">
-                      <p className="text-xs text-gray-500 italic">
-                        * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-gray-600 mb-2">Chưa có phí phạt nguội</p>
-                    <p className="text-xs text-gray-500 italic">
-                      * Phí phạt nguội được thanh toán riêng biệt, không ảnh hưởng đến tổng tiền thuê xe.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* Booking Timeline */}
             <div className="bg-white rounded-lg shadow-md p-6">
