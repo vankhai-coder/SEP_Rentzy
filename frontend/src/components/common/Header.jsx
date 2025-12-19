@@ -1,4 +1,4 @@
-import {  useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
@@ -16,7 +16,6 @@ import { useState } from "react";
 import { MenuIcon } from "lucide-react";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
@@ -29,16 +28,18 @@ const Header = () => {
   const { userId, email, avatar, role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
 
-  // set open/close for Login,Register Dialog :
+  // Dialog states (shared between desktop and mobile)
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
-  // state for login and register with phone Dialog :
   const [isLoginWithPhoneOpen, setIsLoginWithPhoneOpen] = useState(false);
   const [isRegisterWithPhoneOpen, setIsRegisterWithPhoneOpen] = useState(false);
 
+  // Mobile menu (Sheet) state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <header className="mx-auto border-b-2">
-      <nav className="flex items-center justify-between w-screen max-w-7xl py-4 md:py-8 px-8 md:px-24 lg:px-16 mx-auto bg-[##ffffff]">
+    <header className="mx-auto border-b-2 fixed top-0 left-0 right-0 z-50">
+      <nav className="flex items-center justify-between w-screen  py-4 md:py-8 px-8 md:px-24 lg:px-40 mx-auto bg-white">
         {/* Logo Section */}
         <div className="flex items-center space-x-2">
           <Link
@@ -54,43 +55,35 @@ const Header = () => {
           </Link>
         </div>
 
-        {/* navigate Section */}
+        {/* Navigation Links & User Actions */}
         <div className="flex items-center gap-6 font-semibold">
-          <Link to={"/about"} className="hover:text-green-500 hidden lg:block" title="About Rentzy">
+          <Link to="/about" className="hover:text-green-500 hidden lg:block">
             Về Rentzy
           </Link>
-          {(role !== "owner" && role!== 'admin' ) &&
-            <Link to={"/register_owner"} className="hover:text-green-500 hidden lg:block" title="Register as owner">
+
+          {role !== "owner" && role !== "admin" && (
+            <Link to="/register_owner" className="hover:text-green-500 hidden lg:block">
               Trở thành chủ xe
             </Link>
-          }
-          <Link to={"/cars"} className="hover:text-green-500 hidden lg:block" title="Cars">
+          )}
+
+          <Link to="/cars" className="hover:text-green-500 hidden lg:block">
             Xe Ô Tô
           </Link>
-          <Link
-            to={"/motorbikes"}
-            className="hover:text-green-500 hidden lg:block "
-            title="Motorbikes"
-          >
+
+          <Link to="/motorbikes" className="hover:text-green-500 hidden lg:block">
             Xe Máy
           </Link>
 
-          {/* Chuyen cua toi: */}
-          {userId && (
-            <>
-              <Link to="/" className="hover:text-green-500 hidden lg:block" title="My trip">
-                Chuyến của tôi
-              </Link>
-            </>
-          )}
-
-          {/* Bell : */}
+          {/* Notification Bell */}
           {userId && <NotificationDropdown />}
 
-          {/* Message */}
+          {/* Messages Icon */}
           {userId && (
-            <button className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors" title="Messages">
-              {/* Chat Icon */}
+            <button
+              className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors"
+              title="Messages"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6"
@@ -107,242 +100,166 @@ const Header = () => {
               </svg>
             </button>
           )}
-          {/* Menu icon for modbile screen : */}
-          <Sheet className={"px-8"}>
-            <SheetTrigger>
-              <MenuIcon className="block lg:hidden" />
-            </SheetTrigger>
-            <SheetContent side="left" className={"w-full"}>
-              <div className="flex flex-col items-center gap-6 justify-center w-full h-full bg-[#f6f6f6] font-semibold text-xl ">
-                {/* first */}
-                <div className="flex flex-col items-center justify-center rounded-2xl overflow-hidden">
-                  {!userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1">
-                      <Dialog
-                        open={registerOpen}
-                        onOpenChange={setRegisterOpen}
-                      >
-                        <DialogTrigger>
-                          <a
-                            className={
-                              "p-6 hover:cursor-pointer hover:text-green-500"
-                            }
-                          >
-                            Đăng Ký
-                          </a>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle></DialogTitle>
-                            <DialogDescription>
-                              <Register
-                                setRegisterOpen={setRegisterOpen}
-                                setLoginOpen={setLoginOpen}
-                                setIsRegisterWithPhoneOpen={
-                                  setIsRegisterWithPhoneOpen
-                                }
-                              />
-                            </DialogDescription>
-                          </DialogHeader>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                  {!userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff]">
-                      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-                        <DialogTrigger>
-                          <a className="hover:cursor-pointer hover:text-green-500">
-                            Đăng Nhập
-                          </a>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle></DialogTitle>
-                            <DialogDescription>
-                              <Login
-                                setIsLoginWithPhoneOpen={
-                                  setIsLoginWithPhoneOpen
-                                }
-                                setRegisterOpen={setRegisterOpen}
-                                setLoginOpen={setLoginOpen}
-                              />
-                            </DialogDescription>
-                          </DialogHeader>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  )}
-                  {userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1 flex items-center justify-center gap-2">
-                      {avatar ? (
-                        <Avatar>
-                          <AvatarImage
-                            src={avatar || ""}
-                            alt="@shadcn"
-                            className="size-8"
-                          />
-                        </Avatar>
-                      ) : (
-                        <Avatar>
-                          <AvatarImage
-                            src={"/default_avt.jpg"}
-                            alt="@shadcn"
-                            className="size-8"
-                          />
-                        </Avatar>
-                      )}
-                      {email}
-                    </div>
-                  )}
-                  {userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1">
-                      <SheetClose asChild>
-                        <Link to="/favorites" className="hover:text-green-500">
-                          Xe Yêu Thích
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  )}
-                  {userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff]">
-                      <SheetClose asChild>
-                        <Link to="/myreward" className="hover:text-green-500">
-                          Quà tặng
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  )}
-                </div>
-                {/* second */}
-                <div className="flex flex-col items-center justify-center rounded-2xl  overflow-hidden">
-                  {
-                    <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1">
-                      <SheetClose asChild>
-                        <Link to="/about" className="hover:text-green-500">
-                          Về Rentzy
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  }
-                  {
-                    <div className="py-8 min-w-2xl text-center bg-[#fff] border-b-1">
-                      <SheetClose asChild>
-                        <Link
-                          to="/register_owner"
-                          className="hover:text-green-500"
-                        >
-                          Trở thành chủ xe
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  }
-                  {userId && (
-                    <div className="py-8 min-w-2xl text-center bg-[#fff]">
-                      <SheetClose asChild>
-                        <Link to="/mytrips" className="hover:text-green-500">
-                          Chuyến của tôi
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  )}
-                </div>
-                {/* logout : */}
-                {userId && (
-                  <SheetClose asChild>
-                    <span
-                      className="flex gap-2 items-center text-red-500 font-semibold hover:cursor-pointer"
-                      onClick={() => {
-                        setLoginOpen(false);
-                        navigate("/logout");
 
-                      }}
+          {/* Mobile Menu Trigger */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button className="lg:hidden">
+                <MenuIcon className="h-6 w-6" />
+              </button>
+            </SheetTrigger>
+
+            <SheetContent side="left" className="w-full bg-[#f6f6f6]">
+              <div className="flex flex-col items-center justify-center gap-8 w-full h-full text-xl font-semibold">
+                {/* User Section */}
+                <div className="flex flex-col w-full rounded-2xl overflow-hidden bg-white shadow">
+                  {userId ? (
+                    <>
+                      <div className="py-8 text-center border-b flex items-center justify-center gap-3">
+                        <Avatar>
+                          <AvatarImage
+                            src={avatar || "/default_avt.jpg"}
+                            alt="User avatar"
+                            className="size-10"
+                          />
+                        </Avatar>
+                        <span>{email}</span>
+                      </div>
+
+                      <Link
+                        to="/account"
+                        className="py-8 text-center border-b hover:text-green-500 block"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Tài khoản của tôi
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="py-8 text-center border-b hover:text-green-500 cursor-pointer"
+                        onClick={() => {
+                          setRegisterOpen(true);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Đăng Ký
+                      </div>
+
+                      <div
+                        className="py-8 text-center hover:text-green-500 cursor-pointer"
+                        onClick={() => {
+                          setLoginOpen(true);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Đăng Nhập
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Navigation Links */}
+                <div className="flex flex-col w-full rounded-2xl overflow-hidden bg-white shadow">
+                  <Link
+                    to="/about"
+                    className="py-8 text-center border-b hover:text-green-500 block"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Về Rentzy
+                  </Link>
+
+                  {role !== "owner" && role !== "admin" && (
+                    <Link
+                      to="/register_owner"
+                      className="py-8 text-center border-b hover:text-green-500 block"
+                      onClick={() => setMobileMenuOpen(false)}
                     >
-                      <BiLogOut size={25} />
-                      Đăng xuất
-                    </span>
-                  </SheetClose>
+                      Trở thành chủ xe
+                    </Link>
+                  )}
+                </div>
+
+                {/* Logout */}
+                {userId && (
+                  <button
+                    className="flex items-center gap-3 text-red-500 font-bold text-lg"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate("/logout");
+                    }}
+                  >
+                    <BiLogOut size={25} />
+                    Đăng xuất
+                  </button>
                 )}
               </div>
             </SheetContent>
           </Sheet>
 
-          {/* User Actions & Profile If Login :*/}
+          {/* Desktop: User Profile (when logged in) */}
           {userId && (
-            <div className="hidden lg:flex items-center space-x-4 ">
-              {/* User Profile */}
-              <div className="flex cursor-pointer items-center space-x-2 rounded-full">
-                {/* User Icon or initials */}
-                <Link
-                  to="/account"
-                  className="flex  items-center gap-2 hover:cursor-pointer hover:opacity-70"
+            <div className="hidden lg:flex items-center space-x-4">
+              <Link
+                to="/account"
+                className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+              >
+                <Avatar>
+                  <AvatarImage src={avatar || "/default_avt.jpg"} alt="User" />
+                </Avatar>
+                <span className="text-sm font-semibold">{email}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {
-                    <Avatar>
-                      <AvatarImage
-                        src={avatar || "/default_avt.jpg"}
-                        alt="@shadcn"
-                      />
-                    </Avatar>
-                  }
-                  <span className="text-sm font-semibold">{email}</span>
-                  {/* Dropdown Arrow */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </Link>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Link>
             </div>
           )}
 
-          {/* Show Login/Register if not login : */}
+          {/* Desktop: Login/Register (when not logged in) */}
           {!userId && (
             <div className="hidden lg:flex items-center gap-4">
-              {/* border : */}
-              <div className="border-1 h-7"></div>
-              {/* Register button: */}
+              <div className="border-r h-8" />
+
               <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-                <DialogTrigger>
-                  <a className={"p-6"}>Đăng Ký</a>
+                <DialogTrigger asChild>
+                  <button className="px-6 py-2 hover:text-green-500 font-medium">
+                    Đăng Ký
+                  </button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle></DialogTitle>
+                    <DialogTitle />
                     <DialogDescription>
                       <Register
-                        setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
                         setRegisterOpen={setRegisterOpen}
                         setLoginOpen={setLoginOpen}
+                        setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
                       />
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
 
-              {/* Login Button */}
               <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    className={"p-6 border border-black"}
-                    variant={"outline"}
-                  >
+                  <Button variant="outline" className="px-6 py-2 border-black">
                     Đăng Nhập
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle></DialogTitle>
+                    <DialogTitle />
                     <DialogDescription>
                       <Login
                         setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen}
@@ -353,67 +270,41 @@ const Header = () => {
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
-
-              {/* Login,Register with Phone , this is dialog so can put here : */}
-              {/* Login with Phone */}
-              <Dialog
-                open={isLoginWithPhoneOpen}
-                onOpenChange={setIsLoginWithPhoneOpen}
-              >
-                <DialogTrigger asChild>
-                  {/* <Button
-                    className={"p-6 border border-black"}
-                    variant={"outline"}
-
-                  >
-                    Đăng nhập với số điện thoại
-                  </Button> */}
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle></DialogTitle>
-                    <DialogDescription>
-                      <LoginWithPhoneNumber
-                        setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
-                        setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen}
-                        setLoginOpen={setLoginOpen}
-                      />
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
-
-              {/* Register with Phone */}
-              <Dialog
-                open={isRegisterWithPhoneOpen}
-                onOpenChange={setIsRegisterWithPhoneOpen}
-              >
-                <DialogTrigger asChild>
-                  {/* <Button
-                    className={"p-6 border border-black"}
-                    variant={"outline"}
-
-                  >
-                    Đăng ký với số điện thoại
-                  </Button> */}
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle></DialogTitle>
-                    <DialogDescription>
-                      <RegisterWithPhoneNumber
-                        setRegisterOpen={setRegisterOpen}
-                        setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
-                        setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen}
-                      />
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
             </div>
           )}
         </div>
       </nav>
+
+      {/* Hidden Dialogs for Phone Login/Register (can be triggered from Login/Register components) */}
+      <Dialog open={isLoginWithPhoneOpen} onOpenChange={setIsLoginWithPhoneOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle />
+            <DialogDescription>
+              <LoginWithPhoneNumber
+                setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
+                setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen}
+                setLoginOpen={setLoginOpen}
+              />
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRegisterWithPhoneOpen} onOpenChange={setIsRegisterWithPhoneOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle />
+            <DialogDescription>
+              <RegisterWithPhoneNumber
+                setRegisterOpen={setRegisterOpen}
+                setIsRegisterWithPhoneOpen={setIsRegisterWithPhoneOpen}
+                setIsLoginWithPhoneOpen={setIsLoginWithPhoneOpen}
+              />
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
