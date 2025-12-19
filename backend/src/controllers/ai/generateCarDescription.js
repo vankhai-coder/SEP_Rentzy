@@ -4,8 +4,8 @@ dotenv.config();
 import OpenAI from "openai";
 import db from "../../models/index.js";
 
-const apiKey = process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY;
-const baseURL = process.env.OPENAI_BASE_URL || (process.env.OPENROUTER_API_KEY ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1");
+const apiKey = process.env.OPENAI_API_KEY || process.env.Generate_API_Key;
+const baseURL = process.env.OPENAI_BASE_URL || (process.env.Generate_API_Key ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1");
 
 const client = new OpenAI({
     apiKey,
@@ -156,9 +156,9 @@ export const generateCarDescription = async (req, res) => {
 
     const message = error?.response?.data?.error?.message || 
                     error?.response?.data?.message || 
-                    (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
+                    (process.env.OPENAI_API_KEY || process.env.Generate_API_Key 
                       ? "Đã xảy ra lỗi khi tạo mô tả xe." 
-                      : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
+                      : "Thiếu API key cho AI (OPENAI_API_KEY hoặc Generate_API_Key)");
 
     return res.status(status).json({ success: false, message });
   }
@@ -232,9 +232,9 @@ export const generateMotoBikeDescription = async (req, res) => {
         const status = error?.response?.status ?? error?.status ?? 500;
         const message = error?.response?.data?.error?.message || 
                         error?.response?.data?.message || 
-                        (process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY 
+                        (process.env.OPENAI_API_KEY || process.env.Generate_API_Key 
                           ? "Đã xảy ra lỗi khi tạo mô tả xe." 
-                          : "Thiếu API key cho AI (OPENAI_API_KEY hoặc OPENROUTER_API_KEY)");
+                          : "Thiếu API key cho AI (OPENAI_API_KEY hoặc Generate_API_Key)");
 
         return res.status(status).json({
           success: false,
