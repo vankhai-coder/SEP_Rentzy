@@ -729,7 +729,7 @@ const AdminPage = () => {
       </div>
 
       {/* main content */}
-      <main className="pt-16 transition-all duration-300 lg:ml-64">
+      <main className="pt- transition-all duration-300 lg:ml-64">
         <Outlet />
       </main>
 
