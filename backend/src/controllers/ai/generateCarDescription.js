@@ -318,6 +318,7 @@ export const checkVehicleInfo = async (req, res) => {
           "kia sportage": { body_type: "suv", seats: [5,5], fuel_type: ["petrol","diesel","hybrid"], transmission: ["automatic","manual"] },
           "toyota vios": { body_type: "sedan", seats: [5,5], fuel_type: ["petrol"], transmission: ["automatic","manual"] },
           "vinfast vf8": { body_type: "suv", seats: [5,5], fuel_type: ["electric"], transmission: ["automatic"] },
+          "vinfast vf9": { body_type: "suv", seats: [6,7], fuel_type: ["electric"], transmission: ["automatic"] },
         };
 
         const commonHeader = `Bạn là chuyên gia kiểm định dữ liệu xe.\n`+
@@ -405,32 +406,32 @@ export const checkVehicleInfo = async (req, res) => {
         const f = fuelAlias(src.fuel_type);
         const rf = fuelAlias(ref.fuel_type);
         const ok = f === rf;
-        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: mẫu ${ref.fuel_type}`);
+        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mẫu này thường dùng ${ref.fuel_type}. Hãy chỉnh lại nhiên liệu hoặc kiểm tra lại model/năm nếu là biến thể khác.`);
       } else {
-        pushMismatch("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu");
+        pushMismatch("Nhiên liệu", "warn", "Thiếu. Hãy chọn nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric) để hệ thống đối chiếu chính xác.");
       }
       if (src.vehicle_type === "car") {
         if (src.body_type) {
           const bt = normalize(src.body_type);
           const ok = bt === normalize(ref.body_type);
-          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type}. Gợi ý: mẫu ${ref.body_type}`);
+          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, dáng xe thường là ${ref.body_type}. Hãy chỉnh về ${ref.body_type} hoặc kiểm tra lại model/năm nếu bạn đăng phiên bản khác.`);
         } else {
-          pushMismatch("Dáng xe", "warn", "Thiếu. Gợi ý: cung cấp dạng thân xe");
+          pushMismatch("Dáng xe", "warn", "Thiếu. Hãy nhập dáng xe theo danh mục (sedan/suv/crossover/hatchback/coupe/convertible/wagon/mpv/minivan/pickup).");
         }
         if (src.transmission) {
           const tr = normalize(src.transmission);
           const ok = Array.isArray(ref.transmission) ? ref.transmission.map(normalize).includes(tr) : normalize(ref.transmission) === tr;
           const sug = Array.isArray(ref.transmission) ? ref.transmission.join("/") : ref.transmission;
-          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission}. Gợi ý: mẫu ${sug}`);
+          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, hộp số thường là ${sug}. Hãy chọn lại hộp số đúng (manual/automatic/cvt/dct).`);
         } else {
-          pushMismatch("Hộp số", "warn", "Thiếu. Gợi ý: cung cấp hộp số");
+          pushMismatch("Hộp số", "warn", "Thiếu. Hãy chọn hộp số (manual/automatic/cvt/dct) để hệ thống đối chiếu chính xác.");
         }
         const seatsNum = Number(src.seats);
         if (Number.isFinite(seatsNum) && Array.isArray(ref.seats_range)) {
           const ok = seatsNum >= Number(ref.seats_range[0]) && seatsNum <= Number(ref.seats_range[1]);
-          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats}. Gợi ý: mẫu ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ`);
+          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats} chỗ không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mẫu này thường có ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ. Hãy chỉnh lại đúng cấu hình thực tế của xe.`);
         } else {
-          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Gợi ý: nhập số chỗ ngồi");
+          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Hãy nhập số chỗ ngồi (2–9). Ví dụ: sedan/hatchback thường 5, SUV/crossover thường 5–7.");
         }
       }
       if (src.fuel_consumption && ref.consumption && ref.consumption.unit && Array.isArray(ref.consumption.range)) {
@@ -439,12 +440,12 @@ export const checkVehicleInfo = async (req, res) => {
         const unitEV = /kwh/i.test(String(src.fuel_consumption)) ? "kWh/100km" : "l/100km";
         const unitMatch = unitEV.toLowerCase() === String(ref.consumption.unit).toLowerCase();
         if (!unitMatch) {
-          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)}. Gợi ý: đơn vị ${ref.consumption.unit}`);
+          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)} chưa đúng đơn vị cho ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, xe này dùng đơn vị ${ref.consumption.unit}. Hãy nhập theo dạng "x ${ref.consumption.unit}" (ví dụ: 6.5 ${ref.consumption.unit}).`);
         } else if (Number.isFinite(fc)) {
           const ok = fc >= Number(ref.consumption.range[0]) && fc <= Number(ref.consumption.range[1]);
-          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${ref.consumption.unit}' trong khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}`);
+          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)} có vẻ không hợp lý cho ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mức tiêu thụ thường khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}. Hãy kiểm tra lại và nhập theo dạng "x ${ref.consumption.unit}".`);
         } else {
-          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${ref.consumption.unit}'`);
+          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)} thiếu số hoặc sai định dạng. Hãy nhập theo dạng "x ${ref.consumption.unit}" (ví dụ: 6.5 ${ref.consumption.unit}).`);
         }
       } else if (src.fuel_consumption) {
         const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
@@ -452,17 +453,17 @@ export const checkVehicleInfo = async (req, res) => {
         const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
         const unit = isEV ? "kWh/100km" : "l/100km";
         const ok = Number.isFinite(fc);
-        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)} thiếu số hoặc sai định dạng. Hãy nhập theo dạng "x ${unit}" (ví dụ: ${isEV ? "15 kWh/100km" : "6.5 l/100km"}).`);
       } else {
-        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ");
+        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Hãy nhập mức tiêu thụ theo dạng \"x l/100km\" (xe xăng/diesel) hoặc \"x kWh/100km\" (xe điện).");
       }
       if (src.engine_capacity && Array.isArray(ref.engine_capacity_range)) {
         const ec = parseFloat(String(src.engine_capacity).replace(/[^\d\.]+/g, ""));
         if (Number.isFinite(ec)) {
           const ok = ec >= Number(ref.engine_capacity_range[0]) && ec <= Number(ref.engine_capacity_range[1]);
-          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: mẫu ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc`);
+          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, dung tích thường khoảng ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc. Hãy kiểm tra lại thông số xe trước khi đăng.`);
         } else {
-          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng");
+          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng. Hãy nhập dung tích theo cc (ví dụ: 1498 cc) để hệ thống đối chiếu chính xác.");
         }
       }
       checks = baseChecks.concat(mismatchChecks);
@@ -510,7 +511,7 @@ export const checkVehicleInfo = async (req, res) => {
               if (!ok) {
                 pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: ${allowedTransmissions.join(", ")}${guide ? ` (mẫu: ${guide.transmission.join("/")})` : ""}`);
               } else if (guide && !guide.transmission.includes(tr)) {
-                pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: mẫu ${guide.transmission.join("/")}`);
+                pushBase("Hộp số", "fail", `${src.transmission} không phù hợp với ${src.brand} ${src.model}. Gợi ý: hộp số thường là ${guide.transmission.join("/")}. Hãy chọn lại hộp số đúng.`);
               } else {
                 pushBase("Hộp số", "pass", src.transmission);
               }
@@ -525,7 +526,7 @@ export const checkVehicleInfo = async (req, res) => {
               if (!okRange) {
                 pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: ${seatGuide}`);
               } else if (guide && !(seatsNum >= guide.seats[0] && seatsNum <= guide.seats[1])) {
-                pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: mẫu ${guide.seats[0]}–${guide.seats[1]} chỗ`);
+                pushBase("Số chỗ ngồi", "fail", `${src.seats} chỗ không phù hợp với ${src.brand} ${src.model}. Gợi ý: mẫu thường có ${guide.seats[0]}–${guide.seats[1]} chỗ. Hãy chỉnh lại theo cấu hình thực tế của xe.`);
               } else {
                 pushBase("Số chỗ ngồi", "pass", String(src.seats));
               }
@@ -539,7 +540,7 @@ export const checkVehicleInfo = async (req, res) => {
               if (!ok) {
                 pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric${guide ? ` (mẫu: ${guide.fuel_type.join("/")})` : ""}`);
               } else if (guide && !guide.fuel_type.includes(f)) {
-                pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: mẫu ${guide.fuel_type.join("/")}`);
+                pushBase("Nhiên liệu", "fail", `${src.fuel_type} không phù hợp với ${src.brand} ${src.model}. Gợi ý: mẫu thường dùng ${guide.fuel_type.join("/")}. Hãy chọn lại nhiên liệu đúng.`);
               } else {
                 pushBase("Nhiên liệu", "pass", src.fuel_type);
               }
@@ -780,32 +781,32 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
         const f = fuelAlias(src.fuel_type);
         const rf = fuelAlias(ref.fuel_type);
         const ok = f === rf;
-        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: mẫu ${ref.fuel_type}`);
+        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mẫu này thường dùng ${ref.fuel_type}. Hãy chỉnh lại nhiên liệu hoặc kiểm tra lại model/năm nếu là biến thể khác.`);
       } else {
-        pushMismatch("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu");
+        pushMismatch("Nhiên liệu", "warn", "Thiếu. Hãy chọn nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric) để hệ thống đối chiếu chính xác.");
       }
       if (src.vehicle_type === "car") {
         if (src.body_type) {
           const bt = normalize(src.body_type);
           const ok = bt === normalize(ref.body_type);
-          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type}. Gợi ý: mẫu ${ref.body_type}`);
+          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, dáng xe thường là ${ref.body_type}. Hãy chỉnh về ${ref.body_type} hoặc kiểm tra lại model/năm nếu bạn đăng phiên bản khác.`);
         } else {
-          pushMismatch("Dáng xe", "warn", "Thiếu. Gợi ý: cung cấp dạng thân xe");
+          pushMismatch("Dáng xe", "warn", "Thiếu. Hãy nhập dáng xe theo danh mục (sedan/suv/crossover/hatchback/coupe/convertible/wagon/mpv/minivan/pickup).");
         }
         if (src.transmission) {
           const tr = normalize(src.transmission);
           const ok = Array.isArray(ref.transmission) ? ref.transmission.map(normalize).includes(tr) : normalize(ref.transmission) === tr;
           const sug = Array.isArray(ref.transmission) ? ref.transmission.join("/") : ref.transmission;
-          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission}. Gợi ý: mẫu ${sug}`);
+          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission} không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, hộp số thường là ${sug}. Hãy chọn lại hộp số đúng (manual/automatic/cvt/dct).`);
         } else {
-          pushMismatch("Hộp số", "warn", "Thiếu. Gợi ý: cung cấp hộp số");
+          pushMismatch("Hộp số", "warn", "Thiếu. Hãy chọn hộp số (manual/automatic/cvt/dct) để hệ thống đối chiếu chính xác.");
         }
         const seatsNum = Number(src.seats);
         if (Number.isFinite(seatsNum) && Array.isArray(ref.seats_range)) {
           const ok = seatsNum >= Number(ref.seats_range[0]) && seatsNum <= Number(ref.seats_range[1]);
-          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats}. Gợi ý: mẫu ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ`);
+          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats} chỗ không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mẫu này thường có ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ. Hãy chỉnh lại đúng cấu hình thực tế của xe.`);
         } else {
-          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Gợi ý: nhập số chỗ ngồi");
+          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Hãy nhập số chỗ ngồi (2–9). Ví dụ: sedan/hatchback thường 5, SUV/crossover thường 5–7.");
         }
       }
       if (src.fuel_consumption && ref.consumption && ref.consumption.unit && Array.isArray(ref.consumption.range)) {
@@ -814,12 +815,12 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
         const unitEV = /kwh/i.test(String(src.fuel_consumption)) ? "kWh/100km" : "l/100km";
         const unitMatch = unitEV.toLowerCase() === String(ref.consumption.unit).toLowerCase();
         if (!unitMatch) {
-          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)}. Gợi ý: đơn vị ${ref.consumption.unit}`);
+          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)} chưa đúng đơn vị cho ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, xe này dùng đơn vị ${ref.consumption.unit}. Hãy nhập theo dạng "x ${ref.consumption.unit}" (ví dụ: 6.5 ${ref.consumption.unit}).`);
         } else if (Number.isFinite(fc)) {
           const ok = fc >= Number(ref.consumption.range[0]) && fc <= Number(ref.consumption.range[1]);
-          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${ref.consumption.unit}' trong khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}`);
+          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)} có vẻ không hợp lý cho ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, mức tiêu thụ thường khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}. Hãy kiểm tra lại và nhập theo dạng "x ${ref.consumption.unit}".`);
         } else {
-          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${ref.consumption.unit}'`);
+          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)} thiếu số hoặc sai định dạng. Hãy nhập theo dạng "x ${ref.consumption.unit}" (ví dụ: 6.5 ${ref.consumption.unit}).`);
         }
       } else if (src.fuel_consumption) {
         const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
@@ -827,17 +828,17 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
         const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
         const unit = isEV ? "kWh/100km" : "l/100km";
         const ok = Number.isFinite(fc);
-        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)} thiếu số hoặc sai định dạng. Hãy nhập theo dạng "x ${unit}" (ví dụ: ${isEV ? "15 kWh/100km" : "6.5 l/100km"}).`);
       } else {
-        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ");
+        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Hãy nhập mức tiêu thụ theo dạng \"x l/100km\" (xe xăng/diesel) hoặc \"x kWh/100km\" (xe điện).");
       }
       if (src.engine_capacity && Array.isArray(ref.engine_capacity_range)) {
         const ec = parseFloat(String(src.engine_capacity).replace(/[^\d\.]+/g, ""));
         if (Number.isFinite(ec)) {
           const ok = ec >= Number(ref.engine_capacity_range[0]) && ec <= Number(ref.engine_capacity_range[1]);
-          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: mẫu ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc`);
+          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc không phù hợp với ${brandLine}${src.year ? ` ${src.year}` : ""}. Theo thông tin phổ biến, dung tích thường khoảng ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc. Hãy kiểm tra lại thông số xe trước khi đăng.`);
         } else {
-          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng");
+          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng. Hãy nhập dung tích theo cc (ví dụ: 1498 cc) để hệ thống đối chiếu chính xác.");
         }
       }
       checks = baseChecks.concat(mismatchChecks);
@@ -877,7 +878,7 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
           if (!ok) {
             pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: ${allowedTransmissions.join(", ")}${guide ? ` (mẫu: ${guide.transmission.join("/")})` : ""}`);
           } else if (guide && !guide.transmission.includes(tr)) {
-            pushBase("Hộp số", "fail", `${src.transmission}. Gợi ý: mẫu ${guide.transmission.join("/")}`);
+            pushBase("Hộp số", "fail", `${src.transmission} không phù hợp với ${src.brand} ${src.model}. Gợi ý: hộp số thường là ${guide.transmission.join("/")}. Hãy chọn lại hộp số đúng.`);
           } else {
             pushBase("Hộp số", "pass", src.transmission);
           }
@@ -892,7 +893,7 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
           if (!okRange) {
             pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: ${seatGuide}`);
           } else if (guide && !(seatsNum >= guide.seats[0] && seatsNum <= guide.seats[1])) {
-            pushBase("Số chỗ ngồi", "fail", `${src.seats}. Gợi ý: mẫu ${guide.seats[0]}–${guide.seats[1]} chỗ`);
+            pushBase("Số chỗ ngồi", "fail", `${src.seats} chỗ không phù hợp với ${src.brand} ${src.model}. Gợi ý: mẫu thường có ${guide.seats[0]}–${guide.seats[1]} chỗ. Hãy chỉnh lại theo cấu hình thực tế của xe.`);
           } else {
             pushBase("Số chỗ ngồi", "pass", String(src.seats));
           }
@@ -906,7 +907,7 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
           if (!ok) {
             pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric${guide ? ` (mẫu: ${guide.fuel_type.join("/")})` : ""}`);
           } else if (guide && !guide.fuel_type.includes(f)) {
-            pushBase("Nhiên liệu", "fail", `${src.fuel_type}. Gợi ý: mẫu ${guide.fuel_type.join("/")}`);
+            pushBase("Nhiên liệu", "fail", `${src.fuel_type} không phù hợp với ${src.brand} ${src.model}. Gợi ý: mẫu thường dùng ${guide.fuel_type.join("/")}. Hãy chọn lại nhiên liệu đúng.`);
           } else {
             pushBase("Nhiên liệu", "pass", src.fuel_type);
           }
