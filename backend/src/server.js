@@ -55,6 +55,7 @@ import AdminApproveOwnerRoute from "./routes/admin/adminApproveOwnerRoute.js";
 import AdminUserChartRoute from "./routes/admin/adminUserChartRoute.js";
 import AdminRevenueRoute from "./routes/admin/adminRevenueRoute.js";
 import AdminBrandRoute from "./routes/admin/adminBrandRoute.js";
+import AdminChatMessage from './routes/admin/adminChatMessageRoute.js'
 
 // payment
 import PaymentRoute from "./routes/payment/paymentRoute.js";
@@ -151,6 +152,7 @@ app.use("/api/admin/user-chart", AdminUserChartRoute);
 app.use("/api/admin/revenue", AdminRevenueRoute);
 app.use("/api/admin/brands", AdminBrandRoute);
 app.use("/api/admin/notifications", AdminNotificationRoute);
+app.use("/api/admin/messages", AdminChatMessage);
 
 // voucher route
 app.use("/api/renter/vouchers", VoucherRoute);

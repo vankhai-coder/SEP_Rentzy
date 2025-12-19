@@ -39,7 +39,7 @@ const Header = () => {
 
   return (
     <header className="mx-auto border-b-2 fixed top-0 left-0 right-0 z-50">
-      <nav className="flex items-center justify-between w-screen  py-4 md:py-8 px-8 md:px-24 lg:px-40 mx-auto bg-white">
+      <nav className="flex items-center justify-between w-screen  py-4 md:py-5 px-8 md:px-24 lg:px-40 mx-auto bg-white">
         {/* Logo Section */}
         <div className="flex items-center space-x-2">
           <Link
