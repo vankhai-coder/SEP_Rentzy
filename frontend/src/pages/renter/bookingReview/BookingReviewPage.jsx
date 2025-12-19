@@ -6,7 +6,7 @@ import {
   fetchBookingDetail,
   clearBookingDetail,
 } from "../../../redux/features/renter/bookingReview/bookingReviewSlice.js";
-import BookingReviewForm from "../../../components/renter/bookingReview/BookingReviewForm.jsx"; // Path này sẽ OK sau khi tạo file
+import BookingReviewForm from "../../../components/renter/bookingReview/BookingReviewForm.jsx";
 
 const BookingReviewPage = () => {
   const { bookingId } = useParams();
@@ -17,7 +17,7 @@ const BookingReviewPage = () => {
 
   useEffect(() => {
     dispatch(fetchBookingDetail(bookingId));
-    return () => dispatch(clearBookingDetail()); // Clear khi unmount
+    return () => dispatch(clearBookingDetail());
   }, [dispatch, bookingId]);
 
   if (loading) {
@@ -34,7 +34,7 @@ const BookingReviewPage = () => {
         <p className="text-red-500 mb-4">{error}</p>
         <button
           onClick={() => window.history.back()}
-          className="px-6 py-2 bg-teal-500 text-white rounded-xl"
+          className="px-6 py-2 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors"
         >
           Quay lại
         </button>
@@ -51,7 +51,7 @@ const BookingReviewPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         <BookingReviewForm bookingDetail={bookingDetail} />
       </div>
