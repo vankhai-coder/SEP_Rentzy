@@ -127,7 +127,7 @@ const MyReportedVehicles = () => {
 
   if (processedReports.length === 0 && !myReportsLoading) {
     return (
-      <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
         <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           Chưa có báo cáo nào
@@ -136,12 +136,6 @@ const MyReportedVehicles = () => {
           Bạn chưa báo cáo xe nào. Hãy duyệt xe và báo cáo nếu phát hiện vấn đề
           để giúp cộng đồng.
         </p>
-        <a
-          href="/vehicles"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
-        >
-          Duyệt xe ngay
-        </a>
       </div>
     );
   }
@@ -151,7 +145,7 @@ const MyReportedVehicles = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
+      <div className="bg-blue-50 rounded-xl p-6 border border-blue-200 shadow-sm">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-100 rounded-full">
@@ -175,7 +169,7 @@ const MyReportedVehicles = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <thead className="bg-gray-100">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
@@ -190,7 +184,7 @@ const MyReportedVehicles = () => {
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Model xe
+                  Tên xe
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
@@ -225,7 +219,7 @@ const MyReportedVehicles = () => {
               {processedReports.map((report) => (
                 <tr
                   key={report.report_id}
-                  className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 transform hover:scale-[1.01]"
+                  className="hover:bg-blue-50 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     <div className="flex items-center space-x-2">
@@ -288,14 +282,14 @@ const MyReportedVehicles = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span
-                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                         report.statusVN === "Chờ xử lý"
-                          ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800"
+                          ? "bg-yellow-100 text-yellow-800"
                           : report.statusVN === "Đang xem xét"
-                          ? "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800"
+                          ? "bg-blue-100 text-blue-800"
                           : report.statusVN === "Đã giải quyết"
-                          ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800"
-                          : "bg-gradient-to-r from-red-100 to-red-200 text-red-800"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
                       }`}
                     >
                       {report.statusVN}

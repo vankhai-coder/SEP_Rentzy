@@ -41,14 +41,14 @@ const BookingReviewForm = ({ bookingDetail }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl border border-teal-200/50">
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-3xl shadow-2xl border border-gray-200">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
         Đánh giá xe
       </h2>
 
       {bookingDetail && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl">
-          <p className="font-semibold text-teal-700">
+        <div className="mb-6 p-4 border border-gray-200 rounded-2xl">
+          <p className="font-semibold text-gray-800">
             Xe: {bookingDetail.vehicle?.model || "N/A"}
           </p>
           <p className="text-gray-600">
@@ -162,7 +162,7 @@ const BookingReviewForm = ({ bookingDetail }) => {
         <button
           type="submit"
           disabled={loading || rating === 0 || !reviewContent.trim()}
-          className="w-full py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           {loading ? "Đang kiểm tra nội dung..." : "Gửi đánh giá"}
         </button>

@@ -1122,6 +1122,11 @@ export const getBookingDetail = async (req, res) => {
             "contract_file_url",
           ],
         },
+        {
+          model: TrafficFineRequest,
+          as: "trafficFineRequests",
+          required: false,
+        },
       ],
     });
 
@@ -1929,23 +1934,23 @@ export const addTrafficFine = async (req, res) => {
     });
 
     // Tìm tất cả admin users để gửi notification
-    const adminUsers = await User.findAll({
-      where: { role: "admin" },
-      attributes: ["user_id"],
-    });
+    // const adminUsers = await User.findAll({
+    //   where: { role: "admin" },
+    //   attributes: ["user_id"],
+    // });
 
-    // Tạo notification cho tất cả admin
-    if (adminUsers.length > 0) {
-      const notifications = adminUsers.map((admin) => ({
-        user_id: admin.user_id,
-        title: "Yêu cầu duyệt phạt nguội mới",
-        content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${
-          booking.booking_id
-        }. Số tiền: ${trafficFineAmount.toLocaleString("vi-VN")} VNĐ.`,
-        type: "alert",
-      }));
-      await Notification.bulkCreate(notifications);
-    }
+    // // Tạo notification cho tất cả admin
+    // if (adminUsers.length > 0) {
+    //   const notifications = adminUsers.map((admin) => ({
+    //     user_id: admin.user_id,
+    //     title: "Yêu cầu duyệt phạt nguội mới",
+    //     content: `Có yêu cầu duyệt phạt nguội mới cho đơn thuê #${
+    //       booking.booking_id
+    //     }. Số tiền: ${trafficFineAmount.toLocaleString("vi-VN")} VNĐ.`,
+    //     type: "alert",
+    //   }));
+    //   await Notification.bulkCreate(notifications);
+    // }
 
     return res.json({
       success: true,
