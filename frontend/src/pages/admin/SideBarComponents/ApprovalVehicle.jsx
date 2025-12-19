@@ -168,7 +168,10 @@ const ApprovalVehicle = () => {
     try {
       const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${vehicleId}/reject`, { reason });
       if (response.data.success) {
-        toast.success(`Đã từ chối xe ${vehicleModel}`);
+        toast.error(`Đã từ chối xe ${vehicleModel}`, {
+          className: 'border-l-4 border-red-500',
+          icon: <MdCancel className="w-5 h-5 text-red-600" />
+        });
         if (expandedVehicleId === vehicleId) {
           setExpandedVehicleId(null);
           setSelectedVehicle(null);
@@ -218,7 +221,10 @@ const ApprovalVehicle = () => {
       setRejecting(true);
       const response = await axiosInstance.patch(`/api/admin/approval-vehicles/${rejectModal.vehicleId}/reject`, { reason: rejectReason.trim() });
       if (response.data.success) {
-        toast.success(`Đã từ chối xe ${rejectModal.vehicleModel}`);
+        toast.error(`Đã từ chối xe ${rejectModal.vehicleModel}`, {
+          className: 'border-l-4 border-red-500',
+          icon: <MdCancel className="w-5 h-5 text-red-600" />
+        });
         fetchVehicles(pagination.currentPage);
         fetchStats();
         if (expandedVehicleId === rejectModal.vehicleId) {

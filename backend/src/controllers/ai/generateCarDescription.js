@@ -358,35 +358,126 @@ export const checkVehicleInfo = async (req, res) => {
 
         const prompt = `${commonHeader}\n${vehicleGuide}\n${attrs}`;
 
-        let aiChecks = null;
-        try {
-          const response = await client.chat.completions.create({
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.1,
-          });
-          let content = response.choices?.[0]?.message?.content || "";
-          if (content.startsWith("```")) {
-            const start = content.indexOf("\n");
-            const end = content.lastIndexOf("```");
-            content = content.substring(start + 1, end);
-          }
-          try {
-            const parsed = JSON.parse(content);
-            if (parsed && Array.isArray(parsed.checks) && parsed.summary) {
-              aiChecks = parsed;
-            }
-          } catch {}
-        } catch {}
+    let aiChecks = null;
+    try {
+      const response = await client.chat.completions.create({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.1,
+      });
+      let content = response.choices?.[0]?.message?.content || "";
+      if (content.startsWith("```")) {
+        const start = content.indexOf("\n");
+        const end = content.lastIndexOf("```");
+        content = content.substring(start + 1, end);
+      }
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed && Array.isArray(parsed.checks) && parsed.summary) {
+          aiChecks = parsed;
+        }
+      } catch {}
+    } catch {}
 
-        let checks, summary;
-        if (aiChecks) {
-          checks = [...baseChecks, ...aiChecks.checks];
-          summary = {
-            pass: checks.filter(c => c.status === "pass").length,
-            fail: checks.filter(c => c.status === "fail").length,
-            warn: checks.filter(c => c.status === "warn").length,
-          };
+    let checks, summary;
+    let ref = null;
+    try {
+      const refPrompt = `Trả về JSON duy nhất mô tả thuộc tính phổ biến cho mẫu xe:\n{"fuel_type": "petrol|diesel|hybrid|electric", "body_type": "sedan|suv|hatchback|crossover|minivan|pickup|coupe|convertible|wagon|mpv", "transmission": ["manual","automatic","cvt","dct"], "seats_range": [min,max], "consumption": {"unit": "l/100km|kWh/100km", "range": [min,max]}, "engine_capacity_range": [min,max]}\nKhông thêm văn bản ngoài JSON.\nThương hiệu: ${src.brand || ""}\nModel: ${src.model || ""}\nNăm: ${src.year || ""}`;
+      const r = await client.chat.completions.create({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: [{ role: "system", content: "Luôn trả về JSON hợp lệ." }, { role: "user", content: refPrompt }],
+        temperature: 0,
+      });
+      let t = r.choices?.[0]?.message?.content?.trim() || "";
+      if (t.startsWith("```")) {
+        const s = t.indexOf("\n");
+        const e = t.lastIndexOf("```");
+        t = t.substring(s + 1, e);
+      }
+      const parsed = JSON.parse(t);
+      if (parsed && parsed.fuel_type) ref = parsed;
+    } catch {}
+
+    if (ref) {
+      const mismatchChecks = [];
+      const pushMismatch = (label, status, detail) => mismatchChecks.push({ label, status, detail });
+      if (src.fuel_type) {
+        const f = fuelAlias(src.fuel_type);
+        const rf = fuelAlias(ref.fuel_type);
+        const ok = f === rf;
+        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: mẫu ${ref.fuel_type}`);
+      } else {
+        pushMismatch("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu");
+      }
+      if (src.vehicle_type === "car") {
+        if (src.body_type) {
+          const bt = normalize(src.body_type);
+          const ok = bt === normalize(ref.body_type);
+          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type}. Gợi ý: mẫu ${ref.body_type}`);
+        } else {
+          pushMismatch("Dáng xe", "warn", "Thiếu. Gợi ý: cung cấp dạng thân xe");
+        }
+        if (src.transmission) {
+          const tr = normalize(src.transmission);
+          const ok = Array.isArray(ref.transmission) ? ref.transmission.map(normalize).includes(tr) : normalize(ref.transmission) === tr;
+          const sug = Array.isArray(ref.transmission) ? ref.transmission.join("/") : ref.transmission;
+          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission}. Gợi ý: mẫu ${sug}`);
+        } else {
+          pushMismatch("Hộp số", "warn", "Thiếu. Gợi ý: cung cấp hộp số");
+        }
+        const seatsNum = Number(src.seats);
+        if (Number.isFinite(seatsNum) && Array.isArray(ref.seats_range)) {
+          const ok = seatsNum >= Number(ref.seats_range[0]) && seatsNum <= Number(ref.seats_range[1]);
+          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats}. Gợi ý: mẫu ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ`);
+        } else {
+          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Gợi ý: nhập số chỗ ngồi");
+        }
+      }
+      if (src.fuel_consumption && ref.consumption && ref.consumption.unit && Array.isArray(ref.consumption.range)) {
+        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+        const fc = m ? parseFloat(m[0]) : NaN;
+        const unitEV = /kwh/i.test(String(src.fuel_consumption)) ? "kWh/100km" : "l/100km";
+        const unitMatch = unitEV.toLowerCase() === String(ref.consumption.unit).toLowerCase();
+        if (!unitMatch) {
+          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)}. Gợi ý: đơn vị ${ref.consumption.unit}`);
+        } else if (Number.isFinite(fc)) {
+          const ok = fc >= Number(ref.consumption.range[0]) && fc <= Number(ref.consumption.range[1]);
+          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${ref.consumption.unit}' trong khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}`);
+        } else {
+          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${ref.consumption.unit}'`);
+        }
+      } else if (src.fuel_consumption) {
+        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+        const fc = m ? parseFloat(m[0]) : NaN;
+        const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+        const unit = isEV ? "kWh/100km" : "l/100km";
+        const ok = Number.isFinite(fc);
+        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+      } else {
+        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ");
+      }
+      if (src.engine_capacity && Array.isArray(ref.engine_capacity_range)) {
+        const ec = parseFloat(String(src.engine_capacity).replace(/[^\d\.]+/g, ""));
+        if (Number.isFinite(ec)) {
+          const ok = ec >= Number(ref.engine_capacity_range[0]) && ec <= Number(ref.engine_capacity_range[1]);
+          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: mẫu ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc`);
+        } else {
+          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng");
+        }
+      }
+      checks = baseChecks.concat(mismatchChecks);
+      summary = {
+        pass: checks.filter(c => c.status === "pass").length,
+        fail: checks.filter(c => c.status === "fail").length,
+        warn: checks.filter(c => c.status === "warn").length,
+      };
+    } else if (aiChecks) {
+      checks = [...baseChecks, ...aiChecks.checks];
+      summary = {
+        pass: checks.filter(c => c.status === "pass").length,
+        fail: checks.filter(c => c.status === "fail").length,
+        warn: checks.filter(c => c.status === "warn").length,
+      };
         } else {
           if (src.vehicle_type === "car") {
             const bt = normalize(src.body_type);
@@ -608,6 +699,7 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
       "kia sportage": { body_type: "suv", seats: [5,5], fuel_type: ["petrol","diesel","hybrid"], transmission: ["automatic","manual"] },
       "toyota vios": { body_type: "sedan", seats: [5,5], fuel_type: ["petrol"], transmission: ["automatic","manual"] },
       "vinfast vf8": { body_type: "suv", seats: [5,5], fuel_type: ["electric"], transmission: ["automatic"] },
+      "vinfast vf9": { body_type: "suv", seats: [6,7], fuel_type: ["electric"], transmission: ["automatic"] },
     };
 
     const commonHeader = `Bạn là chuyên gia kiểm định dữ liệu xe.\n`+
@@ -662,8 +754,99 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
       } catch {}
     } catch {}
 
+    let ref = null;
+    try {
+      const refPrompt = `Trả về JSON duy nhất mô tả thuộc tính phổ biến cho mẫu xe:\n{"fuel_type": "petrol|diesel|hybrid|electric", "body_type": "sedan|suv|hatchback|crossover|minivan|pickup|coupe|convertible|wagon|mpv", "transmission": ["manual","automatic","cvt","dct"], "seats_range": [min,max], "consumption": {"unit": "l/100km|kWh/100km", "range": [min,max]}, "engine_capacity_range": [min,max]}\nKhông thêm văn bản ngoài JSON.\nThương hiệu: ${src.brand || ""}\nModel: ${src.model || ""}\nNăm: ${src.year || ""}`;
+      const r = await client.chat.completions.create({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: [{ role: "system", content: "Luôn trả về JSON hợp lệ." }, { role: "user", content: refPrompt }],
+        temperature: 0,
+      });
+      let t = r.choices?.[0]?.message?.content?.trim() || "";
+      if (t.startsWith("```")) {
+        const s = t.indexOf("\n");
+        const e = t.lastIndexOf("```");
+        t = t.substring(s + 1, e);
+      }
+      const parsed = JSON.parse(t);
+      if (parsed && parsed.fuel_type) ref = parsed;
+    } catch {}
+
     let checks, summary;
-    if (aiChecks) {
+    if (ref) {
+      const mismatchChecks = [];
+      const pushMismatch = (label, status, detail) => mismatchChecks.push({ label, status, detail });
+      if (src.fuel_type) {
+        const f = fuelAlias(src.fuel_type);
+        const rf = fuelAlias(ref.fuel_type);
+        const ok = f === rf;
+        pushMismatch("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: mẫu ${ref.fuel_type}`);
+      } else {
+        pushMismatch("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu");
+      }
+      if (src.vehicle_type === "car") {
+        if (src.body_type) {
+          const bt = normalize(src.body_type);
+          const ok = bt === normalize(ref.body_type);
+          pushMismatch("Dáng xe", ok ? "pass" : "fail", ok ? src.body_type : `${src.body_type}. Gợi ý: mẫu ${ref.body_type}`);
+        } else {
+          pushMismatch("Dáng xe", "warn", "Thiếu. Gợi ý: cung cấp dạng thân xe");
+        }
+        if (src.transmission) {
+          const tr = normalize(src.transmission);
+          const ok = Array.isArray(ref.transmission) ? ref.transmission.map(normalize).includes(tr) : normalize(ref.transmission) === tr;
+          const sug = Array.isArray(ref.transmission) ? ref.transmission.join("/") : ref.transmission;
+          pushMismatch("Hộp số", ok ? "pass" : "fail", ok ? src.transmission : `${src.transmission}. Gợi ý: mẫu ${sug}`);
+        } else {
+          pushMismatch("Hộp số", "warn", "Thiếu. Gợi ý: cung cấp hộp số");
+        }
+        const seatsNum = Number(src.seats);
+        if (Number.isFinite(seatsNum) && Array.isArray(ref.seats_range)) {
+          const ok = seatsNum >= Number(ref.seats_range[0]) && seatsNum <= Number(ref.seats_range[1]);
+          pushMismatch("Số chỗ ngồi", ok ? "pass" : "fail", ok ? String(src.seats) : `${src.seats}. Gợi ý: mẫu ${ref.seats_range[0]}–${ref.seats_range[1]} chỗ`);
+        } else {
+          pushMismatch("Số chỗ ngồi", "warn", "Thiếu. Gợi ý: nhập số chỗ ngồi");
+        }
+      }
+      if (src.fuel_consumption && ref.consumption && ref.consumption.unit && Array.isArray(ref.consumption.range)) {
+        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+        const fc = m ? parseFloat(m[0]) : NaN;
+        const unitEV = /kwh/i.test(String(src.fuel_consumption)) ? "kWh/100km" : "l/100km";
+        const unitMatch = unitEV.toLowerCase() === String(ref.consumption.unit).toLowerCase();
+        if (!unitMatch) {
+          pushMismatch("Mức tiêu thụ", "fail", `${String(src.fuel_consumption)}. Gợi ý: đơn vị ${ref.consumption.unit}`);
+        } else if (Number.isFinite(fc)) {
+          const ok = fc >= Number(ref.consumption.range[0]) && fc <= Number(ref.consumption.range[1]);
+          pushMismatch("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${ref.consumption.unit}' trong khoảng ${ref.consumption.range[0]}–${ref.consumption.range[1]} ${ref.consumption.unit}`);
+        } else {
+          pushMismatch("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${ref.consumption.unit}'`);
+        }
+      } else if (src.fuel_consumption) {
+        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+        const fc = m ? parseFloat(m[0]) : NaN;
+        const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+        const unit = isEV ? "kWh/100km" : "l/100km";
+        const ok = Number.isFinite(fc);
+        pushMismatch("Mức tiêu thụ", ok ? "pass" : "warn", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+      } else {
+        pushMismatch("Mức tiêu thụ", "warn", "Thiếu. Gợi ý: cung cấp mức tiêu thụ");
+      }
+      if (src.engine_capacity && Array.isArray(ref.engine_capacity_range)) {
+        const ec = parseFloat(String(src.engine_capacity).replace(/[^\d\.]+/g, ""));
+        if (Number.isFinite(ec)) {
+          const ok = ec >= Number(ref.engine_capacity_range[0]) && ec <= Number(ref.engine_capacity_range[1]);
+          pushMismatch("Dung tích động cơ", ok ? "pass" : "fail", ok ? `${ec} cc` : `${ec} cc. Gợi ý: mẫu ${ref.engine_capacity_range[0]}–${ref.engine_capacity_range[1]} cc`);
+        } else {
+          pushMismatch("Dung tích động cơ", "warn", "Thiếu hoặc sai định dạng");
+        }
+      }
+      checks = baseChecks.concat(mismatchChecks);
+      summary = {
+        pass: checks.filter(c => c.status === "pass").length,
+        fail: checks.filter(c => c.status === "fail").length,
+        warn: checks.filter(c => c.status === "warn").length,
+      };
+    } else if (aiChecks) {
       checks = [...baseChecks, ...aiChecks.checks];
       summary = {
         pass: checks.filter(c => c.status === "pass").length,
@@ -767,39 +950,36 @@ export const checkVehicleInfoCore = async ({ vehicle, vehicle_id, brand, model, 
           pushBase("Dung tích", "warn", "Thiếu. Gợi ý: nhập dung tích (ví dụ: 125 cc)");
         }
       }
-      if (src.fuel_type) {
-        const f = fuelAlias(src.fuel_type);
-        const ok = allowedFuelTypes.includes(f);
-        pushBase("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric`);
-      } else {
-        pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
-      }
-      if (src.fuel_consumption) {
-        const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
-        const fc = m ? parseFloat(m[0]) : NaN;
-        if (Number.isFinite(fc)) {
-          const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
-          const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
-          const unit = isEV ? "kWh/100km" : "l/100km";
-          const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
-          pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
+      if (!ref) {
+        if (src.fuel_type) {
+          const f = fuelAlias(src.fuel_type);
+          const ok = allowedFuelTypes.includes(f);
+          pushBase("Nhiên liệu", ok ? "pass" : "fail", ok ? src.fuel_type : `${src.fuel_type}. Gợi ý: petrol/xăng, diesel/dầu, hybrid, electric`);
         } else {
-          const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
-          const unit = isEV ? "kWh/100km" : "l/100km";
-          pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+          pushBase("Nhiên liệu", "warn", "Thiếu. Gợi ý: cung cấp loại nhiên liệu (petrol/xăng, diesel/dầu, hybrid, electric)");
         }
-      } else {
-        const isEV = fuelAlias(src.fuel_type) === "electric";
-        const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
-        pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
+        if (src.fuel_consumption) {
+          const m = String(src.fuel_consumption).match(/\d+(?:\.\d+)?/);
+          const fc = m ? parseFloat(m[0]) : NaN;
+          if (Number.isFinite(fc)) {
+            const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+            const ok = isEV ? (fc >= 10 && fc <= 30) : (fc >= 3 && fc <= 20);
+            const unit = isEV ? "kWh/100km" : "l/100km";
+            const range = isEV ? "10–30 kWh/100km" : "3–20 l/100km";
+            pushBase("Mức tiêu thụ", ok ? "pass" : "fail", ok ? String(src.fuel_consumption) : `${String(src.fuel_consumption)}. Gợi ý: 'x ${unit}' trong khoảng ${range}`);
+          } else {
+            const isEV = fuelAlias(src.fuel_type) === "electric" || /kwh/i.test(String(src.fuel_consumption));
+            const unit = isEV ? "kWh/100km" : "l/100km";
+            pushBase("Mức tiêu thụ", "warn", `${String(src.fuel_consumption)}. Gợi ý: định dạng 'x ${unit}'`);
+          }
+        } else {
+          const isEV = fuelAlias(src.fuel_type) === "electric";
+          const eg = isEV ? "ví dụ: 15 kWh/100km" : "ví dụ: 6.5 l/100km";
+          pushBase("Mức tiêu thụ", "warn", `Thiếu. Gợi ý: cung cấp mức tiêu thụ nhiên liệu (${eg})`);
+        }
       }
     }
-
-    return { vehicle_id: vehicle_id ?? v?.vehicle_id ?? null, brand: src.brand, model: src.model, name: src.name, year: src.year, checks: baseChecks.concat(aiChecks?.checks || []), summary: {
-      pass: (baseChecks.concat(aiChecks?.checks || [])).filter(c=>c.status==='pass').length,
-      fail: (baseChecks.concat(aiChecks?.checks || [])).filter(c=>c.status==='fail').length,
-      warn: (baseChecks.concat(aiChecks?.checks || [])).filter(c=>c.status==='warn').length,
-    } };
+    return { vehicle_id: vehicle_id ?? v?.vehicle_id ?? null, brand: src.brand, model: src.model, name: src.name, year: src.year, checks, summary };
   } catch (error) {
     throw error;
   }
