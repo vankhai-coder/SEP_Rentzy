@@ -293,6 +293,7 @@ const NotificationDropdown = () => {
         }}
         className="relative p-2 text-gray-600 hover:text-green-500 transition-colors cursor-pointer"
         aria-label="Thông báo"
+        title="Thông báo"
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (

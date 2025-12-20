@@ -24,6 +24,7 @@ import {
   LayoutDashboard,
   Bell,
   Receipt,
+  MessageSquare,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -98,10 +99,8 @@ const Account = () => {
       "/register_owner": "Bảng điều khiển chủ xe",
       "/favorites": "Xe yêu thích",
       "/my-reports": "Xe đã báo cáo",
-      "/mytrips": "Chuyến của tôi",
       "/longtermrenting": "Đơn hàng Thuê xe dài hạn",
       "/points": "Điểm thưởng",
-      "/myreward": "Quà tặng",
       "/myaddress": "Địa chỉ của tôi",
       "/bank-accounts": "Tài khoản ngân hàng",
       "/traffic-fine-search": "Tra Cứu Phạt Nguội",
@@ -158,7 +157,7 @@ const Account = () => {
   // }
 
   return (
-    <div className="p-2 xs:px-4 sm:px-8 md:px-12 lg:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16 w-full max-w-full overflow-x-hidden box-border">
+    <div className="p-8 xs:px-4 sm:px-8 md:px-12 lg:px-24 xm:pt-2 sm:pt-6 md:pt-16 mb-16 w-full max-w-full overflow-x-hidden box-border">
       {/* mobile: nav list */}
       <Select
         onValueChange={(value) => {
@@ -227,12 +226,6 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
-              value="/mytrips"
-            >
-              <MapPinCheck /> Chuyến của tôi
-            </SelectItem>
-            <SelectItem
-              className={"border-b-1 py-2 text-md font-medium"}
               value="/longtermrenting"
             >
               <CheckCircle2Icon />
@@ -246,9 +239,9 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
-              value="/myreward"
+              value="/messages"
             >
-              <Gift /> Quà tặng
+              <MessageSquare /> Tin nhắn
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
@@ -387,6 +380,14 @@ const Account = () => {
               }
             >
               <Gift /> Điểm thưởng
+            </NavLink>
+            <NavLink
+              to="/messages"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <MessageSquare /> Tin nhắn
             </NavLink>
             <NavLink
               to="/notifications"

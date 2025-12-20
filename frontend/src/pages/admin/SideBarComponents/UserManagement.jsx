@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Lock, LockKeyholeOpen, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X, Users, UserCheck, Car, UserCircle } from "lucide-react"
+import { Ban, ChevronDown, ChevronLeft, ChevronRight, CircleX, Columns2, DollarSign, Download, Ellipsis, Eye, Loader, Lock, LockKeyholeOpen, Search, ShieldCheck, Trash2, Trash2Icon, UserPlus, X, Users, UserCheck, Car, UserCircle, MessageCircle } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -33,10 +33,15 @@ import axiosInstance from "@/config/axiosInstance"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
+import { useDispatch } from "react-redux"
+import { setMessageUserDetails } from "@/redux/features/admin/messageSlice"
+import { useNavigate } from "react-router-dom"
 
 const UserManagement = () => {
 
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // selected user for view details or ban/unban , view booking history : 
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -356,7 +361,7 @@ const UserManagement = () => {
                       <TableHead>Vai trò</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead>Ngày đăng ký</TableHead>
-                      <TableHead>Điểm</TableHead>
+                      <TableHead>Nhắn</TableHead>
                       <TableHead>Thêm </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -423,7 +428,31 @@ const UserManagement = () => {
 
                         <TableCell className={'text-secondary-600 dark:text-secondary-400'}>{formatDateTime(user.created_at)}</TableCell>
 
-                        <TableCell className={'text-secondary-600 dark:text-secondary-400'}>{user.points}</TableCell>
+                        <TableCell className={'text-secondary-600 dark:text-secondary-400'}>
+                          {/* reducers: {
+                            // function that add 3 state : action.payload = { userFullNameOrEmail, userIdToChatWith, userImageURL } 
+                            // and call by dispatch(setMessageUserDetails({ userFullNameOrEmail, userIdToChatWith, userImageURL }))
+                            setMessageUserDetails: (state, action) => {
+                            state.userFullNameOrEmail = action.payload.userFullNameOrEmail;
+                          state.userIdToChatWith = action.payload.userIdToChatWith;
+                          state.userImageURL = action.payload.userImageURL;
+        }
+    }, */}
+                          <MessageCircle
+                            onClick={
+                              () => {
+                                // dispatch to redux store :
+                                dispatch(setMessageUserDetails({
+                                  userFullNameOrEmail: user.full_name || user.email,
+                                  userIdToChatWith: user.user_id,
+                                  userImageURL: user.avatar_url
+                                }));
+                                // navigate to admin/messages page
+                                navigate('/admin/messages');
+                              }
+                            }
+                          />
+                        </TableCell>
 
                         <TableCell>
                           {/* trigger "view more" in each user */}
@@ -545,7 +574,7 @@ const UserManagement = () => {
                         variant={p === currentPage ? "default" : "outline"}
                         onClick={() => setCurrentPage(p)}
                       >
-                        {p} 
+                        {p}
                       </Button>
                     ))}
 

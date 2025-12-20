@@ -508,7 +508,7 @@ const OverViewManagement = () => {
                       />
                     </BarChart>
                   ) : (
-                    <LineChart data={formatChartData(revenueChart)}>
+                    <BarChart data={formatChartData(revenueChart)}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="label" />
                       <YAxis tickFormatter={(value) => formatCompactCurrency(value)} />
@@ -516,14 +516,12 @@ const OverViewManagement = () => {
                         formatter={(value) => [formatCurrency(value), 'Doanh thu']}
                         labelFormatter={(label) => `Thời gian: ${label}`}
                       />
-                      <Line 
-                        type="monotone" 
+                      <Bar 
                         dataKey="revenue" 
-                        stroke="#3B82F6" 
-                        strokeWidth={2}
-                        dot={{ fill: '#3B82F6' }}
+                        fill="#3B82F6" 
+                        name="Doanh thu"
                       />
-                    </LineChart>
+                    </BarChart>
                   )}
                 </ResponsiveContainer>
               ) : (
@@ -577,7 +575,7 @@ const OverViewManagement = () => {
                       />
                     </BarChart>
                   ) : (
-                    <LineChart data={formatChartData(revenueChart)}>
+                    <BarChart data={formatChartData(revenueChart)}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="label" />
                       <YAxis 
@@ -588,14 +586,12 @@ const OverViewManagement = () => {
                         formatter={(value) => [Math.round(value), 'Số đơn']}
                         labelFormatter={(label) => `Thời gian: ${label}`}
                       />
-                      <Line 
-                        type="monotone" 
+                      <Bar 
                         dataKey="bookingCount" 
-                        stroke="#10B981" 
-                        strokeWidth={2}
-                        dot={{ fill: '#10B981' }}
+                        fill="#10B981" 
+                        name="Số đơn"
                       />
-                    </LineChart>
+                    </BarChart>
                   )}
                 </ResponsiveContainer>
               ) : (

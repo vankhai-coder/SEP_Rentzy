@@ -846,7 +846,8 @@ const BookingDetailsPage = () => {
                           key={`violation-${index}`}
                           src={imageUrl}
                           alt={`Vi phạm ${index + 1}`}
-                          className="traffic-fine-image"
+                          className="traffic-fine-image cursor-pointer"
+                          title="Hình ảnh vi phạm"
                           onClick={() => setViewImage(imageUrl)}
                           style={{ cursor: "pointer" }}
                         />
@@ -863,7 +864,8 @@ const BookingDetailsPage = () => {
                           key={`receipt-${index}`}
                           src={imageUrl}
                           alt={`Hóa đơn ${index + 1}`}
-                          className="traffic-fine-image"
+                          className="traffic-fine-image cursor-pointer"
+                          title="Hóa đơn nộp phạt"
                           onClick={() => setViewImage(imageUrl)}
                           style={{ cursor: "pointer" }}
                         />

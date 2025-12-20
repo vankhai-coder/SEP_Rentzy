@@ -3,12 +3,17 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const apiKey = process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY;
-const baseURL =
-  process.env.OPENAI_BASE_URL ||
-  (process.env.OPENROUTER_API_KEY
-    ? "https://openrouter.ai/api/v1"
-    : "https://api.openai.com/v1");
+// Ưu tiên key riêng cho Traffic Fine nếu có, nếu không thì dùng key chung
+  const apiKey =
+    process.env.OPENROUTER_API_KEY_TRAFFIC_FINE ||
+    process.env.OPENAI_API_KEY ||
+    process.env.OPENROUTER_API_KEY;
+
+  const baseURL =
+    process.env.OPENAI_BASE_URL ||
+    (process.env.OPENROUTER_API_KEY_TRAFFIC_FINE || process.env.OPENROUTER_API_KEY
+      ? "https://openrouter.ai/api/v1"
+      : "https://api.openai.com/v1");
 
 const client = new OpenAI({
   apiKey,

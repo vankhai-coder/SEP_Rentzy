@@ -40,8 +40,6 @@ const VehicleReportModal = ({ isOpen, onClose, vehicleId }) => {
       toast.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
       navigate("/login");
       dispatch(resetReportState());
-    } else if (error) {
-      setError(error);
     }
   }, [error, navigate, dispatch]);
 
@@ -58,27 +56,22 @@ const VehicleReportModal = ({ isOpen, onClose, vehicleId }) => {
   const handleClose = () => {
     setReason("");
     setMessage("");
-    setError("");
     dispatch(resetReportState());
     onClose();
-  };
-
-  const setError = (msg) => {
-    toast.error(msg);
   };
 
   if (!isOpen) return null;
 
   return typeof document !== "undefined"
     ? createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50">
           <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-red-600 to-pink-600 text-white">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-red-600 text-white">
               <h3 className="text-xl font-bold">Báo cáo xe vi phạm</h3>
               <button
                 type="button"
                 onClick={handleClose}
-                className="text-white hover:text-gray-200 transition"
+                className="text-white hover:text-gray-200 transition text-2xl font-bold leading-none"
               >
                 ✕
               </button>
@@ -131,7 +124,7 @@ const VehicleReportModal = ({ isOpen, onClose, vehicleId }) => {
                 <button
                   type="submit"
                   disabled={loading || !reason || !message.trim()}
-                  className="px-6 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold rounded-lg hover:from-red-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Đang gửi..." : "Gửi báo cáo"}
                 </button>

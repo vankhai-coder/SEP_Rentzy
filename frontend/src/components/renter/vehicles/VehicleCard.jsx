@@ -119,7 +119,7 @@ const VehicleCard = ({ vehicle, iconSpecs, type }) => {
 
   return (
     <div
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden border border-gray-100 flex flex-col h-full"
+      className="bg-white rounded-xl shadow-md cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-transform duration-200 ease-out overflow-hidden border border-gray-100 flex flex-col h-full"
       onClick={handleCardClick}
     >
       <div className="relative">

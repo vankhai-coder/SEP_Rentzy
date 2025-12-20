@@ -52,7 +52,7 @@ const ChatBox = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 text-white rounded-full p-4 shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all duration-300 animate-bounce"
+          className="group relative bg-purple-600 text-white rounded-full p-4 shadow-2xl hover:shadow-purple-500/50 hover:scale-110 transition-all duration-300 animate-bounce"
         >
           <MessageCircle className="w-7 h-7" />
           <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
@@ -70,12 +70,12 @@ const ChatBox = () => {
       {/* Chatbox - Modern Design */}
       {isOpen && (
         <div
-          className={`bg-white shadow-2xl rounded-3xl flex flex-col overflow-hidden border border-gray-200/50 backdrop-blur-xl transition-all duration-300 ${
+          className={`bg-white shadow-2xl rounded-3xl flex flex-col overflow-hidden border border-gray-200 backdrop-blur-xl transition-all duration-300 ${
             isMinimized ? "w-80 h-16" : "w-[380px] h-[520px]"
           }`}
         >
-          {/* Header - Gradient với Glass Effect */}
-          <div className="relative bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 text-white p-4 shadow-lg">
+          {/* Header - Đơn sắc */}
+          <div className="relative bg-purple-600 text-white p-4 shadow-lg">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 <div className="relative">
@@ -84,11 +84,11 @@ const ChatBox = () => {
                     alt="Rentzy Bot"
                     className="w-10 h-10 rounded-full border-2 border-white/30 shadow-lg"
                   />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-purple-700"></span>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-purple-600"></span>
                 </div>
                 <div>
                   <h3 className="font-bold text-base">Trợ lý Rentzy</h3>
-                  <p className="text-xs text-purple-200">
+                  <p className="text-xs text-purple-100">
                     Luôn sẵn sàng hỗ trợ bạn
                   </p>
                 </div>
@@ -108,18 +108,15 @@ const ChatBox = () => {
                 </button>
               </div>
             </div>
-
-            {/* Decorative wave */}
-            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-transparent to-white/5"></div>
           </div>
 
           {!isMinimized && (
             <>
               {/* Messages Area - Modern Scroll */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-gray-50 to-white">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
                 {messages.length === 0 && (
                   <div className="text-center mt-8 space-y-4">
-                    <div className="inline-block p-4 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl">
+                    <div className="inline-block p-4 bg-purple-100 rounded-2xl">
                       <MessageCircle className="w-12 h-12 text-purple-600" />
                     </div>
                     <div>
@@ -152,7 +149,7 @@ const ChatBox = () => {
                     <div
                       className={`max-w-[75%] rounded-2xl shadow-md transition-all hover:shadow-lg ${
                         msg.role === "user"
-                          ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-none"
+                          ? "bg-blue-500 text-white rounded-br-none"
                           : "bg-white text-gray-800 rounded-bl-none border border-gray-100"
                       }`}
                     >
@@ -177,7 +174,7 @@ const ChatBox = () => {
                                     onClick={() =>
                                       handleViewVehicle(vehicle.vehicle_id)
                                     }
-                                    className="group w-full bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 rounded-xl p-3 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
+                                    className="group w-full bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl p-3 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="text-left flex-1">
@@ -248,7 +245,7 @@ const ChatBox = () => {
                   <button
                     type="submit"
                     disabled={!input.trim()}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="bg-purple-600 text-white rounded-2xl p-3 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     <Send size={20} />
                   </button>

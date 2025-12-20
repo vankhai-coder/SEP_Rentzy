@@ -30,6 +30,7 @@ import BookingHistory from "./pages/renter/bookingHistory/BookingHistory.jsx";
 import BookingDetailsPage from "./pages/renter/booking/bookingDetailRenter/BookingDetailsPage.jsx";
 import TransactionHistory from "./pages/renter/transaction/TransactionHistory.jsx";
 import PointsHistory from "./pages/renter/points/PointsHistory.jsx";
+import MessagesPage from "./pages/admin/SideBarComponents/Messages.jsx";
 import MyReportedVehicles from "./pages/renter/account/MyReportedVehicles";
 import NotificationsRenter from "./pages/renter/account/Notifications.jsx";
 import TrafficFineSearch from "./pages/renter/account/TrafficFineSearch.jsx";
@@ -107,6 +108,7 @@ const App = () => {
             <Route path="/contract/:bookingId" element={<ContractPage />} />
             <Route path="/transactions" element={<TransactionHistory />} />
             <Route path="/points" element={<PointsHistory />} />
+            <Route path="/messages" element={<MessagesPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/mytrips" element={<MyTrips />} />
             <Route path="/longtermrenting" element={<LongTermRenting />} />

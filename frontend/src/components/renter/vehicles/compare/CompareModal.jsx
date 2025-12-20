@@ -37,7 +37,7 @@ const CompareTable = ({ data, type }) => {
   const renderFeatures = (vehicleIndex) => {
     const vehicle = vehicles[vehicleIndex];
     if (!vehicle || !vehicle.features || vehicle.features.length === 0)
-      return <span className="text-gray-400 italic text-xs">Không có</span>;
+      return <span className="text-slate-400 italic text-xs">Không có</span>;
 
     const shortFeatures = vehicle.features.slice(0, 3).join(", ");
     const fullList = vehicle.features.join(", ");
@@ -49,7 +49,7 @@ const CompareTable = ({ data, type }) => {
     return (
       <span
         title={`Tất cả: ${fullList}`}
-        className="text-gray-700 text-xs block break-words cursor-help"
+        className="text-slate-600 text-xs block break-words cursor-help"
       >
         {displayText}
       </span>
@@ -85,43 +85,39 @@ const CompareTable = ({ data, type }) => {
   };
 
   return (
-    <div>
-      <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200">
+    <div className="mt-4">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
         <table className="min-w-full bg-white">
-          <thead className="bg-gradient-to-r from-[#4ECDC4] to-[#44A08D] text-white">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3 text-left font-bold text-sm uppercase tracking-wide">
+              <th className="px-6 py-4 text-left font-bold text-slate-700 text-sm uppercase tracking-wider">
                 Tiêu Chí
               </th>
               {comparison.models.map((m, i) => (
-                <th key={i} className="px-4 py-3 font-bold text-center text-sm">
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs font-semibold">{m}</span>
-                  </div>
+                <th
+                  key={i}
+                  className="px-6 py-4 font-bold text-center text-indigo-700 text-sm uppercase tracking-wider"
+                >
+                  {m}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {columns.map((col, idx) => (
-              <tr
-                key={col.key}
-                className={`hover:bg-blue-50 ${
-                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                }`}
-              >
-                <td className="px-4 py-3 font-semibold text-gray-800 text-sm border-b border-gray-200">
+          <tbody className="divide-y divide-slate-100">
+            {columns.map((col) => (
+              <tr key={col.key} className="hover:bg-slate-50 transition-colors">
+                <td className="px-6 py-4 font-semibold text-slate-600 text-sm bg-slate-50/50">
                   {col.label}
                 </td>
                 {comparison[col.key].map((val, i) => (
                   <td
                     key={i}
-                    className="px-4 py-3 text-sm text-center text-gray-700 border-b border-gray-200"
+                    className="px-6 py-4 text-sm text-center text-slate-600"
                   >
                     {col.key === "features" ? (
                       renderFeatures(i)
                     ) : col.key === "prices" ? (
-                      <span className="font-bold text-green-600 text-base">
+                      <span className="font-bold text-slate-900 text-base">
                         {formatPrice(val)}
                       </span>
                     ) : col.key === "fuel_types" ? (
@@ -129,22 +125,22 @@ const CompareTable = ({ data, type }) => {
                     ) : col.key === "transmissions" ? (
                       translateTrans(val)
                     ) : col.key === "body_types" ? (
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-medium text-slate-700">
                         {translateBodyType(val)}
                       </span>
                     ) : col.key === "fuel_consumptions" ? (
                       <span
-                        className={`font-bold ${
+                        className={`font-medium ${
                           val === "N/A"
-                            ? "text-gray-400 italic"
-                            : "text-emerald-600"
+                            ? "text-slate-400 italic"
+                            : "text-slate-700"
                         }`}
                       >
                         {val !== "N/A" ? `${val} L/100km` : val}
                       </span>
                     ) : col.key === "rent_counts" ? (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-bold text-xs">
-                        {val} lần
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        {val} lượt thuê
                       </span>
                     ) : Array.isArray(val) ? (
                       val.join(", ")
@@ -158,9 +154,6 @@ const CompareTable = ({ data, type }) => {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-gray-500 italic text-center">
-        Di chuột vào "Tính năng" để xem thêm chi tiết
-      </p>
     </div>
   );
 };
@@ -193,80 +186,98 @@ const AIRecommendSection = ({
   };
 
   return (
-    <div className="mt-12 p-8 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-300 shadow-lg">
-      <div>
-        <h3 className="text-3xl font-black text-purple-700 mb-8 text-center">
+    <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
+          <svg
+            className="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-slate-800">
           AI Tư Vấn Thông Minh
         </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {[
-            { key: "preferCheap", label: "Giá rẻ nhất" },
-            { key: "preferFuelEfficient", label: "Tiết kiệm nhiên liệu" },
-            { key: "preferSpacious", label: "Rộng rãi thoải mái" },
-            { key: "preferLuxury", label: "Sang trọng, đầy đủ tiện nghi" },
-            { key: "preferPopular", label: "Được ưa chuộng nhất" },
-            { key: "preferSafety", label: "An toàn tối đa" },
-            { key: "preferNewCar", label: "Xe mới, ít hư hỏng" },
-            { key: "preferLongTrip", label: "Phù hợp đường dài" },
-          ].map((item) => (
-            <label
-              key={item.key}
-              className="flex items-center gap-3 cursor-pointer p-5 rounded-xl shadow-md border-2 border-gray-300 bg-white text-gray-800 hover:shadow-lg hover:border-purple-300 transition-all"
-            >
-              <input
-                type="checkbox"
-                checked={survey[item.key]}
-                onChange={(e) =>
-                  setSurvey({ ...survey, [item.key]: e.target.checked })
-                }
-                className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-400 cursor-pointer"
-              />
-              <span className="text-sm font-bold flex-1">{item.label}</span>
-            </label>
-          ))}
-        </div>
-
-        <button
-          onClick={handleRecommend}
-          disabled={aiLoading}
-          className={`w-full py-5 rounded-xl font-black text-xl shadow-lg transition-all ${
-            aiLoading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-xl"
-          }`}
-        >
-          {aiLoading ? (
-            <span className="flex items-center justify-center gap-3">
-              <span className="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></span>
-              AI đang phân tích...
-            </span>
-          ) : (
-            "Nhờ AI Gợi Ý Ngay"
-          )}
-        </button>
-
-        {aiRecommendation && (
-          <div className="mt-8 p-8 bg-white rounded-2xl border-2 border-purple-500 shadow-lg">
-            <p className="text-purple-700 font-black text-2xl mb-6 text-center">
-              Gợi Ý Từ AI
-            </p>
-            <div>
-              <p className="text-lg leading-relaxed text-gray-800 font-semibold text-center bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
-                "{aiRecommendation}"
-              </p>
-            </div>
-          </div>
-        )}
-
-        {aiError && (
-          <div className="mt-6 p-5 bg-red-100 border-2 border-red-400 rounded-xl">
-            <p className="text-red-700 text-center font-bold text-lg">
-              {aiError}
-            </p>
-          </div>
-        )}
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {[
+          { key: "preferCheap", label: "Giá rẻ nhất" },
+          { key: "preferFuelEfficient", label: "Tiết kiệm nhiên liệu" },
+          { key: "preferSpacious", label: "Rộng rãi thoải mái" },
+          { key: "preferLuxury", label: "Sang trọng, đầy đủ tiện ích" },
+          { key: "preferPopular", label: "Được ưa chuộng nhất" },
+          { key: "preferSafety", label: "An toàn tối đa" },
+          { key: "preferNewCar", label: "Xe mới, ít hư hỏng" },
+          { key: "preferLongTrip", label: "Phù hợp đường dài" },
+        ].map((item) => (
+          <label
+            key={item.key}
+            className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all ${
+              survey[item.key]
+                ? "border-indigo-600 bg-indigo-50/50 shadow-sm"
+                : "border-slate-200 bg-white hover:border-slate-300"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={survey[item.key]}
+              onChange={(e) =>
+                setSurvey({ ...survey, [item.key]: e.target.checked })
+              }
+              className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+            />
+            <span
+              className={`text-sm font-medium ${
+                survey[item.key] ? "text-indigo-700" : "text-slate-600"
+              }`}
+            >
+              {item.label}
+            </span>
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={handleRecommend}
+        disabled={aiLoading}
+        className="w-full py-3.5 rounded-xl font-bold text-white bg-slate-900 hover:bg-black transition-all disabled:bg-slate-300 flex items-center justify-center gap-2"
+      >
+        {aiLoading ? (
+          <>
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            Đang phân tích dữ liệu...
+          </>
+        ) : (
+          "Nhận gợi ý từ AI"
+        )}
+      </button>
+      {aiRecommendation && (
+        <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-500">
+          <div className="p-5 bg-white rounded-xl border border-indigo-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3 text-indigo-600">
+              <span className="text-xs font-bold uppercase tracking-widest">
+                Kết quả phân tích
+              </span>
+              <div className="h-px flex-1 bg-indigo-50"></div>
+            </div>
+            <p className="text-slate-700 leading-relaxed italic">
+              "{aiRecommendation}"
+            </p>
+          </div>
+        </div>
+      )}
+      {aiError && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl text-center font-medium">
+          {aiError}
+        </div>
+      )}
     </div>
   );
 };
@@ -312,35 +323,68 @@ const CompareModal = ({ isOpen, onClose }) => {
     }
   }, [comparisonData]);
 
-  const removeTimeoutRef = useRef(null);
+  const extractVehicleId = () => {
+    if (!aiRecommendation || !comparisonData?.vehicles) return null;
+
+    // Debug log (bỏ khi production)
+    console.log("AI Recommendation:", aiRecommendation.toLowerCase());
+    console.log(
+      "Available vehicles:",
+      comparisonData.vehicles.map((v) => ({
+        id: v.id,
+        model: v.model.toLowerCase(),
+      }))
+    );
+
+    const recLower = aiRecommendation.toLowerCase();
+    const recommendedVehicle = comparisonData.vehicles.find((v) => {
+      const modelLower = v.model.toLowerCase();
+
+      // Partial match hai chiều: rec contains model HOẶC model contains key parts of rec
+      const recWords = recLower.split(" ").filter((word) => word.length > 2); // Lấy từ >2 ký tự
+      const modelWords = modelLower
+        .split(" ")
+        .filter((word) => word.length > 2);
+
+      const recContainsModel = recLower.includes(modelLower);
+      const modelContainsRecWords = recWords.some((word) =>
+        modelLower.includes(word)
+      );
+      const recContainsModelWords = modelWords.some((word) =>
+        recLower.includes(word)
+      );
+
+      return recContainsModel || modelContainsRecWords || recContainsModelWords;
+    });
+
+    console.log(
+      "Matched vehicle:",
+      recommendedVehicle
+        ? { id: recommendedVehicle.id, model: recommendedVehicle.model }
+        : "None"
+    );
+
+    return recommendedVehicle?.id || null;
+  };
 
   const handleRemove = useCallback(
     (id) => {
       dispatch(removeFromCompare(id));
       setLocalList((prev) => {
         const newList = prev.filter((i) => i.id !== id);
-
-        if (removeTimeoutRef.current) clearTimeout(removeTimeoutRef.current);
-
-        if (newList.length >= 2) {
-          removeTimeoutRef.current = setTimeout(() => {
+        setTimeout(() => {
+          if (newList.length >= 2) {
             dispatch(compareVehicles());
-          }, 500);
-        }
-
+          }
+        }, 500);
         return newList;
       });
     },
     [dispatch]
   );
 
-  useEffect(() => {
-    return () => {
-      if (removeTimeoutRef.current) clearTimeout(removeTimeoutRef.current);
-    };
-  }, []);
-
   const handleCompare = () => dispatch(compareVehicles());
+
   const handleClear = () => {
     dispatch(clearCompareList());
     setLocalList([]);
@@ -353,16 +397,6 @@ const CompareModal = ({ isOpen, onClose }) => {
     },
     [dispatch]
   );
-
-  const extractVehicleId = () => {
-    if (!aiRecommendation || !comparisonData?.vehicles) return null;
-
-    const recommendedVehicle = comparisonData.vehicles.find((v) =>
-      aiRecommendation.toLowerCase().includes(v.model.toLowerCase())
-    );
-
-    return recommendedVehicle?.id || null;
-  };
 
   const handleRentNow = () => {
     const vehicleId = extractVehicleId();
@@ -377,100 +411,110 @@ const CompareModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-7xl max-h-[92vh] shadow-2xl border border-gray-200 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/10 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[92vh] shadow-2xl overflow-hidden flex flex-col border border-white">
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
+        <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
           <div>
-            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              So Sánh Xe Chi Tiết
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+              So Sánh Chi Tiết
             </h2>
-            <p className="text-sm text-gray-500 mt-2">
-              Đang so sánh:{" "}
-              <span className="font-bold text-purple-600">
-                {localList.length}/4 xe
-              </span>
-              {localList.length > 0 && (
-                <span className="ml-2 text-xs text-gray-400">
-                  (
-                  {localList
-                    .map((item) => item.model || `#${item.id}`)
-                    .join(", ")}
-                  )
-                </span>
-              )}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+              <p className="text-sm text-slate-500 font-medium">
+                Đang chọn {localList.length}/4 phương tiện
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 text-2xl font-bold transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all"
           >
-            ×
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
-
-        {/* DANH SÁCH XE ĐANG SO SÁNH */}
-        {localList.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {localList.map((item) => (
-              <div
-                key={item.id}
-                className="relative flex justify-between items-center bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-3 hover:shadow-md hover:border-blue-300 transition-all"
-              >
-                <div className="flex items-center gap-2 text-gray-800 truncate flex-1 pr-2">
-                  <span className="text-sm font-bold truncate">
+        <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+          {/* XE ĐANG CHỌN */}
+          {localList.length > 0 && (
+            <div className="flex flex-wrap gap-3 mb-8">
+              {localList.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl group hover:border-indigo-300 transition-all shadow-sm"
+                >
+                  <span className="text-sm font-bold text-slate-700">
                     {item.model || `Xe #${item.id}`}
                   </span>
+                  <button
+                    onClick={() => handleRemove(item.id)}
+                    className="text-slate-400 hover:text-red-500 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleRemove(item.id)}
-                  className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-100 rounded-full text-lg font-bold transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {/* NÚT SO SÁNH */}
-        {comparisonData === null && localList.length >= 2 && (
-          <button
-            onClick={handleCompare}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-lg py-4 rounded-xl mb-6 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-xl"
-          >
-            {loading ? "Đang tải..." : `So Sánh ${localList.length} Xe Ngay`}
-          </button>
-        )}
+          {/* NÚT SO SÁNH */}
+          {comparisonData === null && localList.length >= 2 && (
+            <button
+              onClick={handleCompare}
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all mb-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Đang xử lý dữ liệu..." : "Tiến Hành So Sánh Ngay"}
+            </button>
+          )}
 
-        {/* ERROR */}
-        {error && (
-          <div className="mb-5 p-4 bg-red-50 border-2 border-red-300 text-red-700 text-sm rounded-xl font-semibold">
-            {error}
-          </div>
-        )}
+          {/* ERROR */}
+          {error && (
+            <div className="mb-5 p-4 bg-red-50 border-2 border-red-400 text-red-700 text-sm rounded-lg font-medium">
+              {error}
+            </div>
+          )}
 
-        {/* BẢNG SO SÁNH */}
+          {/* BẢNG SO SÁNH */}
+          {comparisonData?.success && (
+            <>
+              <CompareTable data={comparisonData} type={comparisonData.type} />
+              <AIRecommendSection
+                onRecommend={handleAIRecommend}
+                aiLoading={aiLoading}
+                aiError={aiError}
+                aiRecommendation={aiRecommendation}
+              />
+            </>
+          )}
+        </div>
+        {/* FOOTER */}
         {comparisonData?.success && (
-          <>
-            <CompareTable data={comparisonData} type={comparisonData.type} />
-            <AIRecommendSection
-              comparisonData={comparisonData}
-              onRecommend={handleAIRecommend}
-              aiLoading={aiLoading}
-              aiError={aiError}
-              aiRecommendation={aiRecommendation}
-            />
-          </>
-        )}
-
-        {/* FOOTER ACTIONS */}
-        {comparisonData?.success && (
-          <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex gap-4">
             <button
               onClick={handleClear}
-              className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-4 rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all"
+              className="px-6 py-3 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all flex-1"
             >
               Xóa Tất Cả
             </button>
@@ -478,9 +522,22 @@ const CompareModal = ({ isOpen, onClose }) => {
             {aiRecommendation && (
               <button
                 onClick={handleRentNow}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                className="px-6 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex-[2] flex items-center justify-center gap-2"
               >
                 Thuê Xe Ngay
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
               </button>
             )}
           </div>
