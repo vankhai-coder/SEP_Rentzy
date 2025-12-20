@@ -20,10 +20,11 @@ export const checkVerificationForBooking = async (req, res, next) => {
 
     if (vehicle_id) {
       const vehicle = await Vehicle.findByPk(vehicle_id);
+         console.log("loại xe" ,vehicle.vehicle_type)
       if (vehicle) {
-        if (vehicle.bike_type) {
+        if (vehicle.vehicle_type === "motorbike") {
           isMotorbike = true;
-        } else if (vehicle.body_type) {
+        } else if (vehicle.vehicle_type === "car") {
           isCar = true;
         }
       }
@@ -55,7 +56,7 @@ export const checkVerificationForBooking = async (req, res, next) => {
     }
 
     // 4. Kiểm tra xác minh GPLX theo loại xe
-    let licenseStatus = "pending";
+    let licenseStatus = "";
     let licenseNumber = "";
     let licenseClass = "";
     let requiredClass = "";
@@ -91,11 +92,12 @@ export const checkVerificationForBooking = async (req, res, next) => {
     }
 
     // Kiểm tra status
+    console.log("licenseStatus:", licenseStatus);
     if (licenseStatus !== "approved") {
       let message = `Bạn cần xác minh GPLX ${vehicleTypeName} để đặt xe này`;
 
       if (licenseStatus === "pending") {
-        message = `GPLX ${vehicleTypeName} của bạn đang chờ phê duyệt`;
+        message = `Bạn cần xác minh GPLX ${vehicleTypeName} để đặt xe này`;
       } else if (licenseStatus === "rejected") {
         message = `GPLX ${vehicleTypeName} của bạn đã bị từ chối. Vui lòng cập nhật lại`;
       }
