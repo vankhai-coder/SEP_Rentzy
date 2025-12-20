@@ -63,7 +63,9 @@ const RenterNotifications = () => {
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL || "";
     if (!base) return;
-    const wsUrl = base.replace(/^https/i, "ws") + "/ws";
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${protocol}://${window.location.host}/ws`;
+
     let ws;
     try {
       ws = new WebSocket(wsUrl);
@@ -444,8 +446,8 @@ const RenterNotifications = () => {
               <div
                 key={notification.notification_id}
                 className={`p-6 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.is_read
-                    ? "bg-blue-50 border-l-4 border-blue-500"
-                    : ""
+                  ? "bg-blue-50 border-l-4 border-blue-500"
+                  : ""
                   }`}
                 onClick={(e) => handleNotificationClick(notification, e)}
               >
@@ -454,8 +456,8 @@ const RenterNotifications = () => {
                     <div className="flex items-center space-x-3 mb-2">
                       <h4
                         className={`text-sm font-medium ${!notification.is_read
-                            ? "text-gray-900"
-                            : "text-gray-700"
+                          ? "text-gray-900"
+                          : "text-gray-700"
                           }`}
                       >
                         {notification.title}
@@ -473,8 +475,8 @@ const RenterNotifications = () => {
                     </div>
                     <p
                       className={`text-sm mb-3 ${!notification.is_read
-                          ? "text-gray-700"
-                          : "text-gray-600"
+                        ? "text-gray-700"
+                        : "text-gray-600"
                         }`}
                     >
                       {notification.content}
