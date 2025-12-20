@@ -1,4 +1,4 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { BiLogOut } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
@@ -23,10 +23,12 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import RegisterWithPhoneNumber from "@/pages/renter/auth/RegisterWithPhoneNumber";
 import LoginWithPhoneNumber from "@/pages/renter/auth/LoginWithPhoneNumber";
 import NotificationDropdown from "./NotificationDropdown";
+import { setMessageUserDetails } from "@/redux/features/admin/messageSlice";
 
 const Header = () => {
   const { userId, email, avatar, role } = useSelector((state) => state.userStore);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Dialog states (shared between desktop and mobile)
   const [loginOpen, setLoginOpen] = useState(false);
@@ -39,7 +41,7 @@ const Header = () => {
 
   return (
     <header className="mx-auto border-b-2 fixed top-0 left-0 right-0 z-50">
-      <nav className="flex items-center justify-between w-screen  py-4 md:py-8 px-8 md:px-24 lg:px-40 mx-auto bg-white">
+      <nav className="flex items-center justify-between w-screen  py-4 md:py-5 px-8 md:px-24 lg:px-40 mx-auto bg-white">
         {/* Logo Section */}
         <div className="flex items-center space-x-2">
           <Link
@@ -83,6 +85,16 @@ const Header = () => {
             <button
               className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors"
               title="Messages"
+              onClick={() => {
+                // dispatch to redux store :
+                dispatch(setMessageUserDetails({
+                  userFullNameOrEmail: 'rentzy.vehicle@gmail.com',
+                  userIdToChatWith: 4,
+                  userImageURL: '/default_avt.jpg'
+                }));
+                navigate('/messages')
+              }
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

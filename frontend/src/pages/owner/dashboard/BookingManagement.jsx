@@ -12,6 +12,8 @@ import {
 } from "react-icons/md";
 import { DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { setMessageUserDetails } from "@/redux/features/admin/messageSlice.js";
 
 const BookingManagement = () => {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ const BookingManagement = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
+  const dispatch = useDispatch();
 
   const statusLabels = {
     pending: "Chờ xác nhận",
@@ -364,6 +367,9 @@ const BookingManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Thao tác
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Nhắn
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-secondary-800 divide-y divide-gray-200 dark:divide-secondary-700">
@@ -423,10 +429,9 @@ const BookingManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          statusColors[booking.status] ||
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[booking.status] ||
                           "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                        }`}
+                          }`}
                       >
                         {statusLabels[booking.status] || booking.status}
                       </span>
@@ -467,16 +472,48 @@ const BookingManagement = () => {
                       {(booking.status === "deposit_paid" ||
                         booking.status === "fully_paid" ||
                         booking.status === "completed") && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/owner/contract/${booking.booking_id}`);
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/owner/contract/${booking.booking_id}`);
+                            }}
+                            className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                          >
+                            Hợp đồng
+                          </button>
+                        )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors"
+                        title="Messages"
+                        onClick={
+
+                          () => {
+                            // dispatch to redux store :
+                            dispatch(setMessageUserDetails({
+                              userFullNameOrEmail: booking.renter?.full_name || booking.renter?.email,
+                              userIdToChatWith: booking.renter?.user_id,
+                              userImageURL: booking.renter?.avatar_url
+                            }));
+                            navigate('/messages');
                           }}
-                          className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
-                          Hợp đồng
-                        </button>
-                      )}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"
+                          />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -515,11 +552,10 @@ const BookingManagement = () => {
                   <button
                     key={page}
                     onClick={() => handleFilterChange("page", page)}
-                    className={`px-3 py-1 text-sm border rounded-md ${
-                      page === pagination.currentPage
-                        ? "bg-blue-500 text-white border-blue-500"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
+                    className={`px-3 py-1 text-sm border rounded-md ${page === pagination.currentPage
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "border-gray-300 hover:bg-gray-50"
+                      }`}
                   >
                     {page}
                   </button>
