@@ -157,7 +157,7 @@ const Messages = () => {
         const base = import.meta.env.VITE_API_URL || "";
         if (!base) return;
 
-        const wsUrl = base.replace(/^http/i, "ws") + "/ws";
+        const wsUrl = base.replace(/^https/i, "ws") + "/ws";
         console.log("Connecting to WS URL:", wsUrl);
 
         const ws = new WebSocket(wsUrl);

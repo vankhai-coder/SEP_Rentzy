@@ -63,7 +63,7 @@ const RenterNotifications = () => {
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL || "";
     if (!base) return;
-    const wsUrl = base.replace(/^http/i, "ws") + "/ws";
+    const wsUrl = base.replace(/^https/i, "ws") + "/ws";
     let ws;
     try {
       ws = new WebSocket(wsUrl);
@@ -443,30 +443,27 @@ const RenterNotifications = () => {
             {notifications.map((notification) => (
               <div
                 key={notification.notification_id}
-                className={`p-6 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  !notification.is_read
+                className={`p-6 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.is_read
                     ? "bg-blue-50 border-l-4 border-blue-500"
                     : ""
-                }`}
+                  }`}
                 onClick={(e) => handleNotificationClick(notification, e)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4
-                        className={`text-sm font-medium ${
-                          !notification.is_read
+                        className={`text-sm font-medium ${!notification.is_read
                             ? "text-gray-900"
                             : "text-gray-700"
-                        }`}
+                          }`}
                       >
                         {notification.title}
                       </h4>
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          typeColors[notification.type] ||
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${typeColors[notification.type] ||
                           "bg-gray-100 text-gray-800"
-                        }`}
+                          }`}
                       >
                         {typeLabels[notification.type] || notification.type}
                       </span>
@@ -475,11 +472,10 @@ const RenterNotifications = () => {
                       )}
                     </div>
                     <p
-                      className={`text-sm mb-3 ${
-                        !notification.is_read
+                      className={`text-sm mb-3 ${!notification.is_read
                           ? "text-gray-700"
                           : "text-gray-600"
-                      }`}
+                        }`}
                     >
                       {notification.content}
                     </p>

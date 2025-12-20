@@ -47,7 +47,7 @@ const SidebarOwner = ({ isOpen, onClose }) => {
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL || "";
     if (!base) return;
-    const wsUrl = base.replace(/^http/i, "ws") + "/ws";
+    const wsUrl = base.replace(/^https/i, "ws") + "/ws";
     let ws;
     try {
       ws = new WebSocket(wsUrl);
