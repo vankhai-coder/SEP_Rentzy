@@ -24,6 +24,7 @@ import {
   LayoutDashboard,
   Bell,
   Receipt,
+  MessageSquare,
 } from "lucide-react";
 import { BiLogOut } from "react-icons/bi";
 import { useSelector } from "react-redux";
@@ -238,6 +239,12 @@ const Account = () => {
             </SelectItem>
             <SelectItem
               className={"border-b-1 py-2 text-md font-medium"}
+              value="/messages"
+            >
+              <MessageSquare /> Tin nhắn
+            </SelectItem>
+            <SelectItem
+              className={"border-b-1 py-2 text-md font-medium"}
               value="/myaddress"
             >
               <LocationEditIcon /> Địa chỉ của tôi
@@ -373,6 +380,14 @@ const Account = () => {
               }
             >
               <Gift /> Điểm thưởng
+            </NavLink>
+            <NavLink
+              to="/messages"
+              className={({ isActive }) =>
+                isActive ? `${baseClass} ${activeClass}` : baseClass
+              }
+            >
+              <MessageSquare /> Tin nhắn
             </NavLink>
             <NavLink
               to="/notifications"

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Star, Eye, Car, X, FileText } from "lucide-react";
- 
+
 import CancelBookingModal from "../bookingCancel/CancelBookingModal";
 
 const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }) => {
@@ -92,7 +92,7 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
   return (
     <div className="w-full overflow-visible">
       <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl ring-1 ring-teal-100/50 overflow-visible">
-        <div 
+        <div
           className="booking-table-scroll overflow-x-scroll overflow-y-visible"
           style={{
             WebkitOverflowScrolling: 'touch',
@@ -104,7 +104,7 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
             minHeight: '1px'
           }}
         >
-        <style>{`
+          <style>{`
           .booking-table-scroll {
             -webkit-overflow-scrolling: touch !important;
             overflow-x: auto !important;
@@ -163,169 +163,169 @@ const BookingHistoryTable = ({ bookings, statusMap, formatVND, onBookingUpdate }
             }
           }
         `}</style>
-        <table className="text-sm whitespace-nowrap" style={{ minWidth: '1400px', width: 'auto' }}>
-          <thead className="bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 text-white">
-            <tr>
-              {[
-                "Mã đơn",
-                "Xe",
-                "Ngày tạo đơn",
-                "Ngày nhận",
-                "Ngày trả",
-                "Tổng tiền",
-                "Đã thanh toán",
-                "Còn lại",
-                "Trạng thái",
-                "Hành động",
-              ].map((title) => (
-                <th
-                  key={title}
-                  className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-bold uppercase tracking-wide"
-                >
-                  {title}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          <table className="text-sm whitespace-nowrap" style={{ minWidth: '1400px', width: 'auto' }}>
+            <thead className="bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 text-white">
+              <tr>
+                {[
+                  "Mã đơn",
+                  "Xe",
+                  "Ngày tạo đơn",
+                  "Ngày nhận",
+                  "Ngày trả",
+                  "Tổng tiền",
+                  "Đã thanh toán",
+                  "Còn lại",
+                  "Trạng thái",
+                  "Hành động",
+                ].map((title) => (
+                  <th
+                    key={title}
+                    className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-bold uppercase tracking-wide"
+                  >
+                    {title}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-          <tbody className="bg-white divide-y divide-gray-200">
-            {bookings.map((booking) => (
-              <tr key={booking.booking_id} className="hover:bg-gray-50">
-                {/* Mã đơn */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-mono text-gray-900">
-                    #{booking.booking_id}
-                  </div>
-                </td>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {bookings.map((booking) => (
+                <tr key={booking.booking_id} className="hover:bg-gray-50">
+                  {/* Mã đơn */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-mono text-gray-900">
+                      #{booking.booking_id}
+                    </div>
+                  </td>
 
-                {/* Xe */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    <h1 className="text-xs sm:text-sm font-medium text-gray-900">
-                      {booking.vehicle?.model || "N/A"}
-                    </h1>
-                  </div>
-                </td>
+                  {/* Xe */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <h1 className="text-xs sm:text-sm font-medium text-gray-900">
+                        {booking.vehicle?.model || "N/A"}
+                      </h1>
+                    </div>
+                  </td>
 
-                {/* Ngày tạo đơn */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm text-gray-900">
-                    {formatDateTime(booking.created_at)}
-                  </div>
-                </td>
+                  {/* Ngày tạo đơn */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm text-gray-900">
+                      {formatDateTime(booking.created_at)}
+                    </div>
+                  </td>
 
-                {/* Ngày nhận */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-medium text-gray-900">
-                    {formatDateWithTime(booking.start_date, booking.start_time)}
-                  </div>
-                </td>
+                  {/* Ngày nhận */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">
+                      {formatDateWithTime(booking.start_date, booking.start_time)}
+                    </div>
+                  </td>
 
-                {/* Ngày trả */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-medium text-gray-900">
-                    {formatDateWithTime(booking.end_date, booking.end_time)}
-                  </div>
-                </td>
+                  {/* Ngày trả */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">
+                      {formatDateWithTime(booking.end_date, booking.end_time)}
+                    </div>
+                  </td>
 
-                {/* Tổng tiền */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-medium text-gray-900">
-                    {formatVND(booking.total_amount)}
-                  </div>
-                </td>
+                  {/* Tổng tiền */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-medium text-gray-900">
+                      {formatVND(booking.total_amount)}
+                    </div>
+                  </td>
 
-                {/* Đã thanh toán */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-medium text-green-600">
-                    {formatVND(booking.total_paid || 0)}
-                  </div>
-                </td>
+                  {/* Đã thanh toán */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-medium text-green-600">
+                      {formatVND(booking.total_paid || 0)}
+                    </div>
+                  </td>
 
-                {/* Còn lại */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="text-xs sm:text-sm font-medium text-red-600">
-                    {formatVND(booking.remaining_amount || 0)}
-                  </div>
-                </td>
+                  {/* Còn lại */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="text-xs sm:text-sm font-medium text-red-600">
+                      {formatVND(booking.remaining_amount || 0)}
+                    </div>
+                  </td>
 
-                {/* Trạng thái */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <span className={`${getStatusBadgeClass(booking.status)} text-xs`}>
-                    {statusMap[booking.status] || booking.status}
-                  </span>
-                </td>
+                  {/* Trạng thái */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <span className={`${getStatusBadgeClass(booking.status)} text-xs`}>
+                      {statusMap[booking.status] || booking.status}
+                    </span>
+                  </td>
 
-                {/* Hành động */}
-                <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
-                    <Link
-                      to={`/booking-history/booking-detail/${booking.booking_id}`}
-                      className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-800"
-                    >
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      <span className="whitespace-nowrap">Chi tiết</span>
-                    </Link>
-                    {/* Nút Thanh toán tiền cọc - hiện khi trạng thái là confirmed */}
-                    {booking.status === "confirmed" && (
+                  {/* Hành động */}
+                  <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
                       <Link
-                        to={`/payment-deposit/${booking.booking_id}`}
-                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
+                        to={`/booking-history/booking-detail/${booking.booking_id}`}
+                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
-                        <span className="whitespace-nowrap">Thanh toán tiền cọc</span>
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <span className="whitespace-nowrap">Chi tiết</span>
                       </Link>
-                    )}
-                    
-                    {/* Nút Hợp đồng - hiện khi đã đặt cọc, thanh toán toàn bộ hoặc hoàn thành */}
-                    {(booking.status === "deposit_paid" ||booking.status === "in_progress" || booking.status === "fully_paid" || booking.status === "completed") && (
-                      <Link
-                        to={`/contract/${booking.booking_id}`}
-                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
-                      >
-                        <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="whitespace-nowrap">Hợp đồng</span>
-                      </Link>
-                    )}
-                    
-                    {/* Nút hủy booking - chỉ hiện khi có thể hủy */}
-                    {(booking.status === "pending" || 
-                      booking.status === "confirmed" || 
-                      booking.status === "deposit_paid" || 
-                      booking.status === "fully_paid") && (
-                      <button
-                        onClick={() => handleCancelClick(booking.booking_id)}
-                        className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-red-600 hover:text-red-800"
-                      >
-                        <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                        <span className="whitespace-nowrap">Hủy</span>
-                      </button>
-                    )}
-                    
-                    {booking.status === "completed" &&
-                      booking.review == null && (
+                      {/* Nút Thanh toán tiền cọc - hiện khi trạng thái là confirmed */}
+                      {booking.status === "confirmed" && (
                         <Link
-                          to={`/booking-review/${booking.booking_id}`}
-                          className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600 hover:text-yellow-800"
+                          to={`/payment-deposit/${booking.booking_id}`}
+                          className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
                         >
-                          <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          <span className="whitespace-nowrap">Đánh giá</span>
+                          <span className="whitespace-nowrap">Thanh toán tiền cọc</span>
                         </Link>
                       )}
-                    {booking.status === "completed" &&
-                      booking.review != null && (
-                        <span className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600">
-                          Đã đánh giá
-                        </span>
+
+                      {/* Nút Hợp đồng - hiện khi đã đặt cọc, thanh toán toàn bộ hoặc hoàn thành */}
+                      {(booking.status === "deposit_paid" || booking.status === "in_progress" || booking.status === "fully_paid" || booking.status === "completed") && (
+                        <Link
+                          to={`/contract/${booking.booking_id}`}
+                          className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-600 hover:text-green-800"
+                        >
+                          <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="whitespace-nowrap">Hợp đồng</span>
+                        </Link>
                       )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+                      {/* Nút hủy booking - chỉ hiện khi có thể hủy */}
+                      {(booking.status === "pending" ||
+                        booking.status === "confirmed" ||
+                        booking.status === "deposit_paid" ||
+                        booking.status === "fully_paid") && (
+                          <button
+                            onClick={() => handleCancelClick(booking.booking_id)}
+                            className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-red-600 hover:text-red-800"
+                          >
+                            <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            <span className="whitespace-nowrap">Hủy</span>
+                          </button>
+                        )}
+
+                      {booking.status === "completed" &&
+                        booking.review == null && (
+                          <Link
+                            to={`/booking-review/${booking.booking_id}`}
+                            className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600 hover:text-yellow-800"
+                          >
+                            <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            <span className="whitespace-nowrap">Đánh giá</span>
+                          </Link>
+                        )}
+                      {booking.status === "completed" &&
+                        booking.review != null && (
+                          <span className="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-yellow-600">
+                            Đã đánh giá
+                          </span>
+                        )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-      
+
       {/* Modal hủy booking */}
       <CancelBookingModal
         isOpen={cancelModalOpen}

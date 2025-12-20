@@ -5,16 +5,19 @@ import axiosInstance from "@/config/axiosInstance"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow, formatDistanceToNowStrict, set } from "date-fns"
 import { toast } from "sonner"
+import { useSelector } from "react-redux"
 
-const Messages = ({ userIdToChatWith = null }) => {
+const Messages = () => {
 
+    // redux : 
+    const { userFullNameOrEmail, userIdToChatWith, userImageURL } = useSelector((state) => state.message);
+    // define query client: 
     const queryClient = useQueryClient();
-
 
     // 0. state for partnerId to chat with
     const [partnerId, setPartnerId] = useState(userIdToChatWith);
-    const [partnerAvatarUrl, setPartnerAvatarUrl] = useState(null);
-    const [partnerFullName, setPartnerFullName] = useState(null);
+    const [partnerAvatarUrl, setPartnerAvatarUrl] = useState(userImageURL);
+    const [partnerFullName, setPartnerFullName] = useState(userFullNameOrEmail);
 
     // 1. State to manage sidebar visibility on mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -212,7 +215,7 @@ const Messages = ({ userIdToChatWith = null }) => {
                     {/* Added conditional classes for mobile/desktop view and a max-w to prevent overflow on very small screens */}
                     <div className={`
                         ${isSidebarOpen ? 'flex' : 'hidden'} 
-                        absolute inset-0 z-50 
+                        absolute inset-0 
                         h-full w-full 
                         flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white 
                         xl:relative xl:flex xl:w-1/4 xl:min-w-[300px] xl:max-w-none 
@@ -252,15 +255,16 @@ const Messages = ({ userIdToChatWith = null }) => {
                             <div className="custom-scrollbar space-y-1 pb-4">
                                 {/* MAPPED CHAT LIST ITEMS (added onClick to close sidebar on mobile) */}
                                 {chatMessages?.map((message, i) => (
-                                    <div key={i} onClick={() => handleChatSelect({ partnerId: message.partner_id, partnerAvatarUrl: message.avatar_url, partnerFullName: message.full_name })} className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
-                                        <div className="relative h-12 w-full max-w-[48px] rounded-full">
+                                    <div key={i} onClick={() => handleChatSelect({ partnerId: message.partner_id, partnerAvatarUrl: message.avatar_url, partnerFullName: message.full_name || message.email })}
+                                        className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/[0.03]">
+                                        <div className="relative h-12 w-full max-w-[48px] rounded-full ">
                                             <img src={message.avatar_url || '/default_avt.jpg'} alt="" className="h-full w-full overflow-hidden rounded-full object-cover object-center" />
-                                            <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900"></span>
+                                            {/* <span className="bg-success-500 absolute right-0 bottom-0 block h-3 w-3 rounded-full border-[1.5px] border-white dark:border-gray-900"></span> */}
                                         </div>
-                                        <div className="w-full">
+                                        <div className="max-w-1/2">
                                             <div className="flex items-start justify-between">
                                                 <div>
-                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">{message.full_name || message.email}</h5>
+                                                    <h5 className="text-sm font-medium text-gray-800 dark:text-white/90 ">{message.full_name || message.email}</h5>
                                                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">{message.latestContent}</p>
                                                 </div>
                                             </div>
@@ -305,7 +309,7 @@ const Messages = ({ userIdToChatWith = null }) => {
                                     }
                                     <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full border-[1.5px] border-white bg-success-500 dark:border-gray-900"></span>
                                 </div>
-                                <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">{partnerFullName}</h5>
+                                <h5 className="text-sm font-medium text-gray-800 dark:text-white/90">{partnerFullName || 'Chọn người để trò chuyện'}</h5>
                             </div>
                             <div className="flex items-center gap-5">
                                 <button className="text-gray-700 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90">

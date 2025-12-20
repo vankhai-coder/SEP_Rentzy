@@ -5,6 +5,8 @@ import VehicleCard from "../../../components/renter/vehicles/VehicleCard.jsx";
 import { MdDirectionsCar } from "react-icons/md";
 import { Bike, Users, Gauge, Settings, ChevronDown, ArrowLeft } from "lucide-react";
 import "./OwnerPublicPage.scss";
+import { setMessageUserDetails } from "@/redux/features/admin/messageSlice.js";
+import { useDispatch } from "react-redux";
 
 const OwnerPublicPage = () => {
   const { ownerId } = useParams();
@@ -13,6 +15,7 @@ const OwnerPublicPage = () => {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchOwner = async () => {
@@ -124,6 +127,37 @@ const OwnerPublicPage = () => {
                     {ratingSummary.avg}
                   </span>
                   <span> ({ratingSummary.count} đánh giá)</span>
+                </div>
+                <div className="">
+                  <button
+                    className="text-gray-600 hover:text-green-500 hidden lg:block cursor-pointer transition-colors"
+                    title="Messages"
+                    onClick={() => {
+                      // dispatch to redux store :
+                      dispatch(setMessageUserDetails({
+                        // userFullNameOrEmail: user.full_name || user.email,
+                        userFullNameOrEmail: owner.full_name || owner.email,
+                        userIdToChatWith: owner.user_id,
+                        userImageURL: owner.avatar_url
+                      }));
+                      navigate('/messages')
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
