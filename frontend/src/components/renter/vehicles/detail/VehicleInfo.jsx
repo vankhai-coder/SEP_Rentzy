@@ -143,7 +143,7 @@ const VehicleInfo = ({ vehicle }) => {
               <span>•</span>
               <span>{vehicle.location || "Phường Linh Đông, TP Thủ Đức"}</span>
             </div>
-            <div className="inline-flex items-center gap-2 bg-green-600 px-3 py-1 rounded-full text-sm margin-bottom-2">
+            <div className="inline-flex items-center gap-2 bg-green-600 px-3 py-1 mb-1 rounded-full text-sm margin-bottom-2">
               <span className="w-2 h-2 bg-green-300 rounded-full"></span>
               <span>Miễn thế chấp </span>
           

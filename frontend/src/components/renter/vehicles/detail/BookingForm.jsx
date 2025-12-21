@@ -25,6 +25,7 @@ import LoginWithPhoneNumber from '../../../../pages/renter/auth/LoginWithPhoneNu
 import RegisterWithPhoneNumber from '../../../../pages/renter/auth/RegisterWithPhoneNumber.jsx'
 import Register from '../../../../pages/renter/auth/Register.jsx'
 import Login from '../../../../pages/renter/auth/Login.jsx'
+import { Button } from "@/components/ui/button";
 
 function BookingForm({ vehicle, prefillParams }) {
   const navigate = useNavigate();
@@ -587,14 +588,14 @@ function BookingForm({ vehicle, prefillParams }) {
           </label>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={handleBooking}
           disabled={!bookingData.startDate || !bookingData.endDate || !agreedTerms || isLoading}
           className={`w-full py-4 px-6 font-bold rounded-lg text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
             isLoading 
               ? "bg-gray-400 text-white cursor-not-allowed" 
-              : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              : " text-white "
           }`}
           aria-label={isLoading ? "Đang xử lý đặt xe" : "Đặt xe ngay"}
         >
@@ -609,7 +610,7 @@ function BookingForm({ vehicle, prefillParams }) {
           ) : (
             "Đặt xe ngay"
           )}
-        </button>
+        </Button>
 
         {/* Report Vehicle */}
         <div className="border-t border-gray-200 pt-4 border-b border-black pb-2 mt-4">
