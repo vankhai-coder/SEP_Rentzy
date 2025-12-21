@@ -37,8 +37,9 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
-import CreateVoucherComponent from "@/components/admin/CreateVoucher"
+import CreateVoucherComponent from "@/components/admin/voucher/CreateVoucher"
 import { Badge } from "@/components/ui/badge"
+import UpdateVoucher from "@/components/admin/voucher/UpdateVoucher"
 {/* <Badge variant="default | outline | secondary | destructive">Badge</Badge> */ }
 
 const VoucherManagement = () => {
@@ -61,6 +62,14 @@ const VoucherManagement = () => {
     code: '',
     title: '',
     description: ''
+  });
+  // state for update voucher dialog :
+  const [isUpdateVoucherDialogOpen, setIsUpdateVoucherDialogOpen] = useState(false);
+  const [updatedVoucherFields, setUpdatedVoucherFields] = useState({
+    code: '',
+    title: '',
+    description: '',
+    usageLimit: '',
   });
   // state for isLoadingBanUnbanVoucher :
   const [isLoadingBanUnbanVoucher, setIsLoadingBanUnbanVoucher] = useState(false);
@@ -581,7 +590,13 @@ const VoucherManagement = () => {
                                 {/* edit voucher */}
                                 <PopoverClose>
                                   <button onClick={() => {
-                                    setSelectedVoucherId(voucher.voucher_id);
+                                    setUpdatedVoucherFields({
+                                      code: voucher.code,
+                                      title: voucher.title,
+                                      description: voucher.description,
+                                      usageLimit: voucher.usage_limit,
+                                    });
+                                    setIsUpdateVoucherDialogOpen(true);
                                   }} className="group flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors duration-150 cursor-pointer text-secondary-900 dark:text-white  hover:bg-gray-400 hover:text-white  dark:hover:bg-gray-700">
                                     <span className="flex-shrink-0">
                                       <Edit className="lucide lucide-eye h-4 w-4" />
@@ -724,7 +739,21 @@ const VoucherManagement = () => {
                 </DialogContent>
               </Dialog>
 
-
+              {/* dialog for update voucher */}
+              <Dialog open={isUpdateVoucherDialogOpen} onOpenChange={(open) => {
+                setIsUpdateVoucherDialogOpen(open);
+              }}>
+                <DialogTrigger>
+                  {/* <Button variant={'outline'} className={'hover:cursor-pointer'}>Xem lý do</Button> */}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Cập nhật voucher</DialogTitle>
+                  </DialogHeader>
+                  {/* update voucher */}
+                  <UpdateVoucher updatedVoucherFields={updatedVoucherFields} />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
