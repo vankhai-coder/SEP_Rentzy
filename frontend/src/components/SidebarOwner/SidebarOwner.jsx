@@ -206,6 +206,23 @@ const SidebarOwner = ({ isOpen, onClose }) => {
             </li>
 
             <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/vouchers"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
+                    ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
+                    : ""
+                  }`
+                }
+              >
+                <MdCalendarMonth className="mr-[10px] text-xl" />
+                Quản lí mã giảm giá
+              </NavLink>
+            </li>
+
+
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
 
             <li className="mb-[10px]">
               <Link

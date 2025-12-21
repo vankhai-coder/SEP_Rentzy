@@ -207,7 +207,7 @@ const CancelBookingModal = ({
                 <div className="timing-row">
                   <span>Thời gian đến ngày bắt đầu:</span>
                   <span>
-                    {cancellationInfo.timing_info?.days_to_start} ngày
+                    {cancellationInfo.timing_info?.hours_to_start} giờ
                   </span>
                 </div>
                 <div className="timing-row">

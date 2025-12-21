@@ -5,21 +5,33 @@ export const getVoucherManagementStats = async (req, res) => {
     try {
         const now = new Date();
 
+        const userId = req.user?.userId 
+        if(!userId){
+            return res.status(400).json({ message: "Invalid user ID" });
+        }
+
         const [
             totalVouchers,
             activeVouchers,
             expiredVouchers,
             notStartYet,
         ] = await Promise.all([
-            // 1. total
-            Voucher.count(),
+            // 1. total vouchers with created_by = userId
+            Voucher.count({
+                where: {
+                    created_by: userId
+                }
+            }),
+
+            // Voucher.count(),
 
             // 2. active (started, not expired, active)
             Voucher.count({
                 where: {
                     is_active: true,
                     valid_from: { [Op.lte]: now },
-                    valid_to: { [Op.gte]: now }
+                    valid_to: { [Op.gte]: now },
+                    created_by : userId
                 }
             }),
 
@@ -28,15 +40,17 @@ export const getVoucherManagementStats = async (req, res) => {
                 where: {
                     [Op.or]: [
                         { valid_to: { [Op.lt]: now } },
-                        { is_active: false }
-                    ]
+                        { is_active: false },
+                    ] ,
+                    created_by : userId
                 }
             }),
 
             // 4. not started yet
             Voucher.count({
                 where: {
-                    valid_from: { [Op.gt]: now }
+                    valid_from: { [Op.gt]: now },
+                    created_by : userId
                 }
             }),
         ]);
@@ -55,6 +69,11 @@ export const getVoucherManagementStats = async (req, res) => {
 
 export const getVouchersWithFilter = async (req, res) => {
     try {
+        // userId : 
+        const userId = req.user?.userId 
+        if(!userId){
+            return res.status(400).json({ message: "Invalid user ID" });
+        }
         // useQuery in frontend will send request like :
         // const response = await axiosInstance.get('/api/admin/owner-approval/requests', {
         //     params: {
@@ -71,7 +90,7 @@ export const getVouchersWithFilter = async (req, res) => {
             validFrom, validTo, page = 1, limit = 10 } = req.query;
 
         const whereClause = {};
-
+        whereClause.created_by = userId;
         if (nameOrDescOrCodeOrTitle && nameOrDescOrCodeOrTitle.trim()) {
             whereClause[Op.or] = [
                 { description: { [Op.like]: `%${nameOrDescOrCodeOrTitle.trim()}%` } },
@@ -264,4 +283,57 @@ export const createVoucher = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 
+}
+
+// update voucher : 
+// frontend will send req.body like :
+// payload:  {code: 'FLASH20', title: 'Flash Sale Discount', description: '', usageLimit: 100 , voucher_id: 1}
+export const updateVoucher = async (req, res) => {
+    try {
+        const { voucher_id, code, title, description, usageLimit } = req.body || {};
+
+        // validate voucher_id
+        if (!voucher_id) {
+            return res.status(400).json({ message: "voucher_id is required" });
+        }
+        // validate code
+        if (!code || code.trim() === "") {
+            return res.status(400).json({ message: "Voucher code is required" });
+        }
+        // validate title
+        if (!title || title.trim() === "") {
+            return res.status(400).json({ message: "Voucher title is required" });
+        }
+        // validate usageLimit
+        if (isNaN(usageLimit) || Number(usageLimit) < 0) {
+            return res.status(400).json({ message: "Invalid usage limit , must be a non-negative number" });
+        }
+
+        const voucher = await Voucher.findByPk(voucher_id);
+        if (!voucher) {
+            return res.status(404).json({ message: `Voucher not found for voucher_id : ${voucher_id}` });
+        }
+
+        // check if code is being updated to an existing code
+        if (voucher.code !== code) {
+            const existingVoucher = await Voucher.findOne({ where: { code } });
+            if (existingVoucher) {
+                return res.status(409).json({ message: `Voucher code already exists for code: ${code}` });
+            }
+        }
+
+        // update voucher fields
+        voucher.code = code;
+        voucher.title = title;
+        voucher.description = description;
+        voucher.usage_limit = usageLimit;
+
+        await voucher.save();
+        console.log("Voucher updated:", voucher);
+
+        return res.status(200).json({ message: "Voucher updated successfully", voucher });
+    } catch (error) {
+        console.error("Error updating voucher:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
 }

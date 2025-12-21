@@ -22,6 +22,7 @@ import {
 const ImageThumbnail = ({ imageUrl, index, onImageClick }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const imgRef = React.useRef(null);
 
   // Đảm bảo imageUrl là string hợp lệ
   const validImageUrl = imageUrl && typeof imageUrl === 'string' ? imageUrl.trim() : '';
@@ -30,16 +31,23 @@ const ImageThumbnail = ({ imageUrl, index, onImageClick }) => {
     // Reset state khi imageUrl thay đổi
     setImageError(false);
     setImageLoaded(false);
-    console.log(`ImageThumbnail #${index} initialized with URL:`, validImageUrl);
-  }, [imageUrl, index]);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    // Check if image is already loaded (from cache)
+    if (imgRef.current && imgRef.current.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setImageLoaded(true);
+      }
+    }
+  }, []);
 
   if (!validImageUrl) {
-    console.warn(`ImageThumbnail #${index}: Invalid URL`, imageUrl);
     return (
-      <div className="w-full h-32 bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center">
+      <div className="w-full h-32 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
         <div className="text-center">
           <MdErrorOutline className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-          <p className="text-xs text-gray-500 dark:text-gray-400">URL không hợp lệ</p>
+          <p className="text-xs text-gray-500">URL không hợp lệ</p>
         </div>
       </div>
     );
@@ -47,62 +55,45 @@ const ImageThumbnail = ({ imageUrl, index, onImageClick }) => {
 
   return (
     <div
-      className="relative cursor-pointer group overflow-hidden rounded-lg bg-gray-100 dark:bg-secondary-700"
+      className="relative cursor-pointer group overflow-hidden rounded-lg bg-gray-100 h-32 w-full"
       onClick={onImageClick}
-      style={{ height: '128px', width: '100%' }}
     >
-      {/* Loading placeholder - chỉ hiện khi chưa load và chưa có lỗi */}
+      {/* Loading placeholder */}
       {!imageLoaded && !imageError && (
-        <div className="absolute inset-0 w-full h-full bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center animate-pulse z-0">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse z-10">
           <MdImage className="w-8 h-8 text-gray-400" />
         </div>
       )}
       
       {/* Error state */}
       {imageError && (
-        <div className="absolute inset-0 w-full h-full bg-gray-200 dark:bg-secondary-700 rounded-lg border border-gray-200 dark:border-secondary-700 flex items-center justify-center z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
           <div className="text-center">
             <MdErrorOutline className="w-6 h-6 text-red-400 mx-auto mb-1" />
-            <p className="text-xs text-gray-500 dark:text-gray-400">Lỗi tải ảnh</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]" title={validImageUrl}>
-              {validImageUrl.substring(0, 20)}...
-            </p>
+            <p className="text-xs text-gray-500">Lỗi tải ảnh</p>
           </div>
         </div>
       )}
       
-      {/* Actual image - luôn render */}
+      {/* Actual image */}
       {!imageError && (
         <img
+          ref={imgRef}
           src={validImageUrl}
           alt={`Phạt nguội ${index + 1}`}
-          className={`absolute inset-0 w-full h-full object-cover rounded-lg border border-gray-200 dark:border-secondary-700 transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100 z-10' : 'opacity-0 z-0'
-          } group-hover:opacity-90`}
-          onLoad={() => {
-            console.log(`✅ Image #${index} loaded successfully:`, validImageUrl);
-            setImageLoaded(true);
-            setImageError(false);
-          }}
-          onError={(e) => {
-            console.error(`❌ Image #${index} load error:`, {
-              url: validImageUrl,
-              error: e,
-              target: e.target?.src
-            });
-            setImageError(true);
-            setImageLoaded(false);
-          }}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
           loading="lazy"
         />
       )}
       
-      {/* Hover overlay - chỉ hiện khi image đã load */}
-      {imageLoaded && !imageError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg pointer-events-none z-30">
-          <MdImage className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-        </div>
-      )}
+      {/* Hover overlay */}
+      <div className="absolute inset-0 flex items-center justify-center bg-transparent group-hover:bg-black/20 transition-all duration-200 z-20">
+        <MdImage className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+      </div>
     </div>
   );
 };
@@ -121,6 +112,7 @@ const TrafficFineApproval = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [rejectModal, setRejectModal] = useState({ open: false, requestId: null });
+  const [approveModal, setApproveModal] = useState({ open: false, requestId: null, processing: false });
   const [rejectReason, setRejectReason] = useState('');
   const [imageModal, setImageModal] = useState(null);
 
@@ -270,13 +262,20 @@ const TrafficFineApproval = () => {
     }
   };
 
-  const handleApprove = async (requestId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn duyệt yêu cầu phạt nguội này?')) {
-      return;
-    }
+  const handleApprove = (requestId) => {
+    console.log('Opening approve modal for request:', requestId);
+    setApproveModal({ open: true, requestId, processing: false });
+  };
+
+  const confirmApprove = async () => {
+    if (!approveModal.requestId) return;
+    
+    setApproveModal(prev => ({ ...prev, processing: true }));
+    console.log('Approving request:', approveModal.requestId);
 
     try {
-      const response = await axiosInstance.patch(`/api/admin/traffic-fine-requests/${requestId}/approve`);
+      const response = await axiosInstance.patch(`/api/admin/traffic-fine-requests/${approveModal.requestId}/approve`);
+      console.log('Approve response:', response.data);
       
       if (response.data.success) {
         toast.success('Đã duyệt yêu cầu phạt nguội thành công');
@@ -284,10 +283,15 @@ const TrafficFineApproval = () => {
         fetchStats();
         // Trigger refresh count in parent component
         window.dispatchEvent(new Event('refreshTrafficFineCount'));
+        setApproveModal({ open: false, requestId: null, processing: false });
+      } else {
+        toast.error('Không thể duyệt yêu cầu: ' + (response.data.message || 'Lỗi không xác định'));
+        setApproveModal(prev => ({ ...prev, processing: false }));
       }
     } catch (error) {
       console.error('Error approving request:', error);
       toast.error(error.response?.data?.message || 'Lỗi khi duyệt yêu cầu');
+      setApproveModal(prev => ({ ...prev, processing: false }));
     }
   };
 
@@ -780,6 +784,59 @@ const TrafficFineApproval = () => {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Xác nhận từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Modal */}
+      {approveModal.open && (
+        <div 
+          className="fixed inset-0 bg-gray-500/30 backdrop-blur-sm flex items-center justify-center z-[1000]"
+          onClick={() => !approveModal.processing && setApproveModal({ open: false, requestId: null, processing: false })}
+        >
+          <div 
+            className="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Duyệt yêu cầu</h3>
+              {!approveModal.processing && (
+                <button
+                  onClick={() => setApproveModal({ open: false, requestId: null, processing: false })}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <MdClose className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-600 dark:text-gray-300">
+                Bạn có chắc chắn muốn duyệt yêu cầu phạt nguội này không?
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setApproveModal({ open: false, requestId: null, processing: false })}
+                disabled={approveModal.processing}
+                className="px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-secondary-600 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmApprove}
+                disabled={approveModal.processing}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {approveModal.processing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Đang xử lý...</span>
+                  </>
+                ) : (
+                  <span>Xác nhận duyệt</span>
+                )}
               </button>
             </div>
           </div>
