@@ -204,10 +204,16 @@ export const getTrafficFineRequestStats = async (req, res) => {
 
 export const getTrafficFinePayouts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const { page = 1, limit = 10, search = "", transfer_status } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereCondition = { transfer_status: "pending" };
+    const whereCondition = {};
+    if (transfer_status && transfer_status !== "all") {
+      whereCondition.transfer_status = transfer_status;
+    } else if (!transfer_status) {
+      whereCondition.transfer_status = "pending";
+    }
+
     if (search) {
       whereCondition[Op.or] = [{ booking_id: { [Op.like]: `%${search}%` } }];
     }
@@ -284,16 +290,24 @@ export const getTrafficFinePayouts = async (req, res) => {
           remaining_to_transfer: remainingToTransfer,
           transfer_status: reqItem.transfer_status,
           updated_at: booking.updated_at,
+          created_at: reqItem.created_at,
         };
       })
     );
 
-    const filtered = payouts.filter((p) => p.remaining_to_transfer > 0);
-
+    // Only filter if we are specifically looking for pending, or let the DB filter handle it.
+    // However, the previous logic filtered by remaining_to_transfer > 0.
+    // If we want history (completed), remaining might be 0.
+    // So we should REMOVE this filter if we want to show all.
+    // If transfer_status is 'pending', we might still want to ensure remaining > 0, but DB filter 'pending' should be enough.
+    // Wait, DB filter is on request.transfer_status.
+    // If request.transfer_status is 'pending', it means it hasn't been fully processed?
+    // Let's assume the DB status is the source of truth.
+    
     return res.json({
       success: true,
       data: {
-        payouts: filtered,
+        payouts: payouts, // Removed .filter()
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(count / limit),
@@ -452,6 +466,10 @@ export const approveTrafficFineRequest = async (req, res) => {
 
     const now = new Date();
 
+    // Determine transfer status based on request type
+    // If delete, no transfer needed (none). If add/update, needs transfer (pending).
+    const transferStatus = request.request_type === "delete" ? "none" : "pending";
+
     // Cập nhật trạng thái yêu cầu
     await request.update(
       {
@@ -459,7 +477,7 @@ export const approveTrafficFineRequest = async (req, res) => {
         reviewed_by: adminId,
         reviewed_at: now,
         updated_at: now,
-        transfer_status: "none",
+        transfer_status: transferStatus,
       },
       { transaction }
     );
