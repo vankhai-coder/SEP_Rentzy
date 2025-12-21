@@ -72,7 +72,7 @@ export const calculateCancellationFee = async (req, res) => {
     }
 
     // Kiểm tra trạng thái booking có thể hủy
-    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid"];
+    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid","confirmed"];
     console.log("Checking booking status:", booking.status);
     console.log("Cancellable statuses:", cancellableStatuses);
 
@@ -105,12 +105,12 @@ export const calculateCancellationFee = async (req, res) => {
       now,
       policyPercents
     );
-
+     console.log("Cancellation calculation result:", calculation);
     // Kiểm tra nếu đã bắt đầu chuyến đi
     if (calculation.daysToStart < 0) {
       return res.status(400).json({
         success: false,
-        message: "Không thể hủy đơn thuê đã bắt đầu.",
+        message: "Không thể hủy đơn thuê trước 1 giờ chuyến đi bắt đầu.",
       });
     }
 
@@ -154,6 +154,7 @@ export const calculateCancellationFee = async (req, res) => {
           hours_from_creation:
             Math.round(calculation.hoursFromCreation * 10) / 10,
           days_to_start: Math.round(calculation.daysToStart * 10) / 10,
+          hours_to_start: Math.round(calculation.daysToStart * 24 * 10) / 10,
         },
         start_date: booking.start_date,
         end_date: booking.end_date,
@@ -202,7 +203,7 @@ export const confirmCancellation = async (req, res) => {
     }
 
     // Kiểm tra trạng thái booking có thể hủy
-    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid","confirm"];
+    const cancellableStatuses = ["pending", "deposit_paid", "fully_paid","confirmed"];
     if (!cancellableStatuses.includes(booking.status)) {
       await transaction.rollback();
       return res.status(400).json({

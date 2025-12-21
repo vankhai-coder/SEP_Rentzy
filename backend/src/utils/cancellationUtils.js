@@ -27,6 +27,12 @@ export const calculateCancellationFeeLogic = (
   
   const startDateUTC = new Date(booking.start_date);
   const startDate = convertToVietnamTime(startDateUTC);
+  
+  // Nếu có start_time (HH:mm:ss), cập nhật giờ cho startDate
+  if (booking.start_time) {
+    const [hours, minutes, seconds] = booking.start_time.split(':').map(Number);
+    startDate.setHours(hours, minutes, seconds || 0, 0);
+  }
 
   const hoursFromCreation = (now - createdAt) / (1000 * 60 * 60);
   const daysToStart = (startDate - now) / (1000 * 60 * 60 * 24);

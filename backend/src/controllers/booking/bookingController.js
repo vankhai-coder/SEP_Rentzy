@@ -39,7 +39,7 @@ export const getVehicleBookedDates = async (req, res) => {
             "fully_paid",
             "cancel_requested",
             "in_progress",
-            "completed",
+            // "completed",
           ],
         },
       },
@@ -1056,7 +1056,7 @@ export const deleteBooking = async (req, res) => {
     const { bookingId } = req.params;
     const renterId = req.user?.userId;
 
-    console.log("🗑️ Delete booking request:", { bookingId, renterId });
+    console.log("Delete booking request:", { bookingId, renterId });
 
     if (!bookingId) {
       return res.status(400).json({
