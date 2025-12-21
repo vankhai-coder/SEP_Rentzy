@@ -76,28 +76,27 @@ const SidebarOwner = ({ isOpen, onClose }) => {
         className={`bg-[#2c3e50] text-[#ecf0f1] py-5 flex flex-col h-screen overflow-y-auto shadow-[2px_0_5px_rgba(0,0,0,0.3)] z-[1000] w-[80vw] md:w-[250px] fixed top-0 left-0 transform transition-transform duration-200 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
       >
-      {/* Back icon and title */}
-      <div className="flex items-center gap-3 px-5 pt-3 mb-[30px]">
-        <NavLink
-          to="/account"
-          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61] flex-shrink-0"
-          title="Quay về hồ sơ"
-          aria-label="Quay về hồ sơ"
-        >
-          <MdArrowBack className="text-xl" />
-        </NavLink>
-        <div className="text-2xl font-bold text-[#3498db]">
-          Bảng điều khiển chủ xe
+        {/* Back icon and title */}
+        <div className="flex items-center gap-3 px-5 pt-3 mb-[30px]">
+          <NavLink
+            to="/account"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#34495e] text-[#ecf0f1] hover:bg-[#3b4b61] flex-shrink-0"
+            title="Quay về hồ sơ"
+            aria-label="Quay về hồ sơ"
+          >
+            <MdArrowBack className="text-xl" />
+          </NavLink>
+          <div className="text-2xl font-bold text-[#3498db]">
+            Bảng điều khiển chủ xe
+          </div>
         </div>
-      </div>
-      <nav>
-        <ul className="list-none p-0 m-0">
-          <li className="mb-[10px]">
-            <NavLink
-              to="/owner/overview"
-              className={({ isActive }) =>
-                `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${
-                  isActive
+        <nav>
+          <ul className="list-none p-0 m-0">
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/overview"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
                   }`
@@ -145,14 +144,14 @@ const SidebarOwner = ({ isOpen, onClose }) => {
                   `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
                     ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
                     : ""
-                }`
-              }
-            >
-              <MdTransform className="mr-[10px] text-xl" />
-              Quản lí giao dịch
-            </NavLink>
-          </li>
-          <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+                  }`
+                }
+              >
+                <MdTransform className="mr-[10px] text-xl" />
+                Quản lí giao dịch
+              </NavLink>
+            </li>
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
 
             <li className="mb-[10px]">
               <NavLink
@@ -203,6 +202,23 @@ const SidebarOwner = ({ isOpen, onClose }) => {
                 )}
               </NavLink>
             </li>
+
+            <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
+            <li className="mb-[10px]">
+              <NavLink
+                to="/owner/vouchers"
+                className={({ isActive }) =>
+                  `flex items-center px-5 py-[10px] text-[#ecf0f1] no-underline text-base transition-colors duration-300 hover:bg-[#34495e] hover:text-[#ecf0f1] ${isActive
+                    ? "bg-[#3498db] text-white font-bold border-l-[5px] border-white pl-[15px]"
+                    : ""
+                  }`
+                }
+              >
+                <MdCalendarMonth className="mr-[10px] text-xl" />
+                Quản lí mã giảm giá
+              </NavLink>
+            </li>
+
 
             <li className="h-px bg-[#34495e] my-[15px] mx-5"></li>
 

@@ -1,10 +1,10 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog'
 import { Loader, Loader2, UserPlus } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '../ui/button';
+import { Button } from '../../ui/button';
 import { toast } from 'sonner';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Calendar } from '../../ui/calendar';
 import { ChevronDownIcon } from 'lucide-react';
 import axiosInstance from '@/config/axiosInstance';
 import { useQueryClient } from '@tanstack/react-query';
