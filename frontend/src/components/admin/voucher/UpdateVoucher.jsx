@@ -7,7 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { Calendar } from '../../ui/calendar';
 import { ChevronDownIcon } from 'lucide-react';
 import axiosInstance from '@/config/axiosInstance';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { set } from 'date-fns';
 const UpdateVoucher = ({ updatedVoucherFields }) => {
   //  const [updatedVoucherFields, setUpdatedVoucherFields] = useState({
   //     code: '',
@@ -15,12 +16,14 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
   //     description: '',
   //     usageLimit: '',
   //   });
+  const [loadingUpdateVoucher, setLoadingUpdateVoucher] = useState(false);
 
   // 3 state for each field
   const [updatedVoucherCode, setUpdatedVoucherCode] = useState(updatedVoucherFields.code || '');
   const [updatedVoucherTitle, setUpdatedVoucherTitle] = useState(updatedVoucherFields.title || '');
   const [updatedVoucherDescription, setUpdatedVoucherDescription] = useState(updatedVoucherFields.description || '');
   const [updatedUsageLimit, setUpdatedUsageLimit] = useState(updatedVoucherFields.usageLimit || '');
+  const [voucher_id, setVoucher_id] = useState(updatedVoucherFields.voucher_id || '');
 
   // fucntion to display number that have comma separator : vd : 1000000 => 1,000,000 . number <1000 => no change
   const formatNumberWithCommas = (value) => {
@@ -31,7 +34,44 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
     }
     return value;
   }
+  // uss react query client mutation to update voucher : 
+  // PATCH /api/admin/voucher-management/update
+  const queryClient = useQueryClient();
+  // React Query mutation
+  const updateVoucherMutation = useMutation({
+    mutationFn: async (payload) => {
+      setLoadingUpdateVoucher(true);
+      const { data } = await axiosInstance.patch(
+        "/api/admin/voucher-management/update",
+        payload
+      );
+      return data;
+    },
+    onSuccess: () => {
+      // Refresh vouchers list if cached
+      queryClient.invalidateQueries(["vouchers"]);
+      toast.success("Cập nhật voucher thành công!");
+    },
+    onError: (error) => {
+      toast.error("Cập nhật voucher thất bại. Vui lòng thử lại.");
+      console.error("Error updating voucher:", error);
+    },
+    onSettled: () => {
+      setLoadingUpdateVoucher(false);
+    }
+  });
 
+  const handleUpdateVoucher = () => {
+    const payload = {
+      code: updatedVoucherCode,
+      title: updatedVoucherTitle,
+      description: updatedVoucherDescription,
+      usageLimit: Number(updatedUsageLimit),
+      voucher_id: voucher_id,
+    };
+    console.log("payload: ", payload);
+    updateVoucherMutation.mutate(payload);
+  };
   return (
     <div>
       {/* Added h-[80vh] and overflow for better dialog handling on various screens */}
@@ -109,9 +149,7 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
               <div className="flex justify-between">
                 <span>Tiêu đề:</span>
                 <span className="font-semibold ml-3">{updatedVoucherTitle}</span>
-
               </div>
-
               {/* number of vouchers */}
               <div className="flex justify-between">
                 <span>Số lượng voucher:</span>
@@ -124,8 +162,6 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
 
           {/* Description  */}
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mt-4">Mô tả (không bắt buộc)</h3>
-
-
           {/* Voucher Description */}
           <div>
             <label htmlFor="voucherDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mô tả voucher</label>
@@ -134,8 +170,8 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
               rows="3"
               className="w-full border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 text-base p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
               placeholder="ví dụ: Giảm giá 20% cho tất cả các đặt chỗ từ ngày 25 đến 30 tháng 11"
-            value={updatedVoucherDescription}
-            onChange={(e) => setUpdatedVoucherDescription(e.target.value)}
+              value={updatedVoucherDescription}
+              onChange={(e) => setUpdatedVoucherDescription(e.target.value)}
             />
           </div>
 
@@ -143,12 +179,14 @@ const UpdateVoucher = ({ updatedVoucherFields }) => {
           <div >
             <Button
               className={'w-full  py-4 sm:py-6'}
-            // disabled condition : if any required field is empty or invalid
+              disabled={updatedVoucherCode !== updatedVoucherFields.code ||
+                updatedVoucherTitle !== updatedVoucherFields.title ||
+                updatedVoucherDescription !== updatedVoucherFields.description ||
+                updatedUsageLimit !== updatedVoucherFields.usageLimit ? false : true}
 
-            // onClick={handleSubmit}
+              onClick={handleUpdateVoucher}
             >
-              {/* {isSubmitting ? <Loader className="animate-spin size-6" /> : 'Tạo mã giảm giá'} */}
-              Cập nhật voucher
+              {loadingUpdateVoucher ? <Loader className="animate-spin size-6" /> : 'Cập nhật voucher'}
             </Button>
           </div>
         </div>

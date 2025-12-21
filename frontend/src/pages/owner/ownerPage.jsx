@@ -9,6 +9,7 @@ import EditMotoBikeForm from "./vehicleManagement/editMotoBikeForm.jsx";
 import SidebarOwner from "@/components/SidebarOwner/SidebarOwner";
 import { MdMenu } from "react-icons/md";
 import BookingManagement from "./dashboard/BookingManagement.jsx";
+import OwnerVoucherManagement from "./dashboard/OwnerVoucherManagement.jsx";
 import BookingDetail from "./dashboard/BookingDetail.jsx";
 import Revenue from "./dashboard/Revenue.jsx";
 import VehicleReviews from "./dashboard/VehicleReviews.jsx";
@@ -69,6 +70,7 @@ const OwnerPage = () => {
       "/owner/revenue": "Doanh thu",
       "/owner/vehicle-reviews": "Đánh giá về xe của tôi",
       "/owner/notifications": "Thông báo",
+      "/owner/vouchers": "Mã giảm giá của tôi",
     };
     return pageMap[pathname] || "Tổng Quan Hệ Thống";
   };
@@ -148,6 +150,12 @@ const OwnerPage = () => {
                 >
                   <MdNotifications className="inline mr-2" /> Thông báo
                 </SelectItem>
+                <SelectItem
+                  className={"border-b-1 py-2 text-md font-medium"}
+                  value="/owner/vouchers"
+                >
+                  <MdNotifications className="inline mr-2" /> Mã giảm giá của tôi
+                </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -206,6 +214,14 @@ const OwnerPage = () => {
             element={
               <AuthRequired>
                 <Notifications />
+              </AuthRequired>
+            }
+          />
+           <Route
+            path="/vouchers"
+            element={
+              <AuthRequired>
+                <OwnerVoucherManagement />
               </AuthRequired>
             }
           />
