@@ -6,13 +6,13 @@ const quickCities = [
   { id: 1, name: "Hà Nội" },
   { id: 2, name: "Đà Nẵng" },
   { id: 3, name: "Huế" },
-  { id: 4, name: "TP. Hồ Chí Minh" },
+  { id: 4, name: "Hồ Chí Minh" },
 ];
 
 const LocationModal = ({
   onClose,
   onLocationSelect,
-  initialLocation = "TP. Hồ Chí Minh",
+  initialLocation = "Hồ Chí Minh",
 }) => {
   const [searchQuery, setSearchQuery] = useState(initialLocation);
   const [selectedLocation, setSelectedLocation] = useState(initialLocation);
@@ -36,7 +36,6 @@ const LocationModal = ({
     }
 
     setIsLoadingLocation(true);
-    toast.info("Đang tìm địa điểm...");
 
     try {
       const query = normalizeSearchText(searchQuery);
@@ -52,7 +51,7 @@ const LocationModal = ({
       const data = await response.json();
 
       if (data.length === 0) {
-        toast.error("Không tìm thấy địa điểm phù hợp.");
+        toast.error("Không tìm thấy địa điểm");
         setIsLoadingLocation(false);
         return;
       }
@@ -79,10 +78,9 @@ const LocationModal = ({
 
       setSelectedLocation(result);
       setSearchQuery(result);
-      toast.success("Đã tìm thấy địa điểm!");
     } catch (error) {
       console.error(error);
-      toast.error("Lỗi khi tìm địa điểm.");
+      toast.error("Lỗi khi tìm địa điểm");
     } finally {
       setIsLoadingLocation(false);
     }
@@ -92,7 +90,6 @@ const LocationModal = ({
     const name = city.name;
     setSearchQuery(name);
     setSelectedLocation(name);
-    toast.success(`Đã chọn ${name}`);
   };
 
   const handleInputChange = (e) => {
@@ -101,18 +98,30 @@ const LocationModal = ({
     setSelectedLocation(value);
   };
 
+  // ✅ Xử lý khi nhấn Enter
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // Nếu đang nhập địa điểm thì tìm kiếm, nếu đã có địa điểm thì lưu luôn
+      if (selectedLocation.trim()) {
+        handleSaveLocation();
+      } else {
+        handleManualSearch();
+      }
+    }
+  };
+
   const handleSaveLocation = () => {
     if (!selectedLocation.trim()) {
-      toast.error("Vui lòng chọn hoặc nhập địa điểm!");
+      toast.error("Vui lòng chọn địa điểm");
       return;
     }
     onLocationSelect(selectedLocation.trim());
-    toast.success("Đã lưu địa điểm!");
     onClose();
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50"
       onClick={onClose}
     >
@@ -145,10 +154,10 @@ const LocationModal = ({
             />
             <input
               type="text"
-              placeholder="Tìm địa điểm (VD: 304 Phan Bội Châu, Huế)"
+              placeholder="Nhập địa điểm ( vd: Đà Nẵng)"
               value={searchQuery}
               onChange={handleInputChange}
-              onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
+              onKeyDown={handleKeyDown}
               className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3.5 sm:py-4 text-sm sm:text-base border border-gray-300 rounded-xl 
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
@@ -205,7 +214,7 @@ const LocationModal = ({
             className="w-full py-3.5 sm:py-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 
                        text-white font-medium rounded-xl transition-colors shadow-md text-sm sm:text-base min-h-[44px]"
           >
-            Lưu địa điểm
+            Xác nhận
           </button>
         </div>
       </div>

@@ -31,37 +31,39 @@ const DateTimeModal = ({
   const [startDate, endDate] = dateRange;
 
   const now = new Date();
-  const roundToNextHalfHour = (date) => {
+
+  // ✅ Làm tròn lên giờ chẵn tiếp theo
+  const roundToNextHour = (date) => {
     const d = new Date(date);
     const mins = d.getMinutes();
-    const add = mins === 0 ? 0 : mins <= 30 ? 30 - mins : 60 - mins;
-    d.setMinutes(mins + add, 0, 0);
+    if (mins > 0) {
+      d.setHours(d.getHours() + 1);
+    }
+    d.setMinutes(0, 0, 0);
     return d;
   };
+
   const timeToMinutes = (t) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
-  const minutesToTime = (mins) => {
-    const h = Math.floor(mins / 60)
-      .toString()
-      .padStart(2, "0");
-    const m = (mins % 60).toString().padStart(2, "0");
-    return `${h}:${m}`;
+
+  const nextHourAfter = (mins) => {
+    const hours = Math.floor(mins / 60) + 1;
+    return `${hours.toString().padStart(2, "0")}:00`;
   };
-  const nextSlotAfter = (mins) => minutesToTime(mins + 30);
 
   // Chỉ chạy 1 lần khi modal mount (lần đầu mở)
   useEffect(() => {
     if (initialStart) {
-      const initStartTime = format(new Date(initialStart), "HH:mm");
+      const initStartTime = format(new Date(initialStart), "HH:00"); // ✅ Chỉ lấy giờ
       setStartTime(initStartTime);
     }
     if (initialEnd) {
-      const initEndTime = format(new Date(initialEnd), "HH:mm");
+      const initEndTime = format(new Date(initialEnd), "HH:00"); // ✅ Chỉ lấy giờ
       setEndTime(initEndTime);
     }
-  }, []); // ← TỐT: chỉ chạy 1 lần khi component mount
+  }, []);
 
   useEffect(() => {
     const fullStart = new Date(startDate);
@@ -89,13 +91,10 @@ const DateTimeModal = ({
     onClose();
   };
 
+  // ✅ CHỈ TẠO GIỜ CHẴN (0h, 1h, 2h, ..., 23h)
   const timeOptions = [];
   for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      timeOptions.push(
-        `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
-      );
-    }
+    timeOptions.push(`${h.toString().padStart(2, "0")}:00`);
   }
 
   // Build filtered options based on current day and selected start/end
@@ -103,7 +102,7 @@ const DateTimeModal = ({
     a && b && new Date(a).toDateString() === new Date(b).toDateString();
 
   const minStartTimeStr = isSameDay(startDate, now)
-    ? format(roundToNextHalfHour(now), "HH:mm")
+    ? format(roundToNextHour(now), "HH:00") // ✅ Làm tròn lên giờ chẵn
     : "00:00";
   const minStartMins = timeToMinutes(minStartTimeStr);
 
@@ -133,7 +132,7 @@ const DateTimeModal = ({
 
     let requiredMinEnd = minEndMins;
     if (timeToMinutes(endTime) <= requiredMinEnd) {
-      const adjusted = nextSlotAfter(requiredMinEnd);
+      const adjusted = nextHourAfter(requiredMinEnd);
       setEndTime(adjusted);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,11 +152,11 @@ const DateTimeModal = ({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white rounded-2xl w-full max-w-lg md:max-w-2xl shadow-xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -228,17 +227,23 @@ const DateTimeModal = ({
                             }`}
                             onClick={() => selectStartTime(time)}
                           >
-                          <div className="flex items-center mr-3">
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                                startTime === time
-                                  ? "bg-green-600 border-green-600"
-                                  : "border-gray-300"
+                            <div className="flex items-center mr-3">
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 transition-colors ${
+                                  startTime === time
+                                    ? "bg-green-600 border-green-600"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                            </div>
+                            <span
+                              className={`text-sm ${
+                                isSelected ? "text-green-700" : "text-gray-700"
                               }`}
-                            />
+                            >
+                              {time}
+                            </span>
                           </div>
-                          <span className={`text-sm ${isSelected ? "text-green-700" : "text-gray-700"}`}>{time}</span>
-                        </div>
                         );
                       })}
                     </div>
@@ -277,17 +282,23 @@ const DateTimeModal = ({
                             }`}
                             onClick={() => selectEndTime(time)}
                           >
-                          <div className="flex items-center mr-3">
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                                endTime === time
-                                  ? "bg-green-600 border-green-600"
-                                  : "border-gray-300"
+                            <div className="flex items-center mr-3">
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 transition-colors ${
+                                  endTime === time
+                                    ? "bg-green-600 border-green-600"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                            </div>
+                            <span
+                              className={`text-sm ${
+                                isSelected ? "text-green-700" : "text-gray-700"
                               }`}
-                            />
+                            >
+                              {time}
+                            </span>
                           </div>
-                          <span className={`text-sm ${isSelected ? "text-green-700" : "text-gray-700"}`}>{time}</span>
-                        </div>
                         );
                       })}
                     </div>
@@ -317,7 +328,7 @@ const DateTimeModal = ({
               className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
             >
               <Clock size={18} />
-              <span>Lưu thời gian</span>
+              <span>Xác nhận</span>
             </button>
           </div>
         </div>
