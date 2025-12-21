@@ -5,6 +5,9 @@ import Vehicle from "../../models/Vehicle.js";
 import Brand from "../../models/Brand.js";
 import SearchHistory from "../../models/SearchHistory.js";
 
+// ✅ CONSTANTS: Buffer time giữa các booking (phút)
+const BUFFER_TIME_MINUTES = 60; // 1 giờ để vệ sinh/giao xe
+
 export const searchVehicles = async (req, res) => {
   try {
     const {
@@ -13,18 +16,20 @@ export const searchVehicles = async (req, res) => {
       brand_id,
       start_date,
       end_date,
+      start_time, // ✅ HH:mm hoặc HH:mm:ss
+      end_time, // ✅ HH:mm hoặc HH:mm:ss
       min_price,
       max_price,
       year_min,
       year_max,
       transmission,
       fuel_type,
-      seats, // Exact match
+      seats,
       bike_type,
-      engine_capacity, // Exact match
-      body_type, // Exact match cho car
+      engine_capacity,
+      body_type,
       page = 1,
-      limit = 8, // SỬA: Default limit=8 thống nhất
+      limit = 8,
       sort_by = "price_per_day",
       sort_order = "ASC",
     } = req.query;
@@ -37,46 +42,57 @@ export const searchVehicles = async (req, res) => {
       });
     }
 
-    // Kiểm tra ngày hợp lệ
+    // ==================== XỬ LÝ NGÀY GIỜ ====================
     let hasValidDateRange = false;
     let searchStartDate = null;
+    let searchStartTime = null;
     let searchEndDate = null;
-    if (start_date && end_date) {
-      if (
-        !start_date ||
-        !end_date ||
-        start_date === "null" ||
-        start_date === "undefined" ||
-        end_date === "null" ||
-        end_date === "undefined"
-      ) {
-        // Bỏ qua nếu frontend gửi rác
-      } else {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(start_date) || !dateRegex.test(end_date)) {
-          return res.status(400).json({
-            success: false,
-            message: "Định dạng ngày không hợp lệ (YYYY-MM-DD)",
-          });
-        }
-        const start = new Date(start_date);
-        const end = new Date(end_date);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          return res.status(400).json({
-            success: false,
-            message: "Ngày không hợp lệ",
-          });
-        }
-        if (end < start) {
-          return res.status(400).json({
-            success: false,
-            message: "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu",
-          });
-        }
-        hasValidDateRange = true;
-        searchStartDate = start_date;
-        searchEndDate = end_date;
+    let searchEndTime = null;
+
+    if (start_date && end_date && start_time && end_time) {
+      // ✅ Validate format ngày (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(start_date) || !dateRegex.test(end_date)) {
+        return res.status(400).json({
+          success: false,
+          message: "Định dạng ngày không hợp lệ (YYYY-MM-DD)",
+        });
       }
+
+      // ✅ Chuẩn hóa time format (HH:mm → HH:mm:ss)
+      const normalizeTime = (timeStr) => {
+        if (!timeStr) return "00:00:00";
+        // Nếu chỉ có HH:mm → thêm :00
+        if (/^\d{2}:\d{2}$/.test(timeStr)) return `${timeStr}:00`;
+        // Nếu đã có HH:mm:ss → giữ nguyên
+        if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+        return "00:00:00";
+      };
+
+      searchStartDate = start_date;
+      searchStartTime = normalizeTime(start_time);
+      searchEndDate = end_date;
+      searchEndTime = normalizeTime(end_time);
+
+      // ✅ Validate datetime logic (để kiểm tra trước khi query)
+      const startDT = new Date(`${searchStartDate}T${searchStartTime}`);
+      const endDT = new Date(`${searchEndDate}T${searchEndTime}`);
+
+      if (isNaN(startDT.getTime()) || isNaN(endDT.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Ngày hoặc giờ không hợp lệ",
+        });
+      }
+
+      if (endDT <= startDT) {
+        return res.status(400).json({
+          success: false,
+          message: "Thời gian kết thúc phải sau thời gian bắt đầu",
+        });
+      }
+
+      hasValidDateRange = true;
     }
 
     // Các validation khác
@@ -128,7 +144,6 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Loại nhiên liệu không hợp lệ" });
     }
-    // Validation cho seats (exact, >=1)
     if (seats && (isNaN(seats) || parseInt(seats) < 1)) {
       return res.status(400).json({
         success: false,
@@ -144,7 +159,6 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Loại xe máy không hợp lệ" });
     }
-    // Validation cho engine_capacity (exact, >=50)
     if (
       engine_capacity &&
       (isNaN(engine_capacity) || parseInt(engine_capacity) < 50)
@@ -159,7 +173,6 @@ export const searchVehicles = async (req, res) => {
         .status(400)
         .json({ success: false, message: "ID hãng xe không hợp lệ" });
     }
-    // Validation cho body_type (chỉ cho car)
     if (
       body_type &&
       type === "car" &&
@@ -181,7 +194,7 @@ export const searchVehicles = async (req, res) => {
     }
 
     const pageNum = parseInt(page);
-    const limitNum = Math.min(parseInt(limit) || 8, 100); // SỬA: Default=8, max 100
+    const limitNum = Math.min(parseInt(limit) || 8, 100);
     if (isNaN(pageNum) || pageNum < 1) {
       return res
         .status(400)
@@ -205,7 +218,7 @@ export const searchVehicles = async (req, res) => {
       approvalStatus: "approved",
     };
 
-    // Base conditions cho filter options (FULL, CHỈ location + price/year - KHÔNG brand/transmission/fuel/exact)
+    // Base conditions cho filter options
     const baseConditions = [];
     if (location) {
       baseConditions.push(
@@ -228,7 +241,6 @@ export const searchVehicles = async (req, res) => {
       baseConditions.push({ year: { [Op.gte]: parseInt(year_min) } });
     if (year_max)
       baseConditions.push({ year: { [Op.lte]: parseInt(year_max) } });
-    // KHÔNG add transmission/fuel_type/brand_id vào baseConditions → options luôn full
 
     // Options where (FULL, chỉ base)
     const optionsWhere = { ...baseVehicleWhere };
@@ -236,7 +248,7 @@ export const searchVehicles = async (req, res) => {
       optionsWhere[Op.and] = baseConditions;
     }
 
-    // Full conditions cho vehicles (base + brand + transmission/fuel + exact)
+    // Full conditions cho vehicles
     const fullConditions = [...baseConditions];
     if (brand_id && !isNaN(brand_id)) {
       fullConditions.push({ brand_id: parseInt(brand_id) });
@@ -258,23 +270,44 @@ export const searchVehicles = async (req, res) => {
       finalWhere[Op.and] = fullConditions;
     }
 
-    // ==================== BLOCK XE ĐÃ CÓ BOOKING (ÁP DỤNG CHO VEHICLES, KHÔNG CHO OPTIONS) ====================
+    // ==================== ✅ BLOCK XE ĐÃ ĐẶT (CÓ BUFFER TIME 1 GIỜ) ====================
     if (hasValidDateRange) {
+      /*
+       * LOGIC OVERLAP VỚI BUFFER TIME:
+       *
+       * Booking cũ: end_date + end_time = endDateTime
+       * Buffer: endDateTime + 1 giờ = availableFrom
+       *
+       * Booking mới CHỈ hợp lệ nếu:
+       * 1. Bắt đầu SAU khi booking cũ kết thúc + buffer: searchStart >= availableFrom
+       *    HOẶC
+       * 2. Kết thúc TRƯỚC khi booking cũ bắt đầu - buffer: searchEnd <= (bookedStart - buffer)
+       *
+       * SQL: Loại bỏ xe nếu:
+       * - Booking cũ bắt đầu (có buffer) < Search kết thúc
+       * - Booking cũ kết thúc (có buffer) > Search bắt đầu
+       */
+
       const blockBookedVehicles = db.sequelize.literal(`
         Vehicle.vehicle_id NOT IN (
           SELECT b.vehicle_id
           FROM bookings b
-          WHERE b.status IN ('pending', 'confirmed', 'in_progress', 'deposit_paid')
-            AND b.start_date <= '${searchEndDate}'
-            AND b.end_date >= '${searchStartDate}'
+          WHERE b.status IN ('pending', 'confirmed', 'fully_paid', 'in_progress', 'deposit_paid')
+            AND (
+              TIMESTAMP(b.start_date, b.start_time) - INTERVAL ${BUFFER_TIME_MINUTES} MINUTE < TIMESTAMP('${searchEndDate}', '${searchEndTime}')
+              AND
+              TIMESTAMP(b.end_date, b.end_time) + INTERVAL ${BUFFER_TIME_MINUTES} MINUTE > TIMESTAMP('${searchStartDate}', '${searchStartTime}')
+            )
         )
       `);
+
       finalWhere[Op.and] = finalWhere[Op.and] || [];
       finalWhere[Op.and].push(blockBookedVehicles);
     }
 
     // ==================== QUERY DATA ====================
     const offset = (pageNum - 1) * limitNum;
+
     const total = await Vehicle.count({
       where: finalWhere,
       include: [
@@ -285,6 +318,7 @@ export const searchVehicles = async (req, res) => {
         },
       ],
     });
+
     const vehicles = await Vehicle.findAll({
       where: finalWhere,
       include: [
@@ -299,10 +333,11 @@ export const searchVehicles = async (req, res) => {
       offset,
     });
 
-    // ==================== FETCH FILTER OPTIONS (FULL: DỘNG TỪ DB, CHỈ BASE - KHÔNG EXACT/BRAND/TRANSMISSION/FUEL) ====================
+    // ==================== FETCH FILTER OPTIONS ====================
     let filterOptions = { brands: [] };
+
     if (type === "car") {
-      // Unique seats (full available sau base, sorted ASC)
+      // Unique seats
       const seatsRes = await Vehicle.findAll({
         where: optionsWhere,
         attributes: [
@@ -315,7 +350,7 @@ export const searchVehicles = async (req, res) => {
         .map((r) => r.seats)
         .filter((s) => s != null && s > 0);
 
-      // Unique body_types (full sau base)
+      // Unique body_types
       const bodyRes = await Vehicle.findAll({
         where: optionsWhere,
         attributes: [
@@ -331,7 +366,7 @@ export const searchVehicles = async (req, res) => {
         .map((r) => r.body_type)
         .filter((b) => b != null);
 
-      // Unique brands (full sau base, KHÔNG brand_id → tất cả hãng available)
+      // Unique brands
       const brandsRes = await Vehicle.findAll({
         where: optionsWhere,
         include: [
@@ -354,7 +389,7 @@ export const searchVehicles = async (req, res) => {
         logo_url: r["brand.logo_url"],
       }));
     } else if (type === "motorbike") {
-      // Unique bike_types (full sau base)
+      // Unique bike_types
       const bikeRes = await Vehicle.findAll({
         where: optionsWhere,
         attributes: [
@@ -370,7 +405,7 @@ export const searchVehicles = async (req, res) => {
         .map((r) => r.bike_type)
         .filter((b) => b != null);
 
-      // Unique engine_capacities (full sau base, sorted ASC)
+      // Unique engine_capacities
       const engineRes = await Vehicle.findAll({
         where: optionsWhere,
         attributes: [
@@ -386,7 +421,7 @@ export const searchVehicles = async (req, res) => {
         .map((r) => r.engine_capacity)
         .filter((e) => e != null);
 
-      // Unique brands (full sau base)
+      // Unique brands
       const brandsRes = await Vehicle.findAll({
         where: optionsWhere,
         include: [
@@ -419,6 +454,8 @@ export const searchVehicles = async (req, res) => {
         brand_id: brand_id ? parseInt(brand_id) : null,
         start_date: searchStartDate,
         end_date: searchEndDate,
+        start_time: searchStartTime,
+        end_time: searchEndTime,
         min_price: min_price ? parseFloat(min_price) : null,
         max_price: max_price ? parseFloat(max_price) : null,
         year_min: year_min ? parseInt(year_min) : null,
@@ -453,7 +490,7 @@ export const searchVehicles = async (req, res) => {
         total,
         total_pages: Math.ceil(total / limitNum) || 1,
       },
-      filterOptions, // FULL options động, independent
+      filterOptions,
     });
   } catch (error) {
     console.error("Lỗi khi tìm kiếm xe:", error);

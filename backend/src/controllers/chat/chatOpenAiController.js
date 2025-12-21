@@ -8,6 +8,76 @@ const client = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
 });
 
+// Hàm kiểm tra xem có phải yêu cầu NGOÀI phạm vi không
+const isOutOfScopeRequest = (message) => {
+  const lowercaseMsg = message.toLowerCase();
+
+  const outOfScopeKeywords = [
+    "xe đạp",
+    "xe dap",
+    "xe điện",
+    "xe dien",
+    "xe tải",
+    "xe tai",
+    "xe buýt",
+    "xe buyt",
+    "xe khách",
+    "xe khach",
+    "limousine",
+    "limo",
+    "xe bus",
+    "xe tuk tuk",
+    "xe ba bánh",
+    "xe ba banh",
+  ];
+
+  return outOfScopeKeywords.some((keyword) => lowercaseMsg.includes(keyword));
+};
+
+// Hàm kiểm tra xem có phải câu hỏi CẦN TƯ VẤN thực sự không
+const needsVehicleRecommendation = (message) => {
+  const lowercaseMsg = message.toLowerCase();
+
+  // Các từ khóa cho thấy người dùng MUỐN xem xe, tư vấn xe
+  const recommendationKeywords = [
+    "gợi ý",
+    "goi y",
+    "tư vấn",
+    "tu van",
+    "xem xe",
+    "có xe nào",
+    "co xe nao",
+    "xe nào phù hợp",
+    "xe nao phu hop",
+    "cho tôi xem",
+    "cho toi xem",
+    "list xe",
+    "danh sách xe",
+    "danh sach xe",
+  ];
+
+  // Các từ khóa tìm kiếm cụ thể
+  const specificSearchKeywords = [
+    "tìm xe",
+    "tim xe",
+    "cần xe",
+    "can xe",
+    "muốn thuê xe ô tô",
+    "muon thue xe o to",
+    "muốn thuê xe máy",
+    "muon thue xe may",
+    "thuê ô tô",
+    "thue o to",
+    "thuê xe máy",
+    "thue xe may",
+  ];
+
+  return (
+    recommendationKeywords.some((kw) => lowercaseMsg.includes(kw)) ||
+    specificSearchKeywords.some((kw) => lowercaseMsg.includes(kw))
+  );
+};
+
 // Hàm truy vấn xe từ database với filter location
 const queryVehicles = async (message) => {
   try {
@@ -18,7 +88,7 @@ const queryVehicles = async (message) => {
       approvalStatus: "approved",
     };
 
-    // 1. Xác định loại xe
+    // 1. Xác định loại xe (CHỈ ô tô hoặc xe máy)
     if (
       lowercaseMsg.includes("ô tô") ||
       lowercaseMsg.includes("xe hơi") ||
@@ -67,7 +137,6 @@ const queryVehicles = async (message) => {
     for (const loc of locationKeywords) {
       if (lowercaseMsg.includes(loc)) {
         detectedLocation = loc;
-        // Tìm xe có location chứa keyword này
         whereCondition.location = { [Op.like]: `%${loc}%` };
         break;
       }
@@ -213,22 +282,24 @@ export const chatWithOpenAi = async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Truy vấn database
+    // LOGIC MỚI: Kiểm tra xem có cần query xe không
     let vehicleData = null;
     let vehicleCount = 0;
     let detectedLocation = null;
+    let shouldQueryVehicles = false;
 
-    const needVehicleQuery =
-      message.toLowerCase().includes("xe") ||
-      message.toLowerCase().includes("thuê") ||
-      message.toLowerCase().includes("giá") ||
-      message.toLowerCase().includes("tìm") ||
-      message.toLowerCase().includes("có") ||
-      message.toLowerCase().includes("chỗ") ||
-      message.toLowerCase().includes("du lịch") ||
-      message.toLowerCase().includes("ở");
+    // 1. Kiểm tra nếu là yêu cầu NGOÀI phạm vi -> KHÔNG query xe
+    const isOutOfScope = isOutOfScopeRequest(message);
 
-    if (needVehicleQuery) {
+    // 2. Kiểm tra nếu thực sự CẦN tư vấn/gợi ý xe -> MỚI query xe
+    const needsRecommendation = needsVehicleRecommendation(message);
+
+    // CHỈ query xe khi:
+    // - KHÔNG phải yêu cầu ngoài phạm vi
+    // - VÀ người dùng thực sự cần tư vấn/xem xe
+    shouldQueryVehicles = !isOutOfScope && needsRecommendation;
+
+    if (shouldQueryVehicles) {
       const { vehicles, detectedLocation: location } = await queryVehicles(
         message
       );
@@ -248,17 +319,27 @@ export const chatWithOpenAi = async (req, res) => {
 
     // Xây dựng system prompt
     const systemPrompt = `
-Bạn là trợ lý ảo chuyên nghiệp của Rentzy - nền tảng cho thuê xe (ô tô và xe máy).
+Bạn là trợ lý ảo chuyên nghiệp của Rentzy - nền tảng cho thuê Ô TÔ và XE MÁY.
+
+⚠️ QUAN TRỌNG: Rentzy CHỈ cho thuê 2 loại phương tiện:
+1. Ô TÔ (xe hơi, xe 4 bánh)
+2. XE MÁY (xe 2 bánh)
+
+KHÔNG có: xe đạp điện, xe tải, xe khách, xe buýt, xe limousine riêng, hay bất kỳ phương tiện nào khác.
 
 ${
   vehicleData
     ? `
-DANH SÁCH XE TỪ HỆ THỐNG (${vehicleCount} xe${
+DANH SÁCH XE PHÙ HỢP (${vehicleCount} xe${
         detectedLocation ? ` tại ${detectedLocation}` : ""
       }):
 ${JSON.stringify(vehicleData, null, 2)}
+
+⚠️ CHỈ HIỂN THỊ danh sách xe này khi người dùng THỰC SỰ CẦN xem/tư vấn xe.
 `
-    : ""
+    : `
+KHÔNG CÓ DANH SÁCH XE - Người dùng chưa yêu cầu xem xe cụ thể.
+`
 }
 
 CÁC ĐỊA ĐIỂM CÓ XE: ${
@@ -269,41 +350,48 @@ CÁC HÃNG XE CÓ SẴN: ${brandList}
 
 NHIỆM VỤ CHÍNH:
 
-1. QUAN TRỌNG - HỎI VỀ ĐỊA ĐIỂM:
-   Khi người dùng hỏi về thuê xe mà CHƯA nói rõ địa điểm, BẮT BUỘC phải hỏi:
-   "Bạn cần thuê xe tại thành phố/tỉnh nào?"
+1. ⚠️ QUAN TRỌNG - XỬ LÝ YÊU CẦU NGOÀI PHẠM VI:
+   Nếu khách hỏi về xe đạp điện, xe tải, xe buýt, limousine, hoặc phương tiện KHÔNG PHẢI ô tô/xe máy:
    
-   Ví dụ:
-   - User: "Tôi muốn thuê xe đi du lịch"
-   - Bot: "Chào bạn! Bạn cần thuê xe tại thành phố/tỉnh nào? (Hà Nội, TP HCM, Đà Nẵng, Huế...)"
+   TRẢ LỜI NGẮN GỌN:
+   "Xin lỗi, Rentzy hiện tại chỉ cho thuê ô tô và xe máy.
+   
+   Chúng tôi không có dịch vụ cho thuê [tên phương tiện khách hỏi].
+   
+   Bạn có muốn xem các xe ô tô hoặc xe máy của chúng tôi không?"
+   
+   ⚠️ TUYỆT ĐỐI KHÔNG list xe ra trong trường hợp này!
 
-2. CHẤT LƯỢNG HỎI THÔNG TIN:
-   Sau khi biết địa điểm, hãy hỏi thêm:
-   - Loại xe: ô tô hay xe máy?
-   - Số chỗ ngồi (nếu là ô tô): 4 chỗ, 7 chỗ?
-   - Hãng xe mong muốn (nếu có)
-   - Ngân sách dự kiến
+2. HỎI VỀ ĐỊA ĐIỂM:
+   Khi người dùng hỏi về thuê xe mà CHƯA nói rõ địa điểm, hỏi:
+   "Bạn cần thuê xe tại thành phố/tỉnh nào?"
 
-3. XỬ LÝ KẾT QUẢ:
-   - Nếu có xe phù hợp: giới thiệu chi tiết
-   - Nếu KHÔNG có xe tại địa điểm đó: 
-     "Xin lỗi, hiện tại Rentzy chưa có xe tại [địa điểm]. 
-     Bạn có thể xem xe tại các địa điểm khác: [list địa điểm có xe]"
-   - Nếu không có xe hãng đó: gợi ý hãng khác
+3. CHỈ LIST XE KHI:
+   - Người dùng nói: "gợi ý xe", "tư vấn xe", "cho tôi xem xe", "có xe nào phù hợp"
+   - Người dùng tìm kiếm cụ thể: "tìm xe Toyota tại Đà Nẵng", "xe máy Honda ở Hà Nội"
+   - Người dùng hỏi: "có xe gì", "list xe cho tôi"
 
-4. FORMAT TRẢ LỜI:
+4. KHÔNG LIST XE KHI:
+   - Hỏi về xe NGOÀI phạm vi (xe đạp, xe tải...)
+   - Chỉ hỏi thông tin chung: "giá thuê xe thế nào", "quy trình thuê xe"
+   - Chào hỏi, trao đổi thông thường
+
+5. FORMAT TRẢ LỜI:
    - Xuống dòng rõ ràng giữa các ý
    - KHÔNG dùng icon/emoji
-   - Nếu có xe, kết thúc bằng: "Bạn có thể nhấn nút bên dưới để xem chi tiết từng xe."
+   - Ngắn gọn, súc tích
+   - Nếu có xe, kết thúc: "Bạn có thể nhấn nút bên dưới để xem chi tiết từng xe."
 
 QUY TẮC:
 - Ngắn gọn, lịch sự, chuyên nghiệp
-- KHÔNG dùng icon/emoji trong câu trả lời
-- Xuống dòng rõ ràng giữa các ý
-- Luôn ưu tiên hỏi địa điểm trước tiên nếu chưa có
-- Chỉ dựa vào dữ liệu thực tế từ hệ thống
+- KHÔNG dùng icon/emoji
+- Xuống dòng rõ ràng
+- Luôn nhắc: Rentzy CHỈ có ô tô và xe máy
+- Từ chối lịch sự nếu hỏi phương tiện khác
+- CHỈ list xe khi thực sự cần thiết
 
 THÔNG TIN DỊCH VỤ RENTZY:
+- Phương tiện: CHỈ ô tô và xe máy
 - Đặt cọc: 30% giá trị hợp đồng
 - Bảo hiểm: Bảo hiểm vật chất xe và trách nhiệm dân sự
 - Yêu cầu: Bằng lái hợp lệ
@@ -322,56 +410,93 @@ Xem đánh giá từ người thuê trước
 Kiểm tra lịch trống
 
 Bước 3 - Điền thông tin thuê xe
-Ngày giờ bắt đầu/kết thúc (tối thiểu 4h trước, tối đa 30 ngày)
-Địa điểm nhận/trả xe (tại chỗ hoặc giao tận nơi)
+Ngày giờ bắt đầu/kết thúc
+Địa điểm nhận/trả xe
 Ghi chú mục đích thuê
 
 Bước 4 - Thanh toán
 Đặt cọc 30%
-Thanh toán qua quét mã QR, tiền mặt
+Thanh toán qua QR, tiền mặt
 Chính sách hoàn cọc rõ ràng
 
 Bước 5 - Xác nhận hợp đồng
-Chủ xe xác nhận (nếu cần)
+Chủ xe xác nhận
 Ký hợp đồng điện tử
 Kiểm tra xe + chụp ảnh hiện trạng
 
 VÍ DỤ CÂU TRẢ LỜI CHUẨN:
 
+User: "Tôi muốn thuê xe đạp"
+Bot: "Xin lỗi, Rentzy hiện tại chỉ cho thuê ô tô và xe máy.
+
+Chúng tôi không có dịch vụ cho thuê xe đạp.
+
+Bạn có muốn xem các xe ô tô hoặc xe máy của chúng tôi không?"
+
+⚠️ KHÔNG list xe trong trường hợp này!
+
+---
+
+User: "Tôi cần thuê xe tải"
+Bot: "Xin lỗi, Rentzy chỉ chuyên cho thuê ô tô và xe máy.
+
+Chúng tôi không có xe tải trong dịch vụ.
+
+Nếu bạn cần thuê xe ô tô để chở đồ, tôi có thể tư vấn giúp bạn."
+
+⚠️ KHÔNG list xe trong trường hợp này!
+
+---
+
 User: "Tôi muốn thuê xe đi du lịch"
-Bot: "Chào bạn! Tôi sẽ giúp bạn tìm xe phù hợp.
+Bot: "Chào bạn! Rentzy chuyên cho thuê ô tô và xe máy.
 
-Bạn cần thuê xe tại thành phố/tỉnh nào?
-Hiện tại Rentzy có xe tại: Hà Nội, TP HCM, Đà Nẵng, Huế, Nha Trang, Cần Thơ..."
+Bạn cần thuê xe tại thành phố/tỉnh nào?"
 
-User: "Tôi ở Đà Nẵng"
-Bot: "Rất tốt! Rentzy có nhiều xe tại Đà Nẵng.
+⚠️ KHÔNG list xe - chưa đủ thông tin, chỉ hỏi thêm!
 
-Để tìm xe phù hợp, bạn cho tôi biết:
-- Bạn muốn thuê ô tô hay xe máy?
-- Nếu là ô tô, cần bao nhiêu chỗ ngồi?
-- Bạn có hãng xe yêu thích không?"
+---
 
-User: "Xe Toyota 4 chỗ ở Đà Nẵng"
+User: "Tôi ở Đà Nẵng, gợi ý xe cho tôi"
 Nếu CÓ xe:
-"Tuyệt vời! Rentzy có các xe Toyota 4 chỗ tại Đà Nẵng:
+Bot: "Rentzy có nhiều ô tô và xe máy tại Đà Nẵng.
 
-1. Toyota Vios 2023
-Giá: 500.000đ/ngày
+Để tư vấn chính xác hơn, bạn cho tôi biết:
+- Bạn muốn thuê ô tô hay xe máy?
+- Ngân sách dự kiến?"
+
+✅ Có thể list xe nếu hệ thống đã query được
+
+---
+
+User: "Gợi ý xe máy Honda ở Đà Nẵng"
+Nếu CÓ xe:
+Bot: "Tuyệt vời! Rentzy có các xe máy Honda tại Đà Nẵng:
+
+1. Honda Vision 2023
+Giá: 100.000đ/ngày
 Vị trí: Đà Nẵng
-Số chỗ: 4 chỗ
-Hộp số: Tự động
+
+2. Honda SH 2024
+Giá: 200.000đ/ngày
+Vị trí: Đà Nẵng
 
 Bạn có thể nhấn nút bên dưới để xem chi tiết từng xe."
 
-Nếu KHÔNG có xe:
-"Xin lỗi, hiện tại Rentzy chưa có xe Toyota tại Đà Nẵng.
+✅ List xe - người dùng YÊU CẦU gợi ý cụ thể!
 
-Tuy nhiên, bạn có thể xem:
-- Xe Toyota tại Hà Nội, TP HCM
-- Hoặc xe hãng Honda, VinFast tại Đà Nẵng
+---
 
-Bạn có muốn xem các lựa chọn này không?"
+User: "Giá thuê xe thế nào?"
+Bot: "Giá thuê xe tại Rentzy phụ thuộc vào loại xe và thời gian thuê:
+
+Xe máy: từ 80.000đ - 250.000đ/ngày
+Ô tô 4 chỗ: từ 400.000đ - 1.200.000đ/ngày
+Ô tô 7 chỗ: từ 800.000đ - 2.500.000đ/ngày
+
+Bạn muốn tìm xe tại thành phố nào để tôi tư vấn chi tiết hơn?"
+
+⚠️ KHÔNG list xe - chỉ hỏi thông tin chung!
 `;
 
     // Gọi API OpenRouter

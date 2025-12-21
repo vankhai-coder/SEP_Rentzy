@@ -19,12 +19,25 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     endDate: "",
   });
 
-  // ✅ FIX: Parse cả ngày VÀ giờ từ URL params
+  // ✅ Helper: Làm tròn giờ lên giờ chẵn tiếp theo
+  const roundToNextHour = (date) => {
+    const d = new Date(date);
+    const mins = d.getMinutes();
+    if (mins > 0 || d.getSeconds() > 0) {
+      d.setHours(d.getHours() + 1);
+    }
+    d.setMinutes(0, 0, 0);
+    return d;
+  };
+
+  // ✅ Parse ngày giờ từ URL params hoặc dùng giờ hiện tại
   useEffect(() => {
-    const today = new Date();
-    today.setHours(9, 0, 0, 0);
+    // ✅ Lấy giờ hiện tại và làm tròn lên giờ chẵn
+    const now = new Date();
+    const today = roundToNextHour(now);
+
+    // ✅ Ngày mai cùng giờ
     const tomorrow = addDays(today, 1);
-    tomorrow.setHours(8, 0, 0, 0);
 
     let parsedStart = null;
     let parsedEnd = null;
@@ -34,7 +47,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
       const [year, month, day] = initialValues.start_date
         .split("-")
         .map(Number);
-      const startTime = initialValues.start_time || "09:00"; // Lấy giờ từ URL hoặc mặc định 09:00
+      const startTime = initialValues.start_time || format(today, "HH:mm");
       const [hours, minutes] = startTime.split(":").map(Number);
       parsedStart = new Date(year, month - 1, day, hours, minutes, 0, 0);
     }
@@ -42,7 +55,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     // Parse end_date và end_time từ URL
     if (initialValues.end_date) {
       const [year, month, day] = initialValues.end_date.split("-").map(Number);
-      const endTime = initialValues.end_time || "08:00"; // Lấy giờ từ URL hoặc mặc định 09:00
+      const endTime = initialValues.end_time || format(tomorrow, "HH:mm");
       const [hours, minutes] = endTime.split(":").map(Number);
       parsedEnd = new Date(year, month - 1, day, hours, minutes, 0, 0);
     }
@@ -60,8 +73,8 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     initialValues.location,
     initialValues.start_date,
     initialValues.end_date,
-    initialValues.start_time, // ✅ Thêm dependency để sync giờ
-    initialValues.end_time, // ✅ Thêm dependency để sync giờ
+    initialValues.start_time,
+    initialValues.end_time,
   ]);
 
   // Realtime search với cả ngày và giờ
@@ -94,8 +107,8 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
         location: formData.location || undefined,
         start_date: getDateOnly(formData.startDate),
         end_date: getDateOnly(formData.endDate),
-        start_time: getTimeOnly(formData.startDate), // ✅ Thêm giờ bắt đầu
-        end_time: getTimeOnly(formData.endDate), // ✅ Thêm giờ kết thúc
+        start_time: getTimeOnly(formData.startDate),
+        end_time: getTimeOnly(formData.endDate),
       });
     }
   }, [formData, onSubmit, hasUserInteraction]);
@@ -105,7 +118,7 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
     return () => clearTimeout(timer);
   }, [triggerSearch]);
 
-  // Format hiển thị thời gian
+  // ✅ Format hiển thị thời gian (chỉ hiển thị giờ chẵn)
   const formatTimeDisplay = () => {
     if (!formData.startDate || !formData.endDate) return "Chọn thời gian";
 
@@ -120,14 +133,14 @@ const SearchForm = ({ onSubmit, initialValues = {}, type = "car" }) => {
       const isSameDay = start.toDateString() === end.toDateString();
 
       if (isSameDay) {
-        return `${format(start, "HH:mm")} - ${format(
+        return `${format(start, "HH:00")} - ${format(
           end,
-          "HH:mm, dd/MM/yyyy"
+          "HH:00, dd/MM/yyyy"
         )}`;
       } else {
-        return `${format(start, "HH:mm, dd/MM")} - ${format(
+        return `${format(start, "HH:00, dd/MM")} - ${format(
           end,
-          "HH:mm, dd/MM/yyyy"
+          "HH:00, dd/MM/yyyy"
         )}`;
       }
     } catch {
