@@ -8,6 +8,8 @@ import { Calendar } from '../../ui/calendar';
 import { ChevronDownIcon } from 'lucide-react';
 import axiosInstance from '@/config/axiosInstance';
 import { useQueryClient } from '@tanstack/react-query';
+import { set } from 'date-fns';
+import { fi } from 'date-fns/locale';
 const CreateVoucher = () => {
   const queryClient = useQueryClient();
 
@@ -136,6 +138,39 @@ const CreateVoucher = () => {
   //   dateForValidFrom,
   //   dateForValidTo
   // })
+
+  // state for loading AI suggestions
+  const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
+  const [listOfAISuggestions, setListOfAISuggestions] = useState([]);
+  // function to get AI suggestion for voucher code : /api/admin/voucher-management/get-suggestions-from-ai 
+  const getAISuggestions = async () => {
+    try {
+      setIsLoadingAISuggestions(true);
+      const response = await axiosInstance.get('/api/admin/voucher-management/get-suggestions-from-ai');
+      // handle suggestions, e.g., set state or display to user
+      console.log('AI Suggestions:', response.data);
+      //     response.data is : [
+      // {
+      // "occasion": "Tên dịp lễ hoặc sự kiện",
+      //   "voucherCode": "TET2026",
+      //   "voucherTitle": "Mã voucher cho dịp Tết Nguyên Đán 2026",
+      //   "voucherDescription": "Giảm giá Flash Sale 20% cho tất cả các xe thuê."
+      // },
+      // {
+      // "occasion": "Tên dịp lễ hoặc sự kiện",
+      //   "voucherCode": "SUMMER2026",
+      //   "voucherTitle": "Mã voucher cho dịp mùa du lịch hè 2026",
+      //   "voucherDescription": "Tiết kiệm ngay 10% cho đơn thuê xe đầu tiên."
+      // },
+      // ]
+      setListOfAISuggestions(response.data);
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      toast.error('Lấy gợi ý từ AI thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsLoadingAISuggestions(false);
+    }
+  };
 
   return (
     <div>
@@ -469,6 +504,50 @@ const CreateVoucher = () => {
                       {isSubmitting ? <Loader className="animate-spin size-6" /> : 'Tạo mã giảm giá'}
                     </Button>
                   </div>
+
+                  {/* suggest button :  */}
+                  <div className="dark:border-gray-700">
+                    <Button
+                      variant={'outline'}
+                      className={'w-full  py-4 sm:py-6'}
+                      onClick={getAISuggestions}
+                    >
+                      {isLoadingAISuggestions ? <Loader className="animate-spin size-6" /> : 'Gợi ý mã tự động từ AI'}
+                    </Button>
+                  </div>
+
+                  {/* list of suggest :  */}
+                  <div className="dark:border-gray-700 grid grid-cols-1 lg:grid-cols-3 gap-4 space-y-4">
+                    {/* render list of AI suggestions */}
+                    {listOfAISuggestions.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        variant={'outline'}
+                        className={'w-full py-4 sm:py-6'}
+                        onClick={() => {
+                          setVoucherCode(suggestion.voucherCode);
+                          setVoucherTitle(suggestion.voucherTitle);
+                          setVoucherDescription(suggestion.voucherDescription);
+                          // manuall set other fields : 
+                          setDiscountType('PERCENT');
+                          setDiscountValue('20');
+                          setMaxDiscount('500000');
+                          setUsageLimit('100');
+                          setMinBookingAmount('800000');
+                          // set valid from today
+                          const today = new Date();
+                          setDateForValidFrom(set(today, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 }));
+                          // set valid to 7 days later
+                          const sevenDaysLater = new Date();
+                          sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+                          setDateForValidTo(set(sevenDaysLater, { hours: 23, minutes: 59, seconds: 59, milliseconds: 999 }));
+                        }}
+                      >
+                        {suggestion.occasion}
+                      </Button>
+                    ))}
+                  </div>
+
                 </div>
               </div>
             </DialogDescription>
