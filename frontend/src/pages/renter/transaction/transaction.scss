@@ -447,63 +447,72 @@
   // Pagination
   .pagination {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     margin-top: 20px;
-    padding: 16px 20px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
 
-    .pagination-info {
-      font-size: 13px;
-      color: #64748b;
-      font-weight: 500;
-    }
-
-    .pagination-btns {
+    .pagination-btn {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      color: #374151;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
 
-      .btn-page {
-        padding: 6px 10px;
-        border: 1px solid #e2e8f0;
-        background: white;
-        color: #374151;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        min-width: 32px;
-        height: 32px;
+      &:hover:not(:disabled) {
+        background: #f8fafc;
+        border-color: #d1d5db;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .pagination-numbers {
+      display: flex;
+      gap: 0.25rem;
+
+      .pagination-number {
+        min-width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        color: #374151;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
 
         &:hover:not(:disabled) {
-          border-color: #3b82f6;
           background: #f8fafc;
-          transform: translateY(-1px);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          background: #f9fafb;
+          border-color: #d1d5db;
         }
 
         &.active {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
+          background: #3b82f6;
           border-color: #3b82f6;
-          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+          color: white;
         }
 
-        svg {
-          width: 14px;
-          height: 14px;
+        &.dots {
+          border: none;
+          background: transparent;
+          cursor: default;
+        }
+
+        &:disabled {
+          cursor: not-allowed;
         }
       }
     }
