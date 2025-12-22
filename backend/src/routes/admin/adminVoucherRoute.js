@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWTToken } from "../../middlewares/authMiddleware.js";
-import { createVoucher, getVoucherManagementStats, getVouchersWithFilter, toggleVoucherActiveStatus, updateVoucher } from "../../controllers/admin/adminVoucherController.js";
+import { createVoucher, getVoucherManagementStats, getVoucherSuggestionsFromAI, getVouchersWithFilter, toggleVoucherActiveStatus, updateVoucher } from "../../controllers/admin/adminVoucherController.js";
 
 
 const router = express.Router();
@@ -32,5 +32,8 @@ router.post("/create", createVoucher);
 
 // PATCH /api/admin/voucher-management/update
 router.patch("/update", updateVoucher);
+
+// GET /api/admin/voucher-management/get-suggestions-from-ai 
+router.get("/get-suggestions-from-ai", getVoucherSuggestionsFromAI);
 
 export default router;
