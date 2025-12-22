@@ -5,7 +5,7 @@ import {
   createCancellationInfo,
 } from "../../utils/cancellationUtils.js";
 import cloudinary from "../../config/cloudinary.js";
-
+import { decryptWithSecret } from "../../utils/cryptoUtil.js";
 const {
   Booking,
   BookingReview,
@@ -338,26 +338,26 @@ export const getOwnerTransactions = async (req, res) => {
         endDate: transaction.Booking?.end_date || null,
         renter: transaction.Booking?.renter
           ? {
-              id: transaction.Booking.renter.user_id,
-              name: transaction.Booking.renter.full_name,
-              email: transaction.Booking.renter.email,
-              phone: transaction.Booking.renter.phone_number,
-            }
+            id: transaction.Booking.renter.user_id,
+            name: transaction.Booking.renter.full_name,
+            email: transaction.Booking.renter.email,
+            phone: transaction.Booking.renter.phone_number,
+          }
           : transaction.fromUser
-          ? {
+            ? {
               id: transaction.fromUser.user_id,
               name: transaction.fromUser.full_name,
               email: transaction.fromUser.email,
               phone: transaction.fromUser.phone_number,
             }
-          : null,
+            : null,
         vehicle: transaction.Booking?.vehicle
           ? {
-              id: transaction.Booking.vehicle.vehicle_id,
-              licensePlate: transaction.Booking.vehicle.license_plate,
-              model: transaction.Booking.vehicle.model,
-              brand: transaction.Booking.vehicle.brand?.name || "N/A",
-            }
+            id: transaction.Booking.vehicle.vehicle_id,
+            licensePlate: transaction.Booking.vehicle.license_plate,
+            model: transaction.Booking.vehicle.model,
+            brand: transaction.Booking.vehicle.brand?.name || "N/A",
+          }
           : null,
       };
     });
@@ -554,17 +554,17 @@ export const getOwnerRevenue = async (req, res) => {
 
     if (year) {
       const filterYear = parseInt(year);
-      
+
       if (quarter) {
         // Filter theo quý (3 tháng)
         const filterQuarter = parseInt(quarter);
         const startMonth = (filterQuarter - 1) * 3 + 1;
         const endMonth = filterQuarter * 3;
-        
+
         dateFilter = `AND YEAR(created_at) = ${filterYear} 
                       AND MONTH(created_at) >= ${startMonth} 
                       AND MONTH(created_at) <= ${endMonth}`;
-        
+
         // Tạo đầy đủ 3 tháng trong quý
         const monthlyRevenueRaw = await db.sequelize.query(
           `
@@ -607,7 +607,7 @@ export const getOwnerRevenue = async (req, res) => {
         const filterMonth = parseInt(month);
         dateFilter = `AND YEAR(created_at) = ${filterYear} 
                       AND MONTH(created_at) = ${filterMonth}`;
-        
+
         // Lấy dữ liệu theo ngày trong tháng
         const dailyRevenueRaw = await db.sequelize.query(
           `
@@ -655,7 +655,7 @@ export const getOwnerRevenue = async (req, res) => {
       } else {
         // Filter theo cả năm (12 tháng)
         dateFilter = `AND YEAR(created_at) = ${filterYear}`;
-        
+
         const monthlyRevenueRaw = await db.sequelize.query(
           `
           SELECT 
@@ -726,7 +726,7 @@ export const getOwnerRevenue = async (req, res) => {
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
         const key = `${year}-${month}`;
-        
+
         if (revenueMap.has(key)) {
           monthlyRevenue.push(revenueMap.get(key));
         } else {
@@ -1152,6 +1152,11 @@ export const getBookingDetail = async (req, res) => {
       bookingData.traffic_fine_images = [];
     }
 
+    // DECRYPT PHONE NUMBER 
+    if (bookingData.renter && bookingData.renter.phone_number) {
+      bookingData.renter.phone_number = decryptWithSecret(bookingData.renter.phone_number, process.env.ENCRYPT_KEY);
+    }
+
     res.json({
       success: true,
       data: bookingData,
@@ -1446,7 +1451,7 @@ export const getTrafficFineCaptcha = async (req, res) => {
     // Tạo CookieJar riêng cho phiên captcha này và lưu lại để dùng khi submit form
     const jar = createEmptyJar();
     const instance = createAxiosInstance(jar);
-    
+
     console.log("[TrafficFineCaptcha] Fetching captcha image...");
     const captchaImage = await getCaptchaImage(jar);
 
@@ -1473,7 +1478,7 @@ export const getTrafficFineCaptcha = async (req, res) => {
       response: error.response?.status,
       responseData: error.response?.data,
     });
-    
+
     res.status(500).json({
       success: false,
       message: "Không thể lấy mã bảo mật. Vui lòng thử lại sau.",
@@ -1546,8 +1551,7 @@ export const searchTrafficFine = async (req, res) => {
     }
 
     console.log(
-      `[TrafficFineSearch] Searching for license plate: ${licensePlate}, vehicleType: ${
-        vehicleType || "1"
+      `[TrafficFineSearch] Searching for license plate: ${licensePlate}, vehicleType: ${vehicleType || "1"
       }`
     );
 
@@ -1784,9 +1788,8 @@ export const rejectBooking = async (req, res) => {
     await Notification.create({
       user_id: booking.renter_id,
       title: "Đơn đặt xe đã bị từ chối",
-      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${
-        reason ? `Lý do: ${reason}` : ""
-      }`,
+      content: `Chủ xe đã từ chối đơn đặt xe #${booking.booking_id}. ${reason ? `Lý do: ${reason}` : ""
+        }`,
       type: "booking",
       is_read: false,
     });
@@ -1824,7 +1827,7 @@ export const addTrafficFine = async (req, res) => {
     // Validate images - bắt buộc phải có ít nhất 1 ảnh phạt nguội và 1 ảnh hóa đơn
     const trafficFineImages = req.files?.images || [];
     const receiptImages = req.files?.receipt_images || [];
-    
+
     if (trafficFineImages.length === 0) {
       return res.status(400).json({
         success: false,
@@ -2066,9 +2069,8 @@ export const requestDeleteTrafficFine = async (req, res) => {
       const notifications = adminUsers.map((admin) => ({
         user_id: admin.user_id,
         title: "Yêu cầu xóa phạt nguội mới",
-        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${
-          booking.booking_id
-        }. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
+        content: `Có yêu cầu xóa phạt nguội cho đơn thuê #${booking.booking_id
+          }. Lý do: ${deletion_reason.trim().substring(0, 100)}...`,
         type: "alert",
       }));
       await Notification.bulkCreate(notifications);
@@ -2098,9 +2100,9 @@ export const requestDeleteTrafficFine = async (req, res) => {
       details:
         process.env.NODE_ENV === "development"
           ? {
-              name: error.name,
-              stack: error.stack,
-            }
+            name: error.name,
+            stack: error.stack,
+          }
           : undefined,
     });
   }
