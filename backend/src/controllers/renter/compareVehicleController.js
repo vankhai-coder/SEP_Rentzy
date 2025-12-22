@@ -58,7 +58,7 @@ const CompareVehicleController = {
       if (vehicles.length !== ids.length) {
         return res.status(404).json({
           success: false,
-          message: `Không tìm thấy đủ xe hoặc type không khớp (${type}).`,
+          message: `Không tìm thấy đủ xe hoặc loại xe không khớp (${type}).`,
         });
       }
 
