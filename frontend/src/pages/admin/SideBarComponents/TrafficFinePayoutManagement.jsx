@@ -329,7 +329,7 @@ const TrafficFinePayoutManagement = () => {
                           <td className="px-6 py-4 text-center text-sm text-gray-500">
                             {formatDate(it.created_at || it.updated_at)}
                           </td>
-                          <td className="px-6 py-4 flex justify-center">
+                          <td className="px-6 py-4 text-center align-middle">
                             {/* If remaining is 0, show completed, otherwise show status from DB */}
                             {completed ? getStatusBadge('completed') : getStatusBadge(it.transfer_status)}
                           </td>
