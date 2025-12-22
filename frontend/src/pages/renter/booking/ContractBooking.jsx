@@ -57,12 +57,19 @@ const ContractBooking = () => {
     try {
       const envelopeId = booking?.contract?.contract_number;
       if (!envelopeId) {
-        console.warn("handleRefreshStatus: No envelopeId, refreshing booking anyway.");
+        console.warn(
+          "handleRefreshStatus: No envelopeId, refreshing booking anyway."
+        );
         return await refreshBooking();
       }
-      console.log("handleRefreshStatus: Calling DocuSign status for", envelopeId);
+      console.log(
+        "handleRefreshStatus: Calling DocuSign status for",
+        envelopeId
+      );
       await axiosInstance.get(`/api/docusign/status/${envelopeId}`);
-      console.log("handleRefreshStatus: DocuSign status updated, refreshing booking...");
+      console.log(
+        "handleRefreshStatus: DocuSign status updated, refreshing booking..."
+      );
       await refreshBooking();
     } catch (err) {
       console.error("Refresh status error:", err);
@@ -206,7 +213,7 @@ const ContractBooking = () => {
   // Listen for postMessage from backend return page (iframe/popup)
   useEffect(() => {
     const handleMessage = (event) => {
-      if (event.data === 'signing_complete') {
+      if (event.data === "signing_complete") {
         console.log("Received signing_complete message (Renter)");
         // Trigger refresh
         handleRefreshStatus();
@@ -502,7 +509,7 @@ const ContractBooking = () => {
                 </>
               ) : (
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary my-4"
                   onClick={handleSignContract}
                   disabled={!renterNeedsSign}
                 >
