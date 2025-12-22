@@ -65,12 +65,20 @@ const reverseGeocode = async (lat, lon) => {
     const response = await fetch(url, { headers: { "Accept-Language": "vi" } });
     const data = await response.json();
     if (data?.address) {
+      // Ưu tiên dùng display_name từ Nominatim vì nó thường đầy đủ nhất
+      if (data.display_name) {
+        return data.display_name;
+      }
+      
       const addr = [
         data.address.house_number,
         data.address.road,
-        data.address.suburb || data.address.village,
-        data.address.city_district,
-        data.address.city || data.address.town,
+        data.address.quarter, // Tổ dân phố
+        data.address.neighbourhood, // Khu vực
+        data.address.hamlet, // Thôn
+        data.address.suburb || data.address.village || data.address.ward, // Phường/Xã
+        data.address.city_district || data.address.district, // Quận/Huyện
+        data.address.city || data.address.town || data.address.municipality, // Thành phố/Thị xã
         data.address.state,
         data.address.country,
       ].filter(Boolean).join(", ");
@@ -231,6 +239,8 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
     }
   }, [vehicleCoords, userCoords]);
 
+  const [isLocating, setIsLocating] = useState(false);
+
   // Get current user location
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -238,23 +248,40 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
       return;
     }
 
+    if (isLocating) return; // Prevent double click
+
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        console.log("User location obtained:", coords);
-        setUserCoords(coords);
-        const addr = await reverseGeocode(coords.lat, coords.lon);
-        setUserAddress(addr);
-        setAddressInput(addr);
-        setSuggestions([]);
+        try {
+          const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          console.log("User location obtained:", coords);
+          setUserCoords(coords);
+          
+          // Reverse geocode
+          const addr = await reverseGeocode(coords.lat, coords.lon);
+          setUserAddress(addr);
+          setAddressInput(addr);
+          setSuggestions([]);
+          toast.success("Đã lấy vị trí thành công!");
+        } catch (error) {
+          console.error("Error processing location:", error);
+          toast.error("Lấy tọa độ thành công nhưng không tìm thấy tên đường.");
+        } finally {
+          setIsLocating(false);
+        }
       },
       (err) => {
         console.error("Geolocation error:", err);
-        toast.error("Không thể lấy vị trí hiện tại.");
+        setIsLocating(false);
+        let msg = "Không thể lấy vị trí hiện tại.";
+        if (err.code === err.PERMISSION_DENIED) msg = "Bạn đã từ chối quyền truy cập vị trí.";
+        else if (err.code === err.TIMEOUT) msg = "Hết thời gian chờ lấy vị trí.";
+        toast.error(msg);
       },
       { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
-  }, []);
+  }, [isLocating]);
 
   // Debounced address suggestion fetching
   const fetchSuggestions = useCallback(async (query) => {
@@ -375,9 +402,24 @@ const AddressSelector = ({ vehicle, onConfirm, onCancel }) => {
         <button
           type="button"
           onClick={getCurrentLocation}
-          className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          disabled={isLocating}
+          className={`rounded-md px-3 py-2 text-sm font-medium text-white transition-colors ${
+            isLocating 
+              ? "bg-blue-400 cursor-not-allowed" 
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
-          Lấy vị trí hiện tại
+          {isLocating ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Đang lấy vị trí...
+            </span>
+          ) : (
+            "Lấy vị trí hiện tại"
+          )}
         </button>
         <span className="text-sm text-gray-600">Khoảng cách: {distance} km</span>
       </div>

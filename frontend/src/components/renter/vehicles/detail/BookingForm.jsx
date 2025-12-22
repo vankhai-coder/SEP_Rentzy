@@ -364,6 +364,9 @@ function BookingForm({ vehicle, prefillParams }) {
           .peer-checked .toggle-switch-knob::after {
             opacity: 1;
           }
+          .peer-checked .toggle-switch-knob {
+            background-color: #fff;
+          }
         `}
       </style>
       <div className="p-6 bg-blue-50 border-b border-gray-200">
@@ -450,7 +453,7 @@ function BookingForm({ vehicle, prefillParams }) {
               aria-label="Giao và nhận xe tại địa chỉ"
             >
               <h5 className="font-semibold text-gray-800 text-sm">
-                Nhận xe tại chỗ
+                Giao xe tận nơi 
               </h5>
               {bookingData.deliveryOption === "delivery" &&
                 bookingData.pickupAddress && (
@@ -541,8 +544,8 @@ function BookingForm({ vehicle, prefillParams }) {
                 onChange={(e) => setUsePoints(e.target.checked)}
                 aria-label="Dùng điểm để giảm giá"
               />
-              <div className="w-10 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600 toggle-switch relative">
-                <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow toggle-switch-knob peer-checked:translate-x-4"></span>
+              <div className={`w-10 h-6 rounded-full toggle-switch relative transition-colors duration-300 ${usePoints ? "bg-blue-600" : "bg-gray-300"}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow toggle-switch-knob transition-transform duration-300 ${usePoints ? "translate-x-4" : ""}`}></span>
               </div>
             </label>
           </div>
@@ -592,23 +595,26 @@ function BookingForm({ vehicle, prefillParams }) {
           type="button"
           onClick={handleBooking}
           disabled={!bookingData.startDate || !bookingData.endDate || !agreedTerms || isLoading}
-          className={`w-full py-4 px-6 font-bold rounded-lg text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-            isLoading 
-              ? "bg-gray-400 text-white cursor-not-allowed" 
-              : " text-white "
-          }`}
+          className={`w-full py-6 text-lg font-bold rounded-xl shadow-xl transition-all duration-300 transform relative overflow-hidden group
+            ${isLoading 
+              ? "bg-gray-400 cursor-not-allowed opacity-80" 
+              : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 text-white"
+            }
+          `}
           aria-label={isLoading ? "Đang xử lý đặt xe" : "Đặt xe ngay"}
         >
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-3">
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Đang xử lý...
+              <span className="tracking-wide">Đang xử lý...</span>
             </div>
           ) : (
-            "Đặt xe ngay"
+            <div className="flex items-center justify-center relative z-10">
+              <span className="tracking-wide">Đặt xe ngay</span>
+            </div>
           )}
         </Button>
 

@@ -128,6 +128,40 @@ const TransactionHistory = () => {
   const totalPages = Math.ceil(
     filteredAndSortedTransactions.length / itemsPerPage
   );
+
+  // Pagination Range Helper
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots.filter(
+      (item, index, arr) => arr.indexOf(item) === index
+    );
+  }, [currentPage, totalPages]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredAndSortedTransactions.slice(
@@ -170,26 +204,23 @@ const TransactionHistory = () => {
   return (
     <div className="transaction-history">
       <div className="page-header">
-        <Wallet size={24} />
-        <div>
-          <h1>Lịch sử giao dịch</h1>
-          <p>Quản lý giao dịch của bạn</p>
-        </div>
+        <h1>
+          <CreditCard className="page-icon" />
+          Lịch sử giao dịch
+        </h1>
+        <p className="page-description">
+          Theo dõi tất cả giao dịch thanh toán của bạn
+        </p>
       </div>
 
+      {/* Statistics Cards - Compact Row Layout */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-content">
-            <div className="stat-value">{statistics.totalTransactions}</div>
-            <div className="stat-label">Giao dịch</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-content">
             <div className="stat-value">
-              {formatCurrency(statistics.totalAmount)}
+              {formatCurrency(statistics.totalTransactions)}
             </div>
-            <div className="stat-label">Tổng tiền</div>
+            <div className="stat-label">Tổng giao dịch</div>
           </div>
         </div>
         <div className="stat-card">
@@ -326,23 +357,45 @@ const TransactionHistory = () => {
               </table>
             </div>
 
-            <div className="pagination">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft size={14} /> Trước
-              </button>
-              <span>
-                Trang {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight size={14} /> Sau
-              </button>
-            </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  <ChevronLeft size={16} />
+                  Trước
+                </button>
+
+                <div className="pagination-numbers">
+                  {paginationRange.map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        typeof page === "number" && handlePageChange(page)
+                      }
+                      className={`pagination-number ${
+                        currentPage === page ? "active" : ""
+                      } ${typeof page !== "number" ? "dots" : ""}`}
+                      disabled={typeof page !== "number"}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  Sau
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

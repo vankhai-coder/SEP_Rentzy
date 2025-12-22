@@ -652,7 +652,7 @@ const BookingDetailsPage = () => {
                 Điểm đã sử dụng ({booking.pointsUsed} điểm)
               </span>
               <span className="payment-value">
-                -{formatCurrency(booking.pointsUsed * 1000)}
+                -{formatCurrency(booking.pointsUsed)}
               </span>
             </div>
 
