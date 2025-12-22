@@ -398,7 +398,7 @@ function BookingForm({ vehicle, prefillParams }) {
             }
             }
             className="w-full p-4 border-2 border-gray-200 rounded-lg text-left bg-white hover:border-blue-500 hover:shadow-md transition-all duration-200"
-            aria-label="Chọn thời gian thuê xe d"
+            aria-label="Chọn thời gian thuê xe"
           >
             {formatDateTime()}
           </button>
