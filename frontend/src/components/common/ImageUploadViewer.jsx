@@ -136,6 +136,14 @@ const ImageUploadViewer = ({
     return new Date(dateString).toLocaleString("vi-VN");
   };
 
+  const formatCurrency = (value) => {
+    if (!value) return "";
+    const stringValue = String(value);
+    const number = stringValue.replace(/\D/g, "");
+    if (!number) return "";
+    return new Intl.NumberFormat("vi-VN").format(number);
+  };
+
   const confirmHandover = async () => {
     if (localImages.length === 0) {
       toast.error("Vui lòng chọn ít nhất 1 ảnh để xác nhận bàn giao");
@@ -540,13 +548,12 @@ const ImageUploadViewer = ({
                         <input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={compensationAmount === 0 ? "" : String(compensationAmount)}
+                          value={compensationAmount ? formatCurrency(compensationAmount) : ""}
                           onChange={(e) => {
-                            const digits = e.target.value.replace(/\D/g, "");
-                            setCompensationAmount(Number(digits || 0));
+                            const rawValue = e.target.value.replace(/\./g, "").replace(/\D/g, "");
+                            setCompensationAmount(Number(rawValue));
                           }}
-                          placeholder="Ví dụ: 150000"
+                          placeholder="Ví dụ: 150.000"
                           className="border border-gray-300 rounded-lg p-2 text-sm w-40"
                         />
                         <span className="text-sm text-gray-500">VND</span>
@@ -621,12 +628,12 @@ const ImageUploadViewer = ({
                         <input
                           type="text"
                           inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={lateReturnFee && Number(lateReturnFee) === 0 ? "" : lateReturnFee}
-                          onChange={(e) =>
-                            setLateReturnFee(e.target.value.replace(/\D/g, ""))
-                          }
-                          placeholder="Ví dụ: 200000"
+                          value={lateReturnFee ? formatCurrency(lateReturnFee) : ""}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, "").replace(/\D/g, "");
+                            setLateReturnFee(rawValue);
+                          }}
+                          placeholder="Ví dụ: 200.000"
                           className="border border-gray-300 rounded-lg p-2 text-sm w-40"
                         />
                         <span className="text-sm text-gray-500">VND</span>
