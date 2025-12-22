@@ -31,6 +31,52 @@ const TrafficFinePayoutManagement = () => {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({ 
+    isOpen: false, 
+    data: null, 
+    processing: false 
+  });
+
+  const openConfirmModal = (item) => {
+    setConfirmModal({
+      isOpen: true,
+      data: item,
+      processing: false
+    });
+  };
+
+  const closeConfirmModal = () => {
+    if (confirmModal.processing) return;
+    setConfirmModal({
+      isOpen: false,
+      data: null,
+      processing: false
+    });
+  };
+
+  const processTransfer = async () => {
+    if (!confirmModal.data) return;
+    
+    setConfirmModal(prev => ({ ...prev, processing: true }));
+    try {
+      const response = await axiosInstance.patch(`/api/admin/traffic-fine-requests/bookings/${confirmModal.data.booking_id}/transfer`);
+      
+      if (response.data?.success) { 
+        toast.success("Đã xác nhận chuyển tiền thành công"); 
+        fetchRequests(); 
+        closeConfirmModal();
+      } else { 
+        toast.error(response.data?.message || "Không thể xác nhận chuyển tiền");
+        setConfirmModal(prev => ({ ...prev, processing: false }));
+      }
+    } catch (error) {
+      console.error("Transfer error:", error);
+      toast.error(error.response?.data?.message || "Có lỗi khi xác nhận chuyển tiền");
+      setConfirmModal(prev => ({ ...prev, processing: false }));
+    }
+  };
+
   // Fetch traffic fine requests
   const fetchRequests = async () => {
     setLoading(true);
@@ -291,21 +337,7 @@ const TrafficFinePayoutManagement = () => {
                             {!completed && (
                               <button
                                 disabled={it.remaining_to_transfer <= 0}
-                                onClick={() => {
-                                  if (!window.confirm("Xác nhận đã chuyển tiền phạt nguội cho chủ xe?")) return;
-                                  axiosInstance.patch(`/api/admin/traffic-fine-requests/bookings/${it.booking_id}/transfer`)
-                                    .then((resp) => {
-                                      if (resp.data?.success) { 
-                                        toast.success("Đã xác nhận chuyển tiền"); 
-                                        fetchRequests(); 
-                                      } else { 
-                                        toast.error(resp.data?.message || "Không thể xác nhận chuyển tiền"); 
-                                      }
-                                    })
-                                    .catch((err) => { 
-                                      toast.error(err.response?.data?.message || "Có lỗi khi xác nhận chuyển tiền"); 
-                                    });
-                                }}
+                                onClick={() => openConfirmModal(it)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                               >
                                 <DollarSign className="w-3.5 h-3.5" />
@@ -358,6 +390,72 @@ const TrafficFinePayoutManagement = () => {
           </>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && confirmModal.data && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
+                <DollarSign className="w-6 h-6 text-blue-600" />
+              </div>
+              
+              <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+                Xác nhận chuyển tiền
+              </h3>
+              
+              <p className="text-center text-gray-500 mb-6">
+                Bạn có chắc chắn muốn xác nhận đã chuyển tiền cho chủ xe <span className="font-bold text-gray-800">{confirmModal.data.owner?.full_name}</span>?
+              </p>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Booking ID:</span>
+                  <span className="font-medium text-gray-900">#{confirmModal.data.booking_id}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Ngân hàng:</span>
+                  <span className="font-medium text-gray-900 text-right">
+                    {confirmModal.data.owner_bank?.bank_name || "N/A"}
+                    <br />
+                    <span className="text-gray-600">{confirmModal.data.owner_bank?.account_number || "N/A"}</span>
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                  <span className="text-gray-500 font-medium">Số tiền chuyển:</span>
+                  <span className="font-bold text-blue-600 text-lg">
+                    {formatCurrency(confirmModal.data.remaining_to_transfer)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={closeConfirmModal}
+                  disabled={confirmModal.processing}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={processTransfer}
+                  disabled={confirmModal.processing}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {confirmModal.processing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    "Xác nhận"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
