@@ -119,12 +119,6 @@ const Login = ({ setRegisterOpen, setLoginOpen, setIsLoginWithPhoneOpen }) => {
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 placeholder=""
                 required
-                onKeyDown={
-                  (e) => {
-                    console.log('enter pressed')
-                    handleLogin(e)
-                  }
-                }
               />
               <span className="absolute inset-y-0 right-0 flex items-center pr-3">
                 {isEyeOpen ?
