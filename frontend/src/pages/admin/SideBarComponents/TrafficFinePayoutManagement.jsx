@@ -287,14 +287,14 @@ const TrafficFinePayoutManagement = () => {
                       const completed = isCompleted(it);
                       return (
                         <tr key={`${it.request_id}-${it.booking_id}`} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 align-middle">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-900">#{it.request_id}</span>
                               <span className="text-sm text-blue-600 font-medium">BK{it.booking_id}</span>
                               <span className="text-xs text-gray-500">{it.vehicle?.model} - {it.vehicle?.license_plate}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 align-middle">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-900">{it.owner?.full_name}</span>
                               {it.owner_bank ? (
@@ -310,13 +310,13 @@ const TrafficFinePayoutManagement = () => {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right font-medium text-gray-900">
+                          <td className="px-6 py-4 text-right font-medium text-gray-900 align-middle">
                             {formatCurrency(it.traffic_fine_amount)}
                           </td>
-                          <td className="px-6 py-4 text-right text-gray-600">
+                          <td className="px-6 py-4 text-right text-gray-600 align-middle">
                             {formatCurrency(it.traffic_fine_paid)}
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right align-middle">
                             <div className={`font-bold ${completed ? 'text-green-600' : 'text-blue-600'}`}>
                               {formatCurrency(it.remaining_to_transfer)}
                             </div>
@@ -326,14 +326,14 @@ const TrafficFinePayoutManagement = () => {
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-center text-sm text-gray-500">
+                          <td className="px-6 py-4 text-center text-sm text-gray-500 align-middle">
                             {formatDate(it.created_at || it.updated_at)}
                           </td>
                           <td className="px-6 py-4 text-center align-middle">
                             {/* If remaining is 0, show completed, otherwise show status from DB */}
                             {completed ? getStatusBadge('completed') : getStatusBadge(it.transfer_status)}
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right align-middle">
                             {!completed && (
                               <button
                                 disabled={it.remaining_to_transfer <= 0}
