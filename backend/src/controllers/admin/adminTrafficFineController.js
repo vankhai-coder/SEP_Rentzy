@@ -577,7 +577,7 @@ export const approveTrafficFineRequest = async (req, res) => {
         {
           user_id: request.owner_id,
           title: "Yêu cầu phạt nguội đã được duyệt",
-          content: `Yêu cầu ${request.description ? 'thêm/sửa' : 'thêm'} phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ.`,
+          content: `Yêu cầu phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt. Số tiền: ${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ.`,
           type: "alert",
         },
         { transaction }
@@ -608,7 +608,7 @@ export const approveTrafficFineRequest = async (req, res) => {
                 <div class="container">
                   <h2>Yêu cầu phạt nguội đã được duyệt</h2>
                   <p>Xin chào${owner.full_name ? ` ${owner.full_name}` : ""},</p>
-                  <p>Yêu cầu ${request.description ? 'thêm/sửa' : 'thêm'} phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt.</p>
+                  <p>Yêu cầu phạt nguội cho đơn thuê #${request.booking.booking_id} đã được admin duyệt.</p>
                   <div class="details">
                     <div class="row"><span class="label">Mã đơn thuê:</span><span class="value">#${request.booking.booking_id}</span></div>
                     <div class="row"><span class="label">Số tiền phạt:</span><span class="value">${parseFloat(request.amount).toLocaleString('vi-VN')} VNĐ</span></div>
