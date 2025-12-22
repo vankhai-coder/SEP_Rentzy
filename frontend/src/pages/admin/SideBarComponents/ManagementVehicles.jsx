@@ -29,6 +29,8 @@ const ManagementVehicles = () => {
   });
     const [expandedVehicleId, setExpandedVehicleId] = useState(null);
     const [imageModal, setImageModal] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ open: false, vehicleId: null, vehicleModel: '', nextStatus: null });
+    const [confirming, setConfirming] = useState(false);
 
   // Fetch all vehicles
   const fetchVehicles = useCallback(async (page = 1, isSearch = false) => {
@@ -105,46 +107,37 @@ const ManagementVehicles = () => {
   };
 
   // Handle lock vehicle
-  const handleLockVehicle = async (vehicleId, vehicleModel) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn khóa xe ${vehicleModel}?`)) {
-      return;
-    }
+  const openConfirmModal = useCallback((vehicleId, vehicleModel, nextStatus) => {
+    setConfirmModal({ open: true, vehicleId, vehicleModel, nextStatus });
+  }, []);
+
+  const closeConfirmModal = useCallback(() => {
+    if (confirming) return;
+    setConfirmModal({ open: false, vehicleId: null, vehicleModel: '', nextStatus: null });
+  }, [confirming]);
+
+  const handleConfirmChangeStatus = useCallback(async () => {
+    if (!confirmModal.vehicleId || !confirmModal.nextStatus) return;
+    const { vehicleId, vehicleModel, nextStatus } = confirmModal;
 
     try {
+      setConfirming(true);
       const response = await axiosInstance.patch(`/api/admin/management-vehicles/${vehicleId}/status`, {
-        status: 'blocked'
+        status: nextStatus
       });
 
       if (response.data.success) {
-        toast.success(`Đã khóa xe ${vehicleModel}`);
+        toast.success(nextStatus === 'blocked' ? `Đã khóa xe ${vehicleModel}` : `Đã mở khóa xe ${vehicleModel}`);
+        closeConfirmModal();
         fetchVehicles(pagination.currentPage);
       }
     } catch (error) {
-      console.error('Error locking vehicle:', error);
-      toast.error('Lỗi khi khóa xe');
+      console.error('Error updating vehicle status:', error);
+      toast.error(nextStatus === 'blocked' ? 'Lỗi khi khóa xe' : 'Lỗi khi mở khóa xe');
+    } finally {
+      setConfirming(false);
     }
-  };
-
-  // Handle unlock vehicle
-  const handleUnlockVehicle = async (vehicleId, vehicleModel) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn mở khóa xe ${vehicleModel}?`)) {
-      return;
-    }
-
-    try {
-      const response = await axiosInstance.patch(`/api/admin/management-vehicles/${vehicleId}/status`, {
-        status: 'available'
-      });
-
-      if (response.data.success) {
-        toast.success(`Đã mở khóa xe ${vehicleModel}`);
-        fetchVehicles(pagination.currentPage);
-      }
-    } catch (error) {
-      console.error('Error unlocking vehicle:', error);
-      toast.error('Lỗi khi mở khóa xe');
-    }
-  };
+  }, [closeConfirmModal, confirmModal, fetchVehicles, pagination.currentPage]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
@@ -219,6 +212,15 @@ const ManagementVehicles = () => {
   const closeImageModal = () => setImageModal(null);
   const prevImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index - 1 + m.images.length) % m.images.length }));
   const nextImage = () => setImageModal((m) => (!m ? null : { images: m.images, index: (m.index + 1) % m.images.length }));
+
+  useEffect(() => {
+    if (!confirmModal.open) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeConfirmModal();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [confirmModal.open, closeConfirmModal]);
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -386,7 +388,7 @@ const ManagementVehicles = () => {
                           <>
                             {vehicle.status === 'available' ? (
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleLockVehicle(vehicle.vehicle_id, vehicle.model); }}
+                                onClick={(e) => { e.stopPropagation(); openConfirmModal(vehicle.vehicle_id, vehicle.model, 'blocked'); }}
                                 className="px-3 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors flex items-center gap-1"
                               >
                                 <MdLock className="w-4 h-4" />
@@ -394,7 +396,7 @@ const ManagementVehicles = () => {
                               </button>
                             ) : (
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleUnlockVehicle(vehicle.vehicle_id, vehicle.model); }}
+                                onClick={(e) => { e.stopPropagation(); openConfirmModal(vehicle.vehicle_id, vehicle.model, 'available'); }}
                                 className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded text-sm hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors flex items-center gap-1"
                               >
                                 <MdLockOpen className="w-4 h-4" />
@@ -594,7 +596,60 @@ const ManagementVehicles = () => {
             </div>
           </div>
         </div>
-      )}</div>
+      )}
+
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6" onClick={closeConfirmModal}>
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-lg shadow-lg border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                {confirmModal.nextStatus === 'blocked' ? 'Xác nhận khóa xe' : 'Xác nhận mở khóa xe'}
+              </div>
+              <button
+                onClick={closeConfirmModal}
+                disabled={confirming}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50"
+              >
+                <MdClose className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                {confirmModal.nextStatus === 'blocked'
+                  ? `Bạn có chắc chắn muốn khóa xe ${confirmModal.vehicleModel}?`
+                  : `Bạn có chắc chắn muốn mở khóa xe ${confirmModal.vehicleModel}?`}
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
+              <button
+                onClick={closeConfirmModal}
+                disabled={confirming}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmChangeStatus}
+                disabled={confirming}
+                className={`px-4 py-2 rounded-lg text-white disabled:opacity-50 ${confirmModal.nextStatus === 'blocked'
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-green-600 hover:bg-green-700'
+                  }`}
+              >
+                {confirming ? (
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Đang xử lý...</span>
+                  </span>
+                ) : (
+                  'Xác nhận'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
