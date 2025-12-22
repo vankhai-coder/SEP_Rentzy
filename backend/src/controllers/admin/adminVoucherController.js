@@ -1,12 +1,16 @@
 import { Op } from "sequelize";
 import Voucher from "../../models/Voucher.js";
+import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const getVoucherManagementStats = async (req, res) => {
     try {
         const now = new Date();
 
-        const userId = req.user?.userId 
-        if(!userId){
+        const userId = req.user?.userId
+        if (!userId) {
             return res.status(400).json({ message: "Invalid user ID" });
         }
 
@@ -31,7 +35,7 @@ export const getVoucherManagementStats = async (req, res) => {
                     is_active: true,
                     valid_from: { [Op.lte]: now },
                     valid_to: { [Op.gte]: now },
-                    created_by : userId
+                    created_by: userId
                 }
             }),
 
@@ -41,8 +45,8 @@ export const getVoucherManagementStats = async (req, res) => {
                     [Op.or]: [
                         { valid_to: { [Op.lt]: now } },
                         { is_active: false },
-                    ] ,
-                    created_by : userId
+                    ],
+                    created_by: userId
                 }
             }),
 
@@ -50,7 +54,7 @@ export const getVoucherManagementStats = async (req, res) => {
             Voucher.count({
                 where: {
                     valid_from: { [Op.gt]: now },
-                    created_by : userId
+                    created_by: userId
                 }
             }),
         ]);
@@ -70,8 +74,8 @@ export const getVoucherManagementStats = async (req, res) => {
 export const getVouchersWithFilter = async (req, res) => {
     try {
         // userId : 
-        const userId = req.user?.userId 
-        if(!userId){
+        const userId = req.user?.userId
+        if (!userId) {
             return res.status(400).json({ message: "Invalid user ID" });
         }
         // useQuery in frontend will send request like :
@@ -259,8 +263,6 @@ export const createVoucher = async (req, res) => {
             return res.status(409).json({ message: `Voucher code already exists for code: ${code}` });
         }
 
-
-
         // create new voucher
         const newVoucher = await Voucher.create({
             code,
@@ -336,4 +338,86 @@ export const updateVoucher = async (req, res) => {
         console.error("Error updating voucher:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
+}
+
+// functon to get suggest from AI for voucher from OpenAI API: 
+export const getVoucherSuggestionsFromAI = async (req, res) => {
+    // must return : {voucherDescription,voucherTitle,voucherCode,}
+    const userId = req.user?.userId
+    if (!userId) {
+        return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    // send request to OpenAI API  : 
+    const apiKey = process.env.OPENROUTER_API_KEY
+
+    const baseURL = process.env.OPENAI_BASE_URL ||
+        (process.env.OPENROUTER_API_KEY_TRAFFIC_FINE || process.env.OPENROUTER_API_KEY
+            ? "https://openrouter.ai/api/v1"
+            : "https://api.openai.com/v1");
+
+    const client = new OpenAI({
+        apiKey,
+        baseURL,
+    });
+    try {
+        {
+            const prompt = `
+Bạn là chuyên gia marketing cho website cho thuê phương tiện (xe máy, ô tô, xe đạp) tại Việt Nam.
+
+Mốc thời gian hiện tại được cố định là: NGÀY 23/12/2025.
+
+Nhiệm vụ của bạn:
+1. Dựa trên mốc thời gian trên, hãy lựa chọn CHÍNH XÁC 6 dịp lễ, sự kiện hoặc mùa cao điểm GẦN NHẤT tiếp theo tại Việt Nam 
+   (ví dụ: Tết Dương Lịch, Tết Nguyên Đán, 30/4–1/5, mùa du lịch hè, Quốc Khánh 2/9…).
+2. Với mỗi dịp, tạo 1 voucher phù hợp cho dịch vụ thuê xe.
+
+Yêu cầu chi tiết cho mỗi voucher:
+- voucherCode: Viết hoa, gắn với tên dịp + năm (ví dụ: TET2026, NEWYEAR2026, SUMMER2026)
+- voucherTitle: Theo mẫu "Mã voucher cho dịp ..."
+  (ví dụ: "Mã voucher cho dịp Tết Nguyên Đán 2026")
+- voucherDescription: Mô tả ngắn gọn, rõ ưu đãi, tương tự:
+  "Giảm giá Flash Sale 20% cho tất cả các xe thuê.",
+  "Tiết kiệm ngay 10% cho đơn thuê xe đầu tiên."
+
+Yêu cầu bổ sung:
+- Nội dung mang tính khuyến mãi, thúc đẩy đặt xe sớm
+- Ngôn ngữ tiếng Việt
+- Phù hợp với website cho thuê phương tiện
+
+Trả lời dưới dạng JSON ARRAY gồm 6 phần tử.
+Mỗi phần tử có cấu trúc:
+{
+"occasion": "Tên dịp lễ hoặc sự kiện",
+  "voucherCode": "",
+  "voucherTitle": "",
+  "voucherDescription": ""
+}
+`;
+
+            const response = await client.chat.completions.create({
+                model: "gpt-3.5-turbo",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7,
+            });
+
+            const aiMessage = response.choices[0].message.content;
+            console.log("AI Response:", aiMessage);
+
+            // parse aiMessage to JSON
+            let aiData;
+            try {
+                aiData = JSON.parse(aiMessage);
+            } catch (parseError) {
+                console.error("Error parsing AI response:", parseError);
+                return res.status(500).json({ message: "Error parsing AI response" });
+            }
+
+            return res.status(200).json(aiData);
+        }
+    } catch (error) {
+        console.error("Error getting AI suggested vouchers:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+
 }
